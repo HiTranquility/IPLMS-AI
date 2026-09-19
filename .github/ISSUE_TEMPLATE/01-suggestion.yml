@@ -1,0 +1,27 @@
+name: 🌱 Suggestion / Idea
+description: Propose an improvement for this repository
+title: "[Suggestion] "
+labels: ["suggestion"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to improve?
+      description: Describe the idea in plain language.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does it solve?
+      description: Who is affected and what is difficult today?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence or reference
+      description: Add links, screenshots, logs, or relevant file paths if available.
+    validations:
+      required: false
+

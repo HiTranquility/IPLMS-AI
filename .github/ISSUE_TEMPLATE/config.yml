@@ -1,0 +1,7 @@
+blank_issues_enabled: false
+
+contact_links:
+  - name: Documentation index
+    url: https://github.com/HiTranquility/IPLMS-AI/blob/develop/docs/INDEX.md
+    about: Read the repository documentation before opening a new issue.
+

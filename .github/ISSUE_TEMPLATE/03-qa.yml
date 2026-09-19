@@ -1,0 +1,19 @@
+name: ❓ Technical question
+description: Ask about implementation, behavior, or repository conventions
+title: "[Question] "
+labels: ["qa"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+    validations:
+      required: true
+  - type: textarea
+    id: searched
+    attributes:
+      label: What have you checked?
+      description: Mention docs, code paths, or experiments you already reviewed.
+    validations:
+      required: true
+
