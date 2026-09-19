@@ -492,3 +492,4 @@ Luật hướng phụ thuộc:
 - [`../../../docs/guides/backend/grpc-nest-python-ai-integration.md`](../../../docs/guides/backend/grpc-nest-python-ai-integration.md) — Nối NestJS ⇄ Python
 
 - [Forecast: dữ liệu, huấn luyện và kiểm chứng](./04-forecast-training-strategy.md)
+- [Worker, storage và vòng đời dữ liệu AI](./05-ai-workers-storage-and-training-lifecycle.md)
