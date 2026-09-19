@@ -1,0 +1,77 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Data & training artifacts (keep the repo light)
+runs/
+*.pth
+*.pth.tar
+*.onnx
+
+# ── Dữ liệu: ảnh/parquet KHÔNG vào git, thứ làm tay THÌ CÓ ───────────────────
+# Luật ở ADR-0003 §4: thứ làm tay và không sinh lại được (tập vàng, file lock,
+# metrics) phải version được; thứ dẫn xuất được, nặng, hoặc là PII thì không.
+#
+# [GOTCHA] Git KHÔNG cho re-include một file khi thư mục cha đã bị loại — nó
+# không buồn đi vào thư mục đó để xét. Nên phải loại theo `<dir>/*` rồi mở lại
+# từng cấp, chứ viết `data/` rồi `!data/knowledge/eval_set.json` sẽ KHÔNG chạy.
+# Bản trước viết đúng kiểu sai đó nên `data/` chặn sạch, và
+# `data/knowledge/regulations_seed.json` chưa bao giờ nằm trong repo.
+
+data/*
+!data/knowledge
+data/knowledge/*
+# Tập vàng làm tay — mất là không dựng lại được, [MUST] version.
+!data/knowledge/eval_set.json
+!data/knowledge/regulations_seed.json
+
+# Bộ vàng đo ANPR: nhãn + số đo VÀO git, ảnh thì KHÔNG (PII, nặng).
+!data/golden
+data/golden/*
+!data/golden/plates
+data/golden/plates/*
+!data/golden/plates/README.md
+# Nhãn do người gán — mất là không dựng lại được, cũng không so được lần đo cũ.
+!data/golden/plates/manifest.json
+# Bằng chứng "trước/sau" của mỗi lần đụng model. Nhẹ, và là thứ duy nhất chứng
+# minh một thay đổi làm tốt lên chứ không phải cảm giác tốt lên.
+!data/golden/plates/reports
+data/golden/plates/reports/*
+!data/golden/plates/reports/*.json
+
+ml/dataset/*
+!ml/dataset/README.md
+!ml/dataset/vehicle-cls
+ml/dataset/vehicle-cls/*
+!ml/dataset/vehicle-cls/README.md
+# Ảnh nào thuộc tập nào (theo hash) — không có file này thì sáu tháng sau
+# không ai biết checkpoint cũ học từ dữ liệu nào.
+!ml/dataset/vehicle-cls/dataset.lock.json
+
+ml/checkpoint/**
+# Mở lại thư mục để git chịu đi vào, rồi chỉ giữ hai file nhẹ mỗi lần train.
+!ml/checkpoint/**/
+!ml/checkpoint/**/metrics.json
+!ml/checkpoint/**/dataset.lock.json
+
+# Training checkpoints (*.pt) are ignored, but the YOLO detector weights are
+# needed by the service — keep them tracked (consider git-lfs; ~6MB).
+*.pt
+!models/best.pt
+
+# Saved crops/originals produced at runtime
+static/cropped/*
+static/original/*
+!static/cropped/.gitkeep
+!static/original/.gitkeep
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Stub gRPC sinh từ proto/ai_service.proto — chạy app/scripts/compile_proto.py để tạo lại
+app/api/grpc/generated/

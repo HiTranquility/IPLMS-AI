@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "created_at": null,
+  "updated_at": null,
+  "images_dir": "images",
+  "note": "Bo vang doc bien so. Anh KHONG vao git (PII) — chi file nay va reports/. Nap anh bang: python training/import_plate_dataset.py --help",
+  "yolo_model": "models/best.pt",
+  "items": []
+}

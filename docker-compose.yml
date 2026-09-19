@@ -1,0 +1,21 @@
+# Run the AI image service on its own. Mount a trained checkpoint read-only so
+# you can swap models without rebuilding the image.
+services:
+  ai:
+    build:
+      context: ..
+      dockerfile: ai/Dockerfile
+    image: iplms-ai:latest
+    ports:
+      - "8000:8000"
+    environment:
+      AI_MODEL: NetV2          # NetV1 (M1) | NetV2 (M2)
+      AI_NUM_CLASSES: "10"
+      AI_IMG_SIZE: "32"
+      AI_DEVICE: cpu
+      AI_TOP_K: "5"
+      # Point at a checkpoint inside the mounted volume to serve a trained model:
+      # AI_CHECKPOINT: /app/checkpoints/cifar10_32x32_NetV2/checkpoint_best.pth
+      # AI_LABELS: /app/checkpoints/labels.txt
+    volumes:
+      - ./ml/checkpoint:/app/checkpoints:ro

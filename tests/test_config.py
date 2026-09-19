@@ -1,0 +1,38 @@
+"""Config đọc từ biến môi trường — chỗ hay lệch tên nhất giữa code và manifest."""
+import unittest
+
+from app.config import get_config
+from app.config.vision_config import VisionConfig
+
+
+class VisionConfigTest(unittest.TestCase):
+    def test_tach_danh_sach_ngon_ngu_ocr(self):
+        cfg = VisionConfig(ocr_languages="en,vi")
+        self.assertEqual(cfg.ocr_language_list, ["en", "vi"])
+
+    def test_bo_khoang_trang_thua_va_phan_tu_rong(self):
+        cfg = VisionConfig(ocr_languages=" en , , vi ")
+        self.assertEqual(cfg.ocr_language_list, ["en", "vi"])
+
+    def test_tach_nhan_loai_xe(self):
+        cfg = VisionConfig(vehicle_labels="car_sedan,car_suv,motorbike,truck")
+        self.assertEqual(len(cfg.vehicle_label_list), 4)
+        self.assertIn("motorbike", cfg.vehicle_label_list)
+
+    def test_so_nhan_khop_so_lop_cua_model(self):
+        """Lệch nhau thì classify_vehicle trả sai nhãn hoặc ném IndexError."""
+        cfg = get_config().vision
+        self.assertEqual(len(cfg.vehicle_label_list), cfg.vehicle_num_classes)
+
+
+class ServerConfigTest(unittest.TestCase):
+    def test_max_message_khop_10mb_mac_dinh(self):
+        """Phải khớp AI_GRPC_MAX_MESSAGE_MB=10 bên NestJS, lệch là RESOURCE_EXHAUSTED."""
+        self.assertEqual(get_config().server.grpc_max_message_length, 10 * 1024 * 1024)
+
+    def test_config_duoc_cache(self):
+        self.assertIs(get_config(), get_config())
+
+
+if __name__ == "__main__":
+    unittest.main()

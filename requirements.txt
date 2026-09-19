@@ -1,0 +1,32 @@
+# Full stack for local dev: ANPR service (app/) + training/eval (training/).
+# Widely-adopted libraries. NOTE: not installed automatically — run
+# `pip install -r requirements.txt` in a venv.
+torch>=2.2
+torchvision>=0.17
+numpy>=1.24
+pillow>=10.0
+opencv-python-headless>=4.9
+easyocr>=1.7
+ultralytics>=8.3
+matplotlib>=3.7
+torchsummary>=1.5.1
+ptflops>=0.7
+fastapi>=0.110
+uvicorn[standard]>=0.27
+python-multipart>=0.0.9
+grpcio>=1.62.0
+grpcio-tools>=1.62.0
+pydantic-settings>=2.0.0
+pgvector>=0.2.5
+psycopg2-binary>=2.9.9
+
+# ── Nạp liệu tri thức (RAG) — xem IDEA-008 ───────────────────────────────────
+# [MUST] pypdf phải >=6.19.0. Năm 2026 nó có 6 CVE cùng một dạng: PDF crafted
+# khiến parser treo vòng lặp vô hạn hoặc ngốn sạch RAM (CVE-2026-27628 vá ở
+# 6.7.2, -31826 ở 6.8.0, -33123 ở 6.9.1, -40260 ở 6.10.0, -49460 ở 6.12.2,
+# -54651 ở 6.13.1). Ta nhận PDF tuỳ ý từ người ngoài nên đây đúng mô hình đe
+# doạ; ghim phiên bản chỉ chặn được CVE đã biết, vì vậy còn có thêm trần kích
+# thước + trần thời gian parse trong app/core/constants.py.
+pypdf>=6.19.0
+python-docx>=1.2.0
+openai>=1.0.0,<2.0.0

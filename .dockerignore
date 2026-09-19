@@ -1,0 +1,15 @@
+# =============================================================================
+# [GOTCHA] FILE NAY KHONG CO TAC DUNG voi cach build hien tai.
+#
+# Docker chi doc `.dockerignore` nam o GOC CONTEXT. `ai-1`/`ai-2` trong
+# `backend/docker-compose.yml` khai `context: ..` (= goc repo) vi Dockerfile can
+# `proto/` nam ngoai `ai/`. Nen file co tac dung la `/.dockerignore` o goc repo.
+#
+# Giu file nay lai CHI de canh bao. Ban truoc no co 18 luat trong nhu mot hang
+# rao that — ke ca luat `.venv/` cho 1.27 GB — ma chua tung chay mot lan nao, va
+# con viet `*.pt` + `!app/core/best.pt` trong khi trong so that o `models/best.pt`
+# (neu no CO tac dung thi image mat luon YOLO weights).
+#
+# [MUST] Sua luat loai tru thi sua o `/.dockerignore`, khong phai o day.
+# [NEVER] them luat vao file nay roi tuong da co tac dung. Xem PROB-034.
+# =============================================================================
