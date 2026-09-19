@@ -16,7 +16,7 @@ pydantic-settings>=2.0.0
 pgvector>=0.2.5
 psycopg2-binary>=2.9.9
 
-# ── Nạp liệu tri thức (RAG) — xem IDEA-008 ───────────────────────────────────
+# ── Nạp liệu tri thức (RAG) — xem SUGGESTION-008 ───────────────────────────────────
 # Service runtime CẦN cả ba (AI_CONVENTIONS §5: dependency runtime ⇒ thêm vào
 # CẢ HAI file requirements). [MUST] pypdf >=6.19.0 — 6 CVE DoS trong 2026, xem
 # ghi chú dài ở requirements.txt.

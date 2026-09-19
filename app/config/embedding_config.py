@@ -3,7 +3,7 @@
 [GOTCHA] `dimensions` KHÔNG phải một con số tuỳ chỉnh được sau khi đã nạp liệu.
 Cột `knowledge_chunks.embedding` khai `vector(1536)`, nên đổi model sang loại
 có số chiều khác đồng nghĩa phải **embed lại toàn bộ** tài liệu đã nạp. Xem
-ngã rẽ A của docs/ideas/09-2026/IDEA-008-knowledge-ingestion-pipeline.md.
+ngã rẽ A của docs/suggestions/09-2026/SUGGESTION-008-knowledge-ingestion-pipeline.md.
 
 API key KHÔNG nằm ở đây mà dùng chung `LlmConfig.llm_api_key`: cùng một tài
 khoản OpenAI phục vụ cả embedding lẫn sinh câu trả lời, tách làm hai biến chỉ

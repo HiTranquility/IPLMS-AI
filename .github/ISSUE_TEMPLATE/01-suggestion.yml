@@ -1,13 +1,13 @@
-name: 🌱 Suggestion / Idea
+name: 🌱 Suggestion / Suggestion
 description: Propose an improvement for this repository
 title: "[Suggestion] "
 labels: ["suggestion"]
 body:
   - type: textarea
-    id: idea
+    id: suggestion
     attributes:
       label: What would you like to improve?
-      description: Describe the idea in plain language.
+      description: Describe the suggestion in plain language.
     validations:
       required: true
   - type: textarea
@@ -24,4 +24,3 @@ body:
       description: Add links, screenshots, logs, or relevant file paths if available.
     validations:
       required: false
-

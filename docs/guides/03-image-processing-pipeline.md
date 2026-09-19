@@ -212,6 +212,6 @@ Trong lần biên soạn này chưa chạy model trên camera hay chứng nhận
 ## 🔗 Liên quan
 
 - [Ba pipeline](./01-three-ai-pipelines-architecture.md) · [RAG](./02-rag-optimization-strategy.md)
-- [IDEA-007: Vision roadmap](../../../docs/ideas/09-2026/IDEA-007-vision-deep-dive-roadmap.md)
+- [SUGGESTION-007: Vision roadmap](../../../docs/suggestions/09-2026/SUGGESTION-007-vision-deep-dive-roadmap.md)
 - [Bộ vàng biển số](../../data/golden/plates/README.md) · [Training CNN](../../training/README.md)
 - [OpenCV filtering](https://docs.opencv.org/4.x/d4/d13/tutorial_py_filtering.html) · [OpenCV CLAHE](https://docs.opencv.org/4.x/d5/daf/tutorial_py_histogram_equalization.html)

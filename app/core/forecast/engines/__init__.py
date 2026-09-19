@@ -2,5 +2,5 @@
 
 [GOTCHA] Chưa có mô hình thật. `occupancy_model` hiện đọc lịch sử rồi BỎ QUA,
 trả về một công thức răng cưa viết cứng. Docstring cũ ghi "Prophet / LightGBM"
-nhưng repo không có thư viện nào trong hai cái đó — xem IDEA-008 §1.2.
+nhưng repo không có thư viện nào trong hai cái đó — xem SUGGESTION-008 §1.2.
 """

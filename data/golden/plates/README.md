@@ -1,10 +1,10 @@
 # `data/golden/plates/` — Bộ vàng đo độ chính xác đọc biển số
 
-> Quyết định chi phối: [IDEA-007 §B1](../../../../docs/ideas/09-2026/IDEA-007-vision-deep-dive-roadmap.md) · [ADR-0003 §4](../../../../docs/projects/adrs/0003-duong-du-lieu-vision-tu-phien-do-toi-checkpoint.md)
+> Quyết định chi phối: [SUGGESTION-007 §B1](../../../../docs/suggestions/09-2026/SUGGESTION-007-vision-deep-dive-roadmap.md) · [ADR-0003 §4](../../../../docs/projects/adrs/0003-duong-du-lieu-vision-tu-phien-do-toi-checkpoint.md)
 
 Đây là **thước đo** của pipeline ANPR. Không có nó thì mọi thay đổi model, mọi
 lần tinh chỉnh tham số, mọi đề xuất "đổi sang PaddleOCR" đều là cảm tính —
-IDEA-007 vì vậy đặt B1 **chặn** toàn bộ B2–B5 và C4.
+SUGGESTION-007 vì vậy đặt B1 **chặn** toàn bộ B2–B5 và C4.
 
 ## Cái gì vào git, cái gì không
 

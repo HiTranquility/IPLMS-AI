@@ -31,7 +31,7 @@ class CopilotService:
         người dùng sẽ tin và trả tiền theo. Nguy hiểm hơn hẳn một lỗi thẳng thắn.
 
         Việc thật cần làm trước khi mở lại: embedding thật + pgvector thật + LLM
-        thật, nạp quy chế qua đường của IDEA-008 / ISSUE-004.
+        thật, nạp quy chế qua đường của SUGGESTION-008 / ISSUE-004.
         """
         logger.warning(
             f"CopilotService.AskQuestion bị gọi bởi user {request.user_id} "
@@ -78,8 +78,8 @@ class CopilotService:
         ngay, còn số bịa thì không để lại dấu vết nào trong log lẫn metric.
 
         Việc thật cần làm trước khi mở lại: nạp log vào/ra + ảnh snapshot của
-        phiên, đối chiếu với quy chế đã nạp qua RAG (xem IDEA-008), rồi mới kết
-        luận. Toàn bộ chuỗi RAG hiện vẫn là giả — xem IDEA-008 §1.2.
+        phiên, đối chiếu với quy chế đã nạp qua RAG (xem SUGGESTION-008), rồi mới kết
+        luận. Toàn bộ chuỗi RAG hiện vẫn là giả — xem SUGGESTION-008 §1.2.
         """
         logger.warning(
             f"CopilotService.ArbitrateDispute bị gọi cho dispute #{request.dispute_id} "

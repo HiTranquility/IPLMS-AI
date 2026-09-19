@@ -10,7 +10,7 @@ AI service, model/runtime behavior, Python dependencies and AI-specific operatio
 
 - Repository README: ../README.md
 - Local conventions: ./AI_CONVENTIONS.md
-- Ideas: ideas/README.md
+- Suggestions: suggestions/README.md
 - Projects and ADRs: projects/README.md
 - Templates: templates/README.md
 

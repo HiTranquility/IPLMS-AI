@@ -63,7 +63,7 @@ Từ phiên đỗ thật — `parking_session.check_in_image_url` / `check_out_i
 `ai_confidence_in/out`. Phần thu thập đã dựng trong ISSUE-003.
 
 Nhãn đến từ **vòng active learning**: khi nhân viên sửa tay một kết quả AI đoán sai,
-đó là nhãn do người gán — miễn phí và đúng phân phối thật (IDEA-007 C1). Ưu tiên kéo
+đó là nhãn do người gán — miễn phí và đúng phân phối thật (SUGGESTION-007 C1). Ưu tiên kéo
 về những lượt `ai_confidence` thấp hoặc bị sửa, vì đó là chỗ model đang yếu.
 
 > **[GOTCHA] Chưa chạy migration trên Production = chưa có ảnh nào được lưu.** Bốn cột

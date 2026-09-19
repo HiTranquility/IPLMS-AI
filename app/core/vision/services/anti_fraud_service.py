@@ -39,7 +39,7 @@ class AntiFraudService:
                 )
 
         # [MUST] Còn thiếu: so khớp ảnh crop (checkin_crop_url vs checkout_crop_url)
-        # bằng embedding ReID — IDEA-007 B6. Tới lúc đó `similarity_score` mới có
+        # bằng embedding ReID — SUGGESTION-007 B6. Tới lúc đó `similarity_score` mới có
         # số thật, và `PLATE_TAMPERING_SUSPECTED` mới có nghĩa (hiện khai rồi
         # nhưng không nhánh nào raise).
         #

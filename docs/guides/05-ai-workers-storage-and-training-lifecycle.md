@@ -393,6 +393,6 @@ Xoá ảnh nguồn không tự xoá ảnh hưởng đã học trong checkpoint. 
 - [Mục lục AI](./README.md) · [Ba pipeline](./01-three-ai-pipelines-architecture.md)
 - [RAG](./02-rag-optimization-strategy.md) · [Vision](./03-image-processing-pipeline.md) · [Forecast](./04-forecast-training-strategy.md)
 - [ADR-0003: từ phiên đỗ tới checkpoint](../../../docs/projects/adrs/0003-duong-du-lieu-vision-tu-phien-do-toi-checkpoint.md)
-- [IDEA-007: active learning và Vision roadmap](../../../docs/ideas/09-2026/IDEA-007-vision-deep-dive-roadmap.md)
+- [SUGGESTION-007: active learning và Vision roadmap](../../../docs/suggestions/09-2026/SUGGESTION-007-vision-deep-dive-roadmap.md)
 - [RabbitMQ confirms/ACK](https://www.rabbitmq.com/docs/confirms) · [MinIO repository](https://github.com/minio/minio)
 - [Cloudinary access control](https://cloudinary.com/documentation/control_access_to_media) · [S3 lifecycle](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html)

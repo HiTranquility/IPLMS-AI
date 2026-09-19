@@ -14,7 +14,7 @@ class IngestDocumentCommand(BaseModel):
     file_name: str
 
     # RỖNG/None = quy chế toàn hệ thống, mọi bãi tra được.
-    # Có giá trị = chỉ bãi đó thấy (Rule 1 — cách ly theo bãi, IDEA-008 §2.2).
+    # Có giá trị = chỉ bãi đó thấy (Rule 1 — cách ly theo bãi, SUGGESTION-008 §2.2).
     parking_lot_id: Optional[str] = None
 
     category: str = "regulation"

@@ -18,5 +18,4 @@
 
 ## Related documents
 
-- <idea, problem, ADR, bug, or PR>
-
+- <suggestion, problem, ADR, bug, or PR>

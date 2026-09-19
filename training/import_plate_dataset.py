@@ -1,4 +1,4 @@
-"""Nạp một dataset biển số công khai vào bộ vàng (IDEA-007 · B1).
+"""Nạp một dataset biển số công khai vào bộ vàng (SUGGESTION-007 · B1).
 
 Dataset ANPR công khai mỗi bộ gói nhãn một kiểu. Script này quy ba kiểu hay gặp
 nhất về **một** `manifest.json` để `eval_plates.py` chỉ phải biết một định dạng:

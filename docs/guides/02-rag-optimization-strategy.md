@@ -219,6 +219,6 @@ Lần chỉnh guide này chỉ đối chiếu source và cấu trúc tài liệu
 ## 🔗 Liên quan
 
 - [Ba pipeline](./01-three-ai-pipelines-architecture.md) · [Xử lý ảnh](./03-image-processing-pipeline.md) · [Forecast](./04-forecast-training-strategy.md)
-- [IDEA-008: nạp tri thức](../../../docs/ideas/09-2026/IDEA-008-knowledge-ingestion-pipeline.md)
+- [SUGGESTION-008: nạp tri thức](../../../docs/suggestions/09-2026/SUGGESTION-008-knowledge-ingestion-pipeline.md)
 - [ISSUE-004](../../../docs/projects/issues/09-2026/ISSUE-004-nap-lieu-tri-thuc-rag/issue.md)
 - [pgvector: index và filtering](https://github.com/pgvector/pgvector) — tài liệu tham chiếu; cần kiểm phiên bản thực tế trước áp dụng.

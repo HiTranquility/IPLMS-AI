@@ -1,11 +1,11 @@
-# 🌱 IDEA-NNN: <Short title>
+# 🌱 SUGGESTION-NNN: <Short title>
 
 > Status: 💡 DRAFT
 > Date: YYYY-MM-DD
 > Proposer: <name>
 > Scope: <this repository>
 
-## Idea
+## Suggestion
 
 <What should be improved or explored?>
 

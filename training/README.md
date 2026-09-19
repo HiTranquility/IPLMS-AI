@@ -73,7 +73,7 @@ python training/test_animal10.py
 
 Mục 1–4 nói về **CNN phân loại ảnh** (NetV1/NetV2). Phần đọc **biển số** do
 YOLO + EasyOCR đảm nhiệm và **không train ở đây** — nhưng vẫn phải **đo được**,
-nếu không mọi thay đổi pipeline sau này đều là cảm tính (IDEA-007 · B1).
+nếu không mọi thay đổi pipeline sau này đều là cảm tính (SUGGESTION-007 · B1).
 
 ```bash
 cd ai

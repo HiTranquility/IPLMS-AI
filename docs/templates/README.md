@@ -2,7 +2,7 @@
 
 This is the minimal template set for contributors working directly in this repository:
 
-- Idea: idea-template.md
+- Suggestion: suggestion-template.md
 - ADR: adr-template.md
 - Issue: issue-template.md
 - Bug: bug-template.md

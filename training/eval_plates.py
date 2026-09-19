@@ -1,4 +1,4 @@
-"""Máy đo độ chính xác ANPR trên bộ vàng (IDEA-007 · B1).
+"""Máy đo độ chính xác ANPR trên bộ vàng (SUGGESTION-007 · B1).
 
 Chạy engine đọc biển hiện tại trên từng ảnh trong `data/golden/plates/manifest.json`,
 so với nhãn người gán, rồi in bảng số và ghi báo cáo JSON.

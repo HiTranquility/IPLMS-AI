@@ -20,7 +20,7 @@ pydantic-settings>=2.0.0
 pgvector>=0.2.5
 psycopg2-binary>=2.9.9
 
-# ── Nạp liệu tri thức (RAG) — xem IDEA-008 ───────────────────────────────────
+# ── Nạp liệu tri thức (RAG) — xem SUGGESTION-008 ───────────────────────────────────
 # [MUST] pypdf phải >=6.19.0. Năm 2026 nó có 6 CVE cùng một dạng: PDF crafted
 # khiến parser treo vòng lặp vô hạn hoặc ngốn sạch RAM (CVE-2026-27628 vá ở
 # 6.7.2, -31826 ở 6.8.0, -33123 ở 6.9.1, -40260 ở 6.10.0, -49460 ở 6.12.2,
