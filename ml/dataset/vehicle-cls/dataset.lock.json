@@ -1,5 +1,37 @@
 {
-  "note": "Chua co du lieu. Sinh boi script gom anh — xem README.md cung thu muc.",
+  "schema_version": 1,
+  "dataset_id": null,
+  "task": "vehicle_classification",
+  "note": "Chua co du lieu. Lock cong khai chi chua hash/label/split/group_hash; object key va PII nam trong private manifest.",
   "created_at": null,
-  "splits": {}
+  "source_cutoff": null,
+  "label_schema": {
+    "version": 1,
+    "classes": [
+      "motorbike",
+      "car",
+      "truck",
+      "bicycle"
+    ]
+  },
+  "split_policy": {
+    "seed": null,
+    "group_by": [
+      "vehicle",
+      "session",
+      "capture_burst"
+    ]
+  },
+  "preprocessing": {
+    "version": null,
+    "image_size": [
+      32,
+      32
+    ]
+  },
+  "splits": {
+    "train": [],
+    "validation": [],
+    "test_golden": []
+  }
 }

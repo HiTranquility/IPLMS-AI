@@ -4,6 +4,9 @@ Script train/eval cho CNN phân loại ảnh ở [`../models`](../models) (code 
 Model: `NetV1` (M1) ở [`../models/m1`](../models/m1), `NetV2` (M2) ở [`../models/m2`](../models/m2).
 
 > **Chạy từ đâu?** Luôn `cd ai` rồi gọi `python training/<script>.py`. Mỗi script tự thêm `ai/` vào `sys.path` nên `from models...` chạy được. Dataset/checkpoint mặc định nằm ở `ai/ml/dataset/` và `ai/ml/checkpoint/` (đều gitignored).
+>
+> Bản đồ dữ liệu/artifact: [`ml/README.md`](../ml/README.md) · Runbook GPU:
+> [Google Colab](../docs/guides/06-google-colab-training-runbook.md).
 
 ## 0. Cài đặt (1 lần)
 
@@ -97,8 +100,11 @@ và backend tra xe bằng so khớp chuỗi chính xác nên rụng dấu = khô
 ## 5. Đưa model đã train vào dịch vụ ANPR
 
 CNN này là **bộ phân loại ảnh** — trong dịch vụ nó chỉ dùng làm **tầng phân loại loại xe (optional)**. Để bật:
-1. Train (hoặc fine-tune) trên tập ảnh **loại xe** (vd 2 lớp: car / motorbike).
-2. Trỏ service tới checkpoint đó qua env (xem [`../README.md`](../README.md)):
+1. Sửa `train_imagefolder.py` để suy `n_class` + `class_to_idx` từ ImageFolder
+   và lưu mapping vào checkpoint. Hiện script suy số lớp từ `--dataset`, nên
+   chưa an toàn để train snapshot `vehicle-cls` 4 lớp.
+2. Train (hoặc fine-tune) trên tập ảnh **loại xe** đúng 4 lớp đã chốt.
+3. Trỏ service tới checkpoint đó qua env (xem [`../README.md`](../README.md)):
    ```bash
    AI_VEHICLE_CHECKPOINT=/path/to/checkpoint.pth AI_VEHICLE_LABELS=car,motorbike
    ```

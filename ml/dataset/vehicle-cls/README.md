@@ -18,7 +18,14 @@ biệt tỷ lệ thân xe.
 Thêm nhãn mới ⇒ **[MUST]** thêm vào `AI_LABEL_TO_CATEGORY` cùng lúc, nếu không
 `toVehicleCategory()` trả `null` và backend hiểu là *"không biết"*.
 
-## Cấu trúc
+> **[GOTCHA] Runtime chưa khớp schema mục tiêu:**
+> `app/config/vision_config.py` hiện mặc định
+> `car_sedan,car_suv,motorbike,truck`, trong khi snapshot này chốt
+> `motorbike,car,truck,bicycle`. Trước khi nạp checkpoint thật phải đổi
+> `AI_VEHICLE_LABELS` đúng thứ tự `class_to_idx` đã lưu trong checkpoint; cùng
+> số 4 lớp không có nghĩa index của hai bộ nhãn tương thích.
+
+## Cấu trúc local sau khi materialize
 
 ```text
 vehicle-cls/
@@ -31,8 +38,8 @@ vehicle-cls/
     ├── motorbike/  car/  truck/  bicycle/
 ```
 
-Git không theo dõi được thư mục rỗng, nên sau khi clone phải dựng lại khung — chạy
-từ `ai/`:
+Git không theo dõi ảnh/thư mục rỗng. Khi chưa có script materialize, có thể dựng
+khung thủ công từ `ai/` để thử nghiệm:
 
 ```bash
 mkdir -p ml/dataset/vehicle-cls/raw
@@ -41,13 +48,15 @@ for split in train val test-golden; do
 done
 ```
 
-Layout này khớp `torchvision.datasets.ImageFolder`, nên dùng thẳng được:
+Layout này khớp `torchvision.datasets.ImageFolder`. Tuy nhiên **chưa chạy lệnh
+train production bằng README này**: `training/train_imagefolder.py` hiện suy số
+lớp từ `--dataset` (`cifar10` → 10, `cifar100` → 100, giá trị khác → 30), trong
+khi task này có 4 lớp. Truyền `--data ./ml/dataset/vehicle-cls` không tự sửa số
+lớp, nên checkpoint sinh ra có output head sai.
 
-```bash
-cd ai
-python training/train_imagefolder.py \
-  --data ./ml/dataset/vehicle-cls --net NetV2 --img-size 32 --epochs 100
-```
+Trước lần train thật cần sửa script để lấy `class_to_idx` từ train set, kiểm
+train/val có cùng thứ tự lớp và ghi mapping đó vào checkpoint. Sau đó mới công
+bố câu lệnh chuẩn tại đây.
 
 ## ⛔ `test-golden/` — đóng băng
 
@@ -70,7 +79,25 @@ về những lượt `ai_confidence` thấp hoặc bị sửa, vì đó là ch�
 > kia chính là thứ bắt ảnh lại. Mỗi phiên xe đi qua khi cột chưa tồn tại là một mẫu
 > huấn luyện mất vĩnh viễn — không quay lại lấy được.
 
-## `dataset.lock.json` — file duy nhất ở đây vào git
+## `dataset.lock.json` — dấu vân tay snapshot được phép vào Git
 
-Ghi hash của từng ảnh theo tập. Không có nó thì không trả lời được câu
-*"con số 91% hồi đó đo trên tập nào"*, và không tái lập được kết quả cũ.
+Ghi hash, label, split và group hash của từng mẫu. Không có nó thì không trả lời
+được câu *"con số 91% hồi đó đo trên tập nào"*. Object key/capture ID nằm trong
+private manifest; lock trong Git không chứa signed URL, biển số hay định danh
+người dùng.
+
+Tối thiểu lock cần có: `schema_version`, `dataset_id`, `task`, `label_schema`,
+`source_cutoff`, `split_policy`, `preprocessing` và `splits`. Mỗi checkpoint phải
+copy đúng lock của lần train vào folder run, không tham chiếu mơ hồ tới lock
+“mới nhất”.
+
+## Ba công cụ còn thiếu trước khi train thật
+
+| Script đề xuất | Vai trò |
+|---|---|
+| `training/materialize_dataset.py` | Tải đúng object version theo private manifest và dựng ImageFolder |
+| `training/validate_dataset.py` | Kiểm hash trùng, ảnh hỏng, nhãn, cân bằng lớp và group leakage |
+| `training/eval_vehicle_classifier.py` | Đo test-golden, per-class metric và confusion matrix |
+
+Không tạo file rỗng để giữ chỗ. Mỗi script được thêm cùng phase triển khai và
+phải có input/output kiểm chứng được.
