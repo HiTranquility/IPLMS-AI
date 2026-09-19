@@ -29,30 +29,33 @@ Thêm nhãn mới ⇒ **[MUST]** thêm vào `AI_LABEL_TO_CATEGORY` cùng lúc, n
 
 ```text
 vehicle-cls/
-├── raw/                    ảnh kéo từ phiên đỗ, CHƯA gán nhãn
-├── train/
-│   ├── motorbike/  car/  truck/  bicycle/
-├── val/
-│   ├── motorbike/  car/  truck/  bicycle/
-└── test-golden/            ⛔ ĐÓNG BĂNG — xem bên dưới
-    ├── motorbike/  car/  truck/  bicycle/
+├── README.md
+├── dataset.lock.json
+└── materialized/           cache local/Colab, không phải nguồn dữ liệu thật
+    ├── train/
+    │   ├── motorbike/  car/  truck/  bicycle/
+    ├── val/
+    │   ├── motorbike/  car/  truck/  bicycle/
+    └── test-golden/        ⛔ ĐÓNG BĂNG — xem bên dưới
+        ├── motorbike/  car/  truck/  bicycle/
 ```
 
 Git không theo dõi ảnh/thư mục rỗng. Khi chưa có script materialize, có thể dựng
 khung thủ công từ `ai/` để thử nghiệm:
 
 ```bash
-mkdir -p ml/dataset/vehicle-cls/raw
+mkdir -p ml/dataset/vehicle-cls/materialized
 for split in train val test-golden; do
-  mkdir -p ml/dataset/vehicle-cls/$split/{motorbike,car,truck,bicycle}
+  mkdir -p ml/dataset/vehicle-cls/materialized/$split/{motorbike,car,truck,bicycle}
 done
 ```
 
 Layout này khớp `torchvision.datasets.ImageFolder`. Tuy nhiên **chưa chạy lệnh
 train production bằng README này**: `training/train_imagefolder.py` hiện suy số
 lớp từ `--dataset` (`cifar10` → 10, `cifar100` → 100, giá trị khác → 30), trong
-khi task này có 4 lớp. Truyền `--data ./ml/dataset/vehicle-cls` không tự sửa số
-lớp, nên checkpoint sinh ra có output head sai.
+khi task này có 4 lớp. Truyền
+`--data ./ml/dataset/vehicle-cls/materialized` không tự sửa số lớp, nên
+checkpoint sinh ra có output head sai.
 
 Trước lần train thật cần sửa script để lấy `class_to_idx` từ train set, kiểm
 train/val có cùng thứ tự lớp và ghi mapping đó vào checkpoint. Sau đó mới công
