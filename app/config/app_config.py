@@ -9,6 +9,7 @@ from app.config.model_registry_config import ModelRegistryConfig
 from app.config.object_storage_config import ObjectStorageConfig
 from app.config.server_config import ServerConfig
 from app.config.vision_config import VisionConfig
+from app.config.workflow_config import WorkflowConfig
 
 
 class AppConfig:
@@ -21,6 +22,7 @@ class AppConfig:
         self.logging = LoggingConfig()
         self.model_registry = ModelRegistryConfig()
         self.object_storage = ObjectStorageConfig()
+        self.workflow = WorkflowConfig()
 
 
 @lru_cache

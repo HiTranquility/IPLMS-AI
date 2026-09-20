@@ -43,6 +43,14 @@ class DatalakeConfigTest(unittest.TestCase):
         self.assertGreater(config.occupancy_slot_minutes, 0)
 
 
+class WorkflowConfigTest(unittest.TestCase):
+    def test_workflow_mac_dinh_tat_va_dung_memory_cho_local(self):
+        config = get_config().workflow
+        self.assertFalse(config.enabled)
+        self.assertEqual(config.checkpoint_backend, "memory")
+        self.assertGreater(config.checkpoint_retention_days, 0)
+
+
 class ServerConfigTest(unittest.TestCase):
     def test_max_message_khop_10mb_mac_dinh(self):
         """Phải khớp AI_GRPC_MAX_MESSAGE_MB=10 bên NestJS, lệch là RESOURCE_EXHAUSTED."""

@@ -49,6 +49,14 @@ class RagPipelineError(AiServiceError):
     """Lỗi trong quá trình truy vấn RAG (embedding, LLM, pgvector)."""
 
 
+class WorkflowConfigurationError(AiServiceError):
+    """Workflow chưa được cấu hình an toàn hoặc thiếu dependency runtime."""
+
+
+class WorkflowStateError(AiServiceError):
+    """State hoặc quyết định resume của workflow không hợp lệ."""
+
+
 # ── Knowledge / Nạp liệu ──────────────────────────────────────────────────────
 
 class UnsupportedFormatError(AiServiceError):
