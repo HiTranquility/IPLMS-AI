@@ -132,7 +132,7 @@ Nguồn: `ai/app/core/vision/engines/anpr_engine.py:203` (`run_anpr`). Đây là
 |---|---|---|
 | `PLATE_MAX_LENGTH` | 11 ký tự | Giới hạn heuristic trong code, không phải bộ kiểm tra đầy đủ biển số VN |
 | `PLATE_MIN_ALPHA` | 1 chữ cái | Phải có ít nhất 1 ký tự chữ |
-| YOLO model | `models/best.pt` | Weights bên thứ ba, KHÔNG train trong repo |
+| YOLO model | `model/artifacts/bootstrap/anpr/best.pt` | Bootstrap weights bên thứ ba, KHÔNG train trong repo |
 | EasyOCR languages | `['en', 'vi']` | Hỗ trợ tiếng Việt cho ký tự đặc biệt |
 | Crop tối thiểu | 220×80 px | `is_valid_crop()` — dưới ngưỡng → enhanced OCR |
 | Min brightness | 80 (grayscale) | Ảnh quá tối → enhanced pipeline |

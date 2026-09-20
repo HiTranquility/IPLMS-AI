@@ -9,7 +9,7 @@ import sys
 # ╔══════════════════════════════════════════════════════════╗
 # ║  CHỈ CẦN ĐỔI DÒNG NÀY                                 ║
 # ╚══════════════════════════════════════════════════════════╝
-CHECKPOINT_DIR = 'ml/checkpoint/cifar10_32x32_BTImages10_Phat_NetV1_V1'
+CHECKPOINT_DIR = 'model/checkpoint/cifar10_32x32_BTImages10_Phat_NetV1_V1'
 
 # ── Auto-detect log file ──
 def find_log_file(checkpoint_dir):

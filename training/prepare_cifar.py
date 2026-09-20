@@ -37,11 +37,11 @@ def export_to_imagefolder(dataset, root_dir, class_names):
     print(f'  Done: {idx + 1} images -> {root_dir}')
 
 
-def prepare_cifar10(base='./ml/dataset/CIFAR10'):
+def prepare_cifar10(base='./model/dataset/CIFAR10'):
     print('=== CIFAR-10 ===')
     print('Downloading CIFAR-10...')
-    train_set = datasets.CIFAR10(root='./ml/dataset/_raw', train=True, download=True)
-    test_set  = datasets.CIFAR10(root='./ml/dataset/_raw', train=False, download=True)
+    train_set = datasets.CIFAR10(root='./model/dataset/_raw', train=True, download=True)
+    test_set  = datasets.CIFAR10(root='./model/dataset/_raw', train=False, download=True)
     class_names = train_set.classes
 
     print(f'Classes: {class_names}')
@@ -54,11 +54,11 @@ def prepare_cifar10(base='./ml/dataset/CIFAR10'):
     print(f'CIFAR-10 ready at {base}\n')
 
 
-def prepare_cifar100(base='./ml/dataset/CIFAR100'):
+def prepare_cifar100(base='./model/dataset/CIFAR100'):
     print('=== CIFAR-100 ===')
     print('Downloading CIFAR-100...')
-    train_set = datasets.CIFAR100(root='./ml/dataset/_raw', train=True, download=True)
-    test_set  = datasets.CIFAR100(root='./ml/dataset/_raw', train=False, download=True)
+    train_set = datasets.CIFAR100(root='./model/dataset/_raw', train=True, download=True)
+    test_set  = datasets.CIFAR100(root='./model/dataset/_raw', train=False, download=True)
     class_names = train_set.classes
 
     print(f'Classes ({len(class_names)}): {class_names[:10]}... ')

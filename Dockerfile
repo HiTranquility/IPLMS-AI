@@ -21,9 +21,9 @@ RUN apt-get update \
 COPY ai/requirements-service.txt .
 RUN pip install -r requirements-service.txt
 
-# models/ chứa best.pt (YOLO) + CNN m1/m2; static/ là nơi lưu ảnh lúc chạy.
+# model/ chứa kiến trúc, bootstrap YOLO và workspace train; image chỉ cần model.
 COPY ai/app ./app
-COPY ai/models ./models
+COPY ai/model ./model
 COPY ai/static ./static
 COPY proto ./proto
 

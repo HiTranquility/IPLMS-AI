@@ -18,4 +18,4 @@ services:
       # AI_CHECKPOINT: /app/checkpoints/cifar10_32x32_NetV2/checkpoint_best.pth
       # AI_LABELS: /app/checkpoints/labels.txt
     volumes:
-      - ./ml/checkpoint:/app/checkpoints:ro
+      - ./model/checkpoint:/app/checkpoints:ro

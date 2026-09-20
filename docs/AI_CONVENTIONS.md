@@ -91,7 +91,7 @@ api/rest/routes/anpr_controller.py  ─┘
 
 ## 4. Config
 
-`app/config/` chia theo mối quan tâm: `app_config` · `base_config` · `datalake_config` · `llm_config` · `logging_config` · `server_config` · `vision_config`.
+`app/config/` chia theo mối quan tâm: `app_config` · `base_config` · `datalake_config` · `llm_config` · `logging_config` · `model_registry_config` · `object_storage_config` · `server_config` · `vision_config`.
 
 - **[MUST]** đọc config qua `from app.config import get_config`. **[NEVER]** đọc `os.environ` rải rác trong engine/service.
 - **[MUST]** thêm nhóm cấu hình mới = thêm **một file** trong `app/config/`, không nhét vào `app_config.py`.

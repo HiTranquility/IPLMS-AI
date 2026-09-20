@@ -3,9 +3,9 @@
 Module **Python độc lập** (ngang hàng `frontend/`, `backend/`): dịch vụ **FastAPI + Docker** xử lý ảnh biển số, chạy xuyên suốt để `backend` gọi ở khâu **check-in / check-out** cổng.
 
 **Nguồn gốc code — đọc trước khi sửa:**
-- **Kiến trúc layered** `app/{api,core,dtos,models,services,utils}` + `static/{cropped,original}` — theo một layout ALPR có sẵn, không tự nghĩ ra ở đây.
+- **Kiến trúc layered** `app/{api,config,core,infra,utils}` + `static/{cropped,original}` — theo một layout ALPR có sẵn, không tự nghĩ ra ở đây.
 - **Engine ALPR** (YOLO detect + EasyOCR) ở `app/core/vision/engines/` là **code bên thứ ba bê nguyên vào**, kèm weights `best.pt` — KHÔNG train trong repo này.
-- **CNN phân loại ảnh** (`models/m1`, `models/m2`) cũng là **code + kiến trúc bên thứ ba**, ở đây dùng làm **tầng phân loại xe (tuỳ chọn)**.
+- **CNN phân loại ảnh** (`model/architectures/m1`, `model/architectures/m2`) cũng là **code + kiến trúc bên thứ ba**, ở đây dùng làm **tầng phân loại xe (tuỳ chọn)**.
 
 ## 📁 Cấu trúc
 
@@ -42,8 +42,15 @@ ai/
 │   ├── script/                      # compile_proto.py · grpc_smoke_check.py · seed_*.py
 │   ├── main.py                      # entrypoint REST (FastAPI app)
 │   └── grpc_server.py               # entrypoint gRPC (grpc.aio, cổng 50051)
-├── tests/                           # unittest stdlib — KHÔNG cần thêm dependency
-├── models/                          # best.pt (YOLO) + CNN bên thứ ba: m1 (NetV1) · m2 (NetV2 + SE)
+├── test/                            # unittest stdlib — KHÔNG cần thêm dependency
+├── model/                           # một root cho toàn bộ vòng đời model
+│   ├── architectures/              # mã kiến trúc CNN: m1 (NetV1) · m2 (NetV2 + SE)
+│   ├── artifacts/bootstrap/anpr/   # weight YOLO mẫu duy nhất còn theo Git
+│   ├── dataset/                     # snapshot local đã materialize
+│   ├── checkpoint/                  # checkpoint train local, weight gitignored
+│   └── runs/                        # output theo training run
+├── notebook/colab/                 # notebook Colab mỏng, chỉ gọi CLI training
+├── var/model-cache/                # artifact tải từ object storage; runtime, gitignored
 ├── training/                        # script train/eval cho CNN nói trên
 ├── static/{cropped,original}        # ảnh crop/gốc lưu lúc chạy (gitignored)
 ├── proto/ → dùng `proto/*.proto` ở GỐC REPO (4 file, nguồn chuẩn dùng chung với backend)
@@ -110,11 +117,11 @@ Bên backend đặt `AI_GRPC_URL=localhost:50051` (xem `backend/src/infrastructu
 
 ```bash
 cd ai
-python -m unittest discover -s tests -t .
+python -m unittest discover -s test -t .
 ```
 
 Dùng `unittest` của thư viện chuẩn — **không thêm dependency nào**, chạy được ngay
-sau `pip install -r requirements.txt`. Ai thích pytest thì `pytest tests` vẫn chạy
+sau `pip install -r requirements.txt`. Ai thích pytest thì `pytest test` vẫn chạy
 y nguyên vì pytest hiểu test kiểu unittest.
 
 Bộ test cố ý chỉ chạm **logic thuần**, không nạp model, nên xong trong vài mili-giây:
@@ -133,10 +140,18 @@ Bộ test cố ý chỉ chạm **logic thuần**, không nạp model, nên xong 
 |---|---|---|
 | `AI_LANE_ID` | `gate_in_01` | `lane_id` gắn vào kết quả |
 | `AI_VEHICLE_CHECKPOINT` | *(rỗng)* | Bật tầng phân loại xe khi trỏ tới checkpoint CNN đã train loại xe. **Rỗng = tắt** (`vehicle_type = null`). |
+| `AI_VEHICLE_MODEL_VERSION` | `v1` | Version bất biến dùng làm thư mục cache artifact |
+| `AI_VEHICLE_ARTIFACT_URL` | *(rỗng)* | Signed HTTPS GET URL; khi có giá trị sẽ ưu tiên hơn checkpoint local |
+| `AI_VEHICLE_ARTIFACT_SHA256` | *(rỗng)* | SHA-256 bắt buộc khi tải checkpoint từ URL |
 | `AI_VEHICLE_MODEL` | `NetV2` | `NetV1`/`NetV2` cho tầng phân loại xe |
 | `AI_VEHICLE_LABELS` | `car_sedan,car_suv,motorbike,truck` | Nhãn lớp (theo thứ tự index) |
 | `AI_OCR_LANGUAGES` | `en,vi` | Ngôn ngữ EasyOCR, ngăn cách bởi dấu phẩy |
-| `AI_YOLO_MODEL_PATH` | `models/best.pt` | Trọng số YOLO, tương đối so với `ai/` |
+| `AI_YOLO_MODEL_PATH` | `model/artifacts/bootstrap/anpr/best.pt` | Bootstrap YOLO local, tương đối so với `ai/` |
+| `AI_YOLO_MODEL_VERSION` | `bootstrap-v1` | Version detector dùng làm khóa cache |
+| `AI_YOLO_ARTIFACT_URL` | *(rỗng)* | Signed HTTPS GET URL; khi có giá trị sẽ ưu tiên hơn bootstrap local |
+| `AI_YOLO_ARTIFACT_SHA256` | *(rỗng)* | SHA-256 bắt buộc khi tải detector từ URL |
+| `AI_MODEL_REGISTRY_CACHE_DIR` | `var/model-cache` | Cache runtime theo `<model>/<version>/<file>` |
+| `AI_OBJECT_STORAGE_MAX_ARTIFACT_MB` | `2048` | Chặn tải artifact vượt giới hạn |
 | `AI_GRPC_PORT` | `50051` | Cổng gRPC server |
 | `AI_DEVICE` | `cpu` | `cpu`/`cuda` |
 
@@ -155,4 +170,5 @@ Xem [`training/README.md`](training/README.md) — cách chuẩn bị dữ liệ
 - **Engine ALPR (YOLO+OCR) là thật** — code + weights `best.pt` bê từ bên thứ ba, không train ở đây.
 - **`confidence` là số THẬT** (detector × OCR) từ ISSUE-003; `0.0` nghĩa là không đọc được biển, [NEVER] hiểu là "tin 0%".
 - **`vehicle_type` mặc định `null`**: checkpoint CNN hiện có train trên CIFAR/Animal-10, **chưa** phân loại xe; chỉ bật khi cấp checkpoint train trên loại xe (`AI_VEHICLE_CHECKPOINT`).
+- Model production nên nằm trong object storage private. Service nhận signed URL ngắn hạn, bắt buộc kiểm SHA-256 và chỉ nạp file đã cache thành công; URL không được ghi log.
 - **Chưa cài gói** (luật supply-chain): torch/ultralytics/easyocr/opencv là thư viện phổ biến; tự `pip install`. `easyocr` tải model ~vài trăm MB lần chạy đầu.

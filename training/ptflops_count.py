@@ -9,7 +9,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from ptflops import get_model_complexity_info
-from models.m2.nets import NetV2
+from model.architectures.m2.nets import NetV2
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = NetV2(n_class=10).to(device)

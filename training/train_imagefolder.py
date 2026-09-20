@@ -37,11 +37,11 @@ import torchvision.datasets as datasets
 
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from models.m1.nets import NetV1
-from models.m2.nets import NetV2
+from model.architectures.m1.nets import NetV1
+from model.architectures.m2.nets import NetV2
 import writeLogAcc as wA
 
-path_ReIN = './ml/dataset/Animal-10'
+path_ReIN = './model/dataset/Animal-10'
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('-r', '--data', type=str, default=path_ReIN, help='path to dataset')
@@ -125,7 +125,7 @@ def main():
         n_class = 30  # default
 
     if not args.data:
-        args.data = './ml/dataset/Animal-10'
+        args.data = './model/dataset/Animal-10'
         n_class = 10  # Animal-10 có 10 class
     args.arch = 'BTImages' + str(n_class) + '_' + args.author.capitalize() + '_' + args.net
 
@@ -133,7 +133,7 @@ def main():
     action_str = f"_{args.action}" if args.action else ""
     args.checkpoint_dir = f"{args.dataset}_{args.img_size}x{args.img_size}_{args.arch}{action_str}"
 
-    filenameLOG = "./ml/checkpoint/%s/%s.txt" % (args.checkpoint_dir, args.arch)
+    filenameLOG = "./model/checkpoint/%s/%s.txt" % (args.checkpoint_dir, args.arch)
     if args.pretrained:
         print("=> using pre-trained model '{}'".format(args.arch))
         model = models.__dict__[args.arch](k_size=args.ksize, pretrained=True)
@@ -168,7 +168,7 @@ def main():
                                 weight_decay=args.weight_decay)
 
     if args.evaluate:
-        pathcheckpoint = "./ml/checkpoint/%s/model_best.pth.tar" % args.checkpoint_dir
+        pathcheckpoint = "./model/checkpoint/%s/model_best.pth.tar" % args.checkpoint_dir
         if os.path.isfile(pathcheckpoint):
             print("=> loading checkpoint '{}'".format(pathcheckpoint))
             checkpoint = torch.load(pathcheckpoint)
@@ -269,7 +269,7 @@ def main():
         print((n - m) / 3600)
         return
 
-    directory = "ml/checkpoint/%s/" % args.checkpoint_dir
+    directory = "model/checkpoint/%s/" % args.checkpoint_dir
     if not os.path.exists(directory):
         os.makedirs(directory)
 
@@ -412,7 +412,7 @@ def validate(val_loader, model, criterion):
 
 
 def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
-    directory = "ml/checkpoint/%s/" % args.checkpoint_dir
+    directory = "model/checkpoint/%s/" % args.checkpoint_dir
     filename = directory + filename
     torch.save(state, filename)
     if is_best:

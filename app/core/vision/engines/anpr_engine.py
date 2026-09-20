@@ -10,14 +10,17 @@ import cv2
 import numpy as np
 import threading
 import time
-import os
 import re
-from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 from app.config import get_config
 from app.core.constants import FALLBACK_PLATE_NUMBER, PLATE_MAX_LENGTH, PLATE_MIN_ALPHA
 from app.core.exceptions import PlateRecognitionError, InvalidImageError, ModelNotLoadedError
+from app.infra.model_registry import (
+    ArtifactResolutionError,
+    ModelArtifactSpec,
+    get_model_artifact_registry,
+)
 from app.utils.logger import logger
 
 # ── Lazy-loaded state ─────────────────────────────────────────────────────────
@@ -32,11 +35,6 @@ _state: Dict[str, Any] = {
 # SAU khi nạp xong. Bật trước (bản cũ) khiến request thứ hai đi tiếp với reader
 # vẫn là None → FAILED_PRECONDITION ngay sau mỗi lần restart pod.
 _load_lock = threading.Lock()
-
-
-def _get_ai_root() -> Path:
-    """Trả về đường dẫn tới thư mục ``ai/`` — gốc của service."""
-    return Path(__file__).resolve().parents[4]
 
 
 def _ensure_models_loaded() -> None:
@@ -60,16 +58,24 @@ def _ensure_models_loaded() -> None:
             logger.error(f"Failed to load EasyOCR: {exc}")
 
         # ── YOLO ──
-        model_path = str(_get_ai_root() / vision.yolo_model_path)
-        if os.path.exists(model_path):
-            try:
-                from ultralytics import YOLO
-                _state["yolo_model"] = YOLO(model_path)
-                logger.info(f"YOLO model loaded: {model_path}")
-            except Exception as exc:
-                logger.error(f"Failed to load YOLO model: {exc}")
-        else:
-            logger.warning(f"YOLO model not found: {model_path}")
+        try:
+            model_path = get_model_artifact_registry().resolve(
+                ModelArtifactSpec(
+                    name="plate-detector",
+                    version=vision.yolo_model_version,
+                    file_name="best.pt",
+                    local_path=vision.yolo_model_path,
+                    source_url=vision.yolo_artifact_url,
+                    sha256=vision.yolo_artifact_sha256,
+                )
+            )
+            from ultralytics import YOLO
+            _state["yolo_model"] = YOLO(str(model_path))
+            logger.info(f"YOLO model loaded: {model_path}")
+        except ArtifactResolutionError as exc:
+            logger.warning(f"YOLO model artifact unavailable: {exc}")
+        except Exception as exc:
+            logger.error(f"Failed to load YOLO model: {exc}")
 
         _state["initialized"] = True
 

@@ -192,7 +192,7 @@ Detector-first có thể bớt OCR toàn ảnh, nhưng có thể mất fallback 
 | Regression | Các test hiện có từ thư mục ai | Báo OK khi môi trường đã có dependencies |
 
 ```powershell
-python -m unittest tests.test_plate_text tests.test_confidence tests.test_plate_metrics
+python -m unittest test.test_plate_text test.test_confidence test.test_plate_metrics
 ```
 
 Trong lần biên soạn này chưa chạy model trên camera hay chứng nhận accuracy. Ngưỡng chấp nhận phải được thống nhất trên validation và mục tiêu nghiệp vụ trước test cuối.

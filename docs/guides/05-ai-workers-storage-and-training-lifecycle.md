@@ -1,13 +1,13 @@
 # 📘 [Guide] Tách module AI, RabbitMQ worker và vòng đời ảnh tới model
 
 > **Đích:** `ai/docs/guides/05-ai-workers-storage-and-training-lifecycle.md` · **Template:** [guide-template](../../../docs/templates/guide-template.md)
-> **Loại nội dung:** phân tích hiện trạng và thiết kế đề xuất. Chưa tạo module Python, migration, queue hay bucket mới.
+> **Loại nội dung:** phân tích hiện trạng và thiết kế đề xuất. Đã có adapter tải model; migration, queue và bucket mới chưa triển khai.
 
 ## 📌 Meta
 
 | | |
 |---|---|
-| **Trạng thái** | ⚠️ Chưa kiểm chứng runtime; đối chiếu source và tài liệu nhà cung cấp 2026-09-19 |
+| **Trạng thái** | ⚠️ Một phần đã có unit test; luồng storage/queue end-to-end chưa kiểm chứng |
 | **Phạm vi** | ai, backend Message/Storage, dữ liệu huấn luyện |
 | **Ngày cập nhật** | 2026-09-19 |
 | **Người viết** | Codex |
@@ -133,13 +133,18 @@ ai/app/
     engines/sample_selector.py         # chọn mẫu, quota, exact/near duplicate
     services/curation_service.py       # đọc raw, chấm chất lượng, đề xuất review
     services/dataset_snapshot_service.py # tạo snapshot từ nhãn được duyệt
-  infra/storage/object_store.py        # get/head/put theo key; không có session policy
+  infra/storage/object_store.py        # đã có: tải signed URL, giới hạn size, kiểm SHA-256
   config/storage_config.py            # endpoint/bucket theo workload
   api/grpc/handlers/dataset_handler.py # vỏ gọi service cho batch deployment
   api/grpc/mappers/dataset_mapper.py   # DTO và proto
 ```
 
-**Tất cả các tên mới trong cây là đề xuất, chưa tồn tại.** MVP chỉ tạo file cho use case đang xây. `dataset_snapshot_service.py` có thể làm sau khi có đủ mẫu reviewed. Consumer Node giữ job lifecycle trong phương án MVP; Python service trả báo cáo, không sửa bảng session của backend. Engine/infra không import ngược handler hoặc DTO core từ infra.
+`core/dataset/{dtos,engines,services}` đã có khung package; chưa có use case bên trong.
+`infra/storage/object_store.py` hiện chỉ phục vụ tải model bằng signed URL, chưa
+phải client get/head/put cho dataset. Các file còn lại trong cây là đề xuất và
+chỉ tạo khi xây use case thật. Consumer Node giữ job lifecycle trong phương án
+MVP; Python service trả báo cáo, không sửa bảng session của backend. Engine/infra
+không import ngược handler hoặc DTO core từ infra.
 
 ### Bước 3: Chọn đúng việc cho RabbitMQ
 
@@ -396,5 +401,5 @@ Xoá ảnh nguồn không tự xoá ảnh hưởng đã học trong checkpoint. 
 - [SUGGESTION-007: active learning và Vision roadmap](../../../docs/suggestions/09-2026/SUGGESTION-007-vision-deep-dive-roadmap.md)
 - [RabbitMQ confirms/ACK](https://www.rabbitmq.com/docs/confirms) · [MinIO repository](https://github.com/minio/minio)
 - [Cloudinary access control](https://cloudinary.com/documentation/control_access_to_media) · [S3 lifecycle](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html)
-- [Bản đồ workspace `ml/`](../../ml/README.md) · [Quy ước dataset local](../../ml/dataset/README.md)
+- [Bản đồ vòng đời `model/`](../../model/README.md) · [Quy ước dataset local](../../model/dataset/README.md)
 - [Google Colab training](./06-google-colab-training-runbook.md)

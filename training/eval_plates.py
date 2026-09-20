@@ -248,7 +248,9 @@ def main() -> int:
                 "run_at": datetime.now(timezone.utc).isoformat(),
                 "label": args.label,
                 "manifest_version": manifest.get("version"),
-                "yolo_model": manifest.get("yolo_model", "models/best.pt"),
+                "yolo_model": manifest.get(
+                    "yolo_model", "model/artifacts/bootstrap/anpr/best.pt"
+                ),
                 "summary": summary,
                 "by_tag": by_tag,
                 "rows": rows,

@@ -13,7 +13,7 @@ import torchvision.transforms
 import torchvision.datasets
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from models.m2.nets import NetV2
+from model.architectures.m2.nets import NetV2
 import writeLogAcc as wA
 
 
@@ -37,7 +37,7 @@ def get_args():
     """
     parser = argparse.ArgumentParser(description='MDFNet training script for CIFAR and fine-grained datasets.',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-r', '--data-root', type=str, default='./ml/dataset', help='Dataset root path.')
+    parser.add_argument('-r', '--data-root', type=str, default='./model/dataset', help='Dataset root path.')
     parser.add_argument('-d', '--dataset', type=str, choices=['cifar10', 'cifar100'], default='cifar10',
                         help='Dataset name.')
     parser.add_argument('--download', action='store_true',
@@ -185,7 +185,7 @@ def main():
     torch.autograd.set_detect_anomaly(True)
 
     n_class = 10 if args.dataset == 'cifar10' else 100
-    pathout = './ml/checkpoint/{}_{}_NetV2'.format(args.dataset, '32x32')
+    pathout = './model/checkpoint/{}_{}_NetV2'.format(args.dataset, '32x32')
     filenameLOG = pathout + '/NetV2.txt'
     if not os.path.exists(pathout):
         os.makedirs(pathout)

@@ -13,7 +13,7 @@ import torchvision.datasets as datasets
 import argparse
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from models.m1.nets import NetV1
+from model.architectures.m1.nets import NetV1
 
 # Italian -> English class names
 ANIMAL10_IT_TO_EN = {
@@ -31,11 +31,11 @@ ANIMAL10_IT_TO_EN = {
 
 def get_args():
     parser = argparse.ArgumentParser(description='Evaluate NetV1 on Animal-10 Test Set')
-    parser.add_argument('-r', '--data', type=str, default='./ml/dataset/Animal-10',
+    parser.add_argument('-r', '--data', type=str, default='./model/dataset/Animal-10',
                         help='Path to Animal-10 dataset')
-    # `Phat/` là tàn dư của cách chia theo TÊN SINH VIÊN đã bỏ (xem models/README.md).
+    # `Phat/` là tàn dư của cách chia theo TÊN SINH VIÊN đã bỏ (xem model/README.md).
     # Giữ nguyên tên thư mục vì đổi nó là trỏ sang chỗ khác, không phải đổi layout.
-    parser.add_argument('--checkpoint', type=str, default='./ml/checkpoint/Phat/model_best32.pth.tar',
+    parser.add_argument('--checkpoint', type=str, default='./model/checkpoint/Phat/model_best32.pth.tar',
                         help='Path to model checkpoint')
     parser.add_argument('-b', '--batch-size', default=128, type=int,
                         help='Batch size for evaluation')

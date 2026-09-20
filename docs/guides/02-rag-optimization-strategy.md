@@ -200,7 +200,7 @@ Trọng tài AI nên tạo **đề xuất có bằng chứng** cho quy trình x�
 
 ```powershell
 # Chạy từ thư mục ai/ sau khi setup môi trường theo README
-python -m unittest tests.test_document_parser tests.test_chunker
+python -m unittest test.test_document_parser test.test_chunker
 ```
 
 Lần chỉnh guide này chỉ đối chiếu source và cấu trúc tài liệu; chưa gọi embedding/LLM hay benchmark retrieval.

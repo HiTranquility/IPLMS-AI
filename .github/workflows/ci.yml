@@ -39,7 +39,7 @@ jobs:
         run: python app/script/compile_proto.py
 
       - name: Run unit tests
-        run: python -m unittest discover -s tests -v
+        run: python -m unittest discover -s test -v
 
       - name: Compile Python sources
-        run: python -m compileall -q app training tests
+        run: python -m compileall -q app model training test

@@ -1,8 +1,8 @@
 """Thước đo độ chính xác đọc biển số — hàm THUẦN, không nạp model.
 
 Tách khỏi `eval_plates.py` có chủ đích: chỗ này không import `cv2`, `torch` hay
-engine nào, nên `tests/` import được và chạy trong vài mili-giây (đúng luật bộ
-test ở `tests/__init__.py`).
+engine nào, nên `test/` import được và chạy trong vài mili-giây (đúng luật bộ
+test ở `test/__init__.py`).
 
 ## Vì sao đo HAI kiểu exact-match
 
@@ -13,7 +13,7 @@ chỉ thiếu dấu phân cách. Nếu chỉ đo một kiểu:
   "đọc sai chữ" với "đọc đúng nhưng thiếu gạch".
 - Chỉ đo **relaxed** ⇒ giấu mất đúng cái lỗi đang làm backend tra không ra xe:
   `vehicle.licensePlate = :trimmedPlate` so khớp CHUỖI CHÍNH XÁC, nên thiếu
-  gạch là thành viên bị tính như khách vãng lai (xem `tests/test_plate_text.py`).
+  gạch là thành viên bị tính như khách vãng lai (xem `test/test_plate_text.py`).
 
 Nên báo cáo cả hai. Khoảng cách giữa hai số chính là phần việc B2 (hậu xử lý
 định dạng biển VN) sẽ lấy về — và là cách duy nhất chứng minh B2 đáng làm.

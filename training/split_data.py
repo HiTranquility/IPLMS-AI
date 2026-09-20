@@ -3,10 +3,10 @@ import random
 import shutil
 
 # Đường dẫn thư mục
-source_dir = './ml/dataset/Animal-10/raw-img'
-train_dir = './ml/dataset/Animal-10/train'
-val_dir = './ml/dataset/Animal-10/val'
-test_dir = './ml/dataset/Animal-10/test'  # NEW: Test set độc lập
+source_dir = './model/dataset/Animal-10/raw-img'
+train_dir = './model/dataset/Animal-10/train'
+val_dir = './model/dataset/Animal-10/val'
+test_dir = './model/dataset/Animal-10/test'  # NEW: Test set độc lập
 
 # Tỷ lệ chia: 70% Train, 10% Val, 20% Test
 train_ratio = 0.7

@@ -1,7 +1,7 @@
 # 📘 [Guide] Google Colab — train, resume và đưa model candidate về IPLMS
 
 > **Đích:** `ai/docs/guides/06-google-colab-training-runbook.md` · **Template:** [guide-template](../../../docs/templates/guide-template.md)
-> **Loại nội dung:** runbook mục tiêu. Các script publish/materialize và model registry nêu dưới đây chưa được triển khai.
+> **Loại nội dung:** runbook mục tiêu. Model artifact resolver đã triển khai; các script publish/materialize vẫn chưa có.
 
 ## 📌 Meta
 
@@ -25,7 +25,7 @@ code và cấu hình không nhạy cảm; backend/AI runtime chỉ dùng model v
 
 ## ☑️ Điều kiện trước khi bắt đầu (Prerequisites)
 
-- [ ] Đọc [bản đồ `ml/`](../../ml/README.md) và [vòng đời dữ liệu AI](./05-ai-workers-storage-and-training-lifecycle.md).
+- [ ] Đọc [bản đồ `model/`](../../model/README.md) và [vòng đời dữ liệu AI](./05-ai-workers-storage-and-training-lifecycle.md).
 - [ ] Có dataset snapshot đã duyệt, lock hash và private manifest; chưa dùng raw bucket đang thay đổi.
 - [ ] Sửa `train_imagefolder.py` để model lấy đúng 4 lớp/class mapping trước khi train `vehicle-cls`.
 - [ ] Có bucket/prefix riêng cho input snapshot, resumable checkpoint và model candidate.
@@ -83,16 +83,21 @@ Notebook mục tiêu chỉ làm sáu việc:
 Không copy class model, augmentation, loss hay vòng train vào cell. Nếu logic
 chỉ sống trong notebook, local/CI/Colab sẽ cho ba kết quả khác nhau.
 
-File đề xuất khi bắt đầu phase, chưa tạo ở lượt viết guide:
+Các entrypoint đã được tạo dưới dạng scaffold có `--status`; nghiệp vụ bên trong
+vẫn phải triển khai và kiểm chứng theo từng phase:
 
 ```text
-notebooks/train_vehicle_classifier_colab.ipynb  # giao diện chạy, rất mỏng
+notebook/colab/train_vehicle_classifier.ipynb   # đã có: giao diện chạy, rất mỏng
 training/materialize_dataset.py                 # snapshot → /content/dataset
 training/validate_dataset.py                    # hash/schema/leakage
 training/eval_vehicle_classifier.py             # metric test-golden
 training/package_model.py                       # model package + manifest
 training/publish_model.py                       # upload candidate, idempotent
 ```
+
+Scaffold cố ý không giả lập thành công: chạy không có `--status` sẽ dừng với
+thông báo chưa triển khai. Khi làm từng phase, thay phần scaffold bằng logic thật
+và giữ notebook chỉ gọi CLI.
 
 ### Bước 3: Chuẩn bị dataset snapshot
 
@@ -173,25 +178,33 @@ vehicle-cls/<model_version>/
 
 `model_version` bất biến; upload lại cùng version chỉ được phép nếu checksum
 giống hệt. Source of truth là artifact storage + catalog. Download về laptop là
-bản sao; không chép tay đè `models/best.pt` rồi mất lịch sử.
+bản sao; không chép tay đè `model/artifacts/bootstrap/anpr/best.pt` rồi mất lịch sử.
 
 ### Bước 8: Đưa model vào service
 
-Hiện `vehicle_classifier.py` chỉ nạp checkpoint từ đường dẫn
-`AI_VEHICLE_CHECKPOINT`. MVP có thể để deployment tải **accepted model version**
-từ object storage về volume/read-only path trước khi service start, kiểm checksum
-rồi mới đặt env path.
+Service hỗ trợ hai nguồn mà không đổi engine:
 
-Thiết kế nâng cấp khi có nhiều model:
+- Local/read-only volume qua `AI_VEHICLE_CHECKPOINT` để giữ tương thích.
+- Signed HTTPS GET URL qua `AI_VEHICLE_ARTIFACT_URL`, kèm version và SHA-256.
+
+Artifact remote được tải theo luồng, giới hạn dung lượng, kiểm hash rồi mới đổi
+tên nguyên tử vào `var/model-cache/<model>/<version>/`. Signed URL không được ghi
+log. Cùng version + hash dùng lại cache; MinIO, S3 và R2 đều dùng được nếu hạ
+tầng cấp signed URL.
+
+Code thực tế:
 
 ```text
-app/infra/model_registry/artifact_store.py   # resolve version → local verified path
-app/config/model_registry_config.py          # bucket/prefix/cache/accepted version
+app/infra/model_registry/artifact_store.py    # local path hoặc URL → verified cache
+app/infra/storage/object_store.py             # signed URL download + SHA-256 + size limit
+app/config/model_registry_config.py           # cache directory
+app/config/object_storage_config.py           # timeout, size limit, HTTPS policy
 ```
 
-Không để request đầu tiên tự tải model lớn. Init/warmup tải hoặc xác nhận artifact
-trước readiness; rollout shadow/canary, quan sát metric rồi mới chuyển alias
-accepted. Giữ version trước để rollback.
+ANPR warmup tải hoặc xác nhận detector trước khi gRPC mở cổng. Vehicle classifier
+vẫn optional và lazy-load khi được gọi; deployment production nên prefetch/kiểm
+accepted version trước readiness nếu bật classifier. Rollout shadow/canary, quan
+sát metric rồi mới chuyển version accepted; giữ version trước để rollback.
 
 ### Bước 9: Colab phù hợp train gì trong IPLMS?
 
@@ -238,7 +251,7 @@ trước khi tốn GPU cho run dài.
 
 ## 🔗 Liên quan
 
-- [Bản đồ `ml/`](../../ml/README.md) · [Dataset local](../../ml/dataset/README.md)
+- [Bản đồ `model/`](../../model/README.md) · [Dataset local](../../model/dataset/README.md)
 - [Worker, storage và lifecycle](./05-ai-workers-storage-and-training-lifecycle.md)
 - [Vision](./03-image-processing-pipeline.md) · [Forecast](./04-forecast-training-strategy.md)
 - [Google Colab FAQ](https://research.google.com/colaboratory/faq.html) · [Runtime versions](https://research.google.com/colaboratory/runtime-version-faq.html)

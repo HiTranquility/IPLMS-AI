@@ -22,13 +22,13 @@ python BTImages.py --dataset cifar100 --img-size 224 --net NetV1 --epochs 100
 ## 2. Cấu trúc thư mục Checkpoints
 
 Thư mục tự động tạo ra giờ đây sẽ được định dạng quy chuẩn để bạn dễ dàng quản lý:
-`./ml/checkpoint/<dataset>_<img_size>x<img_size>_<arch>_<action>/`
+`./model/checkpoint/<dataset>_<img_size>x<img_size>_<arch>_<action>/`
 
 **Ví dụ thực tế:**
 - Nếu bạn chạy `--dataset cifar10 --img-size 32 --net NetBT2`:
-  Thư mục sinh ra: `./ml/checkpoint/cifar10_32x32_BTImages10_NetBT2/`
+  Thư mục sinh ra: `./model/checkpoint/cifar10_32x32_BTImages10_NetBT2/`
 - Nếu bạn chạy `--dataset cifar100 --img-size 224 --net NetV1` (với `--action exp1`):
-  Thư mục sinh ra: `./ml/checkpoint/cifar100_224x224_BTImages100_NetV1_exp1/`
+  Thư mục sinh ra: `./model/checkpoint/cifar100_224x224_BTImages100_NetV1_exp1/`
 
 ---
 

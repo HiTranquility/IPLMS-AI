@@ -9,8 +9,8 @@ if hasattr(sys.stdout, "reconfigure"):
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from torchsummary import summary
-from models.m1.nets import NetV1
-from models.m2.nets import NetV2
+from model.architectures.m1.nets import NetV1
+from model.architectures.m2.nets import NetV2
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using device: {device}\n")

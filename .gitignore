@@ -42,25 +42,29 @@ data/golden/plates/*
 data/golden/plates/reports/*
 !data/golden/plates/reports/*.json
 
-ml/dataset/*
-!ml/dataset/README.md
-!ml/dataset/vehicle-cls
-ml/dataset/vehicle-cls/*
-!ml/dataset/vehicle-cls/README.md
+model/dataset/*
+!model/dataset/README.md
+!model/dataset/vehicle-cls
+model/dataset/vehicle-cls/*
+!model/dataset/vehicle-cls/README.md
 # Ảnh nào thuộc tập nào (theo hash) — không có file này thì sáu tháng sau
 # không ai biết checkpoint cũ học từ dữ liệu nào.
-!ml/dataset/vehicle-cls/dataset.lock.json
+!model/dataset/vehicle-cls/dataset.lock.json
 
-ml/checkpoint/**
+model/checkpoint/**
 # Mở lại thư mục để git chịu đi vào, rồi chỉ giữ hai file nhẹ mỗi lần train.
-!ml/checkpoint/**/
-!ml/checkpoint/**/metrics.json
-!ml/checkpoint/**/dataset.lock.json
+!model/checkpoint/**/
+!model/checkpoint/**/metrics.json
+!model/checkpoint/**/dataset.lock.json
 
-# Training checkpoints (*.pt) are ignored, but the YOLO detector weights are
-# needed by the service — keep them tracked (consider git-lfs; ~6MB).
+# Training checkpoints (*.pt) are ignored, but the bootstrap YOLO detector is
+# needed by the service — keep that one tracked (consider git-lfs; ~6MB).
 *.pt
-!models/best.pt
+!model/artifacts/bootstrap/anpr/best.pt
+
+# Model tải từ object storage là cache runtime, có thể dựng lại theo version/hash.
+var/model-cache/*
+!var/model-cache/.gitkeep
 
 # Saved crops/originals produced at runtime
 static/cropped/*
