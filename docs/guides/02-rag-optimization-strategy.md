@@ -48,13 +48,14 @@ flowchart TD
 |---|---|---|
 | Parser | Có validate, PDF/DOCX/TXT/MD; PDF scan không có text bị từ chối | [document_parser.py](../../app/core/knowledge/engines/document_parser.py), `parse_document` |
 | Chunker | Có chia heading/đoạn, overlap theo ký tự | [chunker.py](../../app/core/knowledge/engines/chunker.py), `chunk_text` |
-| Knowledge service | Chưa có điều phối ingest | `ai/app/core/knowledge/services/` chỉ có `__init__.py` khi rà |
-| Embedding | Chưa có provider thực | `ai/app/infra/embedding/__init__.py` |
-| Vector store | `connect` chỉ đổi cờ, search/insert trả mẫu | [pgvector_client.py](../../app/infra/database/pgvector_client.py), `connect`, `insert_chunk` |
-| RAG engine | Vector 0, confidence 0.95 viết cứng | [rag_pipeline.py](../../app/core/copilot/engines/rag_pipeline.py), `query` |
-| Public service | Ném `FeatureNotImplementedError` | [copilot_service.py](../../app/core/copilot/services/copilot_service.py), `ask_question`, `stream_answer` |
+| Knowledge service | Có điều phối parse → chunk → embed → transaction | [ingestion_service.py](../../app/core/knowledge/services/ingestion_service.py), `ingest` |
+| Embedding | OpenAI client thật, batch/retry/timeout | [embedding_client.py](../../app/infra/embedding/embedding_client.py), `embed_texts` |
+| Vector store | psycopg2 thật, HNSW + full-text + RRF, scope theo bãi | [pgvector_client.py](../../app/infra/database/pgvector_client.py), `search_similar_chunks` |
+| RAG engine | Query embedding thật, abstain khi thiếu nguồn, stream Responses API | [rag_pipeline.py](../../app/core/copilot/engines/rag_pipeline.py), `query`, `stream_query` |
+| Public service | Q&A unary + stream thật; chỉ arbitration còn bị chặn | [copilot_service.py](../../app/core/copilot/services/copilot_service.py), `ask_question`, `stream_answer` |
 
-Các tên trạng thái, metadata và response đề xuất trong guide là thiết kế cần triển khai, không phải hợp đồng DTO hiện có.
+Phần quản trị tài liệu từ NestJS và bộ eval vẫn là thiết kế cần hoàn thiện; đường
+ingest core và query đã có implementation. Xem PROB-035 ở repo gốc để biết rollout.
 
 ## 🪜 Các bước
 

@@ -1,0 +1,72 @@
+import asyncio
+import unittest
+
+from app.core.copilot.engines.rag_pipeline import NO_CONTEXT_ANSWER, RagPipelineEngine
+
+
+class FakeEmbedder:
+    async def embed_query(self, text):
+        return [0.1, 0.2]
+
+
+class FakeStore:
+    def __init__(self, chunks):
+        self.chunks = chunks
+        self.calls = []
+
+    async def search_similar_chunks(self, vector, query_text, parking_lot_id, **kwargs):
+        self.calls.append((vector, query_text, parking_lot_id, kwargs))
+        return self.chunks
+
+
+class FakeLlm:
+    def __init__(self):
+        self.context = None
+
+    async def generate_response(self, system_prompt, user_query, context):
+        self.context = context
+        return "Phí là 20.000đ [Nguồn: quy-che.md]"
+
+    async def stream_response(self, system_prompt, user_query, context):
+        self.context = context
+        for token in ("Phí ", "20.000đ"):
+            yield token
+
+
+class RagPipelineTest(unittest.TestCase):
+    def test_no_context_does_not_call_llm(self):
+        engine = RagPipelineEngine(FakeEmbedder(), FakeStore([]), FakeLlm())
+        result = asyncio.run(engine.query("phí bao nhiêu?"))
+        self.assertEqual(NO_CONTEXT_ANSWER, result["answer"])
+        self.assertEqual([], result["sources"])
+        self.assertEqual(0.0, result["confidence"])
+
+    def test_real_retrieval_is_scoped_and_sources_are_deduplicated(self):
+        chunks = [
+            {"content": "Phí 20.000đ", "source": "quy-che.md", "similarity": 0.9},
+            {"content": "Áp dụng ô tô", "source": "quy-che.md", "similarity": 0.8},
+        ]
+        store = FakeStore(chunks)
+        llm = FakeLlm()
+        engine = RagPipelineEngine(FakeEmbedder(), store, llm)
+        result = asyncio.run(engine.query("phí bao nhiêu?", "lot-a"))
+        self.assertEqual(["quy-che.md"], result["sources"])
+        self.assertEqual("lot-a", store.calls[0][2])
+        self.assertIn("[Nguồn: quy-che.md]", llm.context)
+        self.assertGreater(result["confidence"], 0.8)
+
+    def test_stream_emits_sources_only_on_terminal_chunk(self):
+        chunks = [{"content": "Phí 20.000đ", "source": "quy-che.md", "similarity": 0.9}]
+        engine = RagPipelineEngine(FakeEmbedder(), FakeStore(chunks), FakeLlm())
+
+        async def collect():
+            return [item async for item in engine.stream_query("phí?")]
+
+        events = asyncio.run(collect())
+        self.assertEqual([[], []], [events[0]["sources"], events[1]["sources"]])
+        self.assertTrue(events[-1]["is_finished"])
+        self.assertEqual(["quy-che.md"], events[-1]["sources"])
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,25 @@
+# ==============================================================================
+# IPLMS — AI Service Develop Override (docker-compose.develop.yml)
+#
+# File này tương đương với docker-compose.dev.yml (đồng bộ cách đặt tên với backend).
+#
+# Cách dùng:
+#   docker compose -f docker-compose.yml -f docker-compose.develop.yml up -d
+# ==============================================================================
+
+services:
+  ai:
+    container_name: ${COMPOSE_PROJECT_NAME:-iplms-ai-dev}-service
+    restart: "no"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - AI_LOG_LEVEL=${AI_LOG_LEVEL:-DEBUG}
+      - PYTHONUNBUFFERED=1
+      - AI_RELOAD=true
+    volumes:
+      # Mount mã nguồn trực tiếp để phản ánh thay đổi ngay lập tức
+      - ./app:/app/app
+      - ./test:/app/test:ro
+      - ./docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh:ro

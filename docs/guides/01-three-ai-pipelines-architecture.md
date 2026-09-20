@@ -219,7 +219,7 @@ Check-out: current_vehicle_type = "motorbike"
 
 ### 3.1. Tổng quan
 
-**Trạng thái:** 🚧 CHƯA TRIỂN KHAI — tất cả method ném `FeatureNotImplementedError`.
+**Trạng thái:** 🟢 Q&A + streaming + ingestion core đã triển khai; 🟡 API quản trị tài liệu/eval còn thiếu; `ArbitrateDispute` vẫn chủ động `UNIMPLEMENTED`.
 
 **Chức năng mục tiêu:**
 - **Trợ lý Hỏi Đáp RAG**: Trả lời câu hỏi về quy chế, biểu phí bãi xe dựa trên tài liệu quy chế đã nạp
@@ -234,19 +234,19 @@ app/core/
 │   ├── engines/
 │   │   ├── document_parser.py       # ✅ Tách text từ PDF/DOCX/TXT/MD (185 dòng)
 │   │   └── chunker.py              # ✅ Cắt đoạn thông minh theo điều khoản (156 dòng)
-│   └── services/                    # 🚧 Chưa có knowledge_service.py
+│   └── services/ingestion_service.py # ✅ Parse → chunk → embed → transaction
 │
 ├── copilot/                         # Domain: Hỏi đáp & Tranh chấp
 │   ├── dtos/copilot_dto.py          # AskQuestionRequest, CopilotAnswer, DisputeVerdict
 │   ├── engines/
-│   │   └── rag_pipeline.py          # 🚧 Placeholder — dùng dummy_embedding [0.0]*1536
+│   │   └── rag_pipeline.py          # ✅ Hybrid retrieval + grounded generation
 │   └── services/
-│       └── copilot_service.py       # 🚧 Ném FeatureNotImplementedError
+│       └── copilot_service.py       # ✅ Q&A; tranh chấp vẫn bị chặn an toàn
 │
 app/infra/
-├── database/pgvector_client.py      # 🚧 Placeholder — trả kết quả viết cứng
-├── embedding/__init__.py            # 🚧 Chưa có embedding provider
-└── llm/llm_factory.py              # 🚧 Placeholder — trả chuỗi cứng
+├── database/pgvector_client.py      # ✅ pgvector + full-text Hybrid Search/RRF
+├── embedding/embedding_client.py    # ✅ OpenAI embedding, batch/retry/timeout
+└── llm/llm_factory.py              # ✅ OpenAI Responses API + typed deltas
 ```
 
 ### 3.3. Hai luồng RAG mục tiêu
@@ -266,7 +266,11 @@ flowchart LR
     T -->|Thiếu| V[Hỏi thêm hoặc báo chưa có cơ sở]
 ```
 
-Bản triển khai cần thêm quản lý phiên bản, timeout thực, idempotency và kiểm chứng nguồn. Số chiều phụ thuộc model được chọn; 1536 chỉ đang xuất hiện trong placeholder. [Guide RAG](./02-rag-optimization-strategy.md) chia chi tiết **8 bước ingest và 9 bước query**, kèm chiến lược tối ưu và nghiệm thu.
+Bản hiện tại đã có timeout/retry, transaction và kiểm tra source; còn nợ quản lý
+phiên bản tài liệu, idempotency theo nội dung và eval retrieval. Số chiều 1536
+được khóa với `text-embedding-3-small`; đổi model/số chiều phải migration và
+re-index toàn bộ. [Guide RAG](./02-rag-optimization-strategy.md) chia chi tiết
+**8 bước ingest và 9 bước query**, kèm chiến lược tối ưu và nghiệm thu.
 
 ### 3.4. Chi tiết Chunker — Thuật Toán Cắt Đoạn Thông Minh
 
@@ -418,13 +422,13 @@ predicted_occupancy → tariff_multiplier:
 
 | Tiêu chí | 🔍 Vision/ANPR | 💬 Copilot/RAG | 📈 Forecast/ML |
 |---|---|---|---|
-| **Trạng thái** | Có engine, cần benchmark | 🚧 Chưa triển khai | 🚧 Chưa triển khai |
-| **Engine** | YOLO + EasyOCR (thật) | rag_pipeline (placeholder) | occupancy_model (placeholder) |
-| **Confidence** | Điểm OCR hoặc det × OCR; chưa calibration | Placeholder 0.95, service chặn | Service chặn, chưa có độ tin cậy đo được |
-| **Dữ liệu** | Ảnh camera cổng | dummy_embedding [0.0]*1536 | Công thức `0.40+(i*0.08)%0.60` |
-| **Infra** | Không cần DB | pgvector (placeholder) | Parquet (placeholder) |
+| **Trạng thái** | Có engine, cần benchmark | 🟢 Q&A thật; cần data/eval production | 🚧 Chưa triển khai |
+| **Engine** | YOLO + EasyOCR (thật) | embedding + Hybrid Search + Responses API | occupancy_model (placeholder) |
+| **Confidence** | Điểm OCR hoặc det × OCR; chưa calibration | Retrieval score bảo thủ; không phải xác suất LLM đúng | Service chặn, chưa có độ tin cậy đo được |
+| **Dữ liệu** | Ảnh camera cổng | Tài liệu thật đã ingest, scope theo bãi | Công thức `0.40+(i*0.08)%0.60` |
+| **Infra** | Không cần DB | PostgreSQL + pgvector + OpenAI | Parquet (placeholder) |
 | **Gọi từ backend** | `VisionAiProvider` | `CopilotAiProvider` | `ForecastAiProvider` |
-| **gRPC response** | PlateResult thật | `UNIMPLEMENTED` | `UNIMPLEMENTED` |
+| **gRPC response** | PlateResult thật | Unary + server stream thật | `UNIMPLEMENTED` |
 
 ---
 
@@ -468,7 +472,7 @@ Luật hướng phụ thuộc:
 | Kiểm tra | Thao tác | Kỳ vọng |
 |---|---|---|
 | Vision có phép đo thật? | Đọc `anpr_engine.py:105`, `:189`, `:203` | Có OCR score; phân biệt nhánh không detector |
-| RAG có phục vụ thật? | Đọc `copilot_service.py`, tìm `FeatureNotImplementedError` | Service chặn placeholder |
+| RAG có phục vụ thật? | Đọc `copilot_service.py` và `rag_pipeline.py`; chạy test + pgvector smoke | Q&A dùng embedding/DB/LLM thật; tranh chấp vẫn bị chặn |
 | Forecast có model thật? | Đọc `forecast_service.py:35` và `occupancy_model.py` | Service chặn; engine còn dãy số mô phỏng |
 | Quyền quyết định | Lần theo response về backend | Kết quả AI cần policy nghiệp vụ trước hành động |
 
@@ -479,7 +483,8 @@ Luật hướng phụ thuộc:
 | Triệu chứng | Nguyên nhân thường gặp | Cách xử lý |
 |---|---|---|
 | Nhầm có DTO là có AI thật | Hợp đồng có trước implementation | Đọc service rồi engine/infra |
-| RAG/Forecast trả UNIMPLEMENTED | Service cố ý chặn dữ liệu mẫu | Hoàn thiện pipeline và kiểm chứng trước khi bật |
+| Q&A RAG trả UNAVAILABLE | Thiếu API key, pgvector hoặc tài liệu/schema | Kiểm `AI_LLM_API_KEY`, `AI_DATABASE_URL`, extension `vector` và ingestion |
+| Forecast/ArbitrateDispute trả UNIMPLEMENTED | Service cố ý chặn dữ liệu mẫu/thiếu evidence | Hoàn thiện pipeline riêng và kiểm chứng trước khi bật |
 | Có biển số nhưng ảnh trả về chưa crop | OCR đầy đủ được giữ lại | Xem logic chọn ứng viên trong guide ảnh |
 | Dự báo đẹp nhưng không có benchmark | Nhầm mô phỏng với học máy | Xem guide Forecast và baseline theo thời gian |
 

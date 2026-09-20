@@ -18,6 +18,9 @@ class VisionConfig(BaseConfig):
     yolo_artifact_url: str = ""
     yolo_artifact_sha256: str = ""
     ocr_languages: str = "en,vi"
+    # Thư mục lưu model EasyOCR. Rỗng = để EasyOCR dùng EASYOCR_MODULE_PATH env
+    # hoặc ~/.EasyOCR/ mặc định. setup-dev script đặt vào var/easyocr-cache/.
+    ocr_model_storage_dir: str = ""
     device: str = "cpu"
 
     # CNN phân loại loại xe (stage tùy chọn — tắt khi không có checkpoint).

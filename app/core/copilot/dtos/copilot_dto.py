@@ -1,7 +1,7 @@
 """DTO Domain Copilot — hỏi đáp RAG và phân xử tranh chấp."""
 from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.core.enums import ArbitrationVerdict
 
@@ -23,7 +23,7 @@ class CopilotAnswer(BaseModel):
 class AnswerChunk(BaseModel):
     token: str
     is_finished: bool
-    sources: List[str] = []
+    sources: List[str] = Field(default_factory=list)
 
 
 class DisputeArbitrationRequest(BaseModel):
@@ -37,4 +37,4 @@ class DisputeVerdict(BaseModel):
     verdict: ArbitrationVerdict
     recommended_refund: float
     justification: str
-    evidence_urls: List[str] = []
+    evidence_urls: List[str] = Field(default_factory=list)

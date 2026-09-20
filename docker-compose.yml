@@ -1,21 +1,88 @@
-# Run the AI image service on its own. Mount a trained checkpoint read-only so
-# you can swap models without rebuilding the image.
+# ==============================================================================
+# IPLMS — AI Service Base Orchestration (docker-compose.yml)
+#
+# Chạy riêng plane AI (FastAPI REST :8000 + gRPC :50051):
+#   docker compose up -d
+#
+# Hoặc chạy kết hợp với cấu hình override theo môi trường:
+#   Dev:  docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#   Prod: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# ⚠️ BUILD CONTEXT LÀ GỐC REPO (`context: ..`), không phải thư mục ai/.
+# Lý do: hợp đồng `proto/` nằm ở gốc repo và dùng chung với backend (xem PROB-034).
+# ==============================================================================
+
+name: iplms-ai
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "50m"
+    max-file: "3"
+
 services:
   ai:
     build:
       context: ..
       dockerfile: ai/Dockerfile
-    image: iplms-ai:latest
+    image: ${AI_IMAGE:-iplms-ai:latest}
+    container_name: ${COMPOSE_PROJECT_NAME:-iplms-ai}-service
+    restart: unless-stopped
+    logging: *default-logging
     ports:
-      - "8000:8000"
+      - "${AI_FASTAPI_PORT:-8000}:8000"
+      - "${AI_GRPC_PORT:-50051}:50051"
     environment:
-      AI_MODEL: NetV2          # NetV1 (M1) | NetV2 (M2)
-      AI_NUM_CLASSES: "10"
-      AI_IMG_SIZE: "32"
-      AI_DEVICE: cpu
-      AI_TOP_K: "5"
-      # Point at a checkpoint inside the mounted volume to serve a trained model:
-      # AI_CHECKPOINT: /app/checkpoints/cifar10_32x32_NetV2/checkpoint_best.pth
-      # AI_LABELS: /app/checkpoints/labels.txt
+      - AI_FASTAPI_PORT=${AI_FASTAPI_PORT:-8000}
+      - AI_GRPC_PORT=${AI_GRPC_PORT:-50051}
+      - AI_GRPC_MAX_WORKERS=${AI_GRPC_MAX_WORKERS:-10}
+      - AI_GRPC_MAX_MESSAGE_LENGTH=${AI_GRPC_MAX_MESSAGE_LENGTH:-10485760}
+      - AI_LANE_ID=${AI_LANE_ID:-gate_in_01}
+      - AI_YOLO_MODEL_PATH=${AI_YOLO_MODEL_PATH:-model/artifacts/bootstrap/anpr/best.pt}
+      - AI_YOLO_MODEL_VERSION=${AI_YOLO_MODEL_VERSION:-bootstrap-v1}
+      - AI_YOLO_ARTIFACT_URL=${AI_YOLO_ARTIFACT_URL:-}
+      - AI_YOLO_ARTIFACT_SHA256=${AI_YOLO_ARTIFACT_SHA256:-}
+      - AI_OCR_LANGUAGES=${AI_OCR_LANGUAGES:-en,vi}
+      - AI_DEVICE=${AI_DEVICE:-cpu}
+      - AI_VEHICLE_CHECKPOINT=${AI_VEHICLE_CHECKPOINT:-}
+      - AI_VEHICLE_MODEL_VERSION=${AI_VEHICLE_MODEL_VERSION:-v1}
+      - AI_VEHICLE_ARTIFACT_URL=${AI_VEHICLE_ARTIFACT_URL:-}
+      - AI_VEHICLE_ARTIFACT_SHA256=${AI_VEHICLE_ARTIFACT_SHA256:-}
+      - AI_VEHICLE_MODEL=${AI_VEHICLE_MODEL:-NetV2}
+      - AI_VEHICLE_NUM_CLASSES=${AI_VEHICLE_NUM_CLASSES:-4}
+      - AI_VEHICLE_IMG_SIZE=${AI_VEHICLE_IMG_SIZE:-32}
+      - AI_VEHICLE_LABELS=${AI_VEHICLE_LABELS:-car_sedan,car_suv,motorbike,truck}
+      - AI_MODEL_REGISTRY_CACHE_DIR=${AI_MODEL_REGISTRY_CACHE_DIR:-var/model-cache}
+      - AI_OBJECT_STORAGE_DOWNLOAD_TIMEOUT_SECONDS=${AI_OBJECT_STORAGE_DOWNLOAD_TIMEOUT_SECONDS:-120}
+      - AI_OBJECT_STORAGE_MAX_ARTIFACT_MB=${AI_OBJECT_STORAGE_MAX_ARTIFACT_MB:-2048}
+      - AI_OBJECT_STORAGE_ALLOW_INSECURE_HTTP=${AI_OBJECT_STORAGE_ALLOW_INSECURE_HTTP:-false}
+      - AI_DATABASE_URL=${AI_DATABASE_URL:-postgresql://postgres:postgres@host.docker.internal:5433/iplms_db}
+      - AI_LLM_API_KEY=${AI_LLM_API_KEY:-}
+      - AI_LLM_MODEL=${AI_LLM_MODEL:-gpt-5.6-luna}
+      - AI_LLM_TIMEOUT_SECONDS=${AI_LLM_TIMEOUT_SECONDS:-60}
+      - AI_LLM_MAX_RETRIES=${AI_LLM_MAX_RETRIES:-2}
+      - AI_LLM_MAX_OUTPUT_TOKENS=${AI_LLM_MAX_OUTPUT_TOKENS:-1200}
+      - AI_RAG_TOP_K=${AI_RAG_TOP_K:-5}
+      - AI_RAG_MIN_SIMILARITY=${AI_RAG_MIN_SIMILARITY:-0.35}
+      - AI_EMBEDDING_MODEL=${AI_EMBEDDING_MODEL:-text-embedding-3-small}
+      - AI_EMBEDDING_DIMENSIONS=${AI_EMBEDDING_DIMENSIONS:-1536}
+      - AI_EMBEDDING_BATCH_SIZE=${AI_EMBEDDING_BATCH_SIZE:-64}
+      - AI_EMBEDDING_TIMEOUT_SECONDS=${AI_EMBEDDING_TIMEOUT_SECONDS:-30}
+      - AI_EMBEDDING_MAX_RETRIES=${AI_EMBEDDING_MAX_RETRIES:-3}
+      - AI_DATALAKE_S3_BUCKET=${AI_DATALAKE_S3_BUCKET:-iplms-datalake}
+      - AI_DATALAKE_LOCAL_PATH=${AI_DATALAKE_LOCAL_PATH:-data/datalake}
+      - AI_LOG_LEVEL=${AI_LOG_LEVEL:-INFO}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
-      - ./model/checkpoint:/app/checkpoints:ro
+      - ./model/artifacts/bootstrap/anpr:/app/model/artifacts/bootstrap/anpr:ro
+      - ./model/checkpoint:/app/model/checkpoint:ro
+      - ./var/model-cache:/app/var/model-cache
+      - ./static:/app/static
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\" || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

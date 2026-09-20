@@ -33,7 +33,8 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install \
             grpcio grpcio-tools numpy opencv-python-headless \
-            pydantic pydantic-settings "pypdf>=6.19.0" python-docx
+            pydantic pydantic-settings "pypdf>=6.19.0" python-docx \
+            "openai>=1.68.0,<2.0.0" "pgvector>=0.2.5" "psycopg2-binary>=2.9.9"
 
       - name: Compile protobuf stubs
         run: python app/script/compile_proto.py

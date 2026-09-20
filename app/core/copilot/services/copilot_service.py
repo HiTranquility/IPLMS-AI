@@ -8,6 +8,7 @@ from app.core.copilot.dtos.copilot_dto import (
     DisputeArbitrationRequest,
     DisputeVerdict,
 )
+from app.core.copilot.engines.rag_pipeline import rag_pipeline
 from app.core.exceptions import FeatureNotImplementedError
 from app.utils.logger import logger
 
@@ -15,50 +16,29 @@ from app.utils.logger import logger
 class CopilotService:
     @staticmethod
     async def ask_question(request: AskQuestionRequest) -> CopilotAnswer:
-        """[NEVER] bật lại cho tới khi chuỗi RAG phía sau là thật.
-
-        Cùng lý do với ``arbitrate_dispute`` bên dưới. Ba tầng phía sau đều giả:
-
-        - ``rag_pipeline.query`` dựng ``dummy_embedding = [0.0] * 1536`` — vector
-          toàn số 0 nên mọi đoạn văn bản cách đều nhau, phép tìm kiếm ngữ nghĩa
-          không tồn tại;
-        - ``pgvector_client.search_similar_chunks`` trả một danh sách viết cứng,
-          trích nguồn ``Quy_che_bai_xe_2026.pdf`` — file không hề có;
-        - ``llm_factory.generate_response`` trả chuỗi cứng, và ``confidence`` bị
-          gán ``0.95`` bất kể câu hỏi là gì.
-
-        Một câu trả lời về BIỂU PHÍ trông tự tin 95% kèm trích dẫn quy chế là thứ
-        người dùng sẽ tin và trả tiền theo. Nguy hiểm hơn hẳn một lỗi thẳng thắn.
-
-        Việc thật cần làm trước khi mở lại: embedding thật + pgvector thật + LLM
-        thật, nạp quy chế qua đường của SUGGESTION-008 / ISSUE-004.
-        """
-        logger.warning(
-            f"CopilotService.AskQuestion bị gọi bởi user {request.user_id} "
-            f"— chuỗi RAG chưa triển khai, từ chối thay vì trả câu trả lời bịa."
+        """Answer through the real embedding → pgvector → Responses pipeline."""
+        result = await rag_pipeline.query(
+            request.query,
+            parking_lot_id=request.parking_lot_id,
         )
-        raise FeatureNotImplementedError(
-            "Trợ lý hỏi đáp chưa khả dụng: phần tra cứu quy chế (embedding + "
-            "vector store + LLM) chưa được triển khai."
+        return CopilotAnswer(
+            answer=result["answer"],
+            sources=result["sources"],
+            confidence=result["confidence"],
         )
 
     @staticmethod
     async def stream_answer(request: AskQuestionRequest) -> AsyncGenerator[AnswerChunk, None]:
-        """Cùng lý do với ``ask_question`` — chỉ khác ở chỗ trả theo từng chunk.
-
-        [GOTCHA] Đây là hàm generator: ``raise`` chỉ nổ khi người gọi bắt đầu
-        lặp, không nổ lúc gọi hàm. Handler gRPC ``stream`` vẫn quy nó về
-        UNIMPLEMENTED đúng như đường unary.
-        """
-        logger.warning(
-            f"CopilotService.StreamAnswer bị gọi bởi user {request.user_id} "
-            f"— chuỗi RAG chưa triển khai, từ chối thay vì phát chuỗi bịa."
-        )
-        raise FeatureNotImplementedError(
-            "Trợ lý hỏi đáp chưa khả dụng: phần tra cứu quy chế (embedding + "
-            "vector store + LLM) chưa được triển khai."
-        )
-        yield  # pragma: no cover — giữ hàm là generator cho đúng chữ ký
+        """Stream the same grounded pipeline without buffering the full answer."""
+        async for chunk in rag_pipeline.stream_query(
+            request.query,
+            parking_lot_id=request.parking_lot_id,
+        ):
+            yield AnswerChunk(
+                token=chunk["token"],
+                is_finished=chunk["is_finished"],
+                sources=chunk["sources"],
+            )
 
     @staticmethod
     async def arbitrate_dispute(request: DisputeArbitrationRequest) -> DisputeVerdict:
@@ -78,8 +58,9 @@ class CopilotService:
         ngay, còn số bịa thì không để lại dấu vết nào trong log lẫn metric.
 
         Việc thật cần làm trước khi mở lại: nạp log vào/ra + ảnh snapshot của
-        phiên, đối chiếu với quy chế đã nạp qua RAG (xem SUGGESTION-008), rồi mới kết
-        luận. Toàn bộ chuỗi RAG hiện vẫn là giả — xem SUGGESTION-008 §1.2.
+        phiên, đối chiếu với quy chế đã nạp qua RAG (xem SUGGESTION-008), rồi mới
+        kết luận. RAG hỏi đáp đã là thật, nhưng nó không tự có evidence của một
+        phiên đỗ cụ thể nên chưa đủ cơ sở để ra phán quyết tài chính.
         """
         logger.warning(
             f"CopilotService.ArbitrateDispute bị gọi cho dispute #{request.dispute_id} "

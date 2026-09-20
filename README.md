@@ -77,98 +77,134 @@ ai/
              ──► PlateResult {plate_number, vehicle_type, crop_url, process_time, ...}
 ```
 
-## ▶️ Chạy (Docker)
+## ⚡ Onboarding nhanh (Dành cho Dev mới)
+
+Chạy script tự động thiết lập toàn bộ venv, stubs gRPC, tải EasyOCR model, tạo `.env` mẫu:
 
 ```bash
 cd ai
-docker compose up --build
-# health : curl http://localhost:8000/health
-# nhận diện: curl -F "file=@xe.jpg" "http://localhost:8000/api/anpr/recognize?lane_id=gate_in_01"
+
+# Trên Windows (PowerShell):
+.\setup-dev.ps1
+
+# Trên Linux / macOS:
+chmod +x setup-dev.sh
+./setup-dev.sh
 ```
 
-Kết quả (`BaseResponse.data[0]` ~ hợp đồng `anpr-pipeline`):
-```json
-{ "event_id": "evt_...", "lane_id": "gate_in_01", "plate_number": "51H-99999",
-  "confidence": 0.7751, "vehicle_type": null,
-  "crop_plate_image_url": "/static/cropped/51H-99999_crop.jpg",
-  "process_time": 0.42, "timestamp": "2026-07-26T..." }
+## ▶️ Chạy (Docker)
+
+AI service hỗ trợ chạy riêng rẽ theo 3 chế độ qua Docker Compose:
+
+```bash
+cd ai
+
+# 1. Development (khuyến nghị cho dev — mount ./app để hot-reload + nạp .env):
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# (hoặc dùng alias: docker compose -f docker-compose.develop.yml up -d)
+
+# 2. Base (cơ bản, không mount volume):
+docker compose up -d
+
+# 3. Production (dùng image build sẵn / ECR, giới hạn CPU/RAM, restart always):
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# (hoặc dùng alias: docker compose -f docker-compose.production.yml up -d)
+
+# Kiểm tra health:
+curl http://localhost:8000/health
+# Nhận diện ảnh thử:
+curl -F "file=@xe.jpg" "http://localhost:8000/api/anpr/recognize?lane_id=gate_in_01"
 ```
+
+> **Lưu ý Full-stack:** Nếu chạy toàn bộ hệ thống cùng backend, dùng `deployment/script/run-stack.ps1` (hoặc `.sh`). AI sẽ chạy cùng mạng nội bộ `iplms-internal` với PostgreSQL, Redis, Keycloak.
 
 ## ▶️ Chạy local (không Docker)
 
 ```bash
-cd ai && python -m venv .venv && source .venv/Scripts/activate
-pip install -r requirements.txt
+cd ai
+
+# Kích hoạt venv (sau khi đã chạy setup-dev)
+# Windows:
+.\.venv\Scripts\Activate.ps1
+# Linux/macOS:
+source .venv/bin/activate
+
+# 1. Chạy REST API (FastAPI)
 uvicorn app.main:app --reload --port 8000
+
+# 2. Chạy gRPC server (lắng nghe [::]:50051 cho backend gọi vào)
+python -m app.grpc_server
 ```
 
-## ▶️ Chạy gRPC server (backend NestJS gọi vào)
+## 🧠 Copilot RAG & Quản lý tri thức (Knowledge)
+
+Dịch vụ Copilot RAG sử dụng PostgreSQL + pgvector để lưu trữ và truy hồi tri thức nội bộ bãi xe (quy định, biểu phí, hướng dẫn):
 
 ```bash
 cd ai
-python app/script/compile_proto.py     # sinh stub — bắt buộc chạy trước
-python -m app.grpc_server              # lắng nghe [::]:50051
-python app/script/grpc_smoke_check.py  # gọi thử cả 5 service
-```
+.\.venv\Scripts\Activate.ps1  # hoặc source .venv/bin/activate
 
-Bên backend đặt `AI_GRPC_URL=localhost:50051` (xem `backend/src/infrastructures/Ai/README.md`).
+# 1. Nạp dữ liệu mẫu (quy chế bãi xe vào pgvector):
+python app/script/seed_regulations.py
+
+# 2. Nạp tài liệu tri thức (Markdown / Text):
+python app/script/ingest_knowledge.py --file path/to/doc.md --lot-id LOT_01 --title "Quy chế bãi"
+
+# 3. Chạy đánh giá chất lượng truy hồi RAG (eval retrieval):
+python app/script/eval_retrieval.py
+
+# 4. Kiểm tra kết nối gRPC smoke check:
+python app/script/grpc_smoke_check.py
+```
 
 ## ✅ Chạy test
 
 ```bash
 cd ai
-python -m unittest discover -s test -t .
+# Chạy toàn bộ test suite (không cần cài thêm dependency):
+.\.venv\Scripts\python.exe -m unittest discover -s test -t .
+# hoặc:
+pytest test
 ```
 
-Dùng `unittest` của thư viện chuẩn — **không thêm dependency nào**, chạy được ngay
-sau `pip install -r requirements.txt`. Ai thích pytest thì `pytest test` vẫn chạy
-y nguyên vì pytest hiểu test kiểu unittest.
+Bộ test bao phủ logic ANPR, Enums, DTO Mappers, Copilot RAG Pipeline, Ingestion Service, LLM Factory:
 
-Bộ test cố ý chỉ chạm **logic thuần**, không nạp model, nên xong trong vài mili-giây:
-
-| File | Giữ cho khỏi vỡ điều gì |
-|---|---|
-| `test_generate_url.py` | Tên file ảnh khoá theo `event_id` — nếu chỉ theo biển số thì mọi xe không đọc được biển ghi đè chung một file |
-| `test_enums_match_proto.py` | Enum Python khớp từng chữ với enum trong proto — lệch là mapper ném lỗi giữa request thật |
-| `test_vision_mapper.py` | Mapping DTO ↔ protobuf, gồm `crop_image` bytes mà backend cần để lưu ảnh bền |
-| `test_plate_text.py` | Chuẩn hoá chuỗi biển số; ghi lại cả hành vi **chưa** chuẩn (thiếu gạch ngang) để đổi là có chủ đích |
-| `test_config.py` | Số nhãn khớp số lớp của model; `grpc_max_message_length` khớp phía NestJS |
+| Nhóm test | File | Mục đích bảo vệ |
+|---|---|---|
+| ANPR & Vision | `test_generate_url.py`, `test_plate_text.py`, `test_vision_mapper.py` | Format biển số, URL ảnh theo event_id, mapping protobuf DTO |
+| gRPC Contract | `test_enums_match_proto.py`, `test_config.py` | Đảm bảo Enum Python khớp từng chữ với proto, config payload max size |
+| Copilot & RAG | `test_rag_pipeline.py`, `test_llm_factory.py` | Luồng truy hồi RAG, fallback khi không có context, LLM provider |
+| Knowledge Ingest | `test_ingestion_service.py`, `test_embedding_client.py` | Tách chunk tài liệu, metadata, sinh vector embedding |
 
 ## ⚙️ Biến môi trường
 
+Toàn bộ cấu hình có thể điều chỉnh qua `.env` (tham khảo `.env.example`):
+
 | Biến | Mặc định | Ý nghĩa |
 |---|---|---|
-| `AI_LANE_ID` | `gate_in_01` | `lane_id` gắn vào kết quả |
-| `AI_VEHICLE_CHECKPOINT` | *(rỗng)* | Bật tầng phân loại xe khi trỏ tới checkpoint CNN đã train loại xe. **Rỗng = tắt** (`vehicle_type = null`). |
-| `AI_VEHICLE_MODEL_VERSION` | `v1` | Version bất biến dùng làm thư mục cache artifact |
-| `AI_VEHICLE_ARTIFACT_URL` | *(rỗng)* | Signed HTTPS GET URL; khi có giá trị sẽ ưu tiên hơn checkpoint local |
-| `AI_VEHICLE_ARTIFACT_SHA256` | *(rỗng)* | SHA-256 bắt buộc khi tải checkpoint từ URL |
-| `AI_VEHICLE_MODEL` | `NetV2` | `NetV1`/`NetV2` cho tầng phân loại xe |
-| `AI_VEHICLE_LABELS` | `car_sedan,car_suv,motorbike,truck` | Nhãn lớp (theo thứ tự index) |
-| `AI_OCR_LANGUAGES` | `en,vi` | Ngôn ngữ EasyOCR, ngăn cách bởi dấu phẩy |
-| `AI_YOLO_MODEL_PATH` | `model/artifacts/bootstrap/anpr/best.pt` | Bootstrap YOLO local, tương đối so với `ai/` |
-| `AI_YOLO_MODEL_VERSION` | `bootstrap-v1` | Version detector dùng làm khóa cache |
-| `AI_YOLO_ARTIFACT_URL` | *(rỗng)* | Signed HTTPS GET URL; khi có giá trị sẽ ưu tiên hơn bootstrap local |
-| `AI_YOLO_ARTIFACT_SHA256` | *(rỗng)* | SHA-256 bắt buộc khi tải detector từ URL |
-| `AI_MODEL_REGISTRY_CACHE_DIR` | `var/model-cache` | Cache runtime theo `<model>/<version>/<file>` |
-| `AI_OBJECT_STORAGE_MAX_ARTIFACT_MB` | `2048` | Chặn tải artifact vượt giới hạn |
 | `AI_GRPC_PORT` | `50051` | Cổng gRPC server |
-| `AI_DEVICE` | `cpu` | `cpu`/`cuda` |
+| `AI_FASTAPI_PORT` | `8000` | Cổng REST API |
+| `AI_DEVICE` | `cpu` | `cpu` hoặc `cuda` |
+| `AI_DATABASE_URL` | `postgresql://...` | Kết nối PostgreSQL hỗ trợ pgvector cho Copilot RAG |
+| `AI_LLM_API_KEY` | *(rỗng)* | OpenAI API key cho Copilot và Embedding |
+| `AI_LLM_MODEL` | `gpt-5.6-luna` | Model LLM sinh câu trả lời |
+| `AI_EMBEDDING_MODEL` | `text-embedding-3-small` | Model sinh vector cho tri thức |
+| `AI_RAG_TOP_K` | `5` | Số chunk tương đồng lấy từ pgvector |
+| `AI_RAG_MIN_SIMILARITY` | `0.35` | Ngưỡng tương đồng cosine tối thiểu |
+| `AI_YOLO_MODEL_PATH` | `model/artifacts/bootstrap/anpr/best.pt` | File trọng số YOLO detector |
+| `AI_OCR_LANGUAGES` | `en,vi` | Ngôn ngữ nhận diện EasyOCR |
+| `AI_VEHICLE_CHECKPOINT` | *(rỗng)* | Checkpoint CNN phân loại xe (để trống = tắt) |
 
-## 🔗 Nối backend (ĐÃ WIRE)
+## 🔗 Tích hợp Backend (NestJS)
 
-Backend NestJS đã có sẵn đường nối:
-- `AnprProvider` ([backend/src/infrastructures/Anpr](../backend/src/infrastructures/Anpr)) — HTTP client gọi `POST /api/anpr/recognize` (fetch native, có timeout). Bật bằng env `ANPR_ENABLED=true` + `ANPR_SERVICE_URL=http://localhost:8000`.
-- Endpoint cổng: `POST /staff/parking-sessions/check-in-anpr` (multipart `file`, query `laneId?`) → `StaffOperationService.staffCheckInFromImage` → nhận diện biển số qua service này → chạy `staffCheckIn` bình thường (giữ nguyên access-control, nhận diện là bước tiền xử lý tách rời — đúng skill `anpr-pipeline`).
+Backend kết nối tới AI service qua 2 kênh:
+1. **gRPC (Kênh chính, thời gian thực):** `AI_GRPC_URL=localhost:50051` cho Copilot RAG (kèm Server-Sent Events / streaming) và ANPR pipeline.
+2. **REST (Kênh phụ / upload ảnh thủ công):** `ANPR_SERVICE_URL=http://localhost:8000` cho staff check-in qua endpoint multipart.
 
-## 📖 Huấn luyện & xem model
+## ⚠️ Hiện trạng triển khai
 
-Xem [`training/README.md`](training/README.md) — cách chuẩn bị dữ liệu, train NetV1/NetV2, xem checkpoint/log, đếm FLOPs, và cách bật tầng phân loại xe.
+- **ANPR (Vision):** ✅ Hoạt động đầy đủ (YOLOv8 phát hiện biển số + EasyOCR nhận diện ký tự đa tầng).
+- **Copilot RAG:** ✅ Hoạt động đầy đủ (pgvector vector search + chunking + OpenAI embedding & text generation + gRPC ServerStreaming).
+- **Forecast (Dự báo chỗ trống):** 🟡 Skeleton/Datalake chuẩn bị sẵn, mô hình dự báo chuyên sâu đang trong lộ trình phát triển.
+- **Anti-fraud (Chống gian lận vé):** 🟡 Skeleton cấu hình sẵn, luật đối soát đang hoàn thiện.
 
-## ⚠️ Trung thực về hiện trạng
-- **Chỉ ANPR là thật.** Anti-fraud / Forecast / Copilot đều trả `UNIMPLEMENTED` thay vì số bịa — xem `core/*/services/*.py`.
-- **Engine ALPR (YOLO+OCR) là thật** — code + weights `best.pt` bê từ bên thứ ba, không train ở đây.
-- **`confidence` là số THẬT** (detector × OCR) từ ISSUE-003; `0.0` nghĩa là không đọc được biển, [NEVER] hiểu là "tin 0%".
-- **`vehicle_type` mặc định `null`**: checkpoint CNN hiện có train trên CIFAR/Animal-10, **chưa** phân loại xe; chỉ bật khi cấp checkpoint train trên loại xe (`AI_VEHICLE_CHECKPOINT`).
-- Model production nên nằm trong object storage private. Service nhận signed URL ngắn hạn, bắt buộc kiểm SHA-256 và chỉ nạp file đã cache thành công; URL không được ghi log.
-- **Chưa cài gói** (luật supply-chain): torch/ultralytics/easyocr/opencv là thư viện phổ biến; tự `pip install`. `easyocr` tải model ~vài trăm MB lần chạy đầu.

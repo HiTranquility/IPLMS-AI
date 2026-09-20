@@ -34,4 +34,5 @@ psycopg2-binary>=2.9.9
 # thước + trần thời gian parse trong app/core/constants.py.
 pypdf>=6.19.0
 python-docx>=1.2.0
-openai>=1.0.0,<2.0.0
+# Responses API + typed streaming events are required by LlmFactory.
+openai>=1.68.0,<2.0.0

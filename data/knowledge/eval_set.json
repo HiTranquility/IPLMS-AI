@@ -1,0 +1,67 @@
+[
+  {
+    "question": "Hai giờ đầu gửi ô tô ở Landmark 81 giá bao nhiêu?",
+    "parking_lot_id": "lot_landmark_81",
+    "expected_sources": ["demo_01_tariff.md"]
+  },
+  {
+    "question": "Ô tô gửi qua đêm từ 22 giờ bị phụ thu thế nào?",
+    "parking_lot_id": "lot_landmark_81",
+    "expected_sources": ["demo_01_tariff.md"]
+  },
+  {
+    "question": "Ban ngày gửi xe máy tính bao nhiêu tiền một lượt?",
+    "parking_lot_id": null,
+    "expected_sources": ["demo_02_tariff.md"]
+  },
+  {
+    "question": "Gói tháng Member VIP dành cho xe máy có giá bao nhiêu?",
+    "parking_lot_id": null,
+    "expected_sources": ["demo_02_tariff.md"]
+  },
+  {
+    "question": "Tôi có bao lâu để gửi yêu cầu khiếu nại sau khi kết thúc phiên?",
+    "parking_lot_id": null,
+    "expected_sources": ["demo_03_regulation.md"]
+  },
+  {
+    "question": "Barie bị lỗi làm chậm hơn 10 phút thì thời gian tính phí xử lý ra sao?",
+    "parking_lot_id": null,
+    "expected_sources": ["demo_03_regulation.md"]
+  },
+  {
+    "question": "Tái phạm đỗ sai ô đã đặt trước bị phạt bao nhiêu?",
+    "parking_lot_id": null,
+    "expected_sources": ["demo_04_fine_policy.md"]
+  },
+  {
+    "question": "Sau khi xe điện sạc đầy tôi có bao nhiêu phút để di chuyển xe?",
+    "parking_lot_id": "lot_vincom_center",
+    "expected_sources": ["demo_05_ev_charging.md"]
+  },
+  {
+    "question": "Đơn giá điện tại trụ sạc là bao nhiêu cho mỗi kWh?",
+    "parking_lot_id": "lot_vincom_center",
+    "expected_sources": ["demo_05_ev_charging.md"]
+  },
+  {
+    "question": "Quá giờ 10 phút có bị làm tròn thành một giờ phụ phí không?",
+    "parking_lot_id": null,
+    "expected_sources": ["demo_06_fine_policy.md"]
+  },
+  {
+    "question": "Mặc định một bãi chưa cấu hình riêng có ân hạn quá giờ bao nhiêu phút?",
+    "parking_lot_id": null,
+    "expected_sources": ["demo_07_regulation.md"]
+  },
+  {
+    "question": "Bảo hiểm có bồi thường khi xe bị trầy sơn trong bãi không?",
+    "parking_lot_id": null,
+    "expected_sources": []
+  },
+  {
+    "question": "Mất vé giấy thì cần nộp bản sao hộ khẩu hay giấy khai sinh?",
+    "parking_lot_id": null,
+    "expected_sources": []
+  }
+]

@@ -16,12 +16,12 @@ _, _pb2_grpc = get_stub("copilot_service")
 class CopilotHandler(_pb2_grpc.CopilotServiceServicer):
     async def AskQuestion(self, request, context):
         payload = to_ask_question_request(request)
-        logger.info(f"CopilotService.AskQuestion query={payload.query}")
+        logger.info("CopilotService.AskQuestion query_chars=%d", len(payload.query))
         return to_ask_question_response(await copilot_service.ask_question(payload))
 
     async def StreamAnswer(self, request, context):
         payload = to_ask_question_request(request)
-        logger.info(f"CopilotService.StreamAnswer query={payload.query}")
+        logger.info("CopilotService.StreamAnswer query_chars=%d", len(payload.query))
         async for chunk in copilot_service.stream_answer(payload):
             yield to_answer_chunk(chunk)
 

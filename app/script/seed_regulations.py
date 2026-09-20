@@ -3,9 +3,8 @@ Phục vụ RAG Copilot trả lời câu hỏi và phân xử khiếu nại tran
 """
 import os
 import json
-import uuid
+import asyncio
 from pathlib import Path
-from datetime import datetime, timezone
 
 # Danh mục các quy chế, biểu phí mẫu chuẩn cho bãi xe thông minh
 SAMPLE_KNOWLEDGE_CHUNKS = [
@@ -110,6 +109,33 @@ SAMPLE_KNOWLEDGE_CHUNKS = [
     }
 ]
 
+async def _ingest_demo_data() -> None:
+    """Embed demo data through the same production ingestion pipeline.
+
+    The generated source name says ``demo`` explicitly. The previous script
+    inserted NULL embeddings while citing PDF files that did not exist, which
+    made retrieval both unusable and misleading.
+    """
+    from app.core.knowledge.dtos.knowledge_dto import IngestDocumentCommand
+    from app.core.knowledge.services import ingestion_service
+
+    for index, chunk in enumerate(SAMPLE_KNOWLEDGE_CHUNKS, start=1):
+        source = f"demo_{index:02d}_{chunk['category']}.md"
+        body = f"# {chunk['title']}\n\n{chunk['content']}\n"
+        result = await ingestion_service.ingest(
+            IngestDocumentCommand(
+                file_data=body.encode("utf-8"),
+                file_name=source,
+                parking_lot_id=chunk.get("parking_lot_id"),
+                category=chunk["category"],
+                uploaded_by="seed-script",
+            )
+        )
+        if result.status.value != "SUCCESS":
+            raise RuntimeError(f"Không nạp được {source}: {result.message}")
+        print(f"[OK] Ingested {source}: {result.chunk_count} chunks")
+
+
 def seed_knowledge():
     ai_dir = Path(__file__).resolve().parent.parent.parent
     data_dir = ai_dir / "data" / "knowledge"
@@ -122,52 +148,14 @@ def seed_knowledge():
 
     print(f"[OK] Saved {len(SAMPLE_KNOWLEDGE_CHUNKS)} knowledge chunks to: {output_file}")
 
-    # 2. Nạp vào PostgreSQL pgvector (nếu có connection string)
+    # 2. Chỉ nạp demo khi đã cấu hình cả DB và OpenAI. Không còn đường ghi
+    # embedding=NULL: hoặc nạp trọn vẹn, hoặc không ghi gì.
     db_url = os.getenv("AI_DATABASE_URL", "")
-    if db_url:
-        try:
-            import psycopg2
-            conn = psycopg2.connect(db_url)
-            cur = conn.cursor()
-            
-            # Tạo extension pgvector và bảng nếu chưa tồn tại
-            cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS knowledge_chunks (
-                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                    parking_lot_id VARCHAR(100),
-                    category VARCHAR(50) NOT NULL,
-                    title VARCHAR(255) NOT NULL,
-                    content TEXT NOT NULL,
-                    source VARCHAR(255),
-                    metadata JSONB DEFAULT '{}',
-                    embedding vector(1536),
-                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-                );
-            """)
-
-            # Thêm dữ liệu mẫu
-            for chunk in SAMPLE_KNOWLEDGE_CHUNKS:
-                cur.execute("""
-                    INSERT INTO knowledge_chunks (id, parking_lot_id, category, title, content, source, metadata)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT DO NOTHING;
-                """, (
-                    str(uuid.uuid4()),
-                    chunk.get("parking_lot_id"),
-                    chunk["category"],
-                    chunk["title"],
-                    chunk["content"],
-                    chunk["source"],
-                    json.dumps({"seeded_at": datetime.now(timezone.utc).isoformat()})
-                ))
-
-            conn.commit()
-            cur.close()
-            conn.close()
-            print("[OK] Seeded knowledge chunks to PostgreSQL (pgvector) successfully!")
-        except Exception as e:
-            print(f"[INFO] PostgreSQL not available ({e}), saved to local seed file.")
+    api_key = os.getenv("AI_LLM_API_KEY", "")
+    if db_url and api_key:
+        asyncio.run(_ingest_demo_data())
+    else:
+        print("[INFO] Chỉ xuất JSON; cần AI_DATABASE_URL + AI_LLM_API_KEY để nạp demo.")
 
 if __name__ == "__main__":
     seed_knowledge()
