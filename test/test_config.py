@@ -48,7 +48,9 @@ class WorkflowConfigTest(unittest.TestCase):
         config = get_config().workflow
         self.assertFalse(config.enabled)
         self.assertEqual(config.checkpoint_backend, "memory")
+        self.assertEqual(config.checkpoint_schema, "ai_workflow")
         self.assertGreater(config.checkpoint_retention_days, 0)
+        self.assertGreater(config.checkpoint_retention_batch_size, 0)
 
 
 class ServerConfigTest(unittest.TestCase):
