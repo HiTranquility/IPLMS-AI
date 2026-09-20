@@ -1,7 +1,9 @@
 # Service deps for the Docker image (CPU torch — smaller than CUDA build).
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch>=2.2
-torchvision>=0.17
+# Keep the matching CPU wheels in lockstep; a mismatched torchvision prevents
+# EasyOCR from loading its reader at runtime.
+torch==2.5.1
+torchvision==0.20.1
 numpy>=1.24
 pillow>=10.0
 opencv-python-headless>=4.9
@@ -10,8 +12,10 @@ ultralytics>=8.3
 fastapi>=0.110
 uvicorn[standard]>=0.27
 python-multipart>=0.0.9
-grpcio>=1.62.0
-grpcio-tools>=1.62.0
+# Keep generated stubs and the protobuf runtime on the same compatible line.
+grpcio==1.71.0
+grpcio-tools==1.71.0
+protobuf==5.29.5
 pydantic-settings>=2.0.0
 pgvector>=0.2.5
 psycopg2-binary>=2.9.9

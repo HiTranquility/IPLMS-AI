@@ -1,8 +1,10 @@
 # Full stack for local dev: ANPR service (app/) + training/eval (training/).
 # Widely-adopted libraries. NOTE: not installed automatically — run
 # `pip install -r requirements.txt` in a venv.
-torch>=2.2
-torchvision>=0.17
+# PyTorch and Torchvision ship binary operators together. Keep this tested pair
+# in lockstep: torchvision 0.26 cannot load against torch 2.5.
+torch==2.5.1
+torchvision==0.20.1
 numpy>=1.24
 pillow>=10.0
 opencv-python-headless>=4.9
@@ -14,8 +16,11 @@ ptflops>=0.7
 fastapi>=0.110
 uvicorn[standard]>=0.27
 python-multipart>=0.0.9
-grpcio>=1.62.0
-grpcio-tools>=1.62.0
+# Pin generator/runtime together. Newer grpcio-tools emits protobuf 7 code,
+# which cannot run with the protobuf 5 runtime used by the rest of this stack.
+grpcio==1.71.0
+grpcio-tools==1.71.0
+protobuf==5.29.5
 pydantic-settings>=2.0.0
 pgvector>=0.2.5
 psycopg2-binary>=2.9.9
