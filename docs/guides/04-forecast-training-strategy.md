@@ -40,7 +40,7 @@ flowchart TD
     I --> J[Policy riêng xem xét giá đề xuất]
 ```
 
-Hiện trạng: [forecast_service.py](../../app/core/forecast/services/forecast_service.py):35 chặn dự báo; [occupancy_model.py](../../app/core/forecast/engines/occupancy_model.py), `predict_occupancy`, vẫn sinh `min(0.95, 0.40 + (i * 0.08) % 0.60)` và chưa dùng history để học. `estimated_free_spots` trong placeholder lấy sức chứa 100, không phải sức chứa thật. Không dùng dãy này làm baseline chất lượng.
+Hiện trạng: [forecast_service.py](../../app/core/forecast/services/forecast_service.py):35 vẫn chặn dự báo; [occupancy_model.py](../../app/core/forecast/engines/occupancy_model.py) vẫn là công thức mô phỏng và không được phục vụ ra ngoài. Đường dữ liệu thật đã có bước đầu: `session_exporter.py` xuất incremental JSONL + manifest/checksum từ PostgreSQL, còn `occupancy_reader.py` dedup session và tính nhãn slot 30 phút theo khoảng nửa mở. Chưa có model/backtest nên không dùng dãy placeholder làm baseline chất lượng.
 
 ## 🪜 Các bước
 

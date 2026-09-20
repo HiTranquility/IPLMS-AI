@@ -75,3 +75,9 @@ class EmbeddingError(AiServiceError):
     nhưng không truy vấn nào tìm ra. Đó đúng là lỗi đang tồn tại ở
     ``app/script/seed_regulations.py``.
     """
+
+
+# ── Data lake ────────────────────────────────────────────────────────────────
+
+class DataLakeError(AiServiceError):
+    """Không thể export hoặc đọc snapshot lịch sử từ data lake."""

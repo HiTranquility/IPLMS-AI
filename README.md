@@ -30,7 +30,7 @@ ai/
 │   │   ├── server_config.py         #   cổng gRPC/REST, max workers, max message
 │   │   ├── vision_config.py         #   YOLO · EasyOCR · CNN phân loại xe
 │   │   ├── llm_config.py            #   pgvector DB · embedding · API key
-│   │   ├── datalake_config.py       #   kho Parquet cho forecast
+│   │   ├── datalake_config.py       #   export batch + slot occupancy cho forecast
 │   │   ├── logging_config.py        #   tên logger · level · format
 │   │   └── app_config.py            #   AppConfig gộp + get_config() (lru_cache)
 │   ├── core/                        # NGHIỆP VỤ — mỗi domain 1 folder
@@ -39,7 +39,7 @@ ai/
 │   │   └── forecast/                #   dtos/forecast_dto.py · engines/occupancy_model.py · services/
 │   ├── infra/                       # ADAPTER RA NGOÀI — database/ (pgvector) · datalake/ · llm/
 │   ├── utils/                       # logger.py · console.py · file.py · generate_url.py
-│   ├── script/                      # compile_proto.py · grpc_smoke_check.py · seed_*.py
+│   ├── script/                      # compile_proto.py · smoke/eval/seed · export_parking_sessions.py
 │   ├── main.py                      # entrypoint REST (FastAPI app)
 │   └── grpc_server.py               # entrypoint gRPC (grpc.aio, cổng 50051)
 ├── test/                            # unittest stdlib — KHÔNG cần thêm dependency
@@ -155,6 +155,10 @@ python app/script/eval_retrieval.py
 
 # 4. Kiểm tra kết nối gRPC smoke check:
 python app/script/grpc_smoke_check.py
+
+# 5. Kiểm tra/export phiên đỗ tăng dần sang data lake local:
+python -m app.script.export_parking_sessions --status
+python -m app.script.export_parking_sessions --since 2026-09-01T00:00:00Z
 ```
 
 ## ✅ Chạy test
@@ -175,6 +179,7 @@ Bộ test bao phủ logic ANPR, Enums, DTO Mappers, Copilot RAG Pipeline, Ingest
 | gRPC Contract | `test_enums_match_proto.py`, `test_config.py` | Đảm bảo Enum Python khớp từng chữ với proto, config payload max size |
 | Copilot & RAG | `test_rag_pipeline.py`, `test_llm_factory.py` | Luồng truy hồi RAG, fallback khi không có context, LLM provider |
 | Knowledge Ingest | `test_ingestion_service.py`, `test_embedding_client.py` | Tách chunk tài liệu, metadata, sinh vector embedding |
+| Data lake | `test_datalake.py` | Export incremental không PII, manifest/checksum, dedup và nhãn occupancy 30 phút |
 
 ## ⚙️ Biến môi trường
 
@@ -191,6 +196,9 @@ Toàn bộ cấu hình có thể điều chỉnh qua `.env` (tham khảo `.env.e
 | `AI_EMBEDDING_MODEL` | `text-embedding-3-small` | Model sinh vector cho tri thức |
 | `AI_RAG_TOP_K` | `5` | Số chunk tương đồng lấy từ pgvector |
 | `AI_RAG_MIN_SIMILARITY` | `0.35` | Ngưỡng tương đồng cosine tối thiểu |
+| `AI_DATALAKE_LOCAL_PATH` | `data/datalake` | Workspace raw/manifest/watermark local |
+| `AI_DATALAKE_EXPORT_BATCH_SIZE` | `1000` | Số session đọc mỗi batch từ PostgreSQL |
+| `AI_DATALAKE_OCCUPANCY_SLOT_MINUTES` | `30` | Độ rộng slot nhãn occupancy |
 | `AI_YOLO_MODEL_PATH` | `model/artifacts/bootstrap/anpr/best.pt` | File trọng số YOLO detector |
 | `AI_OCR_LANGUAGES` | `en,vi` | Ngôn ngữ nhận diện EasyOCR |
 | `AI_VEHICLE_CHECKPOINT` | *(rỗng)* | Checkpoint CNN phân loại xe (để trống = tắt) |
@@ -205,6 +213,6 @@ Backend kết nối tới AI service qua 2 kênh:
 
 - **ANPR (Vision):** ✅ Hoạt động đầy đủ (YOLOv8 phát hiện biển số + EasyOCR nhận diện ký tự đa tầng).
 - **Copilot RAG:** ✅ Hoạt động đầy đủ (pgvector vector search + chunking + OpenAI embedding & text generation + gRPC ServerStreaming).
-- **Forecast (Dự báo chỗ trống):** 🟡 Skeleton/Datalake chuẩn bị sẵn, mô hình dự báo chuyên sâu đang trong lộ trình phát triển.
+- **Forecast (Dự báo chỗ trống):** 🟡 Export/reader data lake đã chạy và có test; model/backtest vẫn chưa triển khai nên endpoint tiếp tục từ chối.
 - **Anti-fraud (Chống gian lận vé):** 🟡 Skeleton cấu hình sẵn, luật đối soát đang hoàn thiện.
 

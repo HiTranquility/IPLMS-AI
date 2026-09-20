@@ -9,3 +9,5 @@ class DatalakeConfig(BaseConfig):
 
     s3_bucket: str = "iplms-datalake"
     local_path: str = "data/datalake"
+    export_batch_size: int = 1000
+    occupancy_slot_minutes: int = 30

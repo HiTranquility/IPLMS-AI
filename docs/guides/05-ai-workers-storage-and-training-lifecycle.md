@@ -1,15 +1,15 @@
 # 📘 [Guide] Tách module AI, RabbitMQ worker và vòng đời ảnh tới model
 
 > **Đích:** `ai/docs/guides/05-ai-workers-storage-and-training-lifecycle.md` · **Template:** [guide-template](../../../docs/templates/guide-template.md)
-> **Loại nội dung:** phân tích hiện trạng và thiết kế đề xuất. Đã có adapter tải model; migration, queue và bucket mới chưa triển khai.
+> **Loại nội dung:** phân tích hiện trạng và thiết kế triển khai từng phần. Đã có stable object reference cho ảnh ANPR và incremental data-lake export local; queue/job catalog end-to-end vẫn là bước sau.
 
 ## 📌 Meta
 
 | | |
 |---|---|
-| **Trạng thái** | ⚠️ Một phần đã có unit test; luồng storage/queue end-to-end chưa kiểm chứng |
+| **Trạng thái** | ⚠️ Object ref + data-lake export đã có test; luồng storage/queue end-to-end chưa kiểm chứng |
 | **Phạm vi** | ai, backend Message/Storage, dữ liệu huấn luyện |
-| **Ngày cập nhật** | 2026-09-19 |
+| **Ngày cập nhật** | 2026-09-20 |
 | **Người viết** | Codex |
 
 ## 🎯 Dành cho ai, đọc xong làm được gì
@@ -53,6 +53,14 @@ flowchart TD
 
 Đây là **phương án MVP đề xuất**: tái sử dụng consumer Node/NestJS; Python thực hiện thuật toán qua service. Chưa cần thêm RabbitMQ client vào Python chỉ để nhận rồi gửi lại cùng một dữ liệu. Khi ingest/batch quá dài hoặc nhiều bước độc lập, có thể chuyển consumer sang Python theo điều kiện ở Bước 4; không vận hành hai consumer khác giao thức trên cùng queue.
 
+### Ranh giới dữ liệu đã chốt
+
+- **[MUST] PostgreSQL là nguồn sự thật nghiệp vụ.** `pgvector` là extension và các bảng `knowledge_*` nằm ngay trong PostgreSQL này, không phải một database thứ hai phải đồng bộ.
+- **[NEVER] thêm MongoDB chỉ để chứa metadata AI.** PostgreSQL `jsonb` đã đáp ứng metadata linh hoạt; thêm Mongo sẽ tạo hai nguồn sự thật và một luồng CDC/reconcile chưa có nhu cầu.
+- **[MUST] object storage giữ bytes; DB giữ `provider + object_key` và URL delivery nếu UI cần.** Signed/delivery URL không phải định danh bền.
+- **[MUST] data lake nhận bản xuất bất biến theo watermark.** Nó phục vụ analytics/train/backtest, không tham gia transaction check-in và không ghi ngược vào bảng nghiệp vụ.
+- **[NEVER] Copilot hoặc worker nối database-to-database.** Service gọi adapter/API, truyền ID/reference nhỏ; bytes đi qua object storage.
+
 ## 🪜 Các bước
 
 ### Bước 1: Nhận diện phần đã có và phần còn thiếu
@@ -61,7 +69,7 @@ flowchart TD
 
 | Bằng chứng trong source | Hiện trạng | Hệ quả thiết kế |
 |---|---|---|
-| `backend/src/modules/Parking/services/staff/staff-operation.service.ts:133`, `:145` | Gọi gRPC và lưu ảnh kết quả qua `persistCropImage` | Giữ đường inference hiện có |
+| `backend/src/modules/Parking/services/staff/staff-operation.service.ts` | Gọi gRPC, lưu ảnh và giữ cả URL + provider/key | Worker dùng key bền; UI vẫn dùng URL |
 | Cùng file `:172`, `:354` | REST fallback lấy URL AI; upload lỗi dùng fallback | Không bảo đảm ảnh luôn bền; cần trạng thái media rõ ràng |
 | Cùng file `:362` | Lưu ảnh bằng `StorageProvider.upload` | Có thể bị tối ưu ảnh; không coi là bản gốc train |
 | `backend/src/infrastructures/Storage/storage.provider.ts:52`, `:128` | Có upload tối ưu và `uploadRaw` giữ bytes | Tái sử dụng raw path sau khi hoàn thiện metadata/MIME |
@@ -70,9 +78,9 @@ flowchart TD
 | `backend/src/infrastructures/Message/adapters/rabbitmq.adapter.ts:34`, `:96` | Durable exchange/queue, persistent message, ACK khi handler xong; lỗi vào DLQ | Có consumer nền, chưa phải job framework hoàn chỉnh |
 | Cùng file `:122` | Dùng `createChannel`; chưa thấy confirm/prefetch/reconnect trong adapter | Cần tăng độ tin cậy và giới hạn concurrency trước job AI |
 | `backend/src/infrastructures/Message/messaging.provider.ts:23` | Publish bắt lỗi rồi chỉ log | Không dùng như xác nhận giao việc bền vững |
-| `staff-operation.service.ts:321` | Check-in event gửi kiểu `void publish`, payload không có original object key | Cần event capture riêng, không chỉ dựa vào check-in |
+| `staff-operation.service.ts`, `parking-session.entity.ts` | Session đã lưu key/provider; check-in event hiện chưa mang object ref | Bước kế tiếp là capture/outbox event bền |
 | `ai/app/core/vision/services/anpr_service.py:25` | gRPC mặc định không lưu file; REST lưu local | Python inference không nên thành nơi giữ ảnh dài hạn |
-| `ai/app/core/knowledge/services/` | Chưa có `knowledge_service.py` | Đây là service thực sự cần thêm để nối parser/chunker với infra thật |
+| `ai/app/core/knowledge/services/ingestion_service.py` | Parse → chunk → embed → transaction đã có | Giữ một đường nghiệp vụ cho REST/gRPC |
 | `ai/training/train_imagefolder.py`, `ai/training/eval_plates.py` | Có code train CNN và đo ANPR | Tái sử dụng có kiểm chứng, không tạo một framework train song song |
 
 Tìm `outbox/Outbox` trong `backend/src` chưa thấy implementation. [PAT-001](../../../docs/practices/PAT-001-transactional-outbox.md) mô tả MassTransit/.NET, không phải chứng cứ NestJS hiện đã có outbox; cần thiết kế transaction TypeORM thực tế.
@@ -100,12 +108,12 @@ Chưa cần tách YOLO/EasyOCR thành process riêng. Có thể tách `plate_det
 
 | File | Việc cần làm |
 |---|---|
-| `core/knowledge/services/knowledge_service.py` — mới | Điều phối parse → quality → chunk → embed → staging → publish version |
+| `core/knowledge/services/ingestion_service.py` — có | Điều phối parse → chunk → embed → transaction |
 | `core/knowledge/engines/document_parser.py`, `chunker.py` — có | Sửa bảo toàn bảng/trang/điều kiện; giữ thuật toán test được |
-| `infra/embedding/embedding_provider.py` — mới | Embed query/doc, batch, timeout, retry, kiểm model/dimension |
-| `infra/database/pgvector_client.py` — có, placeholder | Kết nối thật và lưu/tìm kiếm theo scope/version |
-| `infra/llm/llm_factory.py` — có, placeholder | Adapter gọi model thật, timeout và usage; không dựng đáp án cứng |
-| `core/copilot/engines/rag_pipeline.py` — có | Thay dummy bằng retrieval/grounding thật; chưa cần xé từng bước thành file |
+| `infra/embedding/embedding_client.py` — có | Embed query/doc, batch, timeout, retry, kiểm model/dimension |
+| `infra/database/pgvector_client.py` — có | PostgreSQL/pgvector thật, scope theo bãi, hybrid vector + full-text |
+| `infra/llm/llm_factory.py` — có | Responses API adapter, streaming, timeout; không dựng đáp án cứng |
+| `core/copilot/engines/rag_pipeline.py` — có | Retrieval/grounding thật; chưa cần xé từng bước thành graph |
 | `core/copilot/services/copilot_service.py` — có | Quyết định trả lời, abstain và DTO; chỉ bỏ chặn sau nghiệm thu |
 
 Ingest chạy nền phù hợp; hỏi đáp tương tác vẫn request/response hoặc streaming. Không gửi từng chunk qua RabbitMQ ngay từ đầu: một job tài liệu có checkpoint theo batch đủ đơn giản và dễ quản lý publish nguyên phiên bản.
@@ -117,7 +125,9 @@ Ingest chạy nền phù hợp; hỏi đáp tương tác vẫn request/response 
 | `core/forecast/engines/occupancy_features.py` — mới | Tạo features chỉ từ dữ liệu có sẵn tại forecast origin |
 | `core/forecast/services/forecast_service.py` — có | Kiểm freshness/horizon và điều phối dự báo |
 | `core/forecast/engines/occupancy_model.py` — có, placeholder | Nạp artifact và predict thật, không gọi train trong request |
-| `infra/datalake/parquet_reader.py` — có, placeholder | Đọc snapshot được chọn, schema/version rõ ràng |
+| `infra/datalake/session_exporter.py` — có | Export tăng dần bằng watermark, stream theo batch, JSONL bất biến + manifest/SHA-256 |
+| `infra/datalake/occupancy_reader.py` — có | Dedup bản incremental và tổng hợp khoảng nửa mở thành slot 30 phút |
+| `infra/datalake/parquet_reader.py` — compatibility | Giữ import cũ; Parquet thật chờ duyệt dependency `pyarrow` |
 | `training/train_forecast.py`, `training/eval_forecast.py` — mới khi có nhãn | Train và backtest theo thời gian, xuất artifact/metrics |
 
 Occupancy lấy từ phiên và capacity, không mặc định lấy ảnh ANPR để train Forecast. Nếu sau này đếm occupancy bằng camera, đó là một bài toán Vision riêng, cần nhãn/đánh giá riêng.
@@ -296,6 +306,15 @@ REST fallback cũng phải qua bước đăng ký media bền; URL `static/` tr�
 | Model artifacts | Checkpoint, config, metrics, dataset hash, code version | Train ghi; evaluation và serving đọc phiên bản được chấp nhận |
 
 Ảnh thường giữ dạng object JPEG/PNG; Parquet chứa metadata/nhãn/tham chiếu, không cần nhét toàn bytes ảnh vào mỗi hàng. Bắt đầu bằng catalog DB + object storage + manifest, chưa cần Spark, Airflow, Kafka hay lakehouse chỉ để có tên công nghệ.
+
+MVP hiện xuất `raw/parking_sessions/export_date=YYYY-MM-DD/*.jsonl` kèm `*.manifest.json` và watermark ở `_state/parking_sessions.json`. JSONL được chọn để chạy bằng thư viện sẵn có; exporter stream theo batch nên không giữ toàn bộ lịch sử trong RAM. Khi có số liệu chứng minh cần Parquet, duyệt `pyarrow`, giữ nguyên schema/manifest và thay adapter vật lý.
+
+```bash
+python -m app.script.export_parking_sessions --status
+python -m app.script.export_parking_sessions --since 2026-09-01T00:00:00Z
+```
+
+Export forecast cố ý không chứa `user_id`, `vehicle_id`, biển số hoặc URL ảnh. Những trường đó không cần để tính occupancy và chỉ làm rộng phạm vi PII.
 
 **Catalog backend đề xuất, chưa phải schema đang có:**
 

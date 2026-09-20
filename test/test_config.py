@@ -36,6 +36,13 @@ class ArtifactConfigTest(unittest.TestCase):
         self.assertEqual(config.max_artifact_bytes, config.max_artifact_mb * 1024 * 1024)
 
 
+class DatalakeConfigTest(unittest.TestCase):
+    def test_export_batch_and_occupancy_slot_are_positive(self):
+        config = get_config().datalake
+        self.assertGreater(config.export_batch_size, 0)
+        self.assertGreater(config.occupancy_slot_minutes, 0)
+
+
 class ServerConfigTest(unittest.TestCase):
     def test_max_message_khop_10mb_mac_dinh(self):
         """Phải khớp AI_GRPC_MAX_MESSAGE_MB=10 bên NestJS, lệch là RESOURCE_EXHAUSTED."""
