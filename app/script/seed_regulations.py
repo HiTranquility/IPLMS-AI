@@ -5,6 +5,7 @@ import os
 import json
 import asyncio
 from pathlib import Path
+from uuid import NAMESPACE_URL, uuid5
 
 # Danh mục các quy chế, biểu phí mẫu chuẩn cho bãi xe thông minh
 SAMPLE_KNOWLEDGE_CHUNKS = [
@@ -129,6 +130,12 @@ async def _ingest_demo_data() -> None:
                 parking_lot_id=chunk.get("parking_lot_id"),
                 category=chunk["category"],
                 uploaded_by="seed-script",
+                # Deterministic per source + tenant: re-running the seed is a
+                # safe replace, not an ever-growing set of duplicate chunks.
+                document_id=uuid5(
+                    NAMESPACE_URL,
+                    f"iplms-demo:{source}:{chunk.get('parking_lot_id') or 'global'}",
+                ),
             )
         )
         if result.status.value != "SUCCESS":

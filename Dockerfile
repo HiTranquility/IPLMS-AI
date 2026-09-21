@@ -25,6 +25,7 @@ RUN pip install -r requirements-service.txt
 COPY ai/app ./app
 COPY ai/model ./model
 COPY ai/static ./static
+COPY ai/data ./data
 COPY proto ./proto
 
 # Sinh stub gRPC ngay lúc build — nếu thiếu, server sẽ chết ở entrypoint chứ

@@ -11,7 +11,9 @@ import numpy as np
 import threading
 import time
 import re
-from typing import Any, Dict, Optional, Tuple
+from collections import Counter
+from dataclasses import dataclass
+from typing import Any, Dict, Iterable, Optional, Tuple
 
 from app.config import get_config
 from app.core.constants import FALLBACK_PLATE_NUMBER, PLATE_MAX_LENGTH, PLATE_MIN_ALPHA
@@ -109,6 +111,93 @@ def _is_valid_plate(text: str) -> bool:
     )
 
 
+def _plate_key(text: str) -> str:
+    """Khoá dùng để so kết quả giữa các nhánh OCR.
+
+    Dấu ``-``/``.`` thường biến mất sau resize hoặc threshold. Chúng vẫn được
+    giữ trong kết quả trả về, nhưng không nên làm hai lần đọc cùng một biển bị
+    xem là hai kết quả khác nhau.
+    """
+    return re.sub(r"[^A-Z0-9]", "", sanitize_plate_text(text))
+
+
+@dataclass(frozen=True)
+class _PlateCandidate:
+    """Một giả thuyết biển số cùng bằng chứng tạo ra nó."""
+
+    text: str
+    ocr_confidence: float
+    detector_confidence: Optional[float]
+    source: str
+    image: Any
+
+    @property
+    def key(self) -> str:
+        return _plate_key(self.text)
+
+    @property
+    def confidence(self) -> float:
+        return _combine_confidence(self.detector_confidence, self.ocr_confidence)
+
+
+def _is_plausible_plate_shape(text: str) -> bool:
+    """Điểm cộng mềm cho hình dạng thường gặp, không thay validation hiện tại."""
+    key = _plate_key(text)
+    digits = sum(char.isdigit() for char in key)
+    letters = sum(char.isalpha() for char in key)
+    return 7 <= len(key) <= 10 and digits >= 5 and letters >= PLATE_MIN_ALPHA
+
+
+def _separator_evidence(text: str) -> int:
+    """Số dấu phân cách OCR thật sự nhìn thấy, không tự suy diễn/chèn thêm."""
+    return int("-" in text) + int("." in text)
+
+
+def _has_strong_format_evidence(candidate: _PlateCandidate) -> bool:
+    """Chỉ coi dấu là bằng chứng mạnh khi cả OCR lẫn detector đủ dùng."""
+    detector_ok = (
+        candidate.detector_confidence is None
+        or candidate.detector_confidence >= 0.40
+    )
+    return (
+        _separator_evidence(candidate.text) == 2
+        and candidate.ocr_confidence >= 0.60
+        and detector_ok
+    )
+
+
+def _select_plate_candidate(candidates: Iterable[_PlateCandidate]) -> Optional[_PlateCandidate]:
+    """Chọn kết quả bằng đồng thuận + confidence, tuyệt đối không bằng độ dài.
+
+    Lỗi thực tế đã gặp: dấu gạch ngang ``-`` trong crop bị EasyOCR đọc thành
+    token ``7`` confidence thấp. Chuỗi sai dài hơn một ký tự nên thuật toán cũ
+    chọn nó. Ở đây, hai nhánh cùng đọc ra một khoá sẽ thắng một kết quả
+    dài nhưng chỉ xuất hiện một lần; khi chưa có đồng thuận thì ưu tiên hình
+    dạng hợp lý và điểm tin cậy đo được.
+    """
+    valid = [
+        candidate
+        for candidate in candidates
+        if candidate.text != FALLBACK_PLATE_NUMBER
+        and _is_valid_plate(candidate.text)
+        and candidate.key
+    ]
+    if not valid:
+        return None
+
+    support = Counter(candidate.key for candidate in valid)
+    return max(
+        valid,
+        key=lambda candidate: (
+            support[candidate.key],
+            _is_plausible_plate_shape(candidate.text),
+            _has_strong_format_evidence(candidate),
+            candidate.confidence,
+            candidate.ocr_confidence,
+        ),
+    )
+
+
 # ── Core detection functions ──────────────────────────────────────────────────
 
 def _read_with_confidence(img) -> Tuple[str, float]:
@@ -154,9 +243,18 @@ def detect_plate_yolo(img_cv) -> Tuple[Any, Optional[float]]:
     xyxy = boxes.xyxy.cpu().numpy()
     if len(xyxy) == 0:
         raise PlateRecognitionError("Không phát hiện được biển số")
-    x1, y1, x2, y2 = xyxy[0].astype(int)
+
+    confidences = boxes.conf.cpu().numpy() if boxes.conf is not None else None
+    best_index = int(np.argmax(confidences)) if confidences is not None else 0
+    x1, y1, x2, y2 = xyxy[best_index].astype(int)
+    height, width = img_cv.shape[:2]
+    x1, x2 = max(0, x1), min(width, x2)
+    y1, y2 = max(0, y1), min(height, y2)
+    if x2 <= x1 or y2 <= y1:
+        raise PlateRecognitionError("Vùng biển số detector trả về không hợp lệ")
+
     crop = img_cv[y1:y2, x1:x2]
-    det_conf = float(boxes.conf.cpu().numpy()[0]) if boxes.conf is not None else None
+    det_conf = float(confidences[best_index]) if confidences is not None else None
     return crop, det_conf
 
 
@@ -219,7 +317,7 @@ def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
 
     Raises:
         InvalidImageError: ảnh rỗng hoặc không decode được.
-        PlateRecognitionError: không nhận diện được biển số hợp lệ.
+        PlateRecognitionError: không encode được ảnh kết quả.
     """
     _ensure_models_loaded()
 
@@ -232,49 +330,82 @@ def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
     if img_cv is None:
         raise InvalidImageError("Không thể decode ảnh đầu vào.")
 
+    candidates = []
     full_text, full_conf = get_plate_text_from_image(img_cv)
-    if not _is_valid_plate(full_text):
-        full_text, full_conf = FALLBACK_PLATE_NUMBER, 0.0
-    plate_number = full_text
-    processed_image = img_cv
-    # Đọc trên ảnh NGUYÊN nên chưa có detector tham gia — điểm chỉ là điểm OCR.
-    plate_confidence = full_conf
-    det_conf: Optional[float] = None
+    if _is_valid_plate(full_text):
+        candidates.append(
+            _PlateCandidate(full_text, full_conf, None, "full", img_cv)
+        )
 
     crop_text = ""
+    crop_conf = 0.0
     enhanced_text = ""
 
     try:
         plate_crop, det_conf = detect_plate_yolo(img_cv)
-        if isinstance(plate_crop, np.ndarray):
-            if is_valid_crop(plate_crop):
+        # Không có detector: detect_plate_yolo trả đúng object ảnh gốc. Không
+        # OCR lại cùng ảnh rồi tính đó là một "nhánh đồng thuận" độc lập giả.
+        if isinstance(plate_crop, np.ndarray) and not (
+            det_conf is None and plate_crop is img_cv
+        ):
+            crop_is_valid = is_valid_crop(plate_crop)
+            if crop_is_valid:
                 crop_text, crop_conf = get_plate_text_from_image(plate_crop)
-                if not _is_valid_plate(crop_text):
-                    crop_text, crop_conf = "", 0.0
-                if len(crop_text) > len(plate_number):
-                    plate_number = crop_text
-                    processed_image = plate_crop
-                    plate_confidence = _combine_confidence(det_conf, crop_conf)
-            else:
+                if _is_valid_plate(crop_text):
+                    candidates.append(
+                        _PlateCandidate(crop_text, crop_conf, det_conf, "crop", plate_crop)
+                    )
+                else:
+                    crop_text = ""
+
+            # Enhance vốn đắt. Chỉ chạy khi crop chưa đủ chất lượng/không đọc
+            # được, hoặc ảnh gốc và crop bất đồng — đúng lúc cần "trọng tài".
+            full_key = _plate_key(full_text) if _is_valid_plate(full_text) else ""
+            crop_key = _plate_key(crop_text) if _is_valid_plate(crop_text) else ""
+            crop_format_is_strong = (
+                _separator_evidence(crop_text) == 2
+                and crop_conf >= 0.60
+                and (det_conf is None or det_conf >= 0.40)
+            ) if crop_key else False
+            should_enhance = (
+                not crop_is_valid
+                or not crop_key
+                or (
+                    bool(full_key)
+                    and full_key != crop_key
+                    # Crop đã đọc được cả hai dấu phân cách là bằng chứng định
+                    # dạng mạnh. Không trả thêm 3-6 giây CPU chỉ để xác nhận lại.
+                    and not crop_format_is_strong
+                )
+            )
+            if should_enhance:
                 enhanced_text, enhanced_img, enhanced_conf = enhanced_ocr(plate_crop)
-                if not _is_valid_plate(enhanced_text):
-                    enhanced_text, enhanced_conf = "", 0.0
-                if len(enhanced_text) > len(plate_number):
-                    plate_number = enhanced_text
-                    processed_image = enhanced_img
-                    plate_confidence = _combine_confidence(det_conf, enhanced_conf)
+                if _is_valid_plate(enhanced_text):
+                    candidates.append(
+                        _PlateCandidate(
+                            enhanced_text,
+                            enhanced_conf,
+                            det_conf,
+                            "enhanced",
+                            enhanced_img,
+                        )
+                    )
+                else:
+                    enhanced_text = ""
     except PlateRecognitionError:
         pass
     except Exception as exc:
         logger.warning(f"YOLO/OCR pipeline error (non-fatal): {exc}")
 
-    # Không đọc ra biển thì điểm phải là 0 — trả 0.95 cho chuỗi "UNKNOWN" là cách
-    # nhanh nhất để một quyết định mở barie được đưa ra trên thông tin không có.
-    if plate_number == FALLBACK_PLATE_NUMBER:
+    selected = _select_plate_candidate(candidates)
+    if selected is None:
+        plate_number = FALLBACK_PLATE_NUMBER
         plate_confidence = 0.0
-
-    if not any([full_text, crop_text, enhanced_text]):
-        raise PlateRecognitionError("Không nhận diện được biển số hợp lệ từ ảnh đầu vào.")
+        processed_image = img_cv
+    else:
+        plate_number = selected.text
+        plate_confidence = selected.confidence
+        processed_image = selected.image
 
     success, buffer = cv2.imencode('.jpg', processed_image)
     if not success:

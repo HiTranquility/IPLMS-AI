@@ -69,9 +69,13 @@ async def serve() -> None:
 
     try:
         await server.wait_for_termination()
-    except KeyboardInterrupt:
+    finally:
+        logger.info("Đang dừng gRPC server, chờ tối đa 5 giây cho request đang chạy.")
         await server.stop(grace=5)
 
 
 if __name__ == "__main__":
-    asyncio.run(serve())
+    try:
+        asyncio.run(serve())
+    except KeyboardInterrupt:
+        pass

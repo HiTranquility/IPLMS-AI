@@ -1,6 +1,7 @@
 """DTO Domain Knowledge — nạp tài liệu quy chế bãi xe vào kho tri thức RAG."""
 from dataclasses import dataclass, field
 from typing import List, Optional
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -19,6 +20,10 @@ class IngestDocumentCommand(BaseModel):
 
     category: str = "regulation"
     uploaded_by: Optional[str] = None
+
+    # Caller-supplied idempotency key. Retrying the same upload with the same
+    # UUID replaces its chunks transactionally instead of creating duplicates.
+    document_id: Optional[UUID] = None
 
 
 @dataclass

@@ -12,6 +12,7 @@ def to_ingest_command(message) -> IngestDocumentCommand:
         parking_lot_id=message.parking_lot_id or None,
         category=message.category or "regulation",
         uploaded_by=message.uploaded_by or None,
+        document_id=message.document_id or None,
     )
 
 
@@ -30,4 +31,3 @@ def to_delete_response(removed_chunk_count: int):
         deleted=removed_chunk_count > 0,
         removed_chunk_count=removed_chunk_count,
     )
-

@@ -109,22 +109,27 @@ app/core/vision/
 ```mermaid
 flowchart TD
     A[1. Nạp model và decode bytes] --> B[2. OCR ảnh đầy đủ và kiểm tra chuỗi]
-    B --> C[3. YOLO lấy box đầu; thiếu YOLO dùng ảnh đầy đủ]
+    B --> P[Thêm full candidate]
+    P --> C[3. YOLO lấy box confidence cao nhất; clamp; thiếu YOLO dùng ảnh đầy đủ]
     C --> D{4. Crop đạt kích thước và độ sáng?}
     D -->|Có| E[5a. OCR crop]
     D -->|Không| F[5b. Sáu phép tiền xử lý rồi OCR]
-    E --> G[6. Kiểm tra chuỗi; chỉ thay khi dài hơn kết quả đang giữ]
-    F --> G
+    E --> G[6. Thêm crop candidate có source và confidence]
+    G --> K{Full/crop bất đồng và crop thiếu đủ dấu phân cách?}
+    K -->|Có| F
+    K -->|Không| I
+    F --> L[Thêm enhanced candidate]
+    L --> I
     C -->|Không box hoặc lỗi nhánh YOLO| H[Giữ kết quả OCR đầy đủ]
-    G --> I[7. Điểm theo nhánh được chọn; UNKNOWN có điểm 0]
+    I[7. Rank theo đồng thuận - dấu - hình dạng - confidence; UNKNOWN bị loại]
     H --> I
     I --> J[8. Encode ảnh được chọn thành JPEG và trả dict]
     A -->|Ảnh rỗng hoặc decode lỗi| X[InvalidImageError]
 ```
 
-Nguồn: `ai/app/core/vision/engines/anpr_engine.py:203` (`run_anpr`). Đây là tám nhóm để học; kiểm tra hợp lệ thực tế diễn ra ngay sau mỗi lượt OCR. Điểm nhánh ảnh đầy đủ chỉ là OCR; chỉ nhánh crop/enhanced được chọn mới kết hợp detector × OCR.
+Nguồn: `ai/app/core/vision/engines/anpr_engine.py` (`run_anpr`). Đây là tám nhóm để học; kiểm tra hợp lệ thực tế diễn ra ngay sau mỗi lượt OCR. Điểm nhánh ảnh đầy đủ chỉ là OCR; chỉ nhánh crop/enhanced được chọn mới kết hợp detector × OCR.
 
-[GOTCHA] Chọn chuỗi dài hơn không đồng nghĩa chọn đúng hơn. `UNKNOWN` dài 7 ký tự có thể ngăn ứng viên hợp lệ dài ≤ 7 thay thế nó. `crop_bytes` cũng có thể chứa ảnh đầy đủ khi nhánh đó thắng. Xem [guide ảnh](./03-image-processing-pipeline.md) để hiểu giới hạn và chiến lược sửa.
+[GOTCHA] Selection không còn dùng độ dài. Dấu phân cách OCR quan sát được là bằng chứng, không phải ký tự engine tự chèn; đồng thuận giữa các nhánh cũng chưa phải xác suất đã calibration. `crop_bytes` vẫn có thể chứa ảnh đầy đủ khi nhánh full thắng. Xem [guide ảnh](./03-image-processing-pipeline.md) để hiểu giới hạn và phép đo before/after.
 
 ### 2.4. Bảng tham số kỹ thuật
 

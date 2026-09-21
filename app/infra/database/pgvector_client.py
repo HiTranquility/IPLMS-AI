@@ -35,6 +35,34 @@ class PgVectorClient:
     async def connect(self) -> None:
         await self.ensure_schema()
 
+    async def get_knowledge_stats(self) -> Dict[str, int]:
+        """Return cheap readiness counters without exposing document content."""
+        await self.ensure_schema()
+        return await asyncio.to_thread(self._get_knowledge_stats_sync)
+
+    def _get_knowledge_stats_sync(self) -> Dict[str, int]:
+        connection = self._connect_sync()
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT
+                        (SELECT COUNT(*) FROM knowledge_documents),
+                        (SELECT COUNT(*) FROM knowledge_chunks),
+                        (SELECT COUNT(*) FROM knowledge_chunks WHERE parking_lot_id IS NULL)
+                    """
+                )
+                documents, chunks, global_chunks = cursor.fetchone()
+                return {
+                    "documents": int(documents),
+                    "chunks": int(chunks),
+                    "global_chunks": int(global_chunks),
+                }
+        except Exception as exc:
+            raise RagPipelineError("Không đọc được trạng thái kho tri thức.") from exc
+        finally:
+            connection.close()
+
     async def ensure_schema(self) -> None:
         if self._schema_ready:
             return

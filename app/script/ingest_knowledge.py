@@ -20,6 +20,11 @@ async def _main() -> int:
     parser.add_argument("--parking-lot-id", default=None)
     parser.add_argument("--category", default="regulation")
     parser.add_argument("--uploaded-by", default="cli")
+    parser.add_argument(
+        "--document-id",
+        default=None,
+        help="UUID ổn định để retry không tạo tài liệu/chunk trùng",
+    )
     args = parser.parse_args()
 
     path: Path = args.file.resolve()
@@ -30,6 +35,7 @@ async def _main() -> int:
             parking_lot_id=args.parking_lot_id,
             category=args.category,
             uploaded_by=args.uploaded_by,
+            document_id=args.document_id,
         )
     )
     print(

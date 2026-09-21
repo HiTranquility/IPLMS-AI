@@ -18,6 +18,21 @@ SUGGESTION-007 vì vậy đặt B1 **chặn** toàn bộ B2–B5 và C4.
 
 ## Dựng bộ vàng
 
+### 0. Xem đang thiếu gì
+
+Chạy từ thư mục `ai/`. Lệnh chỉ đọc manifest/ảnh, kiểm checksum và trả exit code
+`1` nếu chưa đạt tối thiểu 200 mẫu:
+
+```powershell
+.\.venv\Scripts\python.exe -m training.readiness --scope vision
+```
+
+Muốn dùng ngưỡng khác cho một đợt bootstrap (không phải tự hạ gate production):
+
+```powershell
+.\.venv\Scripts\python.exe -m training.readiness --scope vision --min-vision-samples 20
+```
+
 ### 1. Nạp ảnh + nhãn
 
 Dataset công khai mỗi bộ gói nhãn một kiểu; script quy cả ba kiểu hay gặp về
@@ -62,6 +77,10 @@ python training/eval_plates.py                 # cả bộ
 python training/eval_plates.py --tag night     # chỉ ảnh ban đêm
 python training/eval_plates.py --label before-B2
 ```
+
+Luồng hoàn chỉnh là `readiness → import --dry-run → import thật → người kiểm
+nhãn/tag → readiness → eval`. Readiness đạt chỉ có nghĩa dataset nguyên vẹn và
+đủ số lượng; accuracy đạt hay không phải đọc từ report của `eval_plates.py`.
 
 ## Đọc con số ra sao
 

@@ -1,5 +1,6 @@
 import asyncio
 import unittest
+from uuid import UUID
 
 from app.core.enums import IngestStatus
 from app.core.knowledge.dtos.knowledge_dto import IngestDocumentCommand
@@ -46,6 +47,23 @@ class IngestionServiceTest(unittest.TestCase):
         )
         self.assertEqual(IngestStatus.UNSUPPORTED_FORMAT, result.status)
         self.assertIsNone(store.saved)
+
+    def test_caller_document_id_makes_retry_replace_the_same_document(self):
+        store = FakeStore()
+        service = IngestionService(FakeEmbedder(), store)
+        stable_id = UUID("d7e1375c-2cce-4a15-bd19-8ed62f9be944")
+        command = IngestDocumentCommand(
+            file_data=b"# Dieu 1\n\nNoi dung quy dinh bai xe.",
+            file_name="quy-che.md",
+            document_id=stable_id,
+        )
+
+        first = asyncio.run(service.ingest(command))
+        second = asyncio.run(service.ingest(command))
+
+        self.assertEqual(str(stable_id), first.document_id)
+        self.assertEqual(first.document_id, second.document_id)
+        self.assertEqual(str(stable_id), store.saved["document_id"])
 
 
 if __name__ == "__main__":

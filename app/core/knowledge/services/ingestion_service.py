@@ -28,7 +28,7 @@ class IngestionService:
 
     async def ingest(self, command: IngestDocumentCommand) -> IngestResult:
         started = time.perf_counter()
-        document_id = str(uuid4())
+        document_id = str(command.document_id or uuid4())
 
         try:
             parsed = await asyncio.wait_for(
@@ -119,4 +119,3 @@ class IngestionService:
 
 
 ingestion_service = IngestionService()
-

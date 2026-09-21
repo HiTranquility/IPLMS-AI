@@ -222,6 +222,7 @@ class ParkingSessionExporter:
                        FROM parking.parking_slots capacity_slot
                        WHERE capacity_slot.parking_lot_id = slot.parking_lot_id
                          AND capacity_slot.deleted_at IS NULL
+                         AND capacity_slot.status <> 'INACTIVE'
                    ) AS capacity_at_export,
                    ps.updated_at
             FROM booking.parking_sessions ps

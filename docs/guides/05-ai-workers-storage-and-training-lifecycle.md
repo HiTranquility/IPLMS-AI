@@ -7,9 +7,9 @@
 
 | | |
 |---|---|
-| **Trạng thái** | ⚠️ Object ref + data-lake export đã có test; luồng storage/queue end-to-end chưa kiểm chứng |
+| **Trạng thái** | ⚠️ Object ref + data-lake export/curation primitives đã có test; cloud sync và queue end-to-end chưa triển khai |
 | **Phạm vi** | ai, backend Message/Storage, dữ liệu huấn luyện |
-| **Ngày cập nhật** | 2026-09-20 |
+| **Ngày cập nhật** | 2026-09-21 |
 | **Người viết** | Codex |
 
 ## 🎯 Dành cho ai, đọc xong làm được gì
@@ -65,21 +65,23 @@ flowchart TD
 
 ### Bước 1: Nhận diện phần đã có và phần còn thiếu
 
-Đường dẫn dưới đây tính từ root repo; line là mốc đọc ngày 2026-09-19, không phải bằng chứng đã chạy production.
+Đường dẫn dưới đây tính từ root repo. Dùng tên class/hàm làm mốc vì số dòng sẽ
+thay đổi sau mỗi refactor; trạng thái “có” chỉ nói code tồn tại/test được, không
+phải bằng chứng đã chạy production.
 
 | Bằng chứng trong source | Hiện trạng | Hệ quả thiết kế |
 |---|---|---|
 | `backend/src/modules/Parking/services/staff/staff-operation.service.ts` | Gọi gRPC, lưu ảnh và giữ cả URL + provider/key | Worker dùng key bền; UI vẫn dùng URL |
-| Cùng file `:172`, `:354` | REST fallback lấy URL AI; upload lỗi dùng fallback | Không bảo đảm ảnh luôn bền; cần trạng thái media rõ ràng |
-| Cùng file `:362` | Lưu ảnh bằng `StorageProvider.upload` | Có thể bị tối ưu ảnh; không coi là bản gốc train |
-| `backend/src/infrastructures/Storage/storage.provider.ts:52`, `:128` | Có upload tối ưu và `uploadRaw` giữ bytes | Tái sử dụng raw path sau khi hoàn thiện metadata/MIME |
-| `backend/src/infrastructures/Storage/adapters/s3.adapter.ts:27` | Có S3 client, endpoint tuỳ chỉnh, presigned PUT | Có nền S3-compatible; chưa có signed GET trong adapter này |
+| Cùng file, `staffCheckInFromImage()` | REST fallback lấy URL AI; upload lỗi dùng fallback | Không bảo đảm ảnh luôn bền; cần trạng thái media rõ ràng |
+| Cùng file, `persistCropImage()` | Lưu ảnh bằng `StorageProvider.upload` | Có thể bị tối ưu ảnh; không coi là bản gốc train |
+| `backend/src/infrastructures/Storage/storage.provider.ts`, `StorageProvider` | Có upload tối ưu và `uploadRaw` giữ bytes | Tái sử dụng raw path sau khi hoàn thiện metadata/MIME |
+| `backend/src/infrastructures/Storage/adapters/s3.adapter.ts`, `S3Adapter` | Có S3 client, endpoint tuỳ chỉnh, presigned PUT | Có nền S3-compatible; chưa phải data-lake publisher |
 | `backend/src/infrastructures/Storage/adapters/cloudinary.adapter.ts`, `upload` | Upload và trả secure_url, chưa đặt authenticated type | URL HTTPS không tự chứng minh media private |
-| `backend/src/infrastructures/Message/adapters/rabbitmq.adapter.ts:34`, `:96` | Durable exchange/queue, persistent message, ACK khi handler xong; lỗi vào DLQ | Có consumer nền, chưa phải job framework hoàn chỉnh |
-| Cùng file `:122` | Dùng `createChannel`; chưa thấy confirm/prefetch/reconnect trong adapter | Cần tăng độ tin cậy và giới hạn concurrency trước job AI |
-| `backend/src/infrastructures/Message/messaging.provider.ts:23` | Publish bắt lỗi rồi chỉ log | Không dùng như xác nhận giao việc bền vững |
+| `backend/src/infrastructures/Message/adapters/rabbitmq.adapter.ts`, `RabbitMQAdapter` | Durable exchange/queue, persistent message, ACK khi handler xong; lỗi vào DLQ | Có consumer nền, chưa phải job framework hoàn chỉnh |
+| Cùng class, `connect()` | Dùng `createChannel`; chưa thấy confirm/prefetch/reconnect trong adapter | Cần tăng độ tin cậy và giới hạn concurrency trước job AI |
+| `backend/src/infrastructures/Message/messaging.provider.ts`, `publish()` | Publish bắt lỗi rồi chỉ log | Không dùng như xác nhận giao việc bền vững |
 | `staff-operation.service.ts`, `parking-session.entity.ts` | Session đã lưu key/provider; check-in event hiện chưa mang object ref | Bước kế tiếp là capture/outbox event bền |
-| `ai/app/core/vision/services/anpr_service.py:25` | gRPC mặc định không lưu file; REST lưu local | Python inference không nên thành nơi giữ ảnh dài hạn |
+| `ai/app/core/vision/services/anpr_service.py`, `recognize_bytes()` | gRPC mặc định không lưu file; REST lưu local | Python inference không nên thành nơi giữ ảnh dài hạn |
 | `ai/app/core/knowledge/services/ingestion_service.py` | Parse → chunk → embed → transaction đã có | Giữ một đường nghiệp vụ cho REST/gRPC |
 | `ai/training/train_imagefolder.py`, `ai/training/eval_plates.py` | Có code train CNN và đo ANPR | Tái sử dụng có kiểm chứng, không tạo một framework train song song |
 
@@ -97,8 +99,8 @@ Một hàm grayscale không cần một service, một queue hay một microserv
 |---|---|---|
 | `core/vision/engines/anpr_engine.py` — có | Giữ façade `run_anpr`, phối hợp engine nhỏ; không đổi transport chỉ vì refactor | Bytes → kết quả nhận diện |
 | `core/vision/engines/image_preprocessor.py` — đề xuất | Chuyển enhanced transforms sang module có cấu hình; dùng chung online/evaluation | Crop → ảnh dẫn xuất + pipeline version |
-| `core/vision/engines/image_quality.py` — đề xuất | Tính kích thước, sáng, blur, lỗi decode; không tự gán nhãn ground truth | Ảnh → quality report |
-| `core/vision/engines/plate_postprocessor.py` — đề xuất | Chuẩn hoá, sắp dòng, kiểm cấu trúc, chọn ứng viên; xử lý sentinel riêng | OCR candidates → kết quả/lý do từ chối |
+| `core/dataset/engines/image_quality.py` — có | Tính kích thước, sáng, blur, lỗi decode; không tự gán nhãn ground truth | Ảnh → quality report |
+| `core/vision/engines/anpr_engine.py` — có | Candidate/provenance/ranking đang ở façade; chưa tách parser hai dòng riêng | OCR candidates → kết quả hiện tại |
 | `core/vision/services/anpr_service.py` — có | Giữ nghiệp vụ nhận diện/DTO; không train hoặc ghi dataset ở đây | Command → PlateResult |
 | `core/vision/dtos/vision_dto.py` — có | Bổ sung model/preprocess version, loại ảnh dẫn xuất khi cần; đồng bộ proto | DTO không phụ thuộc gRPC |
 
@@ -128,7 +130,7 @@ Ingest chạy nền phù hợp; hỏi đáp tương tác vẫn request/response 
 | `infra/datalake/session_exporter.py` — có | Export tăng dần bằng watermark, stream theo batch, JSONL bất biến + manifest/SHA-256 |
 | `infra/datalake/occupancy_reader.py` — có | Dedup bản incremental và tổng hợp khoảng nửa mở thành slot 30 phút |
 | `infra/datalake/parquet_reader.py` — compatibility | Giữ import cũ; Parquet thật chờ duyệt dependency `pyarrow` |
-| `training/train_forecast.py`, `training/eval_forecast.py` — mới khi có nhãn | Train và backtest theo thời gian, xuất artifact/metrics |
+| `training/forecast/{snapshot,build_features,backtest,train}.py` — có | Snapshot, feature split, baseline và ridge candidate offline |
 
 Occupancy lấy từ phiên và capacity, không mặc định lấy ảnh ANPR để train Forecast. Nếu sau này đếm occupancy bằng camera, đó là một bài toán Vision riêng, cần nhãn/đánh giá riêng.
 
@@ -149,10 +151,13 @@ ai/app/
   api/grpc/mappers/dataset_mapper.py   # DTO và proto
 ```
 
-`core/dataset/{dtos,engines,services}` đã có khung package; chưa có use case bên trong.
-`infra/storage/object_store.py` hiện chỉ phục vụ tải model bằng signed URL, chưa
-phải client get/head/put cho dataset. Các file còn lại trong cây là đề xuất và
-chỉ tạo khi xây use case thật. Consumer Node giữ job lifecycle trong phương án
+`core/dataset/{dtos,engines,services}` đã có DTO quality/snapshot, quality
+inspection, sample selection, `CurationService.evaluate()` và
+`SnapshotService.build_lock()`. Chúng là primitives thuần, chưa có persistence,
+review UI hay transport end-to-end. `infra/storage/object_store.py` hiện chỉ
+phục vụ tải model bằng signed URL, chưa phải client get/head/put cho dataset.
+Các file transport/worker còn lại trong cây là đề xuất và chỉ tạo khi xây use
+case thật. Consumer Node giữ job lifecycle trong phương án
 MVP; Python service trả báo cáo, không sửa bảng session của backend. Engine/infra
 không import ngược handler hoặc DTO core từ infra.
 
@@ -422,3 +427,4 @@ Xoá ảnh nguồn không tự xoá ảnh hưởng đã học trong checkpoint. 
 - [Cloudinary access control](https://cloudinary.com/documentation/control_access_to_media) · [S3 lifecycle](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html)
 - [Bản đồ vòng đời `model/`](../../model/README.md) · [Quy ước dataset local](../../model/dataset/README.md)
 - [Google Colab training](./06-google-colab-training-runbook.md)
+- [Source map seed → data lake → cloud](./07-seed-datalake-cloud-source-map.md)

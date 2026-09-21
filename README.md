@@ -136,6 +136,23 @@ uvicorn app.main:app --reload --port 8000
 python -m app.grpc_server
 ```
 
+## 🔎 Kiểm readiness Vision / Forecast
+
+Hai lệnh này chỉ đọc dữ liệu và trả exit code khác `0` khi chưa qua gate; chúng
+không tự sinh nhãn và không bật endpoint Forecast giả:
+
+```powershell
+cd ai
+.\.venv\Scripts\python.exe -m training.readiness --scope vision
+.\.venv\Scripts\python.exe -m training.readiness --scope forecast
+```
+
+Quy trình đầy đủ:
+
+- Vision: [nạp bộ vàng → kiểm checksum/tag → đo exact/CER/latency](data/golden/plates/README.md).
+- Forecast: [export session thật → readiness → baseline backtest theo lot/horizon](docs/guides/04-forecast-training-strategy.md#quy-trình-chạy-thật-từ-postgresql-đến-baseline-report).
+- Upload ảnh và đo request gRPC/REST: [guide Postman](../docs/guides/backend/test-grpc-ai-with-postman.md).
+
 ## 🧠 Copilot RAG & Quản lý tri thức (Knowledge)
 
 Dịch vụ Copilot RAG sử dụng PostgreSQL + pgvector để lưu trữ và truy hồi tri thức nội bộ bãi xe (quy định, biểu phí, hướng dẫn):
@@ -180,6 +197,8 @@ Bộ test bao phủ logic ANPR, Enums, DTO Mappers, Copilot RAG Pipeline, Ingest
 | Copilot & RAG | `test_rag_pipeline.py`, `test_llm_factory.py` | Luồng truy hồi RAG, fallback khi không có context, LLM provider |
 | Knowledge Ingest | `test_ingestion_service.py`, `test_embedding_client.py` | Tách chunk tài liệu, metadata, sinh vector embedding |
 | Data lake | `test_datalake.py` | Export incremental không PII, manifest/checksum, dedup và nhãn occupancy 30 phút |
+| ML readiness/baseline | `test_training_readiness.py`, `test_forecast_training.py` | Gate ảnh/hash/raw export và backtest không impute zero/không leakage |
+| Request measurement | `test_request_metrics.py` | Percentile, error rate, throughput, plate-match và benchmark gates |
 
 ## ⚙️ Biến môi trường
 
@@ -211,8 +230,8 @@ Backend kết nối tới AI service qua 2 kênh:
 
 ## ⚠️ Hiện trạng triển khai
 
-- **ANPR (Vision):** ✅ Hoạt động đầy đủ (YOLOv8 phát hiện biển số + EasyOCR nhận diện ký tự đa tầng).
+- **ANPR (Vision):** 🟡 Runtime end-to-end hoạt động; bộ vàng hiện `0/200`, nên chưa có accuracy/threshold production được chứng nhận.
 - **Copilot RAG:** ✅ Hoạt động đầy đủ (pgvector vector search + chunking + OpenAI embedding & text generation + gRPC ServerStreaming).
-- **Forecast (Dự báo chỗ trống):** 🟡 Export/reader data lake đã chạy và có test; model/backtest vẫn chưa triển khai nên endpoint tiếp tục từ chối.
+- **Forecast (Dự báo chỗ trống):** 🟡 Export/reader, snapshot, point-in-time feature split, baseline/backtest và offline ridge candidate đã có test; local chưa có raw data/capacity history hay candidate được kiểm chứng, nên endpoint tiếp tục từ chối.
 - **Anti-fraud (Chống gian lận vé):** 🟡 Skeleton cấu hình sẵn, luật đối soát đang hoàn thiện.
 

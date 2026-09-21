@@ -83,7 +83,8 @@ cd ai
 # 1. Nạp dataset công khai đã tải về vào bộ vàng
 python training/import_plate_dataset.py --from filename --src ~/Downloads/vn-plates
 
-# 2. Đo
+# 2. Kiểm dataset nguyên vẹn/đủ số lượng rồi đo
+python -m training.readiness --scope vision
 python training/eval_plates.py --label before-B2
 ```
 
@@ -144,6 +145,15 @@ Phần nhận diện **biển số** do YOLO+EasyOCR trong [`../app/core/vision/
 | `import_plate_dataset.py` | Nạp dataset biển số công khai → bộ vàng (`data/golden/plates/`) |
 | `eval_plates.py` | Đo `exact-match` / CER / latency của pipeline đọc biển trên bộ vàng |
 | `plate_metrics.py` | Hàm thuần tính CER / exact-match (không nạp model — `test/` import được) |
+| `readiness.py` | Gate chỉ đọc cho bộ vàng Vision và raw data Forecast; kiểm file/hash/watermark/history |
+| `forecast/dataset.py` | Regularize slot Forecast và giữ missing label tường minh |
+| `forecast/baselines.py` | Backtest persistence/seasonal-naive không đọc tương lai |
+| `forecast/backtest.py` | CLI tạo MAE/RMSE theo lot/horizon từ raw session export thật |
+| `forecast/snapshot.py` | Khóa JSONL + manifest/hash/lineage theo một `as_of` tái lập được |
+| `forecast/features.py` | Lag/rolling/calendar point-in-time correct + temporal split có purge |
+| `forecast/build_features.py` | CLI ghi artifact train/validation/test bất biến từ snapshot |
+| `forecast/ridge_model.py` | Ridge per-horizon audit được, có impute/missing indicator và metric theo lot |
+| `forecast/train.py` | Fit train-only, so persistence trên validation/test; chỉ ghi candidate, không promote |
 | `materialize_dataset.py` | Scaffold CLI: materialize snapshot từ object storage |
 | `validate_dataset.py` | Scaffold CLI: kiểm hash/schema/leakage trước train |
 | `train_vehicle_classifier.py` | Scaffold CLI chuẩn cho local/Colab |

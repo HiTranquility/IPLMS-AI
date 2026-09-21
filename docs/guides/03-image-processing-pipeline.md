@@ -7,9 +7,9 @@
 
 | | |
 |---|---|
-| **Trạng thái** | ⚠️ Chưa kiểm chứng runtime; đối chiếu mã nguồn 2026-09-19 |
+| **Trạng thái** | ✅ Đã đối chiếu source và benchmark request 2026-09-21; chưa có benchmark accuracy bộ vàng |
 | **Phạm vi** | ai — vision, ANPR, tiền xử lý và đánh giá |
-| **Ngày cập nhật** | 2026-09-19 |
+| **Ngày cập nhật** | 2026-09-21 |
 | **Người viết** | Codex |
 
 ## 🎯 Dành cho ai, đọc xong làm được gì
@@ -31,14 +31,17 @@ Có thể hình dung: detector tìm đúng tờ giấy trong bức ảnh; tiền
 flowchart TD
     A[Bytes ảnh] --> B[Decode thành ma trận BGR]
     B --> C[OCR toàn ảnh: baseline hiện tại]
-    C --> D[YOLO lấy box đầu và crop]
+    C --> D[YOLO lấy box confidence cao nhất - clamp và crop]
     D --> E{Crop đạt quality gate?}
     E -->|Có| F[OCR crop trực tiếp]
     E -->|Không| G[Resize nếu cần - gray - bilateral - CLAHE - sharpen - stretch]
+    F --> I[Chuẩn hoá và thêm crop candidate]
+    I --> O{Full và crop bất đồng, crop thiếu dấu phân cách?}
+    O -->|Có| G
+    O -->|Không| J
     G --> H[OCR ảnh đã xử lý]
-    F --> I[Chuẩn hoá và kiểm tra chuỗi]
-    H --> I
-    I --> J[Chỉ thay ứng viên hiện giữ nếu chuỗi dài hơn]
+    H --> P[Chuẩn hoá và thêm enhanced candidate]
+    P --> J[Xếp hạng: đồng thuận - dấu phân cách - hình dạng - confidence]
     D -->|Không box hoặc lỗi| K[Giữ baseline toàn ảnh]
     J --> L[Điểm theo nhánh - encode JPEG - trả kết quả]
     K --> L
@@ -46,7 +49,22 @@ flowchart TD
     M --> N[Backend áp dụng nghiệp vụ cổng]
 ```
 
-Nguồn chính: [anpr_engine.py](../../app/core/vision/engines/anpr_engine.py), `run_anpr:203`; [anpr_service.py](../../app/core/vision/services/anpr_service.py), `recognize_bytes`. Mô tả **hiện tại** bên dưới dựa trên các hàm này; chiến lược sửa được ghi **đề xuất**.
+Nguồn chính: [anpr_engine.py](../../app/core/vision/engines/anpr_engine.py), hàm `run_anpr`; [anpr_service.py](../../app/core/vision/services/anpr_service.py), hàm `recognize_bytes`. Mô tả **hiện tại** bên dưới dựa trên các hàm này; chiến lược sửa được ghi **đề xuất**.
+
+### Snapshot runtime 2026-09-21
+
+| Kiểm tra | Kết quả | Cách hiểu |
+|---|---|---|
+| Toàn bộ unit test AI | `173` pass, `2` skip optional | Có regression test cho selection, confidence và box detector |
+| gRPC `RecognizePlate` trên ảnh biển tự sinh 500×300 | Đọc `51H2988.88`, confidence `0.775`, engine `~1.373s`, client RTT `~1.384s` trên CPU | Chứng minh pipeline chạy end-to-end; **không** chứng minh accuracy ngoài thực tế |
+| Readiness | Model Vision warm-up xong rồi gRPC `:50051` mới mở | Request thật đầu không phải trả toàn bộ giá nạp model |
+| Bộ vàng | `manifest.json` có `0` item, thư mục ảnh và report rỗng | Chưa được tuyên bố exact-match/CER hay chọn threshold production |
+| Vehicle classifier | Mặc định không có checkpoint | `vehicle_type` rỗng là trung thực; chưa có phân loại xe thật |
+| Image quality/curation | Đã có engine blur/brightness/size và sample selector | Chưa được nối vào request ANPR hoặc vòng feedback production |
+| Baseline trước sửa, synthetic CPU 10 lượt | success `100%`, RTT p95 `1032.0 ms`; đọc sai `51H7988.88`, normalized match `0%` | Bắt được lỗi selection: chuỗi có ký tự thừa thắng vì dài hơn |
+| Sau sửa selection, cùng synthetic CPU 10 lượt | success `100%`, đọc `51H-988.88`, normalized match `100%`; RTT p50 `1189.0 ms`, p95 `1730.8 ms`, overhead p95 `2.60 ms` | Regression mẫu đã hết; đây vẫn chỉ là smoke test, không phải accuracy production |
+
+[MUST] Phân biệt ba mức: **chạy được** (snapshot trên), **đo được** (cần bộ vàng), và **đủ an toàn để tự mở barie** (cần threshold được calibration + nhánh con người xác nhận). Hiện hệ thống mới chắc chắn ở mức đầu.
 
 ## 🪜 Các bước
 
@@ -62,15 +80,17 @@ Nguồn chính: [anpr_engine.py](../../app/core/vision/engines/anpr_engine.py), 
 
 Detection trả vị trí vùng nghi là biển số, chưa trả chuỗi biển số. OCR mới đọc nội dung vùng đó.
 
-**Hiện tại:** `detect_plate_yolo:132` đổi BGR → RGB để gọi model, lấy `xyxy[0]` rồi crop trên ảnh BGR gốc. Không có YOLO → trả ảnh đầy đủ và `det_conf=None`; có YOLO nhưng không box → `PlateRecognitionError`, được nhánh gọi giữ lại kết quả OCR toàn ảnh.
+**Hiện tại:** `detect_plate_yolo` đổi BGR → RGB để gọi model, chọn box có confidence cao nhất, clamp tọa độ vào kích thước ảnh và từ chối box rỗng trước khi crop trên ảnh BGR gốc. Không có YOLO → trả ảnh đầy đủ và `det_conf=None`; có YOLO nhưng không box → `PlateRecognitionError`, được nhánh gọi giữ lại kết quả OCR toàn ảnh.
 
 **Đầu vào → đầu ra:** ảnh → crop + detector score hoặc fallback. Không coi box đầu là biển số đúng lane trong cảnh nhiều xe.
 
-**Đề xuất:** kiểm tọa độ trong biên, crop không rỗng, chọn box theo vùng lane/diện tích/chất lượng có đo. Nếu phối cảnh nghiêng nặng, thử chỉnh hình học sau khi có góc/điểm đủ tin cậy; chưa có deskew hay perspective correction trong nhánh hiện tại.
+**Còn thiếu:** box cao điểm nhất chưa chắc đúng lane khi cảnh có nhiều xe; cần ranking thêm ROI lane/diện tích/chất lượng có đo. Nếu phối cảnh nghiêng nặng, thử chỉnh hình học sau khi có góc/điểm đủ tin cậy; chưa có deskew hay perspective correction trong nhánh hiện tại.
 
 ### Bước 3: Quality gate — có cần enhanced OCR không?
 
-`is_valid_crop:179` yêu cầu width ≥220, height ≥80 và độ sáng grayscale trung bình ≥80. Đây là heuristic, không phải model đánh giá chất lượng. Ảnh đủ sáng vẫn có thể loá hoặc mờ; ảnh nhỏ vẫn có thể đọc được.
+`is_valid_crop` yêu cầu width ≥220, height ≥80 và độ sáng grayscale trung bình ≥80. Đây là heuristic, không phải model đánh giá chất lượng. Ảnh đủ sáng vẫn có thể loá hoặc mờ; ảnh nhỏ vẫn có thể đọc được.
+
+Enhanced OCR chạy khi crop không đạt gate, crop không đọc được, hoặc full/crop bất đồng mà crop chưa quan sát được đủ cả `-` và `.`. Nếu crop đã thấy cả hai dấu phân cách, engine dùng bằng chứng định dạng đó để tránh trả thêm 3–6 giây CPU chỉ nhằm xác nhận lại. Đây là tối ưu có regression test; vẫn phải đo trên bộ vàng.
 
 [GOTCHA] Gate width 220 khác điều kiện resize width 100. Crop 150×90 tối có thể đi vào enhanced nhưng không được phóng to. Hai ngưỡng làm hai việc khác nhau.
 
@@ -78,7 +98,7 @@ Detection trả vị trí vùng nghi là biển số, chưa trả chuỗi biển
 
 ### Bước 4: Sáu phép tiền xử lý trong enhanced OCR
 
-Nguồn: `anpr_engine.py:154` (`enhanced_ocr`). Sau sáu phép biến đổi mới gọi OCR; upscale là phép có điều kiện.
+Nguồn: `anpr_engine.py`, hàm `enhanced_ocr`. Sau sáu phép biến đổi mới gọi OCR; upscale là phép có điều kiện.
 
 | Thứ tự | Biến đổi và tham số hiện tại | Lý thuyết/mục đích | Rủi ro cần kiểm tra |
 |---|---|---|---|
@@ -113,9 +133,9 @@ flowchart LR
 
 ### Bước 5: OCR và hậu xử lý chuỗi
 
-`_read_with_confidence:105` gọi `reader.readtext`, nối text theo thứ tự kết quả trả về, chuẩn hoá bằng `sanitize_plate_text:89`: viết hoa và giữ A–Z, 0–9, dấu gạch ngang/dấu chấm. Code chưa tự sắp xếp dòng biển hai hàng theo hình học.
+`_read_with_confidence` gọi `reader.readtext`, nối text theo thứ tự kết quả trả về, rồi `sanitize_plate_text` viết hoa và chỉ giữ A–Z, 0–9, dấu gạch ngang/dấu chấm. Code chưa tự sắp xếp dòng biển hai hàng theo hình học.
 
-`_is_valid_plate:95` chỉ yêu cầu dài ≤11 và ít nhất một chữ cái. Chuỗi “A” cũng có thể qua phép kiểm này, nên gọi đây là **heuristic**, không phải xác thực đầy đủ biển số hợp pháp.
+`_is_valid_plate:104` chỉ yêu cầu dài ≤11 và ít nhất một chữ cái. Chuỗi “A” cũng có thể qua phép kiểm này, nên gọi đây là **heuristic**, không phải xác thực đầy đủ biển số hợp pháp.
 
 **Đề xuất:** tách chuỗi quan sát nguyên bản và chuỗi chuẩn dùng so khớp, giữ lý do sửa; không đổi mọi O thành 0 hoặc mọi B thành 8. Nếu dùng quy tắc vị trí/ký tự, cần hỗ trợ kiểu biển mục tiêu và đo tỷ lệ sửa sai.
 
@@ -123,7 +143,7 @@ flowchart LR
 
 ### Bước 6: Chọn ứng viên và hiểu confidence
 
-**Hiện tại:** OCR toàn ảnh chạy trước; chỉ thay bằng crop/enhanced khi chuỗi mới hợp lệ và **dài hơn** chuỗi đang giữ. Không có xếp hạng tất cả ứng viên theo accuracy hay score.
+**Hiện tại:** engine giữ candidate `full`, `crop`, `enhanced` cùng OCR confidence, detector confidence, source và ảnh tương ứng. `UNKNOWN` bị loại khỏi candidate. Bộ chọn xếp theo: số nhánh độc lập đồng thuận trên khoá bỏ dấu → bằng chứng dấu `-`/`.` thực sự OCR thấy → hình dạng biển hợp lý → confidence kết hợp. Nó không còn chọn theo độ dài chuỗi.
 
 | Điểm | Công thức hiện tại | Cách hiểu đúng |
 |---|---|---|
@@ -134,14 +154,14 @@ flowchart LR
 
 Ví dụ detector=0.30, OCR=0.95 → điểm 0.285. Phép nhân làm giảm điểm khi một tầng yếu, nhưng hai score chưa được chứng minh là các xác suất độc lập; không diễn giải thành “đúng 28.5%”.
 
-**Giới hạn nhìn thấy trong source:**
+**Giới hạn còn lại:**
 
-- `UNKNOWN` có 7 ký tự; ứng viên dài ≤7 không thay được nó theo phép so hiện tại.
-- OCR toàn ảnh có thể đọc chữ nền; ứng viên cùng độ dài nhưng tốt hơn vẫn không thay được.
+- Grammar mới chỉ là điểm cộng mềm (7–10 ký tự chuẩn hoá, ≥5 số, ≥1 chữ), chưa phủ đủ mọi loại biển Việt Nam.
+- Hai nhánh OCR dùng cùng EasyOCR nên “đồng thuận” không đồng nghĩa độc lập thống kê hay xác suất đúng.
 - Lỗi crop/enhanced được bắt và giữ baseline; cần log/metric riêng để không che lỗi lặp lại.
 - `processed_image` khởi tạo bằng ảnh đầy đủ; `crop_bytes` không luôn là crop biển số.
 
-**Đề xuất thứ tự sửa:** xử lý sentinel riêng → giữ danh sách ứng viên với provenance (full/crop/enhanced) → kiểm chất lượng và cấu trúc → chọn/rút lui theo validation. Đây là hướng sửa cho đợt code sau; guide này không thay engine.
+**Bước kế:** đưa provenance/reason vào trace quan sát được, chuẩn hoá biển đồng thời với DB/backend, rồi calibration threshold trên bộ vàng. Không tự chèn dấu hoặc đổi ký tự mù quáng khi chưa chốt canonical format.
 
 ### Bước 7: Trả kết quả và nối nghiệp vụ
 
@@ -179,6 +199,37 @@ flowchart TD
 
 Detector-first có thể bớt OCR toàn ảnh, nhưng có thể mất fallback khi detector bỏ sót. Phải đo cả tốc độ và tỷ lệ không đọc được trước khi thay luồng.
 
+## 🎓 Lộ trình học và nâng cấp Vision
+
+Học theo đúng thứ tự của pipeline, không bắt đầu bằng việc đổi model:
+
+| Chặng | Học/làm | Sản phẩm phải có trước khi qua chặng sau |
+|---|---|---|
+| V0 — Data & metric | Ground truth, train/val/test theo camera/phiên, exact-match, CER, detection recall, p95 | Bộ vàng 200–500 ảnh có tag `day/night/rain/blur/two_line/angled/no_plate`; baseline report |
+| V1 — Classical CV | BGR/gray, histogram, blur, morphology, perspective transform; ablation | Bảng so sánh giữ/bỏ từng phép tiền xử lý trên cùng bộ vàng |
+| V2 — Detection | Bounding box, IoU, precision/recall, confidence threshold, NMS | Chọn box theo score/ROI thay vì box đầu; biết detector có thật là nút thắt không |
+| V3 — OCR & plate grammar | OCR token bbox, sắp hai dòng, confusion theo vị trí, format biển VN | Candidate có provenance `full/crop/enhanced`, parser không biến mọi `O` thành `0` mù quáng |
+| V4 — Robust inference | Quality gate, 3–5 frame, chọn frame nét, majority/edit-distance vote | Giảm false accept và `UNKNOWN` trên ca khó mà chưa cần retrain |
+| V5 — Model experiment | Fine-tune detector hoặc so EasyOCR với OCR khác qua interface | Report trước/sau; chỉ merge khi metric theo nhóm không regression |
+| V6 — Deployment/MLOps | Model version, artifact hash, shadow, canary, rollback, ONNX/OpenVINO/TensorRT | Cùng accuracy trong sai số cho phép và latency/RAM tốt hơn trên đúng hardware |
+
+Thứ tự nâng cấp code nên là:
+
+1. Nạp bộ vàng và chạy `training/eval_plates.py`; đây là blocker số 1.
+2. Sửa selection: `UNKNOWN` không được thắng chỉ vì dài 7; xếp hạng candidate bằng validity + provenance + score thay vì chỉ `len()`.
+3. Dùng bbox OCR để sắp biển hai dòng; thêm parser format Việt Nam và confusion theo vị trí.
+4. Nối `inspect_image_quality()` và `select_sample()` vào vòng review; lưu lý do mờ/tối/cháy sáng thay vì chỉ trả `UNKNOWN`.
+5. Thử multi-frame trước khi train lại. Camera cổng là video/chuỗi frame, nhưng API hiện chỉ nhận một ảnh.
+6. Chỉ khi detection recall thấp mới fine-tune YOLO; chỉ khi CER vẫn cao sau crop/parser mới A/B EasyOCR với PaddleOCR hoặc recognizer chuyên biệt.
+
+Tài liệu công nghệ nên đọc:
+
+- [Ultralytics modes](https://docs.ultralytics.com/modes/) — train, validation, predict, export và benchmark là các chặng khác nhau.
+- [Ultralytics validation](https://docs.ultralytics.com/modes/val/) — precision/recall, mAP, IoU và cách giữ split đánh giá.
+- [EasyOCR](https://github.com/JaidedAI/EasyOCR) — output gồm bbox, text, confidence; model reader nên nạp một lần.
+- [PaddleOCR pipeline](https://www.paddleocr.ai/main/en/version3.x/pipeline_usage/OCR.html) — **chỉ là candidate A/B**, không phải nâng cấp mặc định.
+- [Ultralytics export](https://docs.ultralytics.com/modes/export/) — ONNX/OpenVINO/TensorRT; benchmark lại accuracy sau export/quantization.
+
 ## ✅ Kiểm chứng cuối (làm sao biết đã xong ĐÚNG)
 
 | Kiểm tra | Cách đo/thao tác | Kỳ vọng |
@@ -192,10 +243,46 @@ Detector-first có thể bớt OCR toàn ảnh, nhưng có thể mất fallback 
 | Regression | Các test hiện có từ thư mục ai | Báo OK khi môi trường đã có dependencies |
 
 ```powershell
-python -m unittest test.test_plate_text test.test_confidence test.test_plate_metrics
+cd ai
+.\.venv\Scripts\python.exe -m training.readiness --scope vision
+
+# Sau khi readiness báo thiếu dữ liệu: nạp ảnh đã có quyền sử dụng.
+.\.venv\Scripts\python.exe training\import_plate_dataset.py `
+  --from filename `
+  --src C:\duong-dan\vn-plates `
+  --tags day,car `
+  --source-name public-bootstrap `
+  --dry-run
+
+# Bỏ --dry-run sau khi kiểm danh sách; sau đó kiểm checksum/tag/sample gate.
+.\.venv\Scripts\python.exe training\import_plate_dataset.py `
+  --from filename `
+  --src C:\duong-dan\vn-plates `
+  --tags day,car `
+  --source-name public-bootstrap
+.\.venv\Scripts\python.exe -m training.readiness --scope vision
+
+.\.venv\Scripts\python.exe -m unittest test.test_plate_text test.test_confidence test.test_plate_metrics
+.\.venv\Scripts\python.exe training\eval_plates.py --label before-pipeline-change
+
+# Đo request lặp lại; thay bằng ảnh/nhãn thật có quyền sử dụng.
+.\.venv\Scripts\python.exe -m app.script.benchmark_vision_grpc `
+  --image C:\duong-dan\xe-co-bien-so.jpg `
+  --expected-plate "51F-178.12" `
+  --requests 20 --warmup 2 --concurrency 1 `
+  --max-error-rate 0 --max-p95-ms 3000 --min-normalized-match-rate 0.95
 ```
 
-Trong lần biên soạn này chưa chạy model trên camera hay chứng nhận accuracy. Ngưỡng chấp nhận phải được thống nhất trên validation và mục tiêu nghiệp vụ trước test cuối.
+`training.readiness` là gate chỉ đọc: nó kiểm số mẫu, file ảnh, SHA-256, nhãn,
+trùng hash và phân bố tag; exit code `0` khi đạt gate, `1` khi chưa đạt. Nó không
+tự tạo nhãn. Ảnh nằm trong `data/golden/plates/images/` và không được commit vì
+là PII; manifest/report mới là bằng chứng versioned.
+
+Unit test toàn AI đã chạy ngày 2026-09-21: `173` pass, `2` skip optional.
+Readiness thực tế đang là `0/200`; `eval_plates.py` vì vậy chưa thể chứng nhận
+accuracy. Sau khi có report, test upload ảnh trực tiếp qua Postman theo
+[guide gRPC/Postman](../../../docs/guides/backend/test-grpc-ai-with-postman.md),
+nhưng một request Postman chỉ là smoke test, không thay report bộ vàng.
 
 ## 🔥 Troubleshooting
 
@@ -211,6 +298,7 @@ Trong lần biên soạn này chưa chạy model trên camera hay chứng nhận
 
 ## 🔗 Liên quan
 
+- [PROB-038: ANPR chạy được nhưng chưa đo được chất lượng](../../../docs/problems/09-2026/PROB-038-anpr-tu-chay-duoc-den-do-duoc.md)
 - [Ba pipeline](./01-three-ai-pipelines-architecture.md) · [RAG](./02-rag-optimization-strategy.md)
 - [Worker, storage và vòng đời dữ liệu AI](./05-ai-workers-storage-and-training-lifecycle.md)
 - [SUGGESTION-007: Vision roadmap](../../../docs/suggestions/09-2026/SUGGESTION-007-vision-deep-dive-roadmap.md)

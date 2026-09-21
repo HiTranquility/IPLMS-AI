@@ -19,6 +19,7 @@ class _Cursor:
         self.rows = list(rows)
         self.offset = 0
         self.params = None
+        self.query = None
 
     def __enter__(self):
         return self
@@ -26,7 +27,8 @@ class _Cursor:
     def __exit__(self, *_args):
         return False
 
-    def execute(self, _query, params):
+    def execute(self, query, params):
+        self.query = query
         self.params = params
 
     def fetchmany(self, size):
@@ -92,6 +94,10 @@ class ParkingSessionExporterTest(unittest.TestCase):
             self.assertNotIn("image_url", record)
             self.assertFalse(manifest["contains_pii"])
             self.assertEqual(checkpoint["watermark"], "2026-09-20T02:00:00Z")
+            self.assertIn(
+                "capacity_slot.status <> 'INACTIVE'",
+                connection.cursor_instance.query,
+            )
             self.assertTrue(connection.closed)
 
     def test_export_does_not_leave_partition_when_checkpoint_fails(self):
