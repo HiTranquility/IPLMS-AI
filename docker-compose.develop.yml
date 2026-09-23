@@ -1,7 +1,7 @@
 # ==============================================================================
 # IPLMS — AI Service Develop Override (docker-compose.develop.yml)
 #
-# File này tương đương với docker-compose.dev.yml (đồng bộ cách đặt tên với backend).
+# Cấu hình override cho môi trường develop (đồng bộ cách đặt tên chuẩn với backend).
 #
 # Cách dùng:
 #   docker compose -f docker-compose.yml -f docker-compose.develop.yml up -d
@@ -9,7 +9,6 @@
 
 services:
   ai:
-    container_name: ${COMPOSE_PROJECT_NAME:-iplms-ai-dev}-service
     restart: "no"
     env_file:
       - path: .env
@@ -21,5 +20,22 @@ services:
     volumes:
       # Mount mã nguồn trực tiếp để phản ánh thay đổi ngay lập tức
       - ./app:/app/app
+      - ./training:/app/training:ro
       - ./test:/app/test:ro
       - ./docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh:ro
+
+  ai-db:
+    restart: "no"
+
+  gateway:
+    restart: "no"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.develop.yml:/etc/traefik/traefik.yml:ro
+    healthcheck:
+      # In dev, prove that the Docker provider discovered the REST router.
+      test:
+        [
+          "CMD-SHELL",
+          "wget --spider -q 'http://127.0.0.1:8080/api/http/routers/ai-rest@docker'",
+        ]

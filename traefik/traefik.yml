@@ -1,0 +1,63 @@
+# ==============================================================================
+# IPLMS AI Service — Traefik v3 Gateway Configuration
+# ==============================================================================
+# Cung cấp bộ cân bằng tải L7 cho:
+#   - REST HTTP/1.1 (port 8000)
+#   - gRPC HTTP/2 h2c (port 50051)
+#   - Web Dashboard & API (port 8080)
+# ==============================================================================
+
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+api:
+  dashboard: true
+  # Dev override enables the unauthenticated dashboard. Base/prod keeps it dark.
+  insecure: false
+
+ping:
+  entryPoint: traefik
+
+entryPoints:
+  rest:
+    address: ":8000"
+  grpc:
+    address: ":50051"
+  traefik:
+    address: ":8080"
+  metrics:
+    address: ":8082"
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+
+log:
+  level: INFO
+  format: json
+
+# JSON stdout is collected by the existing Docker Promtail target and sent to Loki.
+accessLog:
+  format: json
+  fields:
+    defaultMode: keep
+    names:
+      ClientHost: drop
+    headers:
+      defaultMode: drop
+
+metrics:
+  prometheus:
+    entryPoint: metrics
+    addEntryPointsLabels: true
+    addRoutersLabels: true
+    addServicesLabels: true
+
+tracing:
+  serviceName: iplms-ai-gateway
+  sampleRate: 0.1
+  otlp:
+    http:
+      endpoint: http://tempo:4318/v1/traces
