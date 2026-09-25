@@ -4,25 +4,31 @@
 # Cấu hình override cho môi trường develop (đồng bộ cách đặt tên chuẩn với backend).
 #
 # Cách dùng:
-#   docker compose -f docker-compose.yml -f docker-compose.develop.yml up -d
+#   docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.develop.yml up -d
 # ==============================================================================
 
 services:
   ai:
+    # Dev image is built from this checkout; do not probe a private registry first.
+    pull_policy: build
+    build:
+      args:
+        PRELOAD_EASYOCR_MODELS: "false"
     restart: "no"
-    env_file:
-      - path: .env
-        required: false
     environment:
       - AI_LOG_LEVEL=${AI_LOG_LEVEL:-DEBUG}
       - PYTHONUNBUFFERED=1
       - AI_RELOAD=true
+      - AI_COMPILE_PROTO_ON_START=true
+      - AI_VISION_WARMUP_ON_START=false
+      - AI_OCR_MODEL_STORAGE_DIR=/app/var/easyocr-cache
     volumes:
       # Mount mã nguồn trực tiếp để phản ánh thay đổi ngay lập tức
       - ./app:/app/app
       - ./training:/app/training:ro
       - ./test:/app/test:ro
       - ./docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh:ro
+      - ./var/easyocr-cache:/app/var/easyocr-cache
 
   ai-db:
     restart: "no"

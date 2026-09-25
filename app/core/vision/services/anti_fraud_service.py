@@ -15,7 +15,7 @@ nghiệp vụ — nó chỉ thôi nói dối trong log và trên màn hình nhâ
 from app.core.constants import SIMILARITY_NOT_MEASURED
 from app.core.enums import FraudReason
 from app.core.vision.dtos.vision_dto import VehicleMatchQuery, VehicleMatchResult
-from app.utils.logger import logger
+from app.util.logger import logger
 
 
 class AntiFraudService:

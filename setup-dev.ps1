@@ -92,15 +92,15 @@ print('EasyOCR models đã tải xong.')
     }
 }
 
-# ── 5. .env ──────────────────────────────────────────────────────────────────
+# ── 5. .env.dev ──────────────────────────────────────────────────────────────
 Write-Sep
-Write-Info "Bước 5/6: Kiểm tra .env"
+Write-Info "Bước 5/6: Kiểm tra .env.dev"
 
-if (Test-Path ".env") {
-    Write-Ok ".env đã tồn tại"
+if (Test-Path ".env.dev") {
+    Write-Ok ".env.dev đã tồn tại"
 } else {
-    Copy-Item ".env.example" ".env"
-    Write-Ok "Đã copy .env.example → .env (sửa theo máy nếu cần)"
+    Copy-Item ".env.example" ".env.dev"
+    Write-Ok "Đã copy .env.example → .env.dev (sửa theo máy nếu cần)"
 }
 
 # ── 6. Smoke test ────────────────────────────────────────────────────────────
@@ -118,7 +118,7 @@ print(f'  gRPC port:    {cfg.server.grpc_port}')
 "@
     Write-Ok "Config load thành công"
 } catch {
-    Write-Fail "Config load thất bại — kiểm tra lại .env"
+    Write-Fail "Config load thất bại — kiểm tra lại .env.dev"
 }
 
 # ── Tổng kết ─────────────────────────────────────────────────────────────────
@@ -136,5 +136,5 @@ Write-Host "  `$env:EASYOCR_MODULE_PATH='$EasyOcrDir'"
 Write-Host '  python -m app.grpc_server'
 Write-Host ""
 Write-Host "  # Hoặc cả hai (Docker)" -ForegroundColor DarkGray
-Write-Host '  docker compose up --build'
+Write-Host '  docker compose --env-file .env.dev up --build'
 Write-Host ""

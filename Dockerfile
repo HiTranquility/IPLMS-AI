@@ -39,9 +39,14 @@ RUN python app/script/compile_proto.py
 # CỐ Ý không để bước này phá build: máy build không có mạng thì vẫn ra được image,
 # chỉ là quay về hành vi cũ (tải lúc chạy). Đọc dòng cảnh báo trong log build để
 # biết image có tự chứa model hay không.
-RUN python -c "import easyocr, os; easyocr.Reader(os.getenv('AI_OCR_LANGUAGES','en,vi').split(','), gpu=False)" \
-      && echo "Model EasyOCR da nam san trong image." \
-      || echo "CANH BAO: khong tai duoc model EasyOCR luc build - se tai o request ANPR dau tien (can Internet luc chay)."
+ARG PRELOAD_EASYOCR_MODELS=true
+RUN if [ "$PRELOAD_EASYOCR_MODELS" = "true" ]; then \
+      python -c "import easyocr, os; easyocr.Reader(os.getenv('AI_OCR_LANGUAGES','en,vi').split(','), gpu=False)" \
+        && echo "Model EasyOCR da nam san trong image." \
+        || echo "CANH BAO: khong tai duoc model EasyOCR luc build - se tai o request ANPR dau tien (can Internet luc chay)."; \
+    else \
+      echo "Bo qua preload EasyOCR cho image dev; model se tai khi ANPR duoc goi lan dau."; \
+    fi
 
 COPY ai/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh

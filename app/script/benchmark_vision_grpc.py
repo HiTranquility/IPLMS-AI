@@ -14,7 +14,7 @@ from typing import Any
 import grpc
 
 from app.api.grpc.generated_stubs import get_stub
-from app.utils.request_metrics import evaluate_gates, summarize_requests
+from app.util.request_metrics import evaluate_gates, summarize_requests
 
 
 _pb2, _pb2_grpc = get_stub("vision_service")

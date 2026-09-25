@@ -5,7 +5,7 @@ from typing import Any, AsyncGenerator
 
 from app.config import get_config
 from app.core.exceptions import RagPipelineError
-from app.utils.logger import logger
+from app.util.logger import logger
 
 
 class LlmFactory:

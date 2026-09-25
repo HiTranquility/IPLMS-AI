@@ -7,9 +7,10 @@ from fastapi.staticfiles import StaticFiles
 from app.api.rest.router import api_router
 from app.api.rest.middlewares.cors import register_cors
 from app.api.rest.middlewares.error_handler import ai_service_error_handler, generic_error_handler
+from app.config import get_config
 from app.core.exceptions import AiServiceError
-from app.utils.console import enable_utf8_stdio
-from app.utils.logger import logger
+from app.util.console import enable_utf8_stdio
+from app.util.logger import logger
 
 enable_utf8_stdio()
 
@@ -20,12 +21,15 @@ os.makedirs(os.path.join(STATIC_DIR, "original"), exist_ok=True)
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     """Load vision dependencies before the REST service accepts ANPR traffic."""
-    from app.core.vision.engines.anpr_engine import warmup
-
-    if await asyncio.to_thread(warmup):
-        logger.info("Vision model loaded — REST ANPR is ready.")
+    if not get_config().vision.vision_warmup_on_start:
+        logger.info("Vision warm-up skipped; models will lazy-load on first ANPR request.")
     else:
-        logger.error("Vision OCR failed to load — REST ANPR is unavailable.")
+        from app.core.vision.engines.anpr_engine import warmup
+
+        if await asyncio.to_thread(warmup):
+            logger.info("Vision model loaded — REST ANPR is ready.")
+        else:
+            logger.error("Vision OCR failed to load — REST ANPR is unavailable.")
     yield
 
 

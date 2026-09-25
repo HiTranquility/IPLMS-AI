@@ -7,8 +7,8 @@ from typing import Optional
 from app.config import get_config
 from app.core.vision.dtos.vision_dto import PlateResult, RecognizePlateCommand
 from app.core.vision.engines.vehicle_classifier import classify_vehicle
-from app.utils.file import save_bytes_image
-from app.utils.generate_url import generate_cropped_image_url, generate_original_image_url
+from app.util.file import save_bytes_image
+from app.util.generate_url import generate_cropped_image_url, generate_original_image_url
 
 
 class AnprService:

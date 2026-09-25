@@ -154,6 +154,7 @@ Phần nhận diện **biển số** do YOLO+EasyOCR trong [`../app/core/vision/
 | `forecast/build_features.py` | CLI ghi artifact train/validation/test bất biến từ snapshot |
 | `forecast/ridge_model.py` | Ridge per-horizon audit được, có impute/missing indicator và metric theo lot |
 | `forecast/train.py` | Fit train-only, so persistence trên validation/test; chỉ ghi candidate, không promote |
+| `forecast/run_experiment.py` | Một lệnh có readiness gate: snapshot → baseline → features → candidate → run report |
 | `materialize_dataset.py` | Scaffold CLI: materialize snapshot từ object storage |
 | `validate_dataset.py` | Scaffold CLI: kiểm hash/schema/leakage trước train |
 | `train_vehicle_classifier.py` | Scaffold CLI chuẩn cho local/Colab |
@@ -164,3 +165,19 @@ Phần nhận diện **biển số** do YOLO+EasyOCR trong [`../app/core/vision/
 Sáu CLI scaffold trên hỗ trợ `--status` và cố ý dừng nếu chạy như một pipeline
 thật. Chúng là mốc công việc đã lưu trong repo, chưa phải tuyên bố pipeline train
 đã hoàn chỉnh.
+
+## 6. Forecast experiment
+
+Exporter phải dùng PostgreSQL nghiệp vụ qua `AI_DATALAKE_SOURCE_DATABASE_URL`,
+không dùng `AI_DATABASE_URL` của Copilot. Sau khi export, chạy một experiment cố
+định theo thời gian:
+
+```powershell
+$env:AI_DATALAKE_SOURCE_DATABASE_URL = "postgresql://...@localhost:5433/iplms"
+python -m app.script.export_parking_sessions --since 2026-01-01T00:00:00Z
+python -m training.forecast.run_experiment --as-of 2026-09-25T00:00:00+07:00
+```
+
+Nếu chưa đủ 30 ngày lịch sử, runner trả `blocked_readiness` và không tạo snapshot
+hay model. Có thể xem gate và artifact bằng
+[`../notebook/forecast_experiment.ipynb`](../notebook/forecast_experiment.ipynb).

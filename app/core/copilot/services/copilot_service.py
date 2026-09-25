@@ -10,7 +10,7 @@ from app.core.copilot.dtos.copilot_dto import (
 )
 from app.core.copilot.engines.rag_pipeline import rag_pipeline
 from app.core.exceptions import FeatureNotImplementedError
-from app.utils.logger import logger
+from app.util.logger import logger
 
 
 class CopilotService:

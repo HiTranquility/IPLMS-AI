@@ -1,21 +1,20 @@
 # ==============================================================================
 # IPLMS — AI Service Production Override (docker-compose.production.yml)
 #
-# File này tương đương với docker-compose.prod.yml (đồng bộ cách đặt tên với backend).
+# Cấu hình override cho môi trường production (đồng bộ cách đặt tên chuẩn với backend).
 #
 # Cách dùng:
-#   docker compose -f docker-compose.yml -f docker-compose.production.yml up -d --no-build
+#   docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.production.yml up -d --no-build
 # ==============================================================================
 
 services:
   ai:
-    container_name: ${COMPOSE_PROJECT_NAME:-iplms-ai-prod}-service
     image: ${AI_IMAGE:-iplms-ai:latest}
     build: !reset null
     restart: always
-    env_file:
-      - path: .env.production
-        required: false
+    env_file: !override
+      - path: .env.prod
+        required: true
     environment:
       - AI_LOG_LEVEL=INFO
       - AI_OBJECT_STORAGE_ALLOW_INSECURE_HTTP=false
@@ -28,3 +27,9 @@ services:
         reservations:
           cpus: '0.25'
           memory: 512M
+
+  ai-db:
+    restart: always
+
+  gateway:
+    restart: always

@@ -7,7 +7,7 @@ from app.config.base_config import BaseConfig
 class LlmConfig(BaseConfig):
     model_config = SettingsConfigDict(env_prefix="AI_")
 
-    database_url: str = "postgresql://postgres:postgres@localhost:5432/iplms_db"
+    database_url: str = "postgresql://postgres:***REMOVED***@localhost:5434/iplms_knowledge"
 
     # Dùng chung cho cả embedding lẫn sinh câu trả lời — một tài khoản OpenAI.
     # Các tham số riêng của embedding (model, số chiều, lô) ở `embedding_config.py`.

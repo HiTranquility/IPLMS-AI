@@ -13,6 +13,13 @@ def main() -> int:
     config = get_config().datalake
     parser = argparse.ArgumentParser(description="Export PostgreSQL parking sessions to data lake")
     parser.add_argument("--output", type=Path, default=Path(config.local_path))
+    parser.add_argument(
+        "--database-url",
+        help=(
+            "Operational PostgreSQL URL; prefer AI_DATALAKE_SOURCE_DATABASE_URL "
+            "so credentials do not appear in shell history"
+        ),
+    )
     parser.add_argument("--since", help="ISO-8601 lower watermark (exclusive)")
     parser.add_argument("--until", help="ISO-8601 upper watermark (inclusive)")
     parser.add_argument(
@@ -30,13 +37,19 @@ def main() -> int:
                     "format": "jsonl+manifest",
                     "output": str(args.output),
                     "batch_size": config.export_batch_size,
+                    "source_database_configured": bool(
+                        args.database_url or config.source_database_url
+                    ),
                 },
                 ensure_ascii=False,
             )
         )
         return 0
 
-    result = ParkingSessionExporter(root_path=args.output).export(
+    result = ParkingSessionExporter(
+        db_url=args.database_url,
+        root_path=args.output,
+    ).export(
         since=args.since,
         until=args.until,
     )

@@ -1,7 +1,7 @@
 """Tên file ảnh phải khoá theo event_id, không chỉ theo biển số."""
 import unittest
 
-from app.utils.generate_url import (
+from app.util.generate_url import (
     generate_cropped_image_url,
     generate_original_image_url,
     sanitize_plate,

@@ -22,8 +22,8 @@ api/          ⟶  core/           ⟶  infra/
 | Tầng | Chứa gì | Được import |
 |---|---|---|
 | `app/api/` | gRPC handler · REST route · mapper · schema | `core/` |
-| `app/core/` | `dtos/` `engines/` `services/` theo từng domain | `infra/`, `utils/`, `config/` |
-| `app/infra/` | pgvector · Parquet · LLM factory | `config/`, `utils/` |
+| `app/core/` | `dtos/` `engines/` `services/` theo từng domain | `infra/`, `util/`, `config/` |
+| `app/infra/` | pgvector · Parquet · LLM factory | `config/`, `util/` |
 
 - **[NEVER]** `app/core/` import `grpc`, `_pb2`, hay `generated_stubs`. Đã kiểm: **0 chỗ vi phạm**. Giữ vậy — core không được biết nó đang được gọi qua giao thức nào.
 - **[NEVER]** `app/api/` import thẳng `engines/`. Đã kiểm: **0 chỗ vi phạm**. Handler/route chỉ gọi `services/`.

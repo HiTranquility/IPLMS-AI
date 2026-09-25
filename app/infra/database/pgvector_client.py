@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from app.config import get_config
 from app.core.exceptions import RagPipelineError
-from app.utils.logger import logger
+from app.util.logger import logger
 
 
 class PgVectorClient:

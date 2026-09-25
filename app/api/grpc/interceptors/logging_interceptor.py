@@ -18,7 +18,7 @@ from app.core.exceptions import (
     PlateRecognitionError,
     RagPipelineError,
 )
-from app.utils.logger import logger
+from app.util.logger import logger
 
 # Thứ tự có ý nghĩa: lớp con đứng trước lớp cha.
 _STATUS_BY_EXCEPTION: tuple[tuple[type[Exception], grpc.StatusCode], ...] = (

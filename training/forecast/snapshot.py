@@ -25,7 +25,7 @@ def _parse_instant(value: str) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
-def _source_manifests(data_lake: Path) -> list[dict[str, str]]:
+def source_manifests(data_lake: Path) -> list[dict[str, str]]:
     root = data_lake / "raw" / "parking_sessions"
     output: list[dict[str, str]] = []
     for path in sorted(root.rglob("*.manifest.json")) if root.exists() else []:
@@ -215,7 +215,7 @@ def main() -> int:
     data_file, manifest_file, manifest = write_snapshot(
         regularized,
         output_dir=args.output,
-        source_manifests=_source_manifests(args.data_lake),
+        source_manifests=source_manifests(args.data_lake),
         as_of=args.as_of,
         history_days=args.days,
     )

@@ -2,6 +2,7 @@
 import unittest
 
 from app.config import get_config
+from app.config.datalake_config import DatalakeConfig
 from app.config.vision_config import VisionConfig
 
 
@@ -29,6 +30,9 @@ class VisionConfigTest(unittest.TestCase):
         self.assertEqual(cfg.yolo_model_version, "bootstrap-v1")
         self.assertEqual(cfg.vehicle_model_version, "v1")
 
+    def test_production_warmup_is_safe_by_default(self):
+        self.assertTrue(VisionConfig().vision_warmup_on_start)
+
 
 class ArtifactConfigTest(unittest.TestCase):
     def test_gioi_han_dung_luong_doi_sang_bytes(self):
@@ -41,6 +45,10 @@ class DatalakeConfigTest(unittest.TestCase):
         config = get_config().datalake
         self.assertGreater(config.export_batch_size, 0)
         self.assertGreater(config.occupancy_slot_minutes, 0)
+
+    def test_operational_database_is_not_implicitly_the_copilot_database(self):
+        config = DatalakeConfig()
+        self.assertEqual(config.source_database_url, "")
 
 
 class WorkflowConfigTest(unittest.TestCase):
