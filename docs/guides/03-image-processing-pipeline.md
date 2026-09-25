@@ -98,7 +98,7 @@ Enhanced OCR chạy khi crop không đạt gate, crop không đọc được, ho
 
 ### Bước 4: Sáu phép tiền xử lý trong enhanced OCR
 
-Nguồn: `anpr_engine.py`, hàm `enhanced_ocr`. Sau sáu phép biến đổi mới gọi OCR; upscale là phép có điều kiện.
+Nguồn: `anpr/preprocess.py`, hàm `enhance_for_ocr` (tham số là hằng số có tên ở đầu file). Sau sáu phép biến đổi mới gọi OCR; upscale là phép có điều kiện.
 
 | Thứ tự | Biến đổi và tham số hiện tại | Lý thuyết/mục đích | Rủi ro cần kiểm tra |
 |---|---|---|---|

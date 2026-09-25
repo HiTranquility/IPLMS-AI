@@ -1,13 +1,13 @@
 """Chuẩn hoá chuỗi biển số đọc từ OCR.
 
-Import được `anpr_engine` mà KHÔNG nạp model vì YOLO/EasyOCR đều lazy-load —
+Import được `anpr.plate_text` mà KHÔNG nạp model vì YOLO/EasyOCR đều lazy-load —
 nếu ai đó đưa việc nạp model ngược lên module level, bộ test này sẽ chậm hẳn
 hoặc chết, và đó là tín hiệu cần sửa.
 """
 import unittest
 
 from app.core.constants import PLATE_MAX_LENGTH, PLATE_MIN_ALPHA
-from app.core.vision.engines.anpr_engine import _is_valid_plate, sanitize_plate_text
+from app.core.vision.engines.anpr.plate_text import is_valid_plate, sanitize_plate_text
 
 
 class SanitizePlateTextTest(unittest.TestCase):
@@ -27,20 +27,20 @@ class SanitizePlateTextTest(unittest.TestCase):
 class IsValidPlateTest(unittest.TestCase):
     def test_bien_that_hop_le(self):
         for plate in ("51F-178.12", "65A-004.50", "86A094.70"):
-            self.assertTrue(_is_valid_plate(plate), plate)
+            self.assertTrue(is_valid_plate(plate), plate)
 
     def test_qua_dai_bi_loai(self):
-        self.assertFalse(_is_valid_plate("A" + "1" * PLATE_MAX_LENGTH))
+        self.assertFalse(is_valid_plate("A" + "1" * PLATE_MAX_LENGTH))
 
     def test_khong_co_chu_cai_bi_loai(self):
-        self.assertFalse(_is_valid_plate("12345678"))
+        self.assertFalse(is_valid_plate("12345678"))
 
     def test_chuoi_rong_bi_loai(self):
-        self.assertFalse(_is_valid_plate(""))
+        self.assertFalse(is_valid_plate(""))
 
     def test_du_so_chu_cai_toi_thieu_thi_hop_le(self):
         self.assertGreaterEqual(PLATE_MIN_ALPHA, 1)
-        self.assertTrue(_is_valid_plate("A1"))
+        self.assertTrue(is_valid_plate("A1"))
 
 
 class DinhDangBienSoVietNamTest(unittest.TestCase):

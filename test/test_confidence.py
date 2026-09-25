@@ -15,12 +15,12 @@ AI_ROOT = Path(__file__).resolve().parents[1]
 if str(AI_ROOT) not in sys.path:
     sys.path.insert(0, str(AI_ROOT))
 
-from app.core.vision.engines.anpr_engine import (
-    _PlateCandidate,
-    _combine_confidence,
-    detect_plate_yolo,
-    _read_with_confidence,
-    _select_plate_candidate,
+from app.core.vision.engines.anpr.detector import detect_plate
+from app.core.vision.engines.anpr.ocr import read_with_confidence
+from app.core.vision.engines.anpr.scoring import (
+    PlateCandidate,
+    combine_confidence,
+    select_plate_candidate,
 )
 from app.core.exceptions import PlateRecognitionError
 
@@ -62,23 +62,23 @@ class _FakeYolo:
 class CombineConfidenceTest(unittest.TestCase):
     def test_khong_co_detector_thi_lay_nguyen_diem_ocr(self):
         """`None` = chưa nạp được YOLO, khác hẳn với "detector tự tin 0.0"."""
-        self.assertEqual(_combine_confidence(None, 0.8), 0.8)
+        self.assertEqual(combine_confidence(None, 0.8), 0.8)
 
     def test_co_detector_thi_nhan_hai_diem(self):
-        self.assertAlmostEqual(_combine_confidence(0.5, 0.8), 0.4)
+        self.assertAlmostEqual(combine_confidence(0.5, 0.8), 0.4)
 
     def test_detector_khong_tin_thi_ca_luot_khong_dang_tin(self):
         """Đọc chữ chắc nịch trên một vùng ảnh không phải biển số vẫn phải ra điểm thấp."""
-        self.assertAlmostEqual(_combine_confidence(0.1, 0.99), 0.099)
+        self.assertAlmostEqual(combine_confidence(0.1, 0.99), 0.099)
 
 
 class ReadWithConfidenceTest(unittest.TestCase):
     def _read(self, results):
         with patch.dict(
-            "app.core.vision.engines.anpr_engine._state",
+            "app.core.vision.engines.anpr.models._state",
             {"ocr_reader": _FakeReader(results)},
         ):
-            return _read_with_confidence(object())
+            return read_with_confidence(object())
 
     def test_khong_doc_duoc_cum_nao_thi_diem_bang_0(self):
         text, conf = self._read([])
@@ -98,11 +98,11 @@ class ReadWithConfidenceTest(unittest.TestCase):
 
 class SelectPlateCandidateTest(unittest.TestCase):
     def _candidate(self, text, ocr, detector, source):
-        return _PlateCandidate(text, ocr, detector, source, object())
+        return PlateCandidate(text, ocr, detector, source, object())
 
     def test_dong_thuan_thang_chuoi_dai_hon_nhung_chi_xuat_hien_mot_lan(self):
         """Regression: dấu `-` bị đọc nhầm thành `7` không được thắng vì dài hơn."""
-        selected = _select_plate_candidate(
+        selected = select_plate_candidate(
             [
                 self._candidate("51H988.88", 0.85, None, "full"),
                 self._candidate("51H7988.88", 0.82, 0.50, "crop"),
@@ -114,7 +114,7 @@ class SelectPlateCandidateTest(unittest.TestCase):
         self.assertEqual(selected.text, "51H988.88")
 
     def test_khong_con_chon_theo_do_dai_khi_chua_co_dong_thuan(self):
-        selected = _select_plate_candidate(
+        selected = select_plate_candidate(
             [
                 self._candidate("51H988.88", 0.85, None, "full"),
                 self._candidate("51H7988.88", 0.82, 0.50, "crop"),
@@ -125,7 +125,7 @@ class SelectPlateCandidateTest(unittest.TestCase):
 
     def test_crop_co_du_dau_phan_cach_thang_ky_tu_thua_tren_anh_goc(self):
         """Ca đo thật: full đọc dấu `-` thành `7`, crop vẫn nhìn đúng `-` và `.`."""
-        selected = _select_plate_candidate(
+        selected = select_plate_candidate(
             [
                 self._candidate("51H7988.88", 0.70, None, "full"),
                 self._candidate("51H-988.88", 0.69, 0.50, "crop"),
@@ -135,7 +135,7 @@ class SelectPlateCandidateTest(unittest.TestCase):
         self.assertEqual(selected.text, "51H-988.88")
 
     def test_dau_phan_cach_confidence_yeu_khong_duoc_lan_at_bang_chung_tot(self):
-        selected = _select_plate_candidate(
+        selected = select_plate_candidate(
             [
                 self._candidate("51H7988.88", 0.70, None, "full"),
                 self._candidate("51H-988.88", 0.20, 0.10, "crop"),
@@ -145,7 +145,7 @@ class SelectPlateCandidateTest(unittest.TestCase):
         self.assertEqual(selected.text, "51H7988.88")
 
     def test_unknown_khong_duoc_xem_la_mot_bien_so_hop_le(self):
-        selected = _select_plate_candidate(
+        selected = select_plate_candidate(
             [self._candidate("UNKNOWN", 0.99, None, "full")]
         )
 
@@ -161,10 +161,10 @@ class DetectPlateYoloTest(unittest.TestCase):
         )
 
         with patch.dict(
-            "app.core.vision.engines.anpr_engine._state",
+            "app.core.vision.engines.anpr.models._state",
             {"yolo_model": model},
         ):
-            crop, confidence = detect_plate_yolo(image)
+            crop, confidence = detect_plate(image)
 
         self.assertEqual(crop.shape, (4, 4, 3))
         self.assertAlmostEqual(confidence, 0.90)
@@ -174,11 +174,11 @@ class DetectPlateYoloTest(unittest.TestCase):
         model = _FakeYolo(xyxy=[[10, 10, 12, 12]], confidence=[0.90])
 
         with patch.dict(
-            "app.core.vision.engines.anpr_engine._state",
+            "app.core.vision.engines.anpr.models._state",
             {"yolo_model": model},
         ):
             with self.assertRaises(PlateRecognitionError):
-                detect_plate_yolo(image)
+                detect_plate(image)
 
 
 if __name__ == "__main__":
