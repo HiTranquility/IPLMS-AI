@@ -65,6 +65,29 @@ class IngestionServiceTest(unittest.TestCase):
         self.assertEqual(first.document_id, second.document_id)
         self.assertEqual(str(stable_id), store.saved["document_id"])
 
+    def test_list_passes_lot_scope_and_maps_rows(self):
+        class ListingStore(FakeStore):
+            async def list_documents(self, parking_lot_id):
+                self.listed_scope = parking_lot_id
+                return [
+                    {
+                        "document_id": "d1",
+                        "file_name": "quy-che.pdf",
+                        "category": "regulation",
+                        "uploaded_by": None,
+                        "chunk_count": 3,
+                        "created_at": "2026-09-25T00:00:00+00:00",
+                        "updated_at": "2026-09-25T00:00:00+00:00",
+                    }
+                ]
+
+        store = ListingStore()
+        documents = asyncio.run(IngestionService(FakeEmbedder(), store).list("lot-a"))
+
+        self.assertEqual("lot-a", store.listed_scope)
+        self.assertEqual("quy-che.pdf", documents[0].file_name)
+        self.assertEqual(3, documents[0].chunk_count)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -72,6 +72,19 @@ class IngestResult:
     process_time: float = 0.0
 
 
+@dataclass
+class KnowledgeDocumentSummary:
+    """1 dòng `knowledge_documents` — metadata tài liệu đã nạp, không kèm nội dung."""
+
+    document_id: str
+    file_name: str
+    category: str
+    uploaded_by: Optional[str]
+    chunk_count: int
+    created_at: str
+    updated_at: str
+
+
 class KnowledgeDocumentItem(BaseModel):
     """1 phần tử trong payload REST `/api/knowledge/*` — hợp đồng với công cụ vận hành."""
 

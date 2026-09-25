@@ -371,6 +371,44 @@ class PgVectorClient:
         finally:
             connection.close()
 
+    async def list_documents(self, parking_lot_id: Optional[str]) -> List[Dict[str, Any]]:
+        await self.ensure_schema()
+        return await asyncio.to_thread(self._list_documents_sync, parking_lot_id)
+
+    def _list_documents_sync(self, parking_lot_id: Optional[str]) -> List[Dict[str, Any]]:
+        connection = self._connect_sync()
+        try:
+            with connection.cursor() as cursor:
+                # Cùng phạm vi với delete: bãi nào chỉ thấy tài liệu của bãi đó.
+                scope_sql = "parking_lot_id = %s" if parking_lot_id else "parking_lot_id IS NULL"
+                params: tuple[Any, ...] = (parking_lot_id,) if parking_lot_id else ()
+                cursor.execute(
+                    f"""
+                    SELECT id::text, file_name, category, uploaded_by, chunk_count,
+                           created_at, updated_at
+                    FROM knowledge_documents
+                    WHERE {scope_sql}
+                    ORDER BY updated_at DESC
+                    """,
+                    params,
+                )
+                return [
+                    {
+                        "document_id": row[0],
+                        "file_name": row[1],
+                        "category": row[2],
+                        "uploaded_by": row[3],
+                        "chunk_count": int(row[4]),
+                        "created_at": row[5].isoformat(),
+                        "updated_at": row[6].isoformat(),
+                    }
+                    for row in cursor.fetchall()
+                ]
+        except Exception as exc:
+            raise RagPipelineError("Không đọc được danh sách tài liệu tri thức.") from exc
+        finally:
+            connection.close()
+
     async def delete_document(self, document_id: str, parking_lot_id: Optional[str]) -> int:
         await self.ensure_schema()
         return await asyncio.to_thread(self._delete_document_sync, document_id, parking_lot_id)

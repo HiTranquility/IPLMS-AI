@@ -21,11 +21,13 @@ os.makedirs(os.path.join(STATIC_DIR, "original"), exist_ok=True)
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     """Load vision dependencies before the REST service accepts ANPR traffic."""
-    if not get_config().vision.vision_warmup_on_start:
-        logger.info("Vision warm-up skipped; models will lazy-load on first ANPR request.")
-    else:
-        from app.core.vision.engines.anpr_engine import warmup
+    from app.core.vision.engines.anpr_engine import warmup
 
+    if not get_config().vision.vision_warmup_on_start:
+        # Dev: serve immediately, load in the background (bug-006).
+        logger.info("Vision warm-up running in background; early ANPR requests wait for it.")
+        asyncio.get_running_loop().run_in_executor(None, warmup)
+    else:
         if await asyncio.to_thread(warmup):
             logger.info("Vision model loaded — REST ANPR is ready.")
         else:

@@ -163,8 +163,10 @@ cd ai
 # 1. Nạp dữ liệu mẫu (quy chế bãi xe vào pgvector):
 python app/script/seed_regulations.py
 
-# 2. Nạp tài liệu tri thức (Markdown / Text):
-python app/script/ingest_knowledge.py --file path/to/doc.md --lot-id LOT_01 --title "Quy chế bãi"
+# 2. Nạp tài liệu tri thức (PDF / DOCX / TXT / MD, ≤ 8MB):
+#    file là đối số vị trí; bỏ --parking-lot-id = tài liệu chung cho mọi bãi.
+#    --parking-lot-id là ID bãi (ParkingArea) mà Copilot của bãi đó sẽ tra.
+python -m app.script.ingest_knowledge path/to/quy-che.pdf --parking-lot-id <area-uuid> --category regulation
 
 # 3. Chạy đánh giá chất lượng truy hồi RAG (eval retrieval):
 python app/script/eval_retrieval.py

@@ -52,37 +52,48 @@ def _ensure_models_loaded() -> None:
         vision = get_config().vision
 
         # ── EasyOCR ──
-        try:
-            import easyocr
-            ocr_kwargs = {}
-            if vision.ocr_model_storage_dir.strip():
-                ocr_kwargs["model_storage_directory"] = vision.ocr_model_storage_dir
-            _state["ocr_reader"] = easyocr.Reader(vision.ocr_language_list, **ocr_kwargs)
-            logger.info(f"EasyOCR loaded: languages={vision.ocr_language_list}")
-        except Exception as exc:
-            logger.error(f"Failed to load EasyOCR: {exc}")
+        if _state["ocr_reader"] is None:
+            try:
+                import easyocr
+                ocr_kwargs = {}
+                if vision.ocr_model_storage_dir.strip():
+                    ocr_kwargs["model_storage_directory"] = vision.ocr_model_storage_dir
+                _state["ocr_reader"] = easyocr.Reader(vision.ocr_language_list, **ocr_kwargs)
+                logger.info(f"EasyOCR loaded: languages={vision.ocr_language_list}")
+            except Exception as exc:
+                logger.error(f"Failed to load EasyOCR: {exc}")
 
         # ── YOLO ──
-        try:
-            model_path = get_model_artifact_registry().resolve(
-                ModelArtifactSpec(
-                    name="plate-detector",
-                    version=vision.yolo_model_version,
-                    file_name="best.pt",
-                    local_path=vision.yolo_model_path,
-                    source_url=vision.yolo_artifact_url,
-                    sha256=vision.yolo_artifact_sha256,
-                )
-            )
-            from ultralytics import YOLO
-            _state["yolo_model"] = YOLO(str(model_path))
-            logger.info(f"YOLO model loaded: {model_path}")
-        except ArtifactResolutionError as exc:
-            logger.warning(f"YOLO model artifact unavailable: {exc}")
-        except Exception as exc:
-            logger.error(f"Failed to load YOLO model: {exc}")
+        if _state["yolo_model"] is None:
+            _load_yolo(vision)
 
-        _state["initialized"] = True
+        # CHỈ đánh dấu xong khi OCR đã nạp. Bật cờ cả lúc OCR lỗi (bản cũ) biến một
+        # lỗi tạm thời — vd. gRPC và REST cùng tải model vào chung `temp.zip` của
+        # EasyOCR, một bên mất file — thành tiến trình hỏng VĨNH VIỄN tới lúc restart
+        # (bug-006). Để False thì request kế tiếp tự thử nạp lại.
+        _state["initialized"] = _state["ocr_reader"] is not None
+
+
+def _load_yolo(vision) -> None:
+    """YOLO là tầng tuỳ chọn: thiếu nó thì OCR chạy trên cả ảnh (`det_conf=None`)."""
+    try:
+        model_path = get_model_artifact_registry().resolve(
+            ModelArtifactSpec(
+                name="plate-detector",
+                version=vision.yolo_model_version,
+                file_name="best.pt",
+                local_path=vision.yolo_model_path,
+                source_url=vision.yolo_artifact_url,
+                sha256=vision.yolo_artifact_sha256,
+            )
+        )
+        from ultralytics import YOLO
+        _state["yolo_model"] = YOLO(str(model_path))
+        logger.info(f"YOLO model loaded: {model_path}")
+    except ArtifactResolutionError as exc:
+        logger.warning(f"YOLO model artifact unavailable: {exc}")
+    except Exception as exc:
+        logger.error(f"Failed to load YOLO model: {exc}")
 
 
 def warmup() -> bool:
