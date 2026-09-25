@@ -18,6 +18,7 @@ def to_ask_question_request(message) -> AskQuestionRequest:
         user_role=message.user_role or "member",
         parking_lot_id=message.parking_lot_id or None,
         session_id=message.session_id or None,
+        preview=message.preview,
     )
 
 

@@ -12,6 +12,9 @@ class AskQuestionRequest(BaseModel):
     user_role: str = "member"
     parking_lot_id: Optional[str] = None
     session_id: Optional[str] = None
+    # Bản xem trước của scope `parking_lot_id` thay vì bản khách thấy (ISSUE-009).
+    # Backend chỉ bật cờ này cho người quản lý đúng scope đó.
+    preview: bool = False
 
 
 class CopilotAnswer(BaseModel):

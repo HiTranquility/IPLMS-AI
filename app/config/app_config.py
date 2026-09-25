@@ -3,6 +3,7 @@ from functools import lru_cache
 
 from app.config.datalake_config import DatalakeConfig
 from app.config.embedding_config import EmbeddingConfig
+from app.config.eval_config import EvalConfig
 from app.config.llm_config import LlmConfig
 from app.config.logging_config import LoggingConfig
 from app.config.model_registry_config import ModelRegistryConfig
@@ -23,6 +24,7 @@ class AppConfig:
         self.model_registry = ModelRegistryConfig()
         self.object_storage = ObjectStorageConfig()
         self.workflow = WorkflowConfig()
+        self.eval = EvalConfig()
 
 
 @lru_cache

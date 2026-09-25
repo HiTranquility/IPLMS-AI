@@ -87,7 +87,7 @@ class IngestionService:
             }
             for chunk, vector in zip(text_chunks, vectors, strict=True)
         ]
-        await self.vector_store.replace_document(
+        version = await self.vector_store.save_draft_version(
             document_id=document_id,
             file_name=command.file_name,
             category=command.category,
@@ -99,12 +99,16 @@ class IngestionService:
             document_id=document_id,
             status=IngestStatus.SUCCESS,
             chunk_count=len(chunks),
-            message="Đã nạp tài liệu vào kho tri thức.",
+            message="Đã nạp bản nháp — chạy test rồi xuất bản để khách thấy.",
             process_time=time.perf_counter() - started,
+            version_id=version["version_id"],
+            version_no=version["version_no"],
         )
 
-    async def delete(self, document_id: str, parking_lot_id: str | None) -> int:
-        return await self.vector_store.delete_document(document_id, parking_lot_id)
+    async def delete(
+        self, document_id: str, parking_lot_id: str | None, draft_only: bool = False
+    ) -> int:
+        return await self.vector_store.delete_document(document_id, parking_lot_id, draft_only)
 
     async def list(self, parking_lot_id: str | None) -> list[KnowledgeDocumentSummary]:
         rows = await self.vector_store.list_documents(parking_lot_id)

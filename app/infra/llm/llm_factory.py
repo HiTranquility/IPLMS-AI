@@ -1,6 +1,7 @@
 """OpenAI Responses API adapter for grounded RAG answers."""
 from __future__ import annotations
 
+import json
 from typing import Any, AsyncGenerator
 
 from app.config import get_config
@@ -71,6 +72,44 @@ class LlmFactory:
         except Exception as exc:
             logger.exception("Responses API request failed")
             raise RagPipelineError("Không sinh được câu trả lời từ OpenAI.") from exc
+
+    async def generate_json(
+        self,
+        instructions: str,
+        input_text: str,
+        schema_name: str,
+        schema: dict[str, Any],
+        model: str | None = None,
+    ) -> dict[str, Any]:
+        """Một lời gọi trả JSON đúng schema (Structured Outputs) — dùng cho bộ test.
+
+        Không log prompt/nội dung; `store=False` như đường trả lời khách.
+        """
+        try:
+            response = await self._get_client().responses.create(
+                model=model or self.model,
+                instructions=instructions,
+                input=input_text,
+                max_output_tokens=max(self.max_output_tokens, 4000),
+                store=False,
+                text={
+                    "format": {
+                        "type": "json_schema",
+                        "name": schema_name,
+                        "schema": schema,
+                        "strict": True,
+                    }
+                },
+            )
+            payload = json.loads((response.output_text or "").strip() or "null")
+            if not isinstance(payload, dict):
+                raise RagPipelineError("Mô hình không trả về JSON đúng định dạng.")
+            return payload
+        except (RagPipelineError, ModelNotLoadedError):
+            raise
+        except Exception as exc:
+            logger.exception("Responses API JSON request failed")
+            raise RagPipelineError("Không nhận được kết quả JSON từ OpenAI.") from exc
 
     async def stream_response(
         self, system_prompt: str, user_query: str, context: str

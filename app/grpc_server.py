@@ -19,6 +19,7 @@ SERVICE_REGISTRY = (
     ("vision_service", "add_VisionServiceServicer_to_server", "VisionHandler", "ANPR & Anti-Fraud"),
     ("copilot_service", "add_CopilotServiceServicer_to_server", "CopilotHandler", "RAG & Dispute"),
     ("knowledge_service", "add_KnowledgeServiceServicer_to_server", "KnowledgeHandler", "Knowledge ingestion"),
+    ("knowledge_service", "add_KnowledgeEvalServiceServicer_to_server", "KnowledgeEvalHandler", "KB test + publish gate"),
     ("forecast_service", "add_ForecastServiceServicer_to_server", "ForecastHandler", "Occupancy & Tariff"),
     ("health_service", "add_HealthServicer_to_server", "HealthHandler", "grpc.health.v1"),
 )

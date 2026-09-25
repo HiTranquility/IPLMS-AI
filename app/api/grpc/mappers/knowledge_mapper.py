@@ -27,6 +27,8 @@ def to_ingest_response(result: IngestResult):
         chunk_count=result.chunk_count,
         message=result.message,
         process_time_ms=result.process_time * 1000,
+        version_id=result.version_id,
+        version_no=result.version_no,
     )
 
 
@@ -48,6 +50,9 @@ def to_list_response(documents: list[KnowledgeDocumentSummary]):
                 chunk_count=doc.chunk_count,
                 created_at=doc.created_at,
                 updated_at=doc.updated_at,
+                latest_version_no=doc.latest_version_no,
+                latest_status=doc.latest_status,
+                published_version_no=doc.published_version_no,
             )
             for doc in documents
         ]

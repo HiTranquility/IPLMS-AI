@@ -70,6 +70,9 @@ class IngestResult:
     chunk_count: int = 0
     message: str = ""
     process_time: float = 0.0
+    # Bản NHÁP vừa ghi (ISSUE-009). Rỗng/0 khi status != SUCCESS.
+    version_id: str = ""
+    version_no: int = 0
 
 
 @dataclass
@@ -83,6 +86,11 @@ class KnowledgeDocumentSummary:
     chunk_count: int
     created_at: str
     updated_at: str
+    # Phiên bản mới nhất chưa lưu trữ + trạng thái của nó; 0/"" nếu chưa có.
+    latest_version_no: int = 0
+    latest_status: str = ""
+    # Phiên bản khách đang thấy; 0 = khách chưa thấy tài liệu này.
+    published_version_no: int = 0
 
 
 class KnowledgeDocumentItem(BaseModel):

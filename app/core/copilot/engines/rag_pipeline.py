@@ -57,7 +57,9 @@ class RagPipelineEngine:
         self.top_k = config.rag_top_k
         self.min_similarity = config.rag_min_similarity
 
-    async def _retrieve(self, query_text: str, parking_lot_id: str | None) -> list[dict[str, Any]]:
+    async def _retrieve(
+        self, query_text: str, parking_lot_id: str | None, preview: bool = False
+    ) -> list[dict[str, Any]]:
         query = query_text.strip()
         if not query:
             raise ValueError("Câu hỏi không được để trống.")
@@ -69,6 +71,7 @@ class RagPipelineEngine:
                 parking_lot_id=parking_lot_id,
                 top_k=self.top_k,
                 min_similarity=self.min_similarity,
+                preview=preview,
             )
         except (RagPipelineError, ModelNotLoadedError):
             raise
@@ -77,13 +80,15 @@ class RagPipelineEngine:
         except Exception as exc:
             raise RagPipelineError("Không truy xuất được kho tri thức.") from exc
 
-    async def query(self, query_text: str, parking_lot_id: str | None = None) -> Dict[str, Any]:
+    async def query(
+        self, query_text: str, parking_lot_id: str | None = None, preview: bool = False
+    ) -> Dict[str, Any]:
         logger.info(
             "Executing RAG query query_chars=%d lot_scoped=%s",
             len(query_text),
             bool(parking_lot_id),
         )
-        chunks = await self._retrieve(query_text, parking_lot_id)
+        chunks = await self._retrieve(query_text, parking_lot_id, preview)
         sources = _sources(chunks)
         if not chunks:
             return {"answer": NO_CONTEXT_ANSWER, "sources": [], "confidence": 0.0}
@@ -100,14 +105,14 @@ class RagPipelineEngine:
         }
 
     async def stream_query(
-        self, query_text: str, parking_lot_id: str | None = None
+        self, query_text: str, parking_lot_id: str | None = None, preview: bool = False
     ) -> AsyncGenerator[Dict[str, Any], None]:
         logger.info(
             "Executing RAG stream query_chars=%d lot_scoped=%s",
             len(query_text),
             bool(parking_lot_id),
         )
-        chunks = await self._retrieve(query_text, parking_lot_id)
+        chunks = await self._retrieve(query_text, parking_lot_id, preview)
         sources = _sources(chunks)
         if not chunks:
             yield {"token": NO_CONTEXT_ANSWER, "is_finished": False, "sources": []}

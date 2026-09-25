@@ -20,6 +20,7 @@ class CopilotService:
         result = await rag_pipeline.query(
             request.query,
             parking_lot_id=request.parking_lot_id,
+            preview=request.preview,
         )
         return CopilotAnswer(
             answer=result["answer"],
@@ -33,6 +34,7 @@ class CopilotService:
         async for chunk in rag_pipeline.stream_query(
             request.query,
             parking_lot_id=request.parking_lot_id,
+            preview=request.preview,
         ):
             yield AnswerChunk(
                 token=chunk["token"],
