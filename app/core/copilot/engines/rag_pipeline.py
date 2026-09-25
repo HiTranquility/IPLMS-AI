@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any, AsyncGenerator, Dict, Iterable
 
 from app.config import get_config
-from app.core.exceptions import EmbeddingError, RagPipelineError
+from app.core.exceptions import EmbeddingError, ModelNotLoadedError, RagPipelineError
 from app.infra.database.pgvector_client import pgvector_client
 from app.infra.embedding import embedding_client
 from app.infra.llm.llm_factory import llm_factory
@@ -70,7 +70,7 @@ class RagPipelineEngine:
                 top_k=self.top_k,
                 min_similarity=self.min_similarity,
             )
-        except RagPipelineError:
+        except (RagPipelineError, ModelNotLoadedError):
             raise
         except EmbeddingError as exc:
             raise RagPipelineError(str(exc)) from exc

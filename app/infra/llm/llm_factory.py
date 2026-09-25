@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any, AsyncGenerator
 
 from app.config import get_config
-from app.core.exceptions import RagPipelineError
+from app.core.exceptions import ModelNotLoadedError, RagPipelineError
 from app.util.logger import logger
 
 
@@ -24,8 +24,9 @@ class LlmFactory:
         if self._client is not None:
             return self._client
         if not self.api_key:
-            raise RagPipelineError(
-                "Thiếu AI_LLM_API_KEY; Copilot chưa thể gọi mô hình ngôn ngữ."
+            logger.error("Thiếu AI_LLM_API_KEY; Copilot chưa thể gọi mô hình ngôn ngữ.")
+            raise ModelNotLoadedError(
+                "Trợ lý AI chưa được cấu hình khoá mô hình ngôn ngữ nên chưa trả lời được."
             )
         try:
             from openai import AsyncOpenAI
@@ -65,7 +66,7 @@ class LlmFactory:
             if not answer:
                 raise RagPipelineError("Mô hình không trả về nội dung văn bản.")
             return answer
-        except RagPipelineError:
+        except (RagPipelineError, ModelNotLoadedError):
             raise
         except Exception as exc:
             logger.exception("Responses API request failed")
@@ -95,7 +96,7 @@ class LlmFactory:
                     raise RagPipelineError(str(message))
             if not completed:
                 raise RagPipelineError("Luồng OpenAI kết thúc trước sự kiện response.completed.")
-        except RagPipelineError:
+        except (RagPipelineError, ModelNotLoadedError):
             raise
         except Exception as exc:
             logger.exception("Responses API stream failed")

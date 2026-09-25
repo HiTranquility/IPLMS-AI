@@ -4,6 +4,7 @@ from app.api.grpc.mappers.knowledge_mapper import (
     to_delete_response,
     to_ingest_command,
     to_ingest_response,
+    to_list_response,
 )
 from app.core.knowledge.services import ingestion_service
 from app.util.logger import logger
@@ -27,4 +28,8 @@ class KnowledgeHandler(_pb2_grpc.KnowledgeServiceServicer):
             request.parking_lot_id or None,
         )
         return to_delete_response(removed)
+
+    async def ListDocuments(self, request, context):
+        documents = await ingestion_service.list(request.parking_lot_id or None)
+        return to_list_response(documents)
 

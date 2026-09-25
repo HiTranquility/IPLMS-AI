@@ -49,13 +49,15 @@ async def serve() -> None:
         _, pb2_grpc = get_stub(proto_name)
         getattr(pb2_grpc, register_fn)(getattr(handler_module, handler_name)(), server)
 
-    # Production nạp model trước khi mở cổng. Dev có thể bỏ warm-up để startup
-    # nhanh; request đầu tiên lazy-load vào cache volume bền.
-    if not get_config().vision.vision_warmup_on_start:
-        logger.info("Bỏ qua Vision warm-up; model sẽ lazy-load ở request ANPR đầu tiên.")
-    else:
-        from app.core.vision.engines.anpr_engine import warmup
+    # Production nạp model trước khi mở cổng. Dev mở cổng ngay nhưng vẫn nạp ở
+    # nền: để dồn cả lượt nạp (~22s từ cache, vài phút nếu phải tải) vào request
+    # ANPR đầu tiên thì nó vượt deadline 30s của backend (bug-006).
+    from app.core.vision.engines.anpr_engine import warmup
 
+    if not get_config().vision.vision_warmup_on_start:
+        logger.info("Vision warm-up chạy nền; request ANPR tới sớm sẽ chờ lượt nạp này xong.")
+        asyncio.get_running_loop().run_in_executor(None, warmup)
+    else:
         if await asyncio.to_thread(warmup):
             logger.info("Model Vision đã nạp xong — sẵn sàng nhận request.")
         else:

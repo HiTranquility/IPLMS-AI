@@ -13,7 +13,11 @@ from app.core.exceptions import (
     NoTextLayerError,
     UnsupportedFormatError,
 )
-from app.core.knowledge.dtos.knowledge_dto import IngestDocumentCommand, IngestResult
+from app.core.knowledge.dtos.knowledge_dto import (
+    IngestDocumentCommand,
+    IngestResult,
+    KnowledgeDocumentSummary,
+)
 from app.core.knowledge.engines.chunker import chunk_text
 from app.core.knowledge.engines.document_parser import parse_document
 from app.infra.database.pgvector_client import pgvector_client
@@ -101,6 +105,10 @@ class IngestionService:
 
     async def delete(self, document_id: str, parking_lot_id: str | None) -> int:
         return await self.vector_store.delete_document(document_id, parking_lot_id)
+
+    async def list(self, parking_lot_id: str | None) -> list[KnowledgeDocumentSummary]:
+        rows = await self.vector_store.list_documents(parking_lot_id)
+        return [KnowledgeDocumentSummary(**row) for row in rows]
 
     @staticmethod
     def _result(

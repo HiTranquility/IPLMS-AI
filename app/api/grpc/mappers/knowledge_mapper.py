@@ -1,6 +1,10 @@
 """Map Knowledge protobuf messages to/from domain DTOs."""
 from app.api.grpc.generated_stubs import get_stub
-from app.core.knowledge.dtos.knowledge_dto import IngestDocumentCommand, IngestResult
+from app.core.knowledge.dtos.knowledge_dto import (
+    IngestDocumentCommand,
+    IngestResult,
+    KnowledgeDocumentSummary,
+)
 
 _pb2, _ = get_stub("knowledge_service")
 
@@ -30,4 +34,21 @@ def to_delete_response(removed_chunk_count: int):
     return _pb2.DeleteDocumentResponse(
         deleted=removed_chunk_count > 0,
         removed_chunk_count=removed_chunk_count,
+    )
+
+
+def to_list_response(documents: list[KnowledgeDocumentSummary]):
+    return _pb2.ListDocumentsResponse(
+        documents=[
+            _pb2.KnowledgeDocument(
+                document_id=doc.document_id,
+                file_name=doc.file_name,
+                category=doc.category,
+                uploaded_by=doc.uploaded_by or "",
+                chunk_count=doc.chunk_count,
+                created_at=doc.created_at,
+                updated_at=doc.updated_at,
+            )
+            for doc in documents
+        ]
     )

@@ -10,7 +10,7 @@ import asyncio
 from typing import Any, Iterable, List, Sequence
 
 from app.config import get_config
-from app.core.exceptions import EmbeddingError
+from app.core.exceptions import EmbeddingError, ModelNotLoadedError
 from app.util.logger import logger
 
 
@@ -40,8 +40,11 @@ class EmbeddingClient:
         if self._client is not None:
             return self._client
         if not self._api_key:
-            raise EmbeddingError(
-                "Thiếu AI_LLM_API_KEY; không thể sinh embedding cho kho tri thức."
+            # Chưa cấu hình ≠ mất kết nối: ModelNotLoadedError đi FAILED_PRECONDITION,
+            # backend giữ nguyên message thay vì báo "AI service is unreachable".
+            logger.error("Thiếu AI_LLM_API_KEY; không thể sinh embedding cho kho tri thức.")
+            raise ModelNotLoadedError(
+                "Trợ lý AI chưa được cấu hình khoá mô hình ngôn ngữ nên chưa trả lời được."
             )
         try:
             from openai import AsyncOpenAI

@@ -1,6 +1,11 @@
 import asyncio
 import unittest
 
+import grpc
+
+from app.api.grpc.interceptors.logging_interceptor import status_for
+from app.core.exceptions import ModelNotLoadedError
+
 from app.core.copilot.engines.rag_pipeline import NO_CONTEXT_ANSWER, RagPipelineEngine
 
 
@@ -66,6 +71,22 @@ class RagPipelineTest(unittest.TestCase):
         self.assertEqual([[], []], [events[0]["sources"], events[1]["sources"]])
         self.assertTrue(events[-1]["is_finished"])
         self.assertEqual(["quy-che.md"], events[-1]["sources"])
+
+    def test_missing_api_key_is_not_reported_as_an_outage(self):
+        class UnconfiguredEmbedder:
+            async def embed_query(self, text):
+                from app.infra.embedding.embedding_client import EmbeddingClient
+
+                client = EmbeddingClient()
+                client._api_key = ""
+                return await client.embed_query(text)
+
+        engine = RagPipelineEngine(UnconfiguredEmbedder(), FakeStore([]), FakeLlm())
+        # FAILED_PRECONDITION (message giữ nguyên), KHÔNG bị gói thành
+        # RagPipelineError → UNAVAILABLE → "AI service is unreachable".
+        with self.assertRaises(ModelNotLoadedError):
+            asyncio.run(engine.query("phí bao nhiêu?"))
+        self.assertIs(grpc.StatusCode.FAILED_PRECONDITION, status_for(ModelNotLoadedError("x")))
 
 
 if __name__ == "__main__":
