@@ -97,7 +97,8 @@ app/core/vision/
 ├── dtos/
 │   └── vision_dto.py          # PlateResult, RecognizePlateCommand, VehicleMatchQuery/Result
 ├── engines/
-│   ├── anpr_engine.py         # 🔥 YOLO detect + EasyOCR (283 dòng, core logic)
+│   ├── anpr_engine.py         # 🔥 façade run_anpr — phối hợp các tầng trong anpr/
+│   ├── anpr/                  # models · detector · preprocess · ocr · plate_text · scoring
 │   └── vehicle_classifier.py  # CNN NetV1/NetV2 phân loại xe (optional)
 └── services/
     ├── anpr_service.py        # Điều phối: ANPR → classify → persist → PlateResult
@@ -476,7 +477,7 @@ Luật hướng phụ thuộc:
 
 | Kiểm tra | Thao tác | Kỳ vọng |
 |---|---|---|
-| Vision có phép đo thật? | Đọc `anpr_engine.py:105`, `:189`, `:203` | Có OCR score; phân biệt nhánh không detector |
+| Vision có phép đo thật? | Đọc `anpr/ocr.py` (`read_with_confidence`), `anpr/scoring.py` (`combine_confidence`, `select_plate_candidate`) | Có OCR score; phân biệt nhánh không detector |
 | RAG có phục vụ thật? | Đọc `copilot_service.py` và `rag_pipeline.py`; chạy test + pgvector smoke | Q&A dùng embedding/DB/LLM thật; tranh chấp vẫn bị chặn |
 | Forecast có model thật? | Đọc `forecast_service.py:35` và `occupancy_model.py` | Service chặn; engine còn dãy số mô phỏng |
 | Quyền quyết định | Lần theo response về backend | Kết quả AI cần policy nghiệp vụ trước hành động |

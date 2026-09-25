@@ -90,7 +90,7 @@ python training/eval_plates.py --label before-B2
 
 Bộ vàng + cách đọc từng chỉ số: [`../data/golden/plates/README.md`](../data/golden/plates/README.md).
 
-**[MUST]** PR nào đụng `anpr_engine.py` hoặc đổi `model/artifacts/bootstrap/anpr/best.pt` phải kèm số
+**[MUST]** PR nào đụng `anpr_engine.py`, thư mục `engines/anpr/` hoặc đổi `model/artifacts/bootstrap/anpr/best.pt` phải kèm số
 **trước và sau** trên cùng bộ vàng. Không có số ⇒ không biết là tốt lên hay tệ đi.
 
 **[GOTCHA]** Chỉ số `exact_match_strict` và `exact_match_relaxed` chênh nhau bao

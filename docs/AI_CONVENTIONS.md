@@ -42,7 +42,7 @@ app/core/<domain>/
 
 | Domain | engines | services |
 |---|---|---|
-| `vision` | `anpr_engine.py` · `vehicle_classifier.py` | `anpr_service.py` · `anti_fraud_service.py` |
+| `vision` | `anpr_engine.py` (façade `run_anpr`) + `anpr/` (`models` · `detector` · `preprocess` · `ocr` · `plate_text` · `scoring`) · `vehicle_classifier.py` | `anpr_service.py` · `anti_fraud_service.py` |
 | `forecast` | `occupancy_model.py` | `forecast_service.py` |
 | `copilot` | `rag_pipeline.py` | `copilot_service.py` |
 
@@ -109,7 +109,7 @@ api/rest/routes/anpr_controller.py  ─┘
 
 ## 6. [GOTCHA] Nạp model — cái bẫy đã cắn một lần
 
-`anpr_engine.py` giữ model ở module scope với cờ `initialized`. Bản cũ bật cờ **trước** khi nạp xong:
+`anpr/models.py` giữ model ở module scope với cờ `initialized`. Bản cũ bật cờ **trước** khi nạp xong:
 
 > *"Bật trước (bản cũ) khiến request thứ hai đi tiếp với reader vẫn là None → FAILED_PRECONDITION ngay sau mỗi lần restart pod."*
 
