@@ -40,7 +40,7 @@ flowchart TD
     I --> J[Policy riêng xem xét giá đề xuất]
 ```
 
-Hiện trạng: [forecast_service.py](../../app/core/forecast/services/forecast_service.py):35 vẫn chặn dự báo; [occupancy_model.py](../../app/core/forecast/engines/occupancy_model.py) vẫn là công thức mô phỏng và không được phục vụ ra ngoài. Đường dữ liệu thật đã có bước đầu: `session_exporter.py` xuất incremental JSONL + manifest/checksum từ PostgreSQL, còn `occupancy_reader.py` dedup session và tính nhãn slot 30 phút theo khoảng nửa mở. Chưa có model/backtest nên không dùng dãy placeholder làm baseline chất lượng.
+Hiện trạng: [forecast_service.py](../../app/core/forecast/services/forecast_service.py):35 vẫn chặn dự báo; `occupancy_model.py` (đã xoá 2026-09-25) vẫn là công thức mô phỏng và không được phục vụ ra ngoài. Đường dữ liệu thật đã có bước đầu: `session_exporter.py` xuất incremental JSONL + manifest/checksum từ PostgreSQL, còn `occupancy_reader.py` dedup session và tính nhãn slot 30 phút theo khoảng nửa mở. Chưa có model/backtest nên không dùng dãy placeholder làm baseline chất lượng.
 
 ### Hiện trạng runtime và dữ liệu 2026-09-20
 
@@ -79,7 +79,7 @@ Kết quả kiểm tra local:
 - `python -m app.script.export_parking_sessions --status` xác nhận đích `data/datalake`, batch `1000`.
 - Chưa có `raw/parking_sessions` hay export watermark local, nghĩa là chưa kéo lịch sử thật từ PostgreSQL.
 - Có file `silver/parking_sessions/historical_occupancy_30d.json` gồm `4320` dòng của 3 bãi, nhưng đây là dữ liệu **random do `seed_datalake_logs.py` sinh**. Nó không cùng input contract với `OccupancyHistoryReader` và không được dùng để tuyên bố model accuracy.
-- `occupancy_model.py` có gọi reader và gán vào biến `history`, nhưng không dùng biến đó; output vẫn là công thức giả. `ForecastService` đã chặn đúng để backend không nhận con số bịa.
+- `occupancy_model.py` (đã xoá 2026-09-25) từng gọi reader rồi bỏ qua kết quả; output là công thức giả. `ForecastService` đã chặn đúng để backend không nhận con số bịa.
 
 Hai biên dữ liệu phải giải quyết trước khi train:
 

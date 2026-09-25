@@ -27,7 +27,7 @@ api/          ⟶  core/           ⟶  infra/
 
 - **[NEVER]** `app/core/` import `grpc`, `_pb2`, hay `generated_stubs`. Đã kiểm: **0 chỗ vi phạm**. Giữ vậy — core không được biết nó đang được gọi qua giao thức nào.
 - **[NEVER]** `app/api/` import thẳng `engines/`. Đã kiểm: **0 chỗ vi phạm**. Handler/route chỉ gọi `services/`.
-- **[MUST]** `core/*/engines/` được phép gọi `app/infra/` (ví dụ `rag_pipeline.py` → `pgvector_client`, `llm_factory`; `occupancy_model.py` → `parquet_reader`). Đây là chiều đúng.
+- **[MUST]** `core/*/engines/` được phép gọi `app/infra/` (ví dụ `rag_pipeline.py` → `pgvector_client`, `llm_factory`). Đây là chiều đúng.
 
 ## 2. Mỗi domain trong `core/` có đúng ba thư mục
 
@@ -43,7 +43,7 @@ app/core/<domain>/
 | Domain | engines | services |
 |---|---|---|
 | `vision` | `anpr_engine.py` (façade `run_anpr`) + `anpr/` (`models` · `detector` · `preprocess` · `ocr` · `plate_text` · `scoring`) · `vehicle_classifier.py` | `anpr_service.py` · `anti_fraud_service.py` |
-| `forecast` | `occupancy_model.py` | `forecast_service.py` |
+| `forecast` | *(trống — chưa có model qua gate; `occupancy_model.py` đã xoá 2026-09-25)* | `forecast_service.py` |
 | `copilot` | `rag_pipeline.py` | `copilot_service.py` |
 
 ### Engine ⇄ Service — ranh giới

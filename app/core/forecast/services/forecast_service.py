@@ -14,7 +14,7 @@ class ForecastService:
 
     Toàn bộ domain này là số học, không phải học máy:
 
-    - ``occupancy_model.predict_occupancy`` sinh tỷ lệ bằng
+    - ``occupancy_model.predict_occupancy`` (đã xoá 2026-09-25) sinh tỷ lệ bằng
       ``min(0.95, 0.40 + (i * 0.08) % 0.60)`` — một dãy số tăng đều, không đọc
       một dòng lịch sử nào dù có gọi ``parquet_reader``;
     - ``confidence_score`` bị gán cứng ``0.89``;

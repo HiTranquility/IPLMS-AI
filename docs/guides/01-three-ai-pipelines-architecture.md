@@ -345,12 +345,12 @@ Tầng 3: Lọc mảnh quá ngắn
 app/core/forecast/
 ├── dtos/forecast_dto.py             # OccupancyForecastQuery, TariffRecommendationQuery
 ├── engines/
-│   └── occupancy_model.py           # 🚧 Placeholder — công thức min(0.95, 0.40+(i*0.08)%0.60)
+│   └── (trống)                      # occupancy_model.py (công thức giả) đã xoá 2026-09-25
 └── services/
     └── forecast_service.py          # 🚧 Ném FeatureNotImplementedError
 
 app/infra/datalake/
-└── parquet_reader.py                # 🚧 Placeholder — trả mẫu dữ liệu cứng
+└── (parquet_reader.py đã xoá 2026-09-25 — dùng occupancy_reader.py)
 ```
 
 ### 4.3. Luồng xử lý mục tiêu
@@ -429,7 +429,7 @@ predicted_occupancy → tariff_multiplier:
 | Tiêu chí | 🔍 Vision/ANPR | 💬 Copilot/RAG | 📈 Forecast/ML |
 |---|---|---|---|
 | **Trạng thái** | Có engine, cần benchmark | 🟢 Q&A thật; cần data/eval production | 🚧 Chưa triển khai |
-| **Engine** | YOLO + EasyOCR (thật) | embedding + Hybrid Search + Responses API | occupancy_model (placeholder) |
+| **Engine** | YOLO + EasyOCR (thật) | embedding + Hybrid Search + Responses API | chưa có (service trả UNIMPLEMENTED) |
 | **Confidence** | Điểm OCR hoặc det × OCR; chưa calibration | Retrieval score bảo thủ; không phải xác suất LLM đúng | Service chặn, chưa có độ tin cậy đo được |
 | **Dữ liệu** | Ảnh camera cổng | Tài liệu thật đã ingest, scope theo bãi | Công thức `0.40+(i*0.08)%0.60` |
 | **Infra** | Không cần DB | PostgreSQL + pgvector + OpenAI | Parquet (placeholder) |
@@ -479,7 +479,7 @@ Luật hướng phụ thuộc:
 |---|---|---|
 | Vision có phép đo thật? | Đọc `anpr/ocr.py` (`read_with_confidence`), `anpr/scoring.py` (`combine_confidence`, `select_plate_candidate`) | Có OCR score; phân biệt nhánh không detector |
 | RAG có phục vụ thật? | Đọc `copilot_service.py` và `rag_pipeline.py`; chạy test + pgvector smoke | Q&A dùng embedding/DB/LLM thật; tranh chấp vẫn bị chặn |
-| Forecast có model thật? | Đọc `forecast_service.py:35` và `occupancy_model.py` | Service chặn; engine còn dãy số mô phỏng |
+| Forecast có model thật? | Đọc `forecast_service.py` và `core/forecast/README.md` | Service chặn; chưa có engine phục vụ |
 | Quyền quyết định | Lần theo response về backend | Kết quả AI cần policy nghiệp vụ trước hành động |
 
 Đã kiểm chứng bằng đọc source, chưa chạy end-to-end hay đo accuracy trong lượt chỉnh tài liệu này.

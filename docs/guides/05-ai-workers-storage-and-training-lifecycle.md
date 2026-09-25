@@ -126,10 +126,10 @@ Ingest chạy nền phù hợp; hỏi đáp tương tác vẫn request/response 
 |---|---|
 | `core/forecast/engines/occupancy_features.py` — mới | Tạo features chỉ từ dữ liệu có sẵn tại forecast origin |
 | `core/forecast/services/forecast_service.py` — có | Kiểm freshness/horizon và điều phối dự báo |
-| `core/forecast/engines/occupancy_model.py` — có, placeholder | Nạp artifact và predict thật, không gọi train trong request |
+| `core/forecast/engines/` — trống (placeholder đã xoá 2026-09-25) | Nạp artifact và predict thật, không gọi train trong request |
 | `infra/datalake/session_exporter.py` — có | Export tăng dần bằng watermark, stream theo batch, JSONL bất biến + manifest/SHA-256 |
 | `infra/datalake/occupancy_reader.py` — có | Dedup bản incremental và tổng hợp khoảng nửa mở thành slot 30 phút |
-| `infra/datalake/parquet_reader.py` — compatibility | Giữ import cũ; Parquet thật chờ duyệt dependency `pyarrow` |
+| `infra/datalake/occupancy_reader.py` — có (`parquet_reader.py` alias đã xoá 2026-09-25) | Parquet thật chờ duyệt dependency `pyarrow` |
 | `training/forecast/{snapshot,build_features,backtest,train}.py` — có | Snapshot, feature split, baseline và ridge candidate offline |
 
 Occupancy lấy từ phiên và capacity, không mặc định lấy ảnh ANPR để train Forecast. Nếu sau này đếm occupancy bằng camera, đó là một bài toán Vision riêng, cần nhãn/đánh giá riêng.
