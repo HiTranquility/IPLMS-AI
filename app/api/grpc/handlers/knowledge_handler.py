@@ -26,6 +26,7 @@ class KnowledgeHandler(_pb2_grpc.KnowledgeServiceServicer):
         removed = await ingestion_service.delete(
             request.document_id,
             request.parking_lot_id or None,
+            draft_only=request.draft_only,
         )
         return to_delete_response(removed)
 

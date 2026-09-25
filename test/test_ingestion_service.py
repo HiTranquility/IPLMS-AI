@@ -16,8 +16,9 @@ class FakeStore:
     def __init__(self):
         self.saved = None
 
-    async def replace_document(self, **kwargs):
+    async def save_draft_version(self, **kwargs):
         self.saved = kwargs
+        return {"version_id": "v-1", "version_no": 1}
 
 
 class IngestionServiceTest(unittest.TestCase):

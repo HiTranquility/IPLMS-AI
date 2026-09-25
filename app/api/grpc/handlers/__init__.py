@@ -2,6 +2,7 @@
 from app.api.grpc.handlers.copilot_handler import CopilotHandler
 from app.api.grpc.handlers.forecast_handler import ForecastHandler
 from app.api.grpc.handlers.health_handler import HealthHandler
+from app.api.grpc.handlers.knowledge_eval_handler import KnowledgeEvalHandler
 from app.api.grpc.handlers.knowledge_handler import KnowledgeHandler
 from app.api.grpc.handlers.vision_handler import VisionHandler
 
@@ -11,4 +12,5 @@ __all__ = [
     "ForecastHandler",
     "HealthHandler",
     "KnowledgeHandler",
+    "KnowledgeEvalHandler",
 ]

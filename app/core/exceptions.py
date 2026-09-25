@@ -45,6 +45,14 @@ class FraudDetectedError(AiServiceError):
 
 # ── Copilot ───────────────────────────────────────────────────────────────────
 
+class KnowledgeGateError(AiServiceError):
+    """Thao tác Knowledge Base bị cổng nghiệp vụ chặn (ISSUE-009).
+
+    Vd. bộ test trống, đã có lượt chạy đang chạy, chưa đạt ngưỡng xuất bản.
+    Message viết sẵn cho người dùng; map FAILED_PRECONDITION để backend giữ nguyên.
+    """
+
+
 class RagPipelineError(AiServiceError):
     """Lỗi trong quá trình truy vấn RAG (embedding, LLM, pgvector)."""
 

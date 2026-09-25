@@ -17,6 +17,8 @@ _KNOWN_SERVICES = frozenset({
     "iplms.ai.vision.v1.VisionService",
     "iplms.ai.copilot.v1.CopilotService",
     "iplms.ai.forecast.v1.ForecastService",
+    "iplms.ai.knowledge.v1.KnowledgeService",
+    "iplms.ai.knowledge.v1.KnowledgeEvalService",
 })
 
 
