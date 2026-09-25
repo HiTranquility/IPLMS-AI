@@ -1,0 +1,3 @@
+# Tài liệu nhị phân: KHÔNG đổi xuống dòng (autocrlf làm lệch offset xref của PDF → file hỏng).
+*.pdf binary
+*.docx binary
