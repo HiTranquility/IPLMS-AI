@@ -50,6 +50,14 @@ class _Connection:
 
 
 class ParkingSessionExporterTest(unittest.TestCase):
+    def test_requires_an_explicit_operational_database(self):
+        exporter = ParkingSessionExporter(db_url="")
+
+        with self.assertRaisesRegex(
+            DataLakeError, "AI_DATALAKE_SOURCE_DATABASE_URL"
+        ):
+            exporter._connect()
+
     def test_export_streams_non_pii_rows_and_advances_watermark(self):
         updated = datetime(2026, 9, 20, 1, 0, tzinfo=UTC)
         rows = [

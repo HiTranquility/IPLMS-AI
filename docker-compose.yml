@@ -2,11 +2,11 @@
 # IPLMS — AI Service Base Orchestration (docker-compose.yml)
 #
 # Chạy riêng plane AI (FastAPI REST :8000 + gRPC :50051):
-#   docker compose up -d
+#   docker compose --env-file .env.dev up -d
 #
 # Hoặc chạy kết hợp với cấu hình override theo môi trường:
-#   Dev:  docker compose -f docker-compose.yml -f docker-compose.develop.yml up -d
-#   Prod: docker compose -f docker-compose.yml -f docker-compose.production.yml up -d
+#   Dev:  docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.develop.yml up -d
+#   Prod: docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.production.yml up -d
 #
 # ⚠️ BUILD CONTEXT LÀ GỐC REPO (`context: ..`), không phải thư mục ai/.
 # Lý do: hợp đồng `proto/` nằm ở gốc repo và dùng chung với backend (xem PROB-034).
@@ -50,7 +50,8 @@ services:
       - "traefik.http.services.ai-grpc.loadbalancer.server.port=50051"
       - "traefik.http.services.ai-grpc.loadbalancer.server.scheme=h2c"
     env_file:
-      - .env
+      - path: .env.dev
+        required: true
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -81,7 +82,9 @@ services:
       POSTGRES_PASSWORD: ${AI_DB_PASSWORD:-postgres}
       POSTGRES_DB: ${AI_DB_NAME:-iplms_knowledge}
     ports:
-      - "${AI_DB_HOST_PORT:-5434}:5432"
+      # Keep the host port distinct from the backend DB (:5433) and the
+      # knowledge-graph dev stack (:5434). Containers still use ai-db:5432.
+      - "${AI_DB_HOST_PORT:-5435}:5432"
     volumes:
       - ai_db_data:/var/lib/postgresql/data
     networks:

@@ -23,7 +23,7 @@ from app.infra.model_registry import (
     ModelArtifactSpec,
     get_model_artifact_registry,
 )
-from app.utils.logger import logger
+from app.util.logger import logger
 
 # ── Lazy-loaded state ─────────────────────────────────────────────────────────
 

@@ -91,15 +91,15 @@ print('EasyOCR models đã tải xong.')
   || warn "Không tải được EasyOCR models (cần Internet) — sẽ thử tải lúc chạy request đầu"
 fi
 
-# ── 5. .env ──────────────────────────────────────────────────────────────────
+# ── 5. .env.dev ──────────────────────────────────────────────────────────────
 sep
-info "Bước 5/6: Kiểm tra .env"
+info "Bước 5/6: Kiểm tra .env.dev"
 
-if [ -f ".env" ]; then
-    ok ".env đã tồn tại"
+if [ -f ".env.dev" ]; then
+    ok ".env.dev đã tồn tại"
 else
-    cp .env.example .env
-    ok "Đã copy .env.example → .env (sửa theo máy nếu cần)"
+    cp .env.example .env.dev
+    ok "Đã copy .env.example → .env.dev (sửa theo máy nếu cần)"
 fi
 
 # ── 6. Smoke test ────────────────────────────────────────────────────────────
@@ -114,7 +114,7 @@ print(f'  OCR langs:    {cfg.vision.ocr_language_list}')
 print(f'  Device:       {cfg.vision.device}')
 print(f'  gRPC port:    {cfg.server.grpc_port}')
 " && ok "Config load thành công" \
-  || fail "Config load thất bại — kiểm tra lại .env"
+  || fail "Config load thất bại — kiểm tra lại .env.dev"
 
 # ── Tổng kết ─────────────────────────────────────────────────────────────────
 sep
@@ -129,5 +129,5 @@ echo "  # gRPC"
 echo "  EASYOCR_MODULE_PATH=$EASYOCR_DIR python -m app.grpc_server"
 echo ""
 echo "  # Hoặc cả hai (Docker)"
-echo "  docker compose up --build"
+echo "  docker compose --env-file .env.dev up --build"
 echo ""

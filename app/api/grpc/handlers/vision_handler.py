@@ -11,7 +11,7 @@ from app.api.grpc.mappers.vision_mapper import (
 )
 from app.core.vision.services.anpr_service import AnprService
 from app.core.vision.services.anti_fraud_service import anti_fraud_service
-from app.utils.logger import logger
+from app.util.logger import logger
 
 _, _pb2_grpc = get_stub("vision_service")
 

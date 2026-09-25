@@ -45,6 +45,33 @@ def expect_unimplemented(label: str, call):
     return False
 
 
+def expect_copilot_guarded(call):
+    """Copilot may be unimplemented or intentionally disabled without its key.
+
+    Only accept the explicit missing-key guard. A generic UNAVAILABLE still
+    fails so this smoke test cannot hide a broken database or network path.
+    """
+    try:
+        call()
+    except grpc.RpcError as exc:
+        details = exc.details() or ""
+        if exc.code() == grpc.StatusCode.UNIMPLEMENTED:
+            print("   [OK] Copilot chưa có model thật và từ chối bằng UNIMPLEMENTED")
+            print(f"        └─ {details}")
+            return True
+        if (
+            exc.code() == grpc.StatusCode.UNAVAILABLE
+            and "AI_LLM_API_KEY" in details
+        ):
+            print("   [OK] Copilot được khóa đúng vì dev chưa cấu hình AI_LLM_API_KEY")
+            print(f"        └─ {details}")
+            return True
+        print(f"   [FAIL] Sai mã lỗi: {exc.code()} — {details}")
+        return False
+    print("   [FAIL] AskQuestion trả dữ liệu dù môi trường smoke chưa có key/model thật")
+    return False
+
+
 def run_tests():
     channel = grpc.insecure_channel("localhost:50051")
     
@@ -124,7 +151,7 @@ def run_tests():
         user_role="member",
         parking_lot_id="vincom-dong-khoi-p01",
     )
-    ok4 = expect_unimplemented("AskQuestion", lambda: copilot_stub.AskQuestion(req4))
+    ok4 = expect_copilot_guarded(lambda: copilot_stub.AskQuestion(req4))
 
     # TEST 5: grpc.health.v1.Health -- dung probe ma Docker/k8s goi
     print("\n[TEST 5] Health.Check (from health_service.proto):")
@@ -136,7 +163,7 @@ def run_tests():
     print("\n" + "=" * 70)
     if all([ok3, ok3b, ok4]):
         print("[SUCCESS] Vision + Health chay that; Forecast + Copilot tu choi dung cach.")
-        print("          Chi ANPR la AI that — 3 service kia cho model, xem ai/README.md.")
+        print("          ANPR da san sang; Forecast cho model, Copilot cho key/model that.")
     else:
         print("[FAIL] Co service tra du lieu trong khi chua co model that.")
     print("=" * 70)

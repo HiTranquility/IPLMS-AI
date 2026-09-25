@@ -33,7 +33,7 @@ from app.core.exceptions import (
     UnsupportedFormatError,
 )
 from app.core.knowledge.dtos.knowledge_dto import ParsedDocument
-from app.utils.logger import logger
+from app.util.logger import logger
 
 _THEO_DUOI_FILE = {
     ".pdf": DocumentFormat.PDF,

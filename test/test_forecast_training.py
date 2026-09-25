@@ -18,6 +18,10 @@ from training.forecast.ridge_model import (
     fit_ridge_models,
     predict,
 )
+from training.forecast.run_experiment import (
+    ForecastReadinessError,
+    run_forecast_experiment,
+)
 from training.forecast.train import write_candidate
 
 
@@ -34,6 +38,73 @@ def _row(slot: int, occupancy: float, lot_id: str = "lot-a") -> dict:
 
 
 class ForecastDatasetTest(unittest.TestCase):
+    def test_experiment_stops_before_artifacts_when_readiness_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            lake = Path(temporary)
+
+            with self.assertRaises(ForecastReadinessError):
+                run_forecast_experiment(
+                    data_lake=lake,
+                    as_of=datetime(2026, 9, 25, tzinfo=timezone.utc),
+                )
+
+            self.assertFalse((lake / "curated").exists())
+            self.assertFalse((lake / "models").exists())
+
+    def test_experiment_writes_linked_offline_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            lake = Path(temporary)
+            partition = lake / "raw" / "parking_sessions" / "export_date=2026-01-06"
+            partition.mkdir(parents=True)
+            start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+            end = start.replace(day=6)
+            row = {
+                "session_id": "session-a",
+                "parking_lot_id": "lot-a",
+                "start_time": start.isoformat(),
+                "end_time": end.isoformat(),
+                "capacity_at_export": 10,
+                "updated_at": end.isoformat(),
+            }
+            data_file = partition / "run.jsonl"
+            data_file.write_text(json.dumps(row) + "\n", encoding="utf-8")
+            manifest = {
+                "data_file": data_file.relative_to(lake).as_posix(),
+                "sha256": hashlib.sha256(data_file.read_bytes()).hexdigest(),
+                "record_count": 1,
+            }
+            (partition / "run.manifest.json").write_text(
+                json.dumps(manifest), encoding="utf-8"
+            )
+            state = lake / "_state" / "parking_sessions.json"
+            state.parent.mkdir()
+            state.write_text(
+                json.dumps({"watermark": end.isoformat()}), encoding="utf-8"
+            )
+
+            run_path, report = run_forecast_experiment(
+                data_lake=lake,
+                as_of=end,
+                history_days=5,
+                minimum_history_days=1,
+                horizons=(1, 2),
+                lag_slots=(1, 2),
+                rolling_windows=(4,),
+                minimum_train_rows_per_horizon=10,
+            )
+
+            self.assertTrue(run_path.is_file())
+            self.assertTrue(Path(report["snapshot_manifest"]).is_file())
+            self.assertTrue(Path(report["feature_manifest"]).is_file())
+            self.assertTrue(Path(report["candidate_manifest"]).is_file())
+            candidate = json.loads(
+                Path(report["candidate_manifest"]).read_text(encoding="utf-8")
+            )
+            self.assertEqual(
+                report["identity"]["candidate_id"], candidate["candidate_id"]
+            )
+            self.assertEqual(report["promotion"].split(";")[0], "never automatic")
+
     def test_regularize_history_marks_missing_slots_without_zero_imputation(self) -> None:
         rows = [_row(0, 0.25), _row(2, 0.75)]
 

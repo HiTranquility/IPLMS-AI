@@ -12,6 +12,14 @@ if [ "$#" -gt 0 ]; then
   exec "$@"
 fi
 
+# The dev Compose file bind-mounts /app/app, which also overlays the stubs that
+# were generated inside the image. Regenerate them with this image's pinned
+# grpcio-tools/protobuf pair before importing either server.
+if [ "${AI_COMPILE_PROTO_ON_START:-false}" = "true" ] || [ "${AI_COMPILE_PROTO_ON_START:-0}" = "1" ]; then
+  echo "▶ Đồng bộ gRPC stubs bằng toolchain trong container..."
+  python app/script/compile_proto.py
+fi
+
 term() {
   echo "▶ Nhận tín hiệu dừng, đóng cả hai tiến trình..."
   kill -TERM "${GRPC_PID:-}" "${REST_PID:-}" 2>/dev/null || true

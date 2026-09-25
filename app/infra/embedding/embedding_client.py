@@ -11,7 +11,7 @@ from typing import Any, Iterable, List, Sequence
 
 from app.config import get_config
 from app.core.exceptions import EmbeddingError
-from app.utils.logger import logger
+from app.util.logger import logger
 
 
 def _status_code(exc: Exception) -> int | None:

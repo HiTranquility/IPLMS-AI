@@ -222,7 +222,8 @@ cd ai
 # 2. Xem cấu hình output mà chưa kết nối DB.
 .\.venv\Scripts\python.exe -m app.script.export_parking_sessions --status
 
-# 3. Export thật. Cần AI_DATABASE_URL đúng; lần đầu chốt --since tường minh.
+# 3. Export thật. Đây là DB nghiệp vụ, tách khỏi AI_DATABASE_URL của Copilot.
+$env:AI_DATALAKE_SOURCE_DATABASE_URL = "postgresql://...@localhost:5433/iplms"
 .\.venv\Scripts\python.exe -m app.script.export_parking_sessions `
   --since 2026-01-01T00:00:00Z
 
@@ -255,6 +256,10 @@ $candidate = .\.venv\Scripts\python.exe -m training.forecast.train `
   --alpha 1.0 `
   --min-train-rows-per-horizon 100 | ConvertFrom-Json
 $candidate
+
+# Hoặc chạy bước 5–8 bằng một lệnh có readiness gate và run manifest liên kết.
+.\.venv\Scripts\python.exe -m training.forecast.run_experiment `
+  --as-of 2026-09-25T00:00:00+07:00
 
 # 9. Regression test không cần DB thật.
 .\.venv\Scripts\python.exe -m unittest test.test_datalake

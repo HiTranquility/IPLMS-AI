@@ -11,7 +11,7 @@ from grpc import aio
 from app.api.grpc.generated_stubs import get_stub, require_stubs
 from app.api.grpc.interceptors import build_interceptors
 from app.config import get_config
-from app.utils.logger import logger
+from app.util.logger import logger
 
 # Thêm proto service mới = thêm ĐÚNG 1 dòng ở đây (và 1 handler).
 # (tên file proto, tên hàm add_*_to_server, đường import handler, nhãn log)
@@ -49,16 +49,19 @@ async def serve() -> None:
         _, pb2_grpc = get_stub(proto_name)
         getattr(pb2_grpc, register_fn)(getattr(handler_module, handler_name)(), server)
 
-    # Nạp model TRƯỚC khi mở cổng: mở cổng rồi mới nạp nghĩa là loạt request đầu
-    # tiên sau mỗi lần restart pod phải đứng chờ 8-10 giây nạp model (hoặc hỏng
-    # hẳn nếu chúng ập vào cùng lúc). Trả giá một lần ở đây, ngay chỗ k8s vẫn
-    # đang coi pod là chưa sẵn sàng.
-    from app.core.vision.engines.anpr_engine import warmup
-
-    if await asyncio.to_thread(warmup):
-        logger.info("Model Vision đã nạp xong — sẵn sàng nhận request.")
+    # Production nạp model trước khi mở cổng. Dev có thể bỏ warm-up để startup
+    # nhanh; request đầu tiên lazy-load vào cache volume bền.
+    if not get_config().vision.vision_warmup_on_start:
+        logger.info("Bỏ qua Vision warm-up; model sẽ lazy-load ở request ANPR đầu tiên.")
     else:
-        logger.warning("Chưa nạp được OCR reader — RecognizePlate sẽ trả FAILED_PRECONDITION.")
+        from app.core.vision.engines.anpr_engine import warmup
+
+        if await asyncio.to_thread(warmup):
+            logger.info("Model Vision đã nạp xong — sẵn sàng nhận request.")
+        else:
+            logger.warning(
+                "Chưa nạp được OCR reader — RecognizePlate sẽ trả FAILED_PRECONDITION."
+            )
 
     server.add_insecure_port(f"[::]:{config.grpc_port}")
     await server.start()

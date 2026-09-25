@@ -21,6 +21,9 @@ class VisionConfig(BaseConfig):
     # Thư mục lưu model EasyOCR. Rỗng = để EasyOCR dùng EASYOCR_MODULE_PATH env
     # hoặc ~/.EasyOCR/ mặc định. setup-dev script đặt vào var/easyocr-cache/.
     ocr_model_storage_dir: str = ""
+    # Production warm-up trước readiness; dev có thể tắt để khởi động nhanh và
+    # lazy-load vào cache volume ở request ANPR đầu tiên.
+    vision_warmup_on_start: bool = True
     device: str = "cpu"
 
     # CNN phân loại loại xe (stage tùy chọn — tắt khi không có checkpoint).

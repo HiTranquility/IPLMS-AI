@@ -1,6 +1,6 @@
 import os
 
-# Thư mục chứa file này: ai/app/utils
+# Thư mục chứa file này: ai/app/util
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # STATIC_ROOT = ai/static  (app/ và static/ là anh em dưới ai/)
 STATIC_ROOT = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "static"))

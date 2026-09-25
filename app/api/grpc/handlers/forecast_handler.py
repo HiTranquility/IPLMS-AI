@@ -9,7 +9,7 @@ from app.api.grpc.mappers.forecast_mapper import (
     to_tariff_recommendation_response,
 )
 from app.core.forecast.services.forecast_service import forecast_service
-from app.utils.logger import logger
+from app.util.logger import logger
 
 _, _pb2_grpc = get_stub("forecast_service")
 

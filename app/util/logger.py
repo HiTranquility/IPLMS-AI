@@ -3,7 +3,7 @@ import logging
 import sys
 
 from app.config import get_config
-from app.utils.console import enable_utf8_stdio
+from app.util.console import enable_utf8_stdio
 
 
 def setup_logger() -> logging.Logger:

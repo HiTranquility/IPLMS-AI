@@ -3,13 +3,13 @@
 Module **Python độc lập** (ngang hàng `frontend/`, `backend/`): dịch vụ **FastAPI + Docker** xử lý ảnh biển số, chạy xuyên suốt để `backend` gọi ở khâu **check-in / check-out** cổng.
 
 **Nguồn gốc code — đọc trước khi sửa:**
-- **Kiến trúc layered** `app/{api,config,core,infra,utils}` + `static/{cropped,original}` — theo một layout ALPR có sẵn, không tự nghĩ ra ở đây.
+- **Kiến trúc layered** `app/{api,config,core,infra,util}` + `static/{cropped,original}` — theo một layout ALPR có sẵn, không tự nghĩ ra ở đây.
 - **Engine ALPR** (YOLO detect + EasyOCR) ở `app/core/vision/engines/` là **code bên thứ ba bê nguyên vào**, kèm weights `best.pt` — KHÔNG train trong repo này.
 - **CNN phân loại ảnh** (`model/architectures/m1`, `model/architectures/m2`) cũng là **code + kiến trúc bên thứ ba**, ở đây dùng làm **tầng phân loại xe (tuỳ chọn)**.
 
 ## 📁 Cấu trúc
 
-Layout theo quy chuẩn `api / config / core / infra / utils` —
+Layout theo quy chuẩn `api / config / core / infra / util` —
 **transport ở ngoài, nghiệp vụ ở trong**, không tầng nào import ngược lên tầng trên.
 
 ```
@@ -26,7 +26,7 @@ ai/
 │   │       ├── router.py            #     gom route
 │   │       └── routes/              #     anpr_controller.py · health.py
 │   ├── config/                      # CẤU HÌNH — mỗi nhóm 1 file, gom ở app_config.get_config()
-│   │   ├── base_config.py           #   BaseConfig (pydantic-settings, đọc .env)
+│   │   ├── base_config.py           #   BaseConfig (pydantic-settings, native dev đọc .env.dev)
 │   │   ├── server_config.py         #   cổng gRPC/REST, max workers, max message
 │   │   ├── vision_config.py         #   YOLO · EasyOCR · CNN phân loại xe
 │   │   ├── llm_config.py            #   pgvector DB · embedding · API key
@@ -38,7 +38,7 @@ ai/
 │   │   ├── copilot/                 #   dtos/copilot_dto.py · engines/rag_pipeline.py · services/
 │   │   └── forecast/                #   dtos/forecast_dto.py · engines/occupancy_model.py · services/
 │   ├── infra/                       # ADAPTER RA NGOÀI — database/ (pgvector) · datalake/ · llm/
-│   ├── utils/                       # logger.py · console.py · file.py · generate_url.py
+│   ├── util/                        # logger.py · console.py · file.py · generate_url.py · request_metrics.py
 │   ├── script/                      # compile_proto.py · smoke/eval/seed · export_parking_sessions.py
 │   ├── main.py                      # entrypoint REST (FastAPI app)
 │   └── grpc_server.py               # entrypoint gRPC (grpc.aio, cổng 50051)
@@ -79,7 +79,7 @@ ai/
 
 ## ⚡ Onboarding nhanh (Dành cho Dev mới)
 
-Chạy script tự động thiết lập toàn bộ venv, stubs gRPC, tải EasyOCR model, tạo `.env` mẫu:
+Chạy script tự động thiết lập toàn bộ venv, stubs gRPC, tải EasyOCR model, tạo `.env.dev` từ contract mẫu:
 
 ```bash
 cd ai
@@ -99,16 +99,14 @@ AI service hỗ trợ chạy riêng rẽ theo 3 chế độ qua Docker Compose:
 ```bash
 cd ai
 
-# 1. Development (khuyến nghị cho dev — mount ./app để hot-reload + nạp .env):
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-# (hoặc dùng alias: docker compose -f docker-compose.develop.yml up -d)
+# 1. Development (khuyến nghị cho dev — mount ./app để hot-reload + nạp .env.dev):
+docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.develop.yml up -d
 
 # 2. Base (cơ bản, không mount volume):
-docker compose up -d
+docker compose --env-file .env.dev up -d
 
 # 3. Production (dùng image build sẵn / ECR, giới hạn CPU/RAM, restart always):
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-# (hoặc dùng alias: docker compose -f docker-compose.production.yml up -d)
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.production.yml up -d
 
 # Kiểm tra health:
 curl http://localhost:8000/health
@@ -116,7 +114,7 @@ curl http://localhost:8000/health
 curl -F "file=@xe.jpg" "http://localhost:8000/api/anpr/recognize?lane_id=gate_in_01"
 ```
 
-> **Lưu ý Full-stack:** Nếu chạy toàn bộ hệ thống cùng backend, dùng `deployment/script/run-stack.ps1` (hoặc `.sh`). AI sẽ chạy cùng mạng nội bộ `iplms-internal` với PostgreSQL, Redis, Keycloak.
+> **Lưu ý Full-stack:** Nếu chạy toàn bộ hệ thống cùng backend, dùng `deployment/script/run-stack.ps1` (hoặc `.sh`). AI sẽ chạy cùng mạng nội bộ `iplms-backend-dev_default` với PostgreSQL, Redis, Keycloak.
 
 ## ▶️ Chạy local (không Docker)
 
@@ -151,6 +149,7 @@ Quy trình đầy đủ:
 
 - Vision: [nạp bộ vàng → kiểm checksum/tag → đo exact/CER/latency](data/golden/plates/README.md).
 - Forecast: [export session thật → readiness → baseline backtest theo lot/horizon](docs/guides/04-forecast-training-strategy.md#quy-trình-chạy-thật-từ-postgresql-đến-baseline-report).
+- Notebook Forecast: [`notebook/forecast_experiment.ipynb`](notebook/forecast_experiment.ipynb) chỉ điều phối readiness và runner; không chứa logic train.
 - Upload ảnh và đo request gRPC/REST: [guide Postman](../docs/guides/backend/test-grpc-ai-with-postman.md).
 
 ## 🧠 Copilot RAG & Quản lý tri thức (Knowledge)
@@ -174,8 +173,10 @@ python app/script/eval_retrieval.py
 python app/script/grpc_smoke_check.py
 
 # 5. Kiểm tra/export phiên đỗ tăng dần sang data lake local:
+$env:AI_DATALAKE_SOURCE_DATABASE_URL = "postgresql://...@localhost:5433/iplms"
 python -m app.script.export_parking_sessions --status
 python -m app.script.export_parking_sessions --since 2026-09-01T00:00:00Z
+python -m training.forecast.run_experiment --as-of 2026-09-25T00:00:00+07:00
 ```
 
 ## ✅ Chạy test
@@ -202,7 +203,8 @@ Bộ test bao phủ logic ANPR, Enums, DTO Mappers, Copilot RAG Pipeline, Ingest
 
 ## ⚙️ Biến môi trường
 
-Toàn bộ cấu hình có thể điều chỉnh qua `.env` (tham khảo `.env.example`):
+Development đọc `.env.dev`; production đọc `.env.prod` do secret manager sinh.
+Danh sách biến chuẩn nằm trong `.env.example`:
 
 | Biến | Mặc định | Ý nghĩa |
 |---|---|---|
@@ -210,6 +212,7 @@ Toàn bộ cấu hình có thể điều chỉnh qua `.env` (tham khảo `.env.e
 | `AI_FASTAPI_PORT` | `8000` | Cổng REST API |
 | `AI_DEVICE` | `cpu` | `cpu` hoặc `cuda` |
 | `AI_DATABASE_URL` | `postgresql://...` | Kết nối PostgreSQL hỗ trợ pgvector cho Copilot RAG |
+| `AI_DATALAKE_SOURCE_DATABASE_URL` | `postgresql://...` | PostgreSQL nghiệp vụ backend dùng riêng cho export Forecast |
 | `AI_LLM_API_KEY` | *(rỗng)* | OpenAI API key cho Copilot và Embedding |
 | `AI_LLM_MODEL` | `gpt-5.6-luna` | Model LLM sinh câu trả lời |
 | `AI_EMBEDDING_MODEL` | `text-embedding-3-small` | Model sinh vector cho tri thức |
@@ -234,4 +237,3 @@ Backend kết nối tới AI service qua 2 kênh:
 - **Copilot RAG:** ✅ Hoạt động đầy đủ (pgvector vector search + chunking + OpenAI embedding & text generation + gRPC ServerStreaming).
 - **Forecast (Dự báo chỗ trống):** 🟡 Export/reader, snapshot, point-in-time feature split, baseline/backtest và offline ridge candidate đã có test; local chưa có raw data/capacity history hay candidate được kiểm chứng, nên endpoint tiếp tục từ chối.
 - **Anti-fraud (Chống gian lận vé):** 🟡 Skeleton cấu hình sẵn, luật đối soát đang hoàn thiện.
-

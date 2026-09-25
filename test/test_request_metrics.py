@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from app.utils.request_metrics import (
+from app.util.request_metrics import (
     distribution,
     evaluate_gates,
     normalize_plate,

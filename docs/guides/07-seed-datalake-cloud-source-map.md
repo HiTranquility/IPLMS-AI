@@ -117,7 +117,7 @@ Manifest chứa schema version, cửa sổ watermark, row count, SHA-256 và
 
 ### Bước 1: cấu hình và seed backend
 
-Sao chép `backend/.env.example` thành file `.env` local và kiểm DB. Không commit
+Sao chép `backend/.env.example` thành file `.env.dev` local và kiểm DB. Không commit
 password/access key. Trên PowerShell:
 
 ```powershell
@@ -138,11 +138,12 @@ trong runbook bình thường.
 
 ### Bước 2: trỏ AI exporter vào đúng PostgreSQL
 
-`ParkingSessionExporter` đang dùng `AI_DATABASE_URL`:
+`ParkingSessionExporter` dùng URL riêng cho PostgreSQL nghiệp vụ; không dùng
+`AI_DATABASE_URL` của Copilot:
 
 ```powershell
 cd ..\ai
-$env:AI_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/iplms_db"
+$env:AI_DATALAKE_SOURCE_DATABASE_URL = "postgresql://postgres:postgres@localhost:5433/iplms"
 
 # Chỉ in config, không kết nối DB và không ghi file.
 .\.venv\Scripts\python.exe -m app.script.export_parking_sessions --status
@@ -253,7 +254,7 @@ Thứ tự publish một partition:
 - Bucket/prefix raw, curated và model cần quyền/lifecycle khác nhau dù có thể nằm
   chung một provider.
 - Runtime cloud ưu tiên role/workload identity; credential local chỉ nằm trong
-  `.env` gitignored. Không commit access key hoặc signed URL.
+  `.env.dev`/`.env.prod` đều gitignored. Không commit access key hoặc signed URL.
 - Bucket private; DB/catalog giữ provider + bucket + key + version/hash. Signed
   URL chỉ để truy cập tạm thời, không làm ID bền.
 

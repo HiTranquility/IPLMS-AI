@@ -5,7 +5,7 @@ from typing import List, Dict, Any
 from app.core.constants import FORECAST_SLOT_SECONDS, DEFAULT_FORECAST_HOURS
 from app.core.enums import OccupancyStatus
 from app.infra.datalake.parquet_reader import parquet_reader
-from app.utils.logger import logger
+from app.util.logger import logger
 
 
 class OccupancyModelEngine:

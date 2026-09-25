@@ -8,7 +8,7 @@ from app.core.exceptions import EmbeddingError, RagPipelineError
 from app.infra.database.pgvector_client import pgvector_client
 from app.infra.embedding import embedding_client
 from app.infra.llm.llm_factory import llm_factory
-from app.utils.logger import logger
+from app.util.logger import logger
 
 
 SYSTEM_PROMPT = """Bạn là trợ lý IPLMS cho quy chế và biểu phí bãi đỗ xe.

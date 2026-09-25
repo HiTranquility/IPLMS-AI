@@ -18,7 +18,7 @@ from app.core.knowledge.engines.chunker import chunk_text
 from app.core.knowledge.engines.document_parser import parse_document
 from app.infra.database.pgvector_client import pgvector_client
 from app.infra.embedding import embedding_client
-from app.utils.logger import logger
+from app.util.logger import logger
 
 
 class IngestionService:

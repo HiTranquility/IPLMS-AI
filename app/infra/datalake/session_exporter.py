@@ -81,7 +81,10 @@ class ParkingSessionExporter:
         batch_size: int | None = None,
     ) -> None:
         config = get_config()
-        self.db_url = db_url or config.llm.database_url
+        configured_url = (
+            config.datalake.source_database_url if db_url is None else db_url
+        )
+        self.db_url = configured_url.strip()
         self.root_path = Path(root_path or config.datalake.local_path)
         self.connection_factory = connection_factory
         self.batch_size = max(1, batch_size or config.datalake.export_batch_size)
@@ -197,6 +200,10 @@ class ParkingSessionExporter:
     def _connect(self) -> Any:
         if self.connection_factory is not None:
             return self.connection_factory()
+        if not self.db_url:
+            raise DataLakeError(
+                "Thiếu AI_DATALAKE_SOURCE_DATABASE_URL cho PostgreSQL vận hành."
+            )
         try:
             import psycopg2
 

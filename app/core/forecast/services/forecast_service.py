@@ -6,7 +6,7 @@ from app.core.forecast.dtos.forecast_dto import (
     TariffRecommendationQuery,
 )
 from app.core.exceptions import FeatureNotImplementedError
-from app.utils.logger import logger
+from app.util.logger import logger
 
 
 class ForecastService:

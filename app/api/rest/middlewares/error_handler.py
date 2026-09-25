@@ -3,7 +3,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 
 from app.core.exceptions import AiServiceError
-from app.utils.logger import logger
+from app.util.logger import logger
 
 
 async def ai_service_error_handler(request: Request, exc: AiServiceError) -> JSONResponse:
