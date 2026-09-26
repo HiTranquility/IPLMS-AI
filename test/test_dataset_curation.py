@@ -6,7 +6,7 @@ import numpy as np
 
 from app.core.dataset.dtos import ImageQualityReport, SnapshotSample
 from app.core.dataset.engines import inspect_image_quality, select_sample
-from app.core.dataset.services import SnapshotService
+from app.core.dataset.services import CurationService, SnapshotService
 
 
 class ImageQualityTest(unittest.TestCase):
@@ -62,6 +62,38 @@ class SnapshotServiceTest(unittest.TestCase):
         sample = self._sample()
         with self.assertRaisesRegex(ValueError, "duplicate sample_id"):
             SnapshotService.build_lock("vehicle-cls-v1", [sample, sample])
+
+
+
+class EvaluateCaptureTest(unittest.TestCase):
+    """ISSUE-010: một lượt check-in ở cổng qua luật chọn mẫu với chính sách của admin."""
+
+    @staticmethod
+    def _good_image() -> bytes:
+        image = np.zeros((120, 160, 3), dtype=np.uint8)
+        image[:, 80:] = 255
+        return cv2.imencode(".jpg", image)[1].tobytes()
+
+    def _run(self, **kw):
+        base = dict(model_confidence=0.9, human_corrected=False, low_confidence_threshold=0.75, random_audit_rate=0.03)
+        base.update(kw)
+        return CurationService.evaluate_capture(self._good_image(), **base)
+
+    def test_confident_good_read_is_not_selected_when_not_drawn(self):
+        result = self._run(draw=lambda: 0.5)
+        self.assertFalse(result.selected)
+
+    def test_random_audit_follows_policy_rate(self):
+        self.assertIn("random_audit", self._run(draw=lambda: 0.01).reasons)  # 0.01 < 3%
+        self.assertNotIn("random_audit", self._run(draw=lambda: 0.05).reasons)
+
+    def test_low_confidence_uses_policy_threshold(self):
+        self.assertIn("low_confidence", self._run(model_confidence=0.6685, draw=lambda: 0.9).reasons)
+        self.assertNotIn("low_confidence", self._run(model_confidence=0.6685, low_confidence_threshold=0.6, draw=lambda: 0.9).reasons)
+
+    def test_staff_correction_is_always_selected(self):
+        result = self._run(human_corrected=True, draw=lambda: 0.9)
+        self.assertEqual(("human_correction",), result.reasons)
 
 
 if __name__ == "__main__":
