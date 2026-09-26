@@ -35,11 +35,13 @@ class EmbeddingClient:
         self._client = client
         self._config = get_config().embedding
         self._api_key = get_config().llm.llm_api_key
+        self._base_url = (self._config.base_url or "").strip()
 
     def _get_client(self) -> Any:
         if self._client is not None:
             return self._client
-        if not self._api_key:
+        api_key = self._api_key or ("ollama" if self._base_url else "")
+        if not api_key:
             # Chưa cấu hình ≠ mất kết nối: ModelNotLoadedError đi FAILED_PRECONDITION,
             # backend giữ nguyên message thay vì báo "AI service is unreachable".
             logger.error("Thiếu AI_LLM_API_KEY; không thể sinh embedding cho kho tri thức.")
@@ -52,7 +54,8 @@ class EmbeddingClient:
             raise EmbeddingError("Python package 'openai' chưa được cài.") from exc
 
         self._client = AsyncOpenAI(
-            api_key=self._api_key,
+            api_key=api_key,
+            base_url=self._base_url or None,
             timeout=self._config.timeout_seconds,
             # Retry được điều khiển tại đây để hành vi ingestion có thể kiểm thử.
             max_retries=0,
