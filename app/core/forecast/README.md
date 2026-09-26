@@ -39,3 +39,49 @@ Theo PROB-039 (Option C): model phải **thắng baseline** trên backtest theo 
 ## Kiểm tra dữ liệu
 
 `python -m app.script.export_parking_sessions --status` · `python training/readiness.py` (chỉ đọc, báo thiếu dữ liệu) · test: `test/test_datalake.py`, `test/test_forecast_training.py`.
+
+## 🎬 Viễn cảnh
+
+**1. Hôm nay — owner mở tab dự báo** → backend gọi `GetOccupancyForecast` → `UNIMPLEMENTED` → HTTP 501 → UI "Chưa có model". Không hiện số giả.
+
+**2. Chu trình đưa model vào phục vụ (mục tiêu PROB-039)**
+
+```mermaid
+flowchart LR
+    DB[(Postgres nghiệp vụ)] -->|export_parking_sessions, watermark| DL[(Datalake JSONL + manifest/checksum)]
+    DL --> SN[snapshot có phiên bản]
+    SN --> F[features đúng thời điểm, chia theo thời gian]
+    F --> BL[baselines: persistence / theo mùa]
+    F --> RG[ridge ứng viên]
+    BL --> BT{backtest MAE/RMSE theo horizon}
+    RG --> BT
+    BT -- thắng baseline --> SH[shadow: dự báo song song, không hiện cho khách]
+    SH -- ổn định --> SV[bật GetOccupancyForecast]
+    BT -- thua --> X[không promote]
+    SV -.->|có policy duyệt| TF[GetDynamicTariffRecommendation]
+```
+
+**3. Dữ liệu thiếu (bãi mới, mất log)** — slot thiếu giữ là thiếu, không điền 0; `training/readiness.py` báo bãi nào chưa đủ dữ liệu để train.
+
+**4. Giá động** — chỉ nối vào dự báo sau khi có policy được duyệt; hệ số giá nhân thẳng vào tiền khách nên không bao giờ dùng số chưa được kiểm.
+
+## 🧰 Công nghệ áp dụng
+
+| Công nghệ | Dùng ở đâu | Vì sao |
+|---|---|---|
+| JSONL bất biến + manifest checksum + watermark | `app/infra/datalake/session_exporter.py` | Export tăng dần, tái lập được, không PII |
+| numpy (ridge dạng đóng) | `training/forecast/ridge_model.py` | Ứng viên nhỏ, kiểm tra tay được — chưa cần thư viện ML nặng |
+| Baseline persistence / theo mùa | `training/forecast/baselines.py` | Mốc phải thắng trước khi tin model |
+| Backtest theo thời gian (MAE, RMSE theo horizon) | `training/forecast/backtest.py` | Không trộn tương lai vào quá khứ |
+
+## ⚡ Case tối ưu
+
+**Đã áp dụng:** tách hẳn huấn luyện offline khỏi đường phục vụ · export tăng dần theo watermark · khử trùng `session_id+updated_at` · đặc trưng tính đúng thời điểm (không rò) · phục vụ tắt thay vì trả số bịa.
+
+**Nên làm khi có tín hiệu**
+
+| Khi nào | Tối ưu |
+|---|---|
+| Ridge thắng baseline trên backtest | Tính trước dự báo theo lô mỗi 30 phút cho mọi bãi → phục vụ = đọc cache, không predict trong request |
+| Đủ dữ liệu nhiều bãi | Đặc trưng theo bãi (capacity, ngày lễ, thời tiết) hoặc model cây (cần cài thêm — hỏi trước) |
+| Sai số lệch theo bãi | Theo dõi MAE theo bãi trong shadow; bãi tệ thì ẩn dự báo riêng bãi đó |

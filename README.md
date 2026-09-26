@@ -34,9 +34,12 @@ ai/
 │   │   ├── logging_config.py        #   tên logger · level · format
 │   │   └── app_config.py            #   AppConfig gộp + get_config() (lru_cache)
 │   ├── core/                        # NGHIỆP VỤ — mỗi domain 1 folder
-│   │   ├── vision/                  #   dtos/vision_dto.py · engines/ (anpr, classifier) · services/
-│   │   ├── copilot/                 #   dtos/copilot_dto.py · engines/rag_pipeline.py · services/
-│   │   └── forecast/                #   dtos/forecast_dto.py · engines/occupancy_model.py · services/
+│   │   ├── vision/                  #   ANPR: engines/anpr_engine.py (façade) + engines/anpr/* · services/
+│   │   ├── dataset/                 #   chọn ảnh cho người gán nhãn + khoá snapshot (ISSUE-010)
+│   │   ├── copilot/                 #   RAG hỏi đáp: engines/rag_pipeline.py · dispute_workflow (chưa nối)
+│   │   ├── knowledge/               #   nạp tài liệu → chunk → embedding → pgvector (bản nháp)
+│   │   ├── knowledge_eval/          #   bộ test Copilot + cổng xuất bản (ISSUE-009)
+│   │   └── forecast/                #   phục vụ TẮT (UNIMPLEMENTED); train offline ở training/forecast/
 │   ├── infra/                       # ADAPTER RA NGOÀI — database/ (pgvector) · datalake/ · llm/
 │   ├── util/                        # logger.py · console.py · file.py · generate_url.py · request_metrics.py
 │   ├── script/                      # compile_proto.py · smoke/eval/seed · export_parking_sessions.py
@@ -53,7 +56,7 @@ ai/
 ├── var/model-cache/                # artifact tải từ object storage; runtime, gitignored
 ├── training/                        # script train/eval cho CNN nói trên
 ├── static/{cropped,original}        # ảnh crop/gốc lưu lúc chạy (gitignored)
-├── proto/ → dùng `proto/*.proto` ở GỐC REPO (4 file, nguồn chuẩn dùng chung với backend)
+├── proto/ → dùng `proto/*.proto` ở GỐC REPO (6 file, nguồn chuẩn dùng chung với backend)
 ├── Dockerfile · docker-compose.yml · requirements*.txt
 ```
 
@@ -66,16 +69,18 @@ ai/
 
 > **Stateless:** dịch vụ này không có tầng DB nghiệp vụ — IPLMS backend giữ DB. `PlateResult` là *domain model* (dataclass), không phải ORM.
 
-## 🔀 Luồng xử lý (services/anpr_service.py)
+## 🔀 Luồng xử lý — mỗi domain một README
 
-```
-ảnh cổng ──► run_alpr (app/core/vision/engines/alpr_engine)
-                 ├─ YOLO (best.pt) phát hiện + crop biển
-                 └─ EasyOCR đọc ký tự (đa tầng fallback: full → crop → enhanced)
-             ──► classify_vehicle (CNN, optional) ─────► vehicle_type
-             ──► lưu ảnh gốc + crop vào static/
-             ──► PlateResult {plate_number, vehicle_type, crop_url, process_time, ...}
-```
+Mỗi README có: luồng code qua từng file · 🎬 viễn cảnh (sơ đồ mermaid) · 🧰 công nghệ áp dụng · ⚡ case tối ưu (đã làm + nên làm khi nào) · test.
+
+| Domain | Trạng thái | README |
+|---|---|---|
+| Vision (ANPR + chống tráo xe) | chạy thật | [app/core/vision/README.md](app/core/vision/README.md) |
+| Dataset (vòng dữ liệu ANPR) | chạy thật (ISSUE-010) | [app/core/dataset/README.md](app/core/dataset/README.md) |
+| Copilot (RAG hỏi đáp) | chạy thật, cần `AI_LLM_API_KEY` | [app/core/copilot/README.md](app/core/copilot/README.md) |
+| Knowledge (nạp tài liệu) | chạy thật, cần key cho embedding | [app/core/knowledge/README.md](app/core/knowledge/README.md) |
+| Knowledge eval (test + xuất bản) | code xong, chưa chạy với LLM thật | [app/core/knowledge_eval/README.md](app/core/knowledge_eval/README.md) |
+| Forecast (dự báo + giá động) | phục vụ tắt, train offline | [app/core/forecast/README.md](app/core/forecast/README.md) |
 
 ## ⚡ Onboarding nhanh (Dành cho Dev mới)
 

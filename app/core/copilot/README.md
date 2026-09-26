@@ -38,3 +38,56 @@ Tài liệu Copilot đọc được quản lý ở [core/knowledge](../knowledge
 ## Cấu hình
 
 `AI_LLM_API_KEY`, `AI_LLM_MODEL` (mặc định `gpt-5.6-luna`), `AI_RAG_TOP_K=5`, `AI_RAG_MIN_SIMILARITY=0.35`, `AI_EMBEDDING_*`, `AI_DATABASE_URL` (ai-db pgvector). Test: `test_rag_pipeline.py`, `test_llm_factory.py`, `test_arbitrate_dispute.py`, `test_dispute_workflow.py`. Smoke: `python app/script/smoke_copilot_stream.py`.
+
+## 🎬 Viễn cảnh
+
+**1. Khách hỏi giá ở trang chi tiết bãi**
+
+```mermaid
+sequenceDiagram
+    actor K as Khách (client DetailPage)
+    participant B as backend AiCopilotController (SSE)
+    participant AI as ai CopilotService
+    participant DB as ai-db pgvector
+    participant L as LLM (Responses API)
+    K->>B: "Gửi ô tô 3 tiếng bao nhiêu?"
+    B->>AI: StreamAnswer(areaId, preview=false)
+    AI->>AI: embed câu hỏi (text-embedding-3-small)
+    AI->>DB: HNSW cosine ≥0.35 + full-text → RRF k=60 → top 5 (bản PUBLISHED của bãi + chung)
+    AI->>L: SYSTEM_PROMPT + ngữ cảnh (store=False)
+    L-->>AI: token stream
+    AI-->>B: chunk…  + nguồn + confidence
+    B-->>K: SSE từng đoạn
+```
+
+**2. Bãi chưa có tài liệu / câu hỏi ngoài quy chế** — không có đoạn nào vượt ngưỡng → trả câu "chưa tìm thấy…" và **không gọi LLM** (không bịa, không tốn tiền).
+
+**3. Owner thử bản nháp trước khi xuất bản** — `preview=true` chỉ cho người quản lý scope (backend `knowledge-scope.service` kiểm); đọc bản mới nhất thay vì bản PUBLISHED.
+
+**4. Thiếu `AI_LLM_API_KEY`** — `FAILED_PRECONDITION` "chưa được cấu hình khoá" → UI báo rõ, không treo.
+
+**5. Phân xử tranh chấp** — `UNIMPLEMENTED` (bug-003) cho tới khi nối khung LangGraph có bước người duyệt.
+
+## 🧰 Công nghệ áp dụng
+
+| Công nghệ | Dùng ở đâu | Vì sao |
+|---|---|---|
+| OpenAI Responses API (`openai` SDK, streaming) | `infra/llm/llm_factory.py` | Stream token về UI; `store=False` không lưu hội thoại phía nhà cung cấp |
+| `text-embedding-3-small` (1536 chiều) | `infra/embedding/embedding_client.py` | Rẻ, đủ cho quy chế tiếng Việt ngắn |
+| pgvector HNSW (`vector_cosine_ops`) + PostgreSQL full-text | `infra/database/pgvector_client.py` | Ngữ nghĩa + khớp từ khoá (số tiền, "Điều 5") trong một DB |
+| Reciprocal Rank Fusion (k=60) | `search_similar_chunks` | Trộn hai bảng xếp hạng không cần chuẩn hoá điểm |
+| gRPC server-streaming → SSE ở backend | `copilot_handler` → `AiCopilotController` | Trình duyệt nhận stream qua HTTP thường |
+| LangGraph (+ checkpoint Postgres) | `engines/dispute_workflow/` | Luồng nhiều bước có điểm dừng chờ người — **chưa nối** |
+
+## ⚡ Case tối ưu
+
+**Đã áp dụng:** bỏ qua LLM khi không có ngữ cảnh · stream thay vì chờ trọn câu · top-k 5 + ngưỡng 0.35 giới hạn token đầu vào · khách chỉ đọc bản PUBLISHED (không cần lọc nháp ở tầng trên) · confidence tính từ điểm truy xuất (không tốn thêm lượt LLM).
+
+**Nên làm khi có tín hiệu**
+
+| Khi nào | Tối ưu |
+|---|---|
+| Nhiều câu hỏi lặp (giá, giờ mở cửa) | Cache câu trả lời theo (scope, phiên bản PUBLISHED, câu hỏi chuẩn hoá) — tự vô hiệu khi xuất bản mới |
+| `app/script/eval_retrieval.py` cho recall thấp | Thêm reranker cross-encoder sau RRF; hoặc tăng top-k trước rerank |
+| Khách gõ không dấu ("gui xe") | Full-text đang dùng cấu hình `simple` — thêm `unaccent` cho tiếng Việt |
+| Chi phí LLM tăng | Model rẻ hơn cho câu `fact`, model mạnh cho câu giải thích; theo dõi token/lượt |

@@ -33,3 +33,46 @@ Trạng thái trả về: `SUCCESS` · `NO_TEXT_LAYER` · `UNSUPPORTED_FORMAT` �
 - CLI: `python -m app.script.ingest_knowledge <file> --parking-lot-id <bãi> [--publish]` — `--publish` bỏ qua bộ test, chỉ cho vận hành phía server. Seed demo: `python app/script/seed_regulations.py` (xuất bản luôn).
 - File mẫu thử nạp: `data/knowledge/demo-upload/` (MD/TXT/DOCX/PDF + 2 file phải bị từ chối).
 - Test: `test_document_parser.py`, `test_chunker.py`, `test_ingestion_service.py`, `test_embedding_client.py`.
+
+## 🎬 Viễn cảnh
+
+**1. Owner nạp quy chế PDF**
+
+```mermaid
+flowchart LR
+    U[operator: tab Quy chế] -->|multipart ≤8MB| B[backend kiểm quyền bãi]
+    B -->|IngestDocument| P[parse: magic bytes → pypdf/python-docx, timeout 20s]
+    P --> C[chunk theo Điều/Chương ~1500 ký tự, chồng 200]
+    C --> E[embed lô 64, retry 429/5xx]
+    E --> D[(1 transaction: thay nháp hoặc thêm phiên bản)]
+    D --> N[Bản NHÁP → phải qua bộ test mới xuất bản]
+    B --> S[(Storage knowledge/bãi/doc/vN — bản gốc)]
+```
+
+**2. PDF scan (ảnh, không có chữ)** → `NO_TEXT_LAYER` — UI báo cần bản có lớp chữ.
+**3. File `.exe` đổi đuôi `.pdf`** → magic bytes không khớp → `UNSUPPORTED_FORMAT`.
+**4. Sửa quy chế, nạp lại cùng tài liệu** → nháp cũ bị thay tại chỗ; bản PUBLISHED khách đang đọc không đổi cho tới khi xuất bản.
+**5. Nhà cung cấp embedding quá tải** → retry có giãn cách; vẫn lỗi → `EMBEDDING_FAILED`, không ghi nửa vời (một transaction).
+
+## 🧰 Công nghệ áp dụng
+
+| Công nghệ | Dùng ở đâu | Vì sao |
+|---|---|---|
+| pypdf · python-docx | `engines/document_parser.py` | Thuần Python, không cần LibreOffice/OCR trong image |
+| Chunker theo cấu trúc pháp lý (regex Điều/Chương/Mục) | `engines/chunker.py` | Một đoạn = một điều khoản → trích nguồn chính xác |
+| OpenAI embeddings (lô 64) | `infra/embedding/embedding_client.py` | Giảm số request, chịu rate-limit |
+| PostgreSQL + pgvector (HNSW, GIN full-text), psycopg2 | `infra/database/pgvector_client.py` | Vector + phiên bản + transaction trong một DB |
+| Unique index một-nháp-một-PUBLISHED | `ensure_schema` | Ép vòng đời phiên bản ở tầng DB, không chỉ ở code |
+
+## ⚡ Case tối ưu
+
+**Đã áp dụng:** timeout parse 20s (chặn PDF độc) · kiểm magic bytes trước khi parse · bỏ đoạn <100 ký tự (rác header/footer) · embed theo lô + retry · ghi một transaction · HNSW cho truy vấn, GIN cho full-text.
+
+**Nên làm khi có tín hiệu**
+
+| Khi nào | Tối ưu |
+|---|---|
+| Owner nạp lại file y hệt | Băm nội dung; trùng hash với nháp/PUBLISHED → bỏ qua embed (tiết kiệm tiền) |
+| Tài liệu lớn làm request chậm | Đưa nạp vào hàng đợi (RabbitMQ) + trả trạng thái, thay vì chờ đồng bộ |
+| Nhiều PDF scan | Thêm OCR (cần cài thêm engine — hỏi trước khi cài) |
+| Số đoạn > vài trăm nghìn | Chỉnh `ef_search`/`m` của HNSW theo số đo recall/độ trễ |
