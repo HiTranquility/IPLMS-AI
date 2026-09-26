@@ -39,6 +39,28 @@ def to_snapshot_samples(message) -> List[SnapshotSample]:
     ]
 
 
+def to_evaluation_samples(message):
+    from app.core.dataset.services.evaluation_service import EvaluationSample
+
+    return [
+        EvaluationSample(sample_id=s.sample_id, image_url=s.image_url, label=s.label)
+        for s in message.samples
+    ]
+
+
+def to_progress_event(done: int, total: int):
+    return _pb2.EvaluateSnapshotEvent(progress=_pb2.EvaluationProgress(done=done, total=total))
+
+
+def to_result_event(model_version: str, summary: dict):
+    return _pb2.EvaluateSnapshotEvent(
+        result=_pb2.EvaluationResult(
+            model_version=model_version,
+            summary_json=json.dumps(summary, ensure_ascii=False, sort_keys=True),
+        )
+    )
+
+
 def to_snapshot_response(lock: dict):
     return _pb2.BuildSnapshotResponse(
         dataset_id=lock["dataset_id"],
