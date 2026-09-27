@@ -83,6 +83,8 @@ class KnowledgeEvalStore:
 
     # ── plumbing ─────────────────────────────────────────────────────────────
     def _connect(self):
+        if not self.db_url:
+            raise RagPipelineError("Thiếu AI_DATABASE_URL cho bộ test tri thức.")
         try:
             import psycopg2
 
@@ -496,6 +498,90 @@ class KnowledgeEvalStore:
             )
             reviewed, rejected = cur.fetchone()
             return {"reviewed": reviewed, "rejected": rejected}
+
+        return await self._run(work)
+
+    async def publish_scope(self, scope: Optional[str], published_by: str, validate) -> int:
+        """Check the gate and publish in one transaction while writes are blocked.
+
+        Table locks include every relation that can change the gate decision.
+        They also protect against writers that do not participate in advisory locks.
+        """
+        def work(cur):
+            cur.execute(
+                "LOCK TABLE knowledge_test_results, knowledge_test_runs, "
+                "knowledge_test_cases, knowledge_document_versions "
+                "IN SHARE ROW EXCLUSIVE MODE"
+            )
+            cur.execute(
+                f"SELECT {_RUN_COLUMNS} FROM knowledge_test_runs "
+                f"WHERE {self._scope_sql()} ORDER BY started_at DESC LIMIT 1",
+                {"scope": scope, "stale": self._stale},
+            )
+            row = cur.fetchone()
+            latest = _run_row(row) if row else None
+            cur.execute(
+                """SELECT DISTINCT ON (v.document_id) v.id::text
+                   FROM knowledge_document_versions v
+                   JOIN knowledge_documents d ON d.id = v.document_id
+                  WHERE v.status <> 'ARCHIVED'
+                    AND d.parking_lot_id IS NOT DISTINCT FROM %s
+                  ORDER BY v.document_id, v.version_no DESC""",
+                (scope,),
+            )
+            current_ids = sorted(row[0] for row in cur.fetchall())
+            cur.execute(
+                f"SELECT id::text, updated_at FROM knowledge_test_cases "
+                f"WHERE {self._scope_sql()} ORDER BY created_at",
+                {"scope": scope},
+            )
+            cases = [{"id": row[0], "updated_at": _iso(row[1])} for row in cur.fetchall()]
+            review = {"reviewed": 0, "rejected": 0}
+            unpublished = 0
+            if latest:
+                cur.execute(
+                    """SELECT COUNT(*) FILTER (WHERE review_verdict IS NOT NULL),
+                              COUNT(*) FILTER (WHERE review_verdict = FALSE)
+                       FROM knowledge_test_results WHERE run_id = %s""",
+                    (latest["id"],),
+                )
+                reviewed, rejected = cur.fetchone()
+                review = {"reviewed": reviewed, "rejected": rejected}
+                cur.execute(
+                    """SELECT COUNT(*) FROM knowledge_document_versions
+                        WHERE id = ANY(%s::uuid[]) AND status IN ('DRAFT', 'TESTED')""",
+                    (list(latest["version_ids"]),),
+                )
+                unpublished = int(cur.fetchone()[0])
+            reasons = validate(latest, current_ids, cases, review, unpublished)
+            if reasons:
+                raise KnowledgeGateError("Chưa được xuất bản: " + " ".join(reasons))
+            cur.execute(
+                """SELECT v.id::text, v.document_id::text
+                     FROM knowledge_document_versions v
+                     JOIN knowledge_documents d ON d.id = v.document_id
+                    WHERE v.id = ANY(%s::uuid[])
+                      AND v.status IN ('DRAFT', 'TESTED')
+                      AND d.parking_lot_id IS NOT DISTINCT FROM %s
+                    FOR UPDATE OF v""",
+                (list(latest["version_ids"]), scope),
+            )
+            versions = cur.fetchall()
+            if len(versions) != unpublished:
+                raise KnowledgeGateError("Phiên bản tài liệu đã thay đổi — chạy lại test.")
+            for version_id, document_id in versions:
+                cur.execute(
+                    "UPDATE knowledge_document_versions SET status = 'ARCHIVED' "
+                    "WHERE document_id = %s AND status = 'PUBLISHED'",
+                    (document_id,),
+                )
+                cur.execute(
+                    """UPDATE knowledge_document_versions
+                          SET status = 'PUBLISHED', published_at = NOW(), published_by = %s
+                        WHERE id = %s""",
+                    (published_by, version_id),
+                )
+            return len(versions)
 
         return await self._run(work)
 

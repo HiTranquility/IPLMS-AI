@@ -22,6 +22,8 @@ class PgVectorClient:
         self._schema_lock = asyncio.Lock()
 
     def _connect_sync(self, register: bool = True):
+        if not self.db_url:
+            raise RagPipelineError("Thiếu AI_DATABASE_URL cho kho tri thức.")
         try:
             import psycopg2
             from pgvector.psycopg2 import register_vector
@@ -567,6 +569,10 @@ class PgVectorClient:
                         (list(version_ids), parking_lot_id),
                     )
                     rows = cursor.fetchall()
+                    if len(rows) != len(set(version_ids)):
+                        raise RagPipelineError(
+                            "Tập phiên bản xuất bản đã thay đổi; không xuất bản một phần."
+                        )
                     for version_id, document_id in rows:
                         cursor.execute(
                             """

@@ -210,21 +210,30 @@ class KnowledgeEvalService:
         return result
 
     # ── cổng xuất bản ────────────────────────────────────────────────────────
-    async def readiness(self, scope: Optional[str]) -> Dict[str, Any]:
-        runs = await self.store.list_runs(scope, limit=1)
-        latest = runs[0] if runs else None
-        docs_fp = gate.fingerprint(await self.vector_store.latest_version_ids(scope))
-        suite_fp = gate.suite_fingerprint(await self.store.list_cases(scope))
-        unpublished = await self.store.count_unpublished(latest["version_ids"]) if latest else 0
-        reasons = gate.readiness(latest, docs_fp, suite_fp, unpublished)
+    def _readiness_reasons(self, latest, version_ids, cases, review, unpublished):
+        reasons = gate.readiness(
+            latest,
+            gate.fingerprint(version_ids),
+            gate.suite_fingerprint(cases),
+            unpublished,
+        )
         if latest and latest["status"] == "PASSED":
-            review = await self.store.review_summary(latest["id"])
             if review["reviewed"] < latest["total"]:
                 reasons.append(
                     f"Cần duyệt đủ {latest['total']} câu ({review['reviewed']} câu đã duyệt)."
                 )
             if review["rejected"]:
                 reasons.append(f"{review['rejected']} câu được đánh dấu Không OK — sửa tài liệu và chạy lại test.")
+        return reasons
+
+    async def readiness(self, scope: Optional[str]) -> Dict[str, Any]:
+        runs = await self.store.list_runs(scope, limit=1)
+        latest = runs[0] if runs else None
+        version_ids = await self.vector_store.latest_version_ids(scope)
+        cases = await self.store.list_cases(scope)
+        unpublished = await self.store.count_unpublished(latest["version_ids"]) if latest else 0
+        review = await self.store.review_summary(latest["id"]) if latest else {"reviewed": 0, "rejected": 0}
+        reasons = self._readiness_reasons(latest, version_ids, cases, review, unpublished)
         return {
             "ready": not reasons,
             "reasons": reasons,
@@ -233,12 +242,7 @@ class KnowledgeEvalService:
         }
 
     async def publish(self, scope: Optional[str], published_by: str) -> int:
-        state = await self.readiness(scope)
-        if not state["ready"]:
-            raise KnowledgeGateError("Chưa được xuất bản: " + " ".join(state["reasons"]))
-        return await self.vector_store.publish_versions(
-            scope, state["latest_run"]["version_ids"], published_by
-        )
+        return await self.store.publish_scope(scope, published_by, self._readiness_reasons)
 
 
 knowledge_eval_service = KnowledgeEvalService()
