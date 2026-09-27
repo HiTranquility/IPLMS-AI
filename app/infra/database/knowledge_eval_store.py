@@ -185,10 +185,15 @@ class KnowledgeEvalStore:
                 kind VARCHAR(16) NOT NULL,
                 expected_answer TEXT NOT NULL DEFAULT '',
                 expected_facts JSONB NOT NULL DEFAULT '[]'::jsonb,
+                expected_source VARCHAR(255) NOT NULL DEFAULT '',
                 answer TEXT NOT NULL DEFAULT '',
                 sources JSONB NOT NULL DEFAULT '[]'::jsonb,
                 passed BOOLEAN NOT NULL,
                 reasons JSONB NOT NULL DEFAULT '[]'::jsonb,
+                review_verdict BOOLEAN,
+                review_note TEXT NOT NULL DEFAULT '',
+                reviewed_by VARCHAR(100),
+                reviewed_at TIMESTAMPTZ,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
             """
@@ -196,6 +201,14 @@ class KnowledgeEvalStore:
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_knowledge_test_results_run"
             " ON knowledge_test_results (run_id, ordinal)"
+        )
+        cursor.execute(
+            """ALTER TABLE knowledge_test_results
+                ADD COLUMN IF NOT EXISTS expected_source VARCHAR(255) NOT NULL DEFAULT '',
+                ADD COLUMN IF NOT EXISTS review_verdict BOOLEAN,
+                ADD COLUMN IF NOT EXISTS review_note TEXT NOT NULL DEFAULT '',
+                ADD COLUMN IF NOT EXISTS reviewed_by VARCHAR(100),
+                ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ"""
         )
 
     # ── test cases ───────────────────────────────────────────────────────────
@@ -320,8 +333,8 @@ class KnowledgeEvalStore:
                 """
                 INSERT INTO knowledge_test_results
                     (run_id, case_id, ordinal, question, kind, expected_answer,
-                     expected_facts, answer, sources, passed, reasons)
-                VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s::jsonb, %s, %s::jsonb)
+                     expected_facts, expected_source, answer, sources, passed, reasons)
+                VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s::jsonb, %s, %s::jsonb)
                 """,
                 (
                     run_id,
@@ -331,6 +344,7 @@ class KnowledgeEvalStore:
                     result["kind"],
                     result["expected_answer"],
                     json.dumps(result["expected_facts"], ensure_ascii=False),
+                    result["expected_source"],
                     result["answer"],
                     json.dumps(result["sources"], ensure_ascii=False),
                     result["passed"],
@@ -407,7 +421,8 @@ class KnowledgeEvalStore:
             cur.execute(
                 """
                 SELECT case_id::text, question, kind, expected_answer, expected_facts,
-                       answer, sources, passed, reasons
+                       answer, sources, passed, reasons, review_verdict, review_note,
+                       reviewed_by, reviewed_at, expected_source
                 FROM knowledge_test_results WHERE run_id = %s ORDER BY ordinal
                 """,
                 (run_id,),
@@ -423,9 +438,64 @@ class KnowledgeEvalStore:
                     "sources": row[6] or [],
                     "passed": row[7],
                     "reasons": row[8] or [],
+                    "reviewed": row[9] is not None,
+                    "approved": row[9] is True,
+                    "review_note": row[10] or "",
+                    "reviewed_by": row[11] or "",
+                    "reviewed_at": _iso(row[12]),
+                    "expected_source": row[13] or "",
                 }
                 for row in cur.fetchall()
             ]
+
+        return await self._run(work)
+
+    async def review_result(
+        self, run_id: str, case_id: str, scope: Optional[str],
+        approved: bool, note: str, reviewer_id: str,
+    ) -> Optional[Dict[str, Any]]:
+        def work(cur):
+            cur.execute(
+                f"""UPDATE knowledge_test_results r
+                SET review_verdict = %(approved)s, review_note = %(note)s,
+                    reviewed_by = %(reviewer)s, reviewed_at = NOW()
+                FROM knowledge_test_runs run
+                WHERE r.run_id = run.id AND run.id = %(run_id)s
+                  AND r.case_id = %(case_id)s
+                  AND {self._scope_sql('run.parking_lot_id')}
+                  AND run.status <> 'RUNNING'
+                RETURNING r.case_id::text, r.question, r.kind, r.expected_answer,
+                          r.expected_facts, r.answer, r.sources, r.passed, r.reasons,
+                          r.review_verdict, r.review_note, r.reviewed_by, r.reviewed_at,
+                          r.expected_source""",
+                {"approved": approved, "note": note, "reviewer": reviewer_id,
+                 "run_id": run_id, "case_id": case_id, "scope": scope},
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            return {
+                "case_id": row[0], "question": row[1], "kind": row[2],
+                "expected_answer": row[3], "expected_facts": row[4] or [],
+                "answer": row[5], "sources": row[6] or [], "passed": row[7],
+                "reasons": row[8] or [], "reviewed": True,
+                "approved": row[9] is True, "review_note": row[10] or "",
+                "reviewed_by": row[11] or "", "reviewed_at": _iso(row[12]),
+                "expected_source": row[13] or "",
+            }
+
+        return await self._run(work)
+
+    async def review_summary(self, run_id: str) -> Dict[str, int]:
+        def work(cur):
+            cur.execute(
+                """SELECT COUNT(*) FILTER (WHERE review_verdict IS NOT NULL),
+                          COUNT(*) FILTER (WHERE review_verdict = FALSE)
+                   FROM knowledge_test_results WHERE run_id = %s""",
+                (run_id,),
+            )
+            reviewed, rejected = cur.fetchone()
+            return {"reviewed": reviewed, "rejected": rejected}
 
         return await self._run(work)
 

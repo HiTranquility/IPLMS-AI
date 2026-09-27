@@ -9,6 +9,7 @@ from app.api.grpc.mappers.knowledge_eval_mapper import (
     to_run,
     to_run_detail,
     to_run_list,
+    to_result,
 )
 from app.core.knowledge_eval.services import knowledge_eval_service
 from app.util.logger import logger
@@ -45,6 +46,13 @@ class KnowledgeEvalHandler(_pb2_grpc.KnowledgeEvalServiceServicer):
         return to_run_detail(
             await knowledge_eval_service.get_run(request.run_id, scope_of(request))
         )
+
+    async def ReviewTestResult(self, request, context):
+        result = await knowledge_eval_service.review_result(
+            request.run_id, request.case_id, scope_of(request),
+            request.approved, request.note, request.reviewer_id,
+        )
+        return to_result(result)
 
     async def ListTestRuns(self, request, context):
         return to_run_list(await knowledge_eval_service.list_runs(scope_of(request)))

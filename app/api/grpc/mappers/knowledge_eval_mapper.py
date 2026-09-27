@@ -65,20 +65,19 @@ def to_run(run: Optional[Dict[str, Any]]):
 def to_run_detail(detail: Dict[str, Any]):
     return _pb2.TestRunDetail(
         run=to_run(detail["run"]),
-        results=[
-            _pb2.TestResult(
-                case_id=r["case_id"],
-                question=r["question"],
-                kind=r["kind"],
-                expected_answer=r["expected_answer"],
-                expected_facts=r["expected_facts"],
-                answer=r["answer"],
-                sources=r["sources"],
-                passed=r["passed"],
-                reasons=r["reasons"],
-            )
-            for r in detail["results"]
-        ],
+        results=[to_result(r) for r in detail["results"]],
+    )
+
+
+def to_result(r: Dict[str, Any]):
+    return _pb2.TestResult(
+        case_id=r["case_id"], question=r["question"], kind=r["kind"],
+        expected_answer=r["expected_answer"], expected_facts=r["expected_facts"],
+        answer=r["answer"], sources=r["sources"], passed=r["passed"],
+        reasons=r["reasons"], reviewed=r.get("reviewed", False),
+        approved=r.get("approved", False), review_note=r.get("review_note", ""),
+        reviewed_by=r.get("reviewed_by", ""), reviewed_at=r.get("reviewed_at", ""),
+        expected_source=r.get("expected_source", ""),
     )
 
 

@@ -57,3 +57,13 @@ def to_list_response(documents: list[KnowledgeDocumentSummary]):
             for doc in documents
         ]
     )
+
+
+def to_chunks_response(result: dict):
+    return _pb2.ListDocumentChunksResponse(
+        version_no=result["version_no"],
+        status=result["status"],
+        total=result["total"],
+        chunks=[_pb2.KnowledgeChunkPreview(**chunk) for chunk in result["chunks"]],
+        versions=[_pb2.KnowledgeDocumentVersionSummary(**version) for version in result["versions"]],
+    )

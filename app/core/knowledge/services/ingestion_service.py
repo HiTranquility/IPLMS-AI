@@ -114,6 +114,9 @@ class IngestionService:
         rows = await self.vector_store.list_documents(parking_lot_id)
         return [KnowledgeDocumentSummary(**row) for row in rows]
 
+    async def list_chunks(self, document_id: str, parking_lot_id: str | None) -> dict:
+        return await self.vector_store.list_document_chunks(document_id, parking_lot_id)
+
     @staticmethod
     def _result(
         document_id: str,

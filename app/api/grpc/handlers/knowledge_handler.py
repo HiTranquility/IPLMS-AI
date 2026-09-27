@@ -1,6 +1,7 @@
 """gRPC handler for knowledge document ingestion and deletion."""
 from app.api.grpc.generated_stubs import get_stub
 from app.api.grpc.mappers.knowledge_mapper import (
+    to_chunks_response,
     to_delete_response,
     to_ingest_command,
     to_ingest_response,
@@ -34,3 +35,8 @@ class KnowledgeHandler(_pb2_grpc.KnowledgeServiceServicer):
         documents = await ingestion_service.list(request.parking_lot_id or None)
         return to_list_response(documents)
 
+    async def ListDocumentChunks(self, request, context):
+        chunks = await ingestion_service.list_chunks(
+            request.document_id, request.parking_lot_id or None
+        )
+        return to_chunks_response(chunks)

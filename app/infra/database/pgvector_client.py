@@ -644,6 +644,75 @@ class PgVectorClient:
         await self.ensure_schema()
         return await asyncio.to_thread(self._list_documents_sync, parking_lot_id)
 
+    async def list_document_chunks(
+        self, document_id: str, parking_lot_id: Optional[str]
+    ) -> Dict[str, Any]:
+        """Đọc tối đa 100 đoạn của bản đang xét; ràng buộc scope ngay tại SQL."""
+        await self.ensure_schema()
+        return await asyncio.to_thread(
+            self._list_document_chunks_sync, document_id, parking_lot_id
+        )
+
+    def _list_document_chunks_sync(
+        self, document_id: str, parking_lot_id: Optional[str]
+    ) -> Dict[str, Any]:
+        connection = self._connect_sync()
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT v.version_no, v.status, v.chunk_count, v.created_at,
+                           v.published_at
+                    FROM knowledge_documents d
+                    JOIN knowledge_document_versions v ON v.document_id = d.id
+                    WHERE d.id = %s AND d.parking_lot_id IS NOT DISTINCT FROM %s
+                    ORDER BY v.version_no DESC
+                    """,
+                    (document_id, parking_lot_id),
+                )
+                versions = [
+                    {"version_no": row[0], "status": row[1], "chunk_count": row[2],
+                     "created_at": row[3].isoformat(),
+                     "published_at": row[4].isoformat() if row[4] else ""}
+                    for row in cursor.fetchall()
+                ]
+                cursor.execute(
+                    """
+                    SELECT v.id, v.version_no, v.status, v.chunk_count
+                    FROM knowledge_documents d
+                    JOIN knowledge_document_versions v ON v.document_id = d.id
+                    WHERE d.id = %s AND d.parking_lot_id IS NOT DISTINCT FROM %s
+                      AND v.status <> 'ARCHIVED'
+                    ORDER BY v.version_no DESC LIMIT 1
+                    """,
+                    (document_id, parking_lot_id),
+                )
+                version = cursor.fetchone()
+                if not version:
+                    return {"version_no": 0, "status": "", "total": 0, "chunks": [], "versions": versions}
+                cursor.execute(
+                    """
+                    SELECT ordinal, COALESCE(title, ''), content
+                    FROM knowledge_chunks WHERE version_id = %s
+                    ORDER BY ordinal LIMIT 100
+                    """,
+                    (version[0],),
+                )
+                return {
+                    "version_no": int(version[1]),
+                    "status": version[2],
+                    "total": int(version[3]),
+                    "chunks": [
+                        {"ordinal": row[0], "section_title": row[1], "content": row[2]}
+                        for row in cursor.fetchall()
+                    ],
+                    "versions": versions,
+                }
+        except Exception as exc:
+            raise RagPipelineError("Không đọc được các đoạn tài liệu tri thức.") from exc
+        finally:
+            connection.close()
+
     def _list_documents_sync(self, parking_lot_id: Optional[str]) -> List[Dict[str, Any]]:
         connection = self._connect_sync()
         try:
