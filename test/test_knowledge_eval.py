@@ -94,6 +94,7 @@ class FakeStore:
         self.cases = cases
         self.runs = {}
         self.results = []
+        self.published = None
 
     async def list_cases(self, scope):
         return list(self.cases)
@@ -133,22 +134,25 @@ class FakeStore:
     async def count_unpublished(self, version_ids):
         return len(version_ids)
 
+    async def publish_scope(self, scope, published_by, validate):
+        latest = next(iter(self.runs.values()), None)
+        review = await self.review_summary(latest["id"]) if latest else {"reviewed": 0, "rejected": 0}
+        reasons = validate(latest, ["v2"], self.cases, review, len(latest["version_ids"]) if latest else 0)
+        if reasons:
+            raise KnowledgeGateError("Chưa được xuất bản: " + " ".join(reasons))
+        self.published = (scope, latest["version_ids"], published_by)
+        return len(latest["version_ids"])
+
 
 class FakeVectors:
     def __init__(self):
         self.tested = None
-        self.published = None
 
     async def latest_version_ids(self, scope):
         return ["v2"]
 
     async def mark_versions_tested(self, ids, ok):
         self.tested = (ids, ok)
-
-    async def publish_versions(self, scope, ids, by):
-        self.published = (scope, ids, by)
-        return len(ids)
-
 
 class FakeRag:
     def __init__(self, answers):
@@ -204,7 +208,7 @@ class EvalServiceTest(unittest.TestCase):
         self.assertFalse(before_review["ready"])
         self.assertTrue(state["ready"], state["reasons"])
         self.assertEqual(1, published)
-        self.assertEqual(("lot-a", ["v2"], "owner-1"), vectors.published)
+        self.assertEqual(("lot-a", ["v2"], "owner-1"), store.published)
 
     def test_one_wrong_fee_blocks_publish(self):
         cases = [_case(i) for i in range(10)]
@@ -221,7 +225,7 @@ class EvalServiceTest(unittest.TestCase):
         asyncio.run(scenario())
         run = store.runs["run-1"]
         self.assertEqual(("FAILED", 1), (run["status"], run["failed_facts"]))
-        self.assertIsNone(vectors.published)
+        self.assertIsNone(store.published)
         self.assertEqual([False], [r["passed"] for r in store.results if r["question"] == "q3"])
 
     def test_manual_rejection_blocks_an_automatically_passing_run(self):
