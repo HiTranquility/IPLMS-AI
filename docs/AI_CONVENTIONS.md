@@ -31,7 +31,7 @@ api/          ⟶  core/           ⟶  infra/
 
 ## 2. Mỗi domain trong `core/` có đúng ba thư mục
 
-Cả ba domain hiện tại đều theo khuôn này — **[MUST]** domain mới cũng vậy:
+Các domain mới **[MUST]** theo khuôn này. Kiểm tra 2026-09-27: `vision`, `forecast`, `copilot`, `knowledge`, `dataset` có đủ ba thư mục; `knowledge_eval` còn thiếu `dtos/` nên đang lệch quy ước. Thêm DTO nghiệp vụ thực khi sửa domain này, không tạo thư mục rỗng chỉ để đạt hình thức.
 
 ```text
 app/core/<domain>/
@@ -45,6 +45,9 @@ app/core/<domain>/
 | `vision` | `anpr_engine.py` (façade `run_anpr`) + `anpr/` (`models` · `detector` · `preprocess` · `ocr` · `plate_text` · `scoring`) · `vehicle_classifier.py` | `anpr_service.py` · `anti_fraud_service.py` |
 | `forecast` | *(trống — chưa có model qua gate; `occupancy_model.py` đã xoá 2026-09-25)* | `forecast_service.py` |
 | `copilot` | `rag_pipeline.py` | `copilot_service.py` |
+| `knowledge` | `chunker.py` · `document_parser.py` | `ingestion_service.py` |
+| `knowledge_eval` | `case_generator.py` · `gate.py` · `grader.py` · `judge.py` | `eval_service.py` |
+| `dataset` | `image_quality.py` · `plate_metrics.py` · `sample_selector.py` | `curation_service.py` · `evaluation_service.py` · `snapshot_service.py` |
 
 ### Engine ⇄ Service — ranh giới
 
@@ -52,7 +55,9 @@ app/core/<domain>/
 |---|---|---|
 | Trả lời | *"tính cái này ra sao?"* | *"một lượt nghiệp vụ gồm những bước nào?"* |
 | Ví dụ thật | `anpr_engine` nạp YOLO + EasyOCR rồi đọc biển | `anpr_service`: *"phát hiện biển → OCR → phân loại xe"* |
-| Trạng thái | được phép giữ model nạp sẵn ở module scope | **[NEVER]** giữ trạng thái giữa các request |
+| Trạng thái | được phép giữ model nạp sẵn ở module scope | **[NEVER]** giữ trạng thái nghiệp vụ giữa các request |
+
+**[GOTCHA]** `knowledge_eval/services/eval_service.py` giữ `_tasks` để task chạy nền không bị thu gom; đây là tham chiếu vòng đời tiến trình, không phải kết quả nghiệp vụ. Kết quả/lượt chạy phải nằm trong DB để replica khác đọc được. Vì vậy dòng **[NEVER]** ở trên áp dụng cho trạng thái **nghiệp vụ**, không cấm tham chiếu task nền có dọn dẹp.
 
 **[MUST]** Engine mới nặng (nạp model) thì viết lazy-load, và đọc kỹ mục §6.
 
