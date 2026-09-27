@@ -36,6 +36,7 @@ def to_ask_question_response(answer: CopilotAnswer):
         answer=answer.answer,
         sources=answer.sources,
         confidence=answer.confidence,
+        model_revision=answer.model_revision,
     )
 
 
@@ -44,6 +45,7 @@ def to_answer_chunk(chunk: AnswerChunk):
         token=chunk.token,
         is_finished=chunk.is_finished,
         sources=chunk.sources,
+        model_revision=chunk.model_revision,
     )
 
 

@@ -99,11 +99,12 @@ class FakeStore:
     async def list_cases(self, scope):
         return list(self.cases)
 
-    async def create_run(self, scope, started_by, total, version_ids, docs_fingerprint, suite_fingerprint, max_concurrent):
+    async def create_run(self, scope, started_by, total, version_ids, docs_fingerprint, suite_fingerprint, max_concurrent, answer_profile_id=None, judge_profile_id=None):
         run = {"id": "run-1", "status": "RUNNING", "total": total, "done": 0, "passed": 0,
                "failed_facts": 0, "failed_abstain": 0, "verdict_reasons": [], "error": "",
                "version_ids": version_ids, "docs_fingerprint": docs_fingerprint,
-               "suite_fingerprint": suite_fingerprint}
+               "suite_fingerprint": suite_fingerprint, "answer_profile_id": answer_profile_id or "",
+               "judge_profile_id": judge_profile_id or ""}
         self.runs[run["id"]] = run
         return dict(run)
 
@@ -137,7 +138,7 @@ class FakeStore:
     async def publish_scope(self, scope, published_by, validate):
         latest = next(iter(self.runs.values()), None)
         review = await self.review_summary(latest["id"]) if latest else {"reviewed": 0, "rejected": 0}
-        reasons = validate(latest, ["v2"], self.cases, review, len(latest["version_ids"]) if latest else 0)
+        reasons = validate(latest, ["v2"], self.cases, review, len(latest["version_ids"]) if latest else 0, {})
         if reasons:
             raise KnowledgeGateError("Chưa được xuất bản: " + " ".join(reasons))
         self.published = (scope, latest["version_ids"], published_by)
@@ -185,6 +186,22 @@ class EvalServiceTest(unittest.TestCase):
     def _service(self, cases, answers):
         store, vectors = FakeStore(cases), FakeVectors()
         return KnowledgeEvalService(store, vectors, FakeRag(answers), FakeLlm()), store, vectors
+
+    def test_model_revision_change_invalidates_publish_gate(self):
+        cases = [_case(i) for i in range(5)]
+        service, _, _ = self._service(cases, {})
+        run = {
+            "status": "PASSED", "total": 5,
+            "docs_fingerprint": gate.fingerprint(["v2"]),
+            "suite_fingerprint": gate.suite_fingerprint(cases),
+            "answer_profile_id": "old-answer", "judge_profile_id": "old-judge",
+        }
+        reasons = service._readiness_reasons(
+            run, ["v2"], cases, {"reviewed": 5, "rejected": 0}, 1,
+            {"copilot_answer": "new-answer", "test_judge": "new-judge"},
+        )
+        self.assertEqual(2, len(reasons))
+        self.assertTrue(all("Model" in reason for reason in reasons))
 
     def test_passing_run_marks_tested_and_unlocks_publish(self):
         cases = [_case(i) for i in range(5)] + [_case(9, "abstain", ())]

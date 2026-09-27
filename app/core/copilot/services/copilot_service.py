@@ -26,6 +26,7 @@ class CopilotService:
             answer=result["answer"],
             sources=result["sources"],
             confidence=result["confidence"],
+            model_revision=result.get("model_revision", ""),
         )
 
     @staticmethod
@@ -40,6 +41,7 @@ class CopilotService:
                 token=chunk["token"],
                 is_finished=chunk["is_finished"],
                 sources=chunk["sources"],
+                model_revision=chunk.get("model_revision", ""),
             )
 
     @staticmethod

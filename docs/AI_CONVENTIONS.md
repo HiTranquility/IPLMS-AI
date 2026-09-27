@@ -47,6 +47,7 @@ app/core/<domain>/
 | `copilot` | `rag_pipeline.py` | `copilot_service.py` |
 | `knowledge` | `chunker.py` · `document_parser.py` | `ingestion_service.py` |
 | `knowledge_eval` | `case_generator.py` · `gate.py` · `grader.py` · `judge.py` | `eval_service.py` |
+| `model_policy` | `validation.py` | `model_policy_service.py` |
 | `dataset` | `image_quality.py` · `plate_metrics.py` · `sample_selector.py` | `curation_service.py` · `evaluation_service.py` · `snapshot_service.py` |
 
 ### Engine ⇄ Service — ranh giới

@@ -15,7 +15,8 @@ from app.core.knowledge_eval.engines import case_generator, gate, judge
 from app.core.knowledge_eval.engines.grader import KINDS, grade
 from app.infra.database.knowledge_eval_store import knowledge_eval_store
 from app.infra.database.pgvector_client import pgvector_client
-from app.infra.llm.llm_factory import llm_factory
+from app.infra.llm.llm_factory import LlmFactory, llm_factory
+from app.infra.database.model_policy_store import model_policy_store
 from app.util.logger import logger
 
 _MAX_QUESTION = 500
@@ -67,7 +68,8 @@ class KnowledgeEvalService:
         if not version_ids:
             raise KnowledgeGateError("Chưa có tài liệu nào trong phạm vi này để AI đọc và soạn câu hỏi.")
         chunks = await self.store.chunks_for_versions(version_ids, limit=40)
-        payload = await self.llm.generate_json(
+        llm = await self.llm.for_task("test_generation") if isinstance(self.llm, LlmFactory) else self.llm
+        payload = await llm.generate_json(
             case_generator.GENERATOR_INSTRUCTIONS,
             case_generator.build_generator_input(chunks, limit),
             "knowledge_test_cases",
@@ -77,7 +79,8 @@ class KnowledgeEvalService:
         return [{**p, "id": "", "parking_lot_id": scope} for p in proposals]
 
     # ── runs ─────────────────────────────────────────────────────────────────
-    async def start_run(self, scope: Optional[str], started_by: str) -> Dict[str, Any]:
+    async def start_run(self, scope: Optional[str], started_by: str,
+                        answer_profile_id: str | None = None) -> Dict[str, Any]:
         cases = await self.store.list_cases(scope)
         if not cases:
             raise KnowledgeGateError("Bộ test đang trống — thêm câu hỏi trước khi chạy.")
@@ -88,6 +91,20 @@ class KnowledgeEvalService:
         version_ids = await self.vector_store.latest_version_ids(scope)
         if not version_ids:
             raise KnowledgeGateError("Chưa có tài liệu nào trong phạm vi này để test.")
+        answer_llm = None
+        if answer_profile_id:
+            if scope is not None:
+                raise KnowledgeGateError("Bộ test ứng viên model chỉ chạy trên kho tri thức chung.")
+            profile = await model_policy_store.get_profile(answer_profile_id)
+            if not profile or profile["task"] != "copilot_answer":
+                raise KnowledgeGateError("Hồ sơ ứng viên trả lời không hợp lệ.")
+            if not profile["tested_at"]:
+                raise KnowledgeGateError("Thử model thành công trước khi chạy bộ test RAG.")
+            answer_llm = LlmFactory(profile=profile)
+        elif isinstance(self.llm, LlmFactory):
+            answer_llm = await self.llm.for_task("copilot_answer")
+            answer_profile_id = answer_llm.profile_id or None
+        judge_llm = await self.llm.for_task("test_judge") if isinstance(self.llm, LlmFactory) else self.llm
         run = await self.store.create_run(
             scope,
             started_by,
@@ -96,19 +113,23 @@ class KnowledgeEvalService:
             docs_fingerprint=gate.fingerprint(version_ids),
             suite_fingerprint=gate.suite_fingerprint(cases),
             max_concurrent=self.config.max_concurrent_runs,
+            answer_profile_id=answer_profile_id,
+            judge_profile_id=getattr(judge_llm, "profile_id", "") or None,
         )
-        task = asyncio.create_task(self._execute(run["id"], scope, cases, version_ids))
+        task = asyncio.create_task(self._execute(run["id"], scope, cases, version_ids, answer_llm, judge_llm))
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
         return run
 
     async def _execute(
-        self, run_id: str, scope: Optional[str], cases: List[Dict[str, Any]], version_ids: List[str]
+        self, run_id: str, scope: Optional[str], cases: List[Dict[str, Any]], version_ids: List[str],
+        answer_llm=None,
+        judge_llm=None,
     ) -> None:
         passed = failed_facts = failed_abstain = 0
         try:
             for ordinal, case in enumerate(cases):
-                result = await self._run_case(case, scope)
+                result = await self._run_case(case, scope, answer_llm, judge_llm)
                 passed += int(result["passed"])
                 if not result["passed"]:
                     failed_facts += int(case["kind"] == "fact")
@@ -145,8 +166,12 @@ class KnowledgeEvalService:
         if gate.fingerprint(await self.vector_store.latest_version_ids(scope)) == gate.fingerprint(version_ids):
             await self.vector_store.mark_versions_tested(version_ids, ok)
 
-    async def _run_case(self, case: Dict[str, Any], scope: Optional[str]) -> Dict[str, Any]:
-        answer = await self.rag.query(case["question"], parking_lot_id=scope, preview=True)
+    async def _run_case(self, case: Dict[str, Any], scope: Optional[str], answer_llm=None,
+                        judge_llm=None) -> Dict[str, Any]:
+        kwargs = {"parking_lot_id": scope, "preview": True}
+        if answer_llm is not None:
+            kwargs["llm_override"] = answer_llm
+        answer = await self.rag.query(case["question"], **kwargs)
         sources = list(answer.get("sources") or [])
         result = grade(
             case["kind"],
@@ -159,12 +184,13 @@ class KnowledgeEvalService:
         reasons = list(result.reasons)
         passed = result.passed
         if result.needs_judge and self.config.judge_enabled and case.get("expected_answer"):
-            payload = await self.llm.generate_json(
+            llm = judge_llm or self.llm
+            payload = await llm.generate_json(
                 judge.JUDGE_INSTRUCTIONS,
                 judge.build_judge_input(case["question"], case["expected_answer"], answer["answer"]),
                 "knowledge_judge_verdict",
                 judge.JUDGE_SCHEMA,
-                model=self.config.judge_model or None,
+                model=(self.config.judge_model or None) if llm is self.llm else None,
             )
             passed, reason = judge.parse_verdict(payload)
             reasons.append(f"Giám khảo AI: {reason}")
@@ -210,7 +236,8 @@ class KnowledgeEvalService:
         return result
 
     # ── cổng xuất bản ────────────────────────────────────────────────────────
-    def _readiness_reasons(self, latest, version_ids, cases, review, unpublished):
+    def _readiness_reasons(self, latest, version_ids, cases, review, unpublished,
+                           active_profile_ids=None):
         reasons = gate.readiness(
             latest,
             gate.fingerprint(version_ids),
@@ -218,6 +245,11 @@ class KnowledgeEvalService:
             unpublished,
         )
         if latest and latest["status"] == "PASSED":
+            active_profile_ids = active_profile_ids or {}
+            if (latest.get("answer_profile_id") or "") != active_profile_ids.get("copilot_answer", ""):
+                reasons.append("Model trả lời đã đổi sau lượt test — chạy lại.")
+            if (latest.get("judge_profile_id") or "") != active_profile_ids.get("test_judge", ""):
+                reasons.append("Model chấm bài đã đổi sau lượt test — chạy lại.")
             if review["reviewed"] < latest["total"]:
                 reasons.append(
                     f"Cần duyệt đủ {latest['total']} câu ({review['reviewed']} câu đã duyệt)."
@@ -233,7 +265,14 @@ class KnowledgeEvalService:
         cases = await self.store.list_cases(scope)
         unpublished = await self.store.count_unpublished(latest["version_ids"]) if latest else 0
         review = await self.store.review_summary(latest["id"]) if latest else {"reviewed": 0, "rejected": 0}
-        reasons = self._readiness_reasons(latest, version_ids, cases, review, unpublished)
+        active_profile_ids = {}
+        if isinstance(self.llm, LlmFactory) and model_policy_store.db_url:
+            for task in ("copilot_answer", "test_judge"):
+                active = await model_policy_store.get_active(task)
+                active_profile_ids[task] = active["id"] if active else ""
+        reasons = self._readiness_reasons(
+            latest, version_ids, cases, review, unpublished, active_profile_ids
+        )
         return {
             "ready": not reasons,
             "reasons": reasons,

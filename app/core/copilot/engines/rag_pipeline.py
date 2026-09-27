@@ -7,7 +7,7 @@ from app.config import get_config
 from app.core.exceptions import EmbeddingError, ModelNotLoadedError, RagPipelineError
 from app.infra.database.pgvector_client import pgvector_client
 from app.infra.embedding import embedding_client
-from app.infra.llm.llm_factory import llm_factory
+from app.infra.llm.llm_factory import LlmFactory, llm_factory
 from app.util.logger import logger
 
 
@@ -81,7 +81,8 @@ class RagPipelineEngine:
             raise RagPipelineError("Không truy xuất được kho tri thức.") from exc
 
     async def query(
-        self, query_text: str, parking_lot_id: str | None = None, preview: bool = False
+        self, query_text: str, parking_lot_id: str | None = None, preview: bool = False,
+        llm_override=None,
     ) -> Dict[str, Any]:
         logger.info(
             "Executing RAG query query_chars=%d lot_scoped=%s",
@@ -93,7 +94,10 @@ class RagPipelineEngine:
         if not chunks:
             return {"answer": NO_CONTEXT_ANSWER, "sources": [], "confidence": 0.0}
 
-        answer = await self.llm.generate_response(
+        llm = llm_override or (
+            await self.llm.for_task("copilot_answer") if isinstance(self.llm, LlmFactory) else self.llm
+        )
+        answer = await llm.generate_response(
             SYSTEM_PROMPT,
             query_text.strip(),
             _context(chunks),
@@ -102,6 +106,7 @@ class RagPipelineEngine:
             "answer": answer,
             "sources": sources,
             "confidence": _confidence(chunks),
+            "model_revision": getattr(llm, "profile_revision", ""),
         }
 
     async def stream_query(
@@ -119,14 +124,16 @@ class RagPipelineEngine:
             yield {"token": "", "is_finished": True, "sources": []}
             return
 
-        async for token in self.llm.stream_response(
+        llm = await self.llm.for_task("copilot_answer") if isinstance(self.llm, LlmFactory) else self.llm
+        async for token in llm.stream_response(
             SYSTEM_PROMPT,
             query_text.strip(),
             _context(chunks),
         ):
             yield {"token": token, "is_finished": False, "sources": []}
 
-        yield {"token": "", "is_finished": True, "sources": sources}
+        yield {"token": "", "is_finished": True, "sources": sources,
+               "model_revision": getattr(llm, "profile_revision", "")}
 
 
 rag_pipeline = RagPipelineEngine()

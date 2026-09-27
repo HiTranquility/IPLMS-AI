@@ -38,7 +38,9 @@ class KnowledgeEvalHandler(_pb2_grpc.KnowledgeEvalServiceServicer):
         )
 
     async def StartTestRun(self, request, context):
-        run = await knowledge_eval_service.start_run(scope_of(request), request.started_by)
+        run = await knowledge_eval_service.start_run(
+            scope_of(request), request.started_by, request.answer_profile_id or None
+        )
         logger.info("KnowledgeEval.StartTestRun run=%s cases=%d", run["id"], run["total"])
         return to_run(run)
 
