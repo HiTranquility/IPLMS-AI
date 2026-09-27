@@ -107,7 +107,21 @@ class FakeStore:
         return dict(run)
 
     async def add_result(self, run_id, ordinal, result):
-        self.results.append(result)
+        self.results.append({**result, "reviewed": False, "approved": False})
+
+    async def review_result(self, run_id, case_id, scope, approved, note, reviewer_id):
+        for result in self.results:
+            if result["case_id"] == case_id:
+                result.update(reviewed=True, approved=approved, review_note=note,
+                              reviewed_by=reviewer_id)
+                return result
+        return None
+
+    async def review_summary(self, run_id):
+        return {
+            "reviewed": sum(r["reviewed"] for r in self.results),
+            "rejected": sum(r["reviewed"] and not r["approved"] for r in self.results),
+        }
 
     async def finish_run(self, run_id, status, failed_facts=0, failed_abstain=0, verdict_reasons=None, error=""):
         self.runs[run_id].update(status=status, failed_facts=failed_facts, failed_abstain=failed_abstain,
@@ -177,13 +191,17 @@ class EvalServiceTest(unittest.TestCase):
         async def scenario():
             await service.start_run("lot-a", "owner-1")
             await _drain(service)
+            before_review = await service.readiness("lot-a")
+            for case in cases:
+                await service.review_result("run-1", case["id"], "lot-a", True, "", "owner-1")
             state = await service.readiness("lot-a")
             published = await service.publish("lot-a", "owner-1")
-            return state, published
+            return before_review, state, published
 
-        state, published = asyncio.run(scenario())
+        before_review, state, published = asyncio.run(scenario())
         self.assertEqual("PASSED", store.runs["run-1"]["status"])
         self.assertEqual((["v2"], True), vectors.tested)
+        self.assertFalse(before_review["ready"])
         self.assertTrue(state["ready"], state["reasons"])
         self.assertEqual(1, published)
         self.assertEqual(("lot-a", ["v2"], "owner-1"), vectors.published)
@@ -205,6 +223,24 @@ class EvalServiceTest(unittest.TestCase):
         self.assertEqual(("FAILED", 1), (run["status"], run["failed_facts"]))
         self.assertIsNone(vectors.published)
         self.assertEqual([False], [r["passed"] for r in store.results if r["question"] == "q3"])
+
+    def test_manual_rejection_blocks_an_automatically_passing_run(self):
+        cases = [_case(i) for i in range(5)]
+        answers = {f"q{i}": {"answer": "Phí 25.000đ", "sources": ["qc.pdf"]} for i in range(5)}
+        service, _, _ = self._service(cases, answers)
+
+        async def scenario():
+            await service.start_run("lot-a", "owner-1")
+            await _drain(service)
+            for case in cases:
+                await service.review_result(
+                    "run-1", case["id"], "lot-a", case["id"] != "c2", "nguồn sai", "owner-1"
+                )
+            return await service.readiness("lot-a")
+
+        state = asyncio.run(scenario())
+        self.assertFalse(state["ready"])
+        self.assertTrue(any("Không OK" in reason for reason in state["reasons"]))
 
     def test_missing_llm_key_fails_run_as_infrastructure_not_as_wrong_answers(self):
         cases = [_case(i) for i in range(5)]

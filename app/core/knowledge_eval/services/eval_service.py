@@ -174,6 +174,7 @@ class KnowledgeEvalService:
             "kind": case["kind"],
             "expected_answer": case.get("expected_answer") or "",
             "expected_facts": case.get("expected_facts") or [],
+            "expected_source": case.get("expected_source") or "",
             "answer": answer["answer"],
             "sources": sources,
             "passed": passed,
@@ -195,6 +196,19 @@ class KnowledgeEvalService:
     async def list_runs(self, scope: Optional[str]) -> List[Dict[str, Any]]:
         return await self.store.list_runs(scope)
 
+    async def review_result(
+        self, run_id: str, case_id: str, scope: Optional[str],
+        approved: bool, note: str, reviewer_id: str,
+    ) -> Dict[str, Any]:
+        if len(note) > 1000:
+            raise ValueError("Ghi chú đánh giá tối đa 1000 ký tự.")
+        result = await self.store.review_result(
+            run_id, case_id, scope, approved, note.strip(), reviewer_id
+        )
+        if result is None:
+            raise KnowledgeGateError("Không tìm thấy kết quả đã chạy trong phạm vi này.")
+        return result
+
     # ── cổng xuất bản ────────────────────────────────────────────────────────
     async def readiness(self, scope: Optional[str]) -> Dict[str, Any]:
         runs = await self.store.list_runs(scope, limit=1)
@@ -203,6 +217,14 @@ class KnowledgeEvalService:
         suite_fp = gate.suite_fingerprint(await self.store.list_cases(scope))
         unpublished = await self.store.count_unpublished(latest["version_ids"]) if latest else 0
         reasons = gate.readiness(latest, docs_fp, suite_fp, unpublished)
+        if latest and latest["status"] == "PASSED":
+            review = await self.store.review_summary(latest["id"])
+            if review["reviewed"] < latest["total"]:
+                reasons.append(
+                    f"Cần duyệt đủ {latest['total']} câu ({review['reviewed']} câu đã duyệt)."
+                )
+            if review["rejected"]:
+                reasons.append(f"{review['rejected']} câu được đánh dấu Không OK — sửa tài liệu và chạy lại test.")
         return {
             "ready": not reasons,
             "reasons": reasons,
