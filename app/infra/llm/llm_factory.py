@@ -12,21 +12,35 @@ from app.util.logger import logger
 class LlmFactory:
     """Small adapter around Responses API, injectable in unit tests."""
 
-    def __init__(self, api_key: str | None = None, client: Any | None = None):
+    def __init__(self, api_key: str | None = None, client: Any | None = None,
+                 profile: dict[str, Any] | None = None):
         config = get_config().llm
         self.api_key = api_key or config.llm_api_key
-        self.base_url = (config.llm_base_url or "").strip()
-        self.model = config.llm_model
-        self.timeout_seconds = config.llm_timeout_seconds
+        self.base_url = (config.llm_base_url or "").strip() if not profile or profile["provider"] == "ollama" else ""
+        self.model = profile["model"] if profile else config.llm_model
+        self.timeout_seconds = profile["timeout_seconds"] if profile else config.llm_timeout_seconds
         self.max_retries = config.llm_max_retries
-        self.max_output_tokens = config.llm_max_output_tokens
+        self.max_output_tokens = profile["max_output_tokens"] if profile else config.llm_max_output_tokens
+        self.reasoning_effort = profile["reasoning_effort"] if profile else "none"
+        self.profile_revision = f"{profile['task']}:{profile['revision']}" if profile else "env"
+        self.profile_id = profile["id"] if profile else ""
+        self._profile = profile is not None
         self._client = client
+
+    async def for_task(self, task: str) -> "LlmFactory":
+        """Read the active revision per request so replicas see activation promptly."""
+        from app.infra.database.model_policy_store import model_policy_store
+
+        if not model_policy_store.db_url:
+            return self
+        profile = await model_policy_store.get_active(task)
+        return LlmFactory(profile=profile) if profile else self
 
     def _get_client(self) -> Any:
         if self._client is not None:
             return self._client
         # Endpoint riêng (Ollama…) không cần key thật; OpenAI thì bắt buộc.
-        api_key = self.api_key or ("ollama" if self.base_url else "")
+        api_key = "ollama" if self.base_url else self.api_key
         if not api_key:
             logger.error("Thiếu AI_LLM_API_KEY; Copilot chưa thể gọi mô hình ngôn ngữ.")
             raise ModelNotLoadedError(
@@ -51,7 +65,7 @@ class LlmFactory:
         return not self.base_url or "api.openai.com" in self.base_url
 
     def _request(self, system_prompt: str, user_query: str, context: str) -> dict[str, Any]:
-        return {
+        request = {
             "model": self.model,
             "instructions": system_prompt,
             "input": (
@@ -65,6 +79,9 @@ class LlmFactory:
             # phía provider trừ khi có quyết định governance riêng.
             "store": False,
         }
+        if self.reasoning_effort != "none" and self.uses_openai:
+            request["reasoning"] = {"effort": self.reasoning_effort}
+        return request
 
     async def generate_response(self, system_prompt: str, user_query: str, context: str) -> str:
         """Generate one grounded answer; never logs prompt or retrieved content."""
@@ -99,11 +116,11 @@ class LlmFactory:
                 instructions, input_text, schema_name, schema, model
             )
         try:
-            response = await self._get_client().responses.create(
+            kwargs = dict(
                 model=model or self.model,
                 instructions=instructions,
                 input=input_text,
-                max_output_tokens=max(self.max_output_tokens, 4000),
+                max_output_tokens=self.max_output_tokens if self._profile else max(self.max_output_tokens, 4000),
                 store=False,
                 text={
                     "format": {
@@ -114,6 +131,9 @@ class LlmFactory:
                     }
                 },
             )
+            if self.reasoning_effort != "none":
+                kwargs["reasoning"] = {"effort": self.reasoning_effort}
+            response = await self._get_client().responses.create(**kwargs)
             payload = json.loads((response.output_text or "").strip() or "null")
             if not isinstance(payload, dict):
                 raise RagPipelineError("Mô hình không trả về JSON đúng định dạng.")
@@ -145,7 +165,7 @@ class LlmFactory:
                     {"role": "system", "content": instructions},
                     {"role": "user", "content": input_text},
                 ],
-                max_tokens=max(self.max_output_tokens, 4000),
+                max_tokens=self.max_output_tokens if self._profile else max(self.max_output_tokens, 4000),
                 response_format={
                     "type": "json_schema",
                     "json_schema": {"name": schema_name, "schema": schema, "strict": True},

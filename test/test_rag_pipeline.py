@@ -79,6 +79,7 @@ class RagPipelineTest(unittest.TestCase):
 
                 client = EmbeddingClient()
                 client._api_key = ""
+                client._base_url = ""
                 return await client.embed_query(text)
 
         engine = RagPipelineEngine(UnconfiguredEmbedder(), FakeStore([]), FakeLlm())

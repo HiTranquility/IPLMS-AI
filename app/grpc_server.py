@@ -20,6 +20,7 @@ SERVICE_REGISTRY = (
     ("copilot_service", "add_CopilotServiceServicer_to_server", "CopilotHandler", "RAG & Dispute"),
     ("knowledge_service", "add_KnowledgeServiceServicer_to_server", "KnowledgeHandler", "Knowledge ingestion"),
     ("knowledge_service", "add_KnowledgeEvalServiceServicer_to_server", "KnowledgeEvalHandler", "KB test + publish gate"),
+    ("model_policy_service", "add_ModelPolicyServiceServicer_to_server", "ModelPolicyHandler", "Admin model profiles"),
     ("forecast_service", "add_ForecastServiceServicer_to_server", "ForecastHandler", "Occupancy & Tariff"),
     ("dataset_service", "add_DatasetServiceServicer_to_server", "DatasetHandler", "ANPR data curation + snapshot"),
     ("health_service", "add_HealthServicer_to_server", "HealthHandler", "grpc.health.v1"),

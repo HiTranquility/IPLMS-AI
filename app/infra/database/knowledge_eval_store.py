@@ -19,7 +19,8 @@ _RUN_COLUMNS = """
     id::text, parking_lot_id, status, total, done, passed, failed_facts, failed_abstain,
     verdict_reasons, error, version_ids, docs_fingerprint, suite_fingerprint,
     started_by, started_at, finished_at,
-    (heartbeat_at < NOW() - make_interval(secs => %(stale)s)) AS is_stale
+    (heartbeat_at < NOW() - make_interval(secs => %(stale)s)) AS is_stale,
+    answer_profile_id::text, judge_profile_id::text
 """
 
 _CASE_COLUMNS = """
@@ -55,6 +56,8 @@ def _run_row(row) -> Dict[str, Any]:
         "started_by": row[13] or "",
         "started_at": _iso(row[14]),
         "finished_at": _iso(row[15]),
+        "answer_profile_id": row[17] or "",
+        "judge_profile_id": row[18] or "",
     }
 
 
@@ -168,7 +171,9 @@ class KnowledgeEvalStore:
                 started_by VARCHAR(100),
                 started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 heartbeat_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                finished_at TIMESTAMPTZ
+                finished_at TIMESTAMPTZ,
+                answer_profile_id UUID,
+                judge_profile_id UUID
             )
             """
         )
@@ -176,6 +181,8 @@ class KnowledgeEvalStore:
             "CREATE INDEX IF NOT EXISTS idx_knowledge_test_runs_scope"
             " ON knowledge_test_runs (parking_lot_id, started_at DESC)"
         )
+        cursor.execute("ALTER TABLE knowledge_test_runs ADD COLUMN IF NOT EXISTS answer_profile_id UUID")
+        cursor.execute("ALTER TABLE knowledge_test_runs ADD COLUMN IF NOT EXISTS judge_profile_id UUID")
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS knowledge_test_results (
@@ -287,6 +294,8 @@ class KnowledgeEvalStore:
         docs_fingerprint: str,
         suite_fingerprint: str,
         max_concurrent: int,
+        answer_profile_id: str | None = None,
+        judge_profile_id: str | None = None,
     ) -> Dict[str, Any]:
         """Kiểm trần + tạo lượt chạy trong CÙNG transaction có khoá — 2 cú bấm
         đồng thời không lọt qua kiểm tra cùng lúc."""
@@ -309,9 +318,9 @@ class KnowledgeEvalStore:
                 f"""
                 INSERT INTO knowledge_test_runs
                     (id, parking_lot_id, status, total, version_ids,
-                     docs_fingerprint, suite_fingerprint, started_by)
+                     docs_fingerprint, suite_fingerprint, started_by, answer_profile_id, judge_profile_id)
                 VALUES (%(id)s, %(scope)s, 'RUNNING', %(total)s, %(versions)s::jsonb,
-                        %(docs_fp)s, %(suite_fp)s, %(by)s)
+                        %(docs_fp)s, %(suite_fp)s, %(by)s, %(answer_profile_id)s, %(judge_profile_id)s)
                 RETURNING {_RUN_COLUMNS}
                 """,
                 {
@@ -322,6 +331,8 @@ class KnowledgeEvalStore:
                     "docs_fp": docs_fingerprint,
                     "suite_fp": suite_fingerprint,
                     "by": started_by,
+                    "answer_profile_id": answer_profile_id,
+                    "judge_profile_id": judge_profile_id,
                     "stale": self._stale,
                 },
             )
@@ -510,9 +521,14 @@ class KnowledgeEvalStore:
         def work(cur):
             cur.execute(
                 "LOCK TABLE knowledge_test_results, knowledge_test_runs, "
-                "knowledge_test_cases, knowledge_document_versions "
+                "knowledge_test_cases, knowledge_document_versions, ai_model_profiles "
                 "IN SHARE ROW EXCLUSIVE MODE"
             )
+            cur.execute(
+                "SELECT task, id::text FROM ai_model_profiles "
+                "WHERE task IN ('copilot_answer', 'test_judge') AND status = 'ACTIVE'"
+            )
+            active_profile_ids = dict(cur.fetchall())
             cur.execute(
                 f"SELECT {_RUN_COLUMNS} FROM knowledge_test_runs "
                 f"WHERE {self._scope_sql()} ORDER BY started_at DESC LIMIT 1",
@@ -553,7 +569,7 @@ class KnowledgeEvalStore:
                     (list(latest["version_ids"]),),
                 )
                 unpublished = int(cur.fetchone()[0])
-            reasons = validate(latest, current_ids, cases, review, unpublished)
+            reasons = validate(latest, current_ids, cases, review, unpublished, active_profile_ids)
             if reasons:
                 raise KnowledgeGateError("Chưa được xuất bản: " + " ".join(reasons))
             cur.execute(
@@ -583,6 +599,9 @@ class KnowledgeEvalStore:
                 )
             return len(versions)
 
+        from app.infra.database.model_policy_store import model_policy_store
+
+        await model_policy_store.ensure_schema()
         return await self._run(work)
 
     # ── phiên bản (đọc cho cổng xuất bản + sinh câu hỏi) ────────────────────

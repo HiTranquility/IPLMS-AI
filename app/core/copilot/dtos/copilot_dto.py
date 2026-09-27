@@ -21,12 +21,14 @@ class CopilotAnswer(BaseModel):
     answer: str
     sources: List[str]
     confidence: float
+    model_revision: str = ""
 
 
 class AnswerChunk(BaseModel):
     token: str
     is_finished: bool
     sources: List[str] = Field(default_factory=list)
+    model_revision: str = ""
 
 
 class DisputeArbitrationRequest(BaseModel):

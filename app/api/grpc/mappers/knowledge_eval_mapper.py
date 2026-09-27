@@ -59,6 +59,8 @@ def to_run(run: Optional[Dict[str, Any]]):
         started_by=run.get("started_by") or "",
         started_at=run.get("started_at") or "",
         finished_at=run.get("finished_at") or "",
+        answer_profile_id=run.get("answer_profile_id") or "",
+        judge_profile_id=run.get("judge_profile_id") or "",
     )
 
 

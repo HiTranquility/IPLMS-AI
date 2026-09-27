@@ -5,6 +5,7 @@ from app.api.grpc.handlers.forecast_handler import ForecastHandler
 from app.api.grpc.handlers.health_handler import HealthHandler
 from app.api.grpc.handlers.knowledge_eval_handler import KnowledgeEvalHandler
 from app.api.grpc.handlers.knowledge_handler import KnowledgeHandler
+from app.api.grpc.handlers.model_policy_handler import ModelPolicyHandler
 from app.api.grpc.handlers.vision_handler import VisionHandler
 
 __all__ = [
@@ -14,5 +15,6 @@ __all__ = [
     "HealthHandler",
     "KnowledgeHandler",
     "KnowledgeEvalHandler",
+    "ModelPolicyHandler",
     "DatasetHandler",
 ]

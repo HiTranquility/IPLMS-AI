@@ -13,6 +13,7 @@ from app.core.exceptions import KnowledgeGateError
 from app.core.knowledge_eval.engines.gate import fingerprint, suite_fingerprint
 from app.infra.database.knowledge_eval_store import KnowledgeEvalStore
 from app.infra.database.pgvector_client import PgVectorClient
+from app.infra.database.model_policy_store import model_policy_store
 
 
 @unittest.skipUnless(os.getenv("AI_TEST_DATABASE_URL"), "requires AI_TEST_DATABASE_URL")
@@ -29,6 +30,10 @@ class PublishConcurrencyTest(unittest.TestCase):
         store._schema_ready = True
         with psycopg2.connect(url) as conn, conn.cursor() as cur:
             store._create_schema(cur)
+        previous_policy_url = model_policy_store.db_url
+        model_policy_store.db_url = url
+        model_policy_store._schema_ready = False
+        asyncio.run(model_policy_store.ensure_schema())
         scope = f"publish-race-{uuid4()}"
         doc_id, version_id, case_id, run_id = (str(uuid4()) for _ in range(4))
         with psycopg2.connect(url) as conn, conn.cursor() as cur:
@@ -63,7 +68,7 @@ class PublishConcurrencyTest(unittest.TestCase):
                 (run_id, case_id),
             )
 
-        def validate(latest, ids, cases, review, unpublished):
+        def validate(latest, ids, cases, review, unpublished, active_profile_id):
             reasons = []
             if latest["docs_fingerprint"] != fingerprint(ids):
                 reasons.append("document changed")
@@ -106,6 +111,8 @@ class PublishConcurrencyTest(unittest.TestCase):
                 cur.execute("SELECT status FROM knowledge_document_versions WHERE id = %s", (version_id,))
                 self.assertEqual("TESTED", cur.fetchone()[0])
         finally:
+            model_policy_store.db_url = previous_policy_url
+            model_policy_store._schema_ready = False
             writer.rollback()
             writer.close()
             with psycopg2.connect(url) as conn, conn.cursor() as cur:
