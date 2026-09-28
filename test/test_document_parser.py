@@ -5,9 +5,10 @@ lại khi đã cài. Nhánh TXT/MD cùng toàn bộ phép kiểm đầu vào th�
 gói nào, chạy được ngay.
 """
 import importlib.util
+import os
 import unittest
 
-from app.core.constants import KNOWLEDGE_MAX_FILE_BYTES
+from app.core.constants import CHUNK_MIN_CHARS, KNOWLEDGE_MAX_FILE_BYTES
 from app.core.enums import DocumentFormat
 from app.core.exceptions import (
     DocumentTooLargeError,
@@ -91,7 +92,7 @@ class ChanDauVaoXauTest(unittest.TestCase):
         self.assertLess(KNOWLEDGE_MAX_FILE_BYTES, 10 * 1024 * 1024)
 
 
-@unittest.skipUnless(CO_PYPDF, "Chưa cài pypdf")
+@unittest.skipUnless(CO_PYPDF and os.getenv("AI_TEST_OCR"), "Cần pypdf + AI_TEST_OCR=1")
 class PdfTest(unittest.TestCase):
     def test_pdf_hop_le_nhung_khong_co_lop_van_ban(self):
         """PDF scan: cấu trúc đúng, chữ ký đúng, nhưng không có chữ nào."""
@@ -105,6 +106,28 @@ class PdfTest(unittest.TestCase):
 
         with self.assertRaises(NoTextLayerError):
             parse_document(buf.getvalue(), "ban_scan.pdf")
+
+    def test_pdf_scan_co_chu_duoc_ocr_thanh_ban_nhap(self):
+        """A raster-only PDF must yield text instead of being treated as empty."""
+        import io as _io
+        from PIL import Image, ImageDraw, ImageFont
+        from pypdf import PdfReader
+
+        image = Image.new("RGB", (2300, 1350), "white")
+        draw = ImageDraw.Draw(image)
+        font = ImageFont.load_default(size=90)
+        draw.text((100, 140), "PARKING RULES", fill="black", font=font)
+        draw.text((100, 360), "MOTORBIKE FEE 25000 VND", fill="black", font=font)
+        draw.text((100, 580), "CAR FEE 50000 VND PER HOUR", fill="black", font=font)
+        draw.text((100, 800), "OPEN FROM SIX AM TO TEN PM", fill="black", font=font)
+        draw.text((100, 1020), "KEEP YOUR TICKET AT ALL TIMES", fill="black", font=font)
+        buf = _io.BytesIO()
+        image.save(buf, "PDF", resolution=150)
+        self.assertFalse(PdfReader(_io.BytesIO(buf.getvalue())).pages[0].extract_text())
+
+        parsed = parse_document(buf.getvalue(), "scanned-rules.pdf")
+        self.assertGreaterEqual(len(parsed.text.strip()), CHUNK_MIN_CHARS)
+        self.assertTrue(any("nhận dạng chữ từ ảnh" in warning for warning in parsed.warnings))
 
 
 @unittest.skipUnless(CO_DOCX, "Chưa cài python-docx")

@@ -53,7 +53,7 @@ class IngestStatus(str, Enum):
     """Kết quả 1 lượt nạp — khớp enum `IngestStatus` trong knowledge_service.proto.
 
     Bốn giá trị lỗi tách riêng thay vì một `FAILED` chung: mỗi loại ứng với một
-    hành động khác nhau của owner — đổi file khác, số hoá lại bản scan, hay chờ
+    hành động khác nhau của owner — đổi file khác, dùng bản rõ nét hơn, hay chờ
     rồi thử lại. Gộp chúng lại là ném việc chẩn đoán sang cho người không có
     thông tin để chẩn đoán.
     """
