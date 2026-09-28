@@ -475,16 +475,17 @@ class PgVectorClient:
                     )
                     draft = cursor.fetchone()
                     if draft:
-                        version_id, version_no = str(draft[0]), int(draft[1])
-                        cursor.execute("DELETE FROM knowledge_chunks WHERE version_id = %s", (version_id,))
+                        previous_version_id, version_no = str(draft[0]), int(draft[1])
+                        version_id = str(uuid4())
+                        cursor.execute("DELETE FROM knowledge_chunks WHERE version_id = %s", (previous_version_id,))
                         cursor.execute(
                             """
                             UPDATE knowledge_document_versions
-                            SET status = 'DRAFT', file_name = %s, uploaded_by = %s,
+                            SET id = %s, status = 'DRAFT', file_name = %s, uploaded_by = %s,
                                 chunk_count = %s, created_at = NOW()
                             WHERE id = %s
                             """,
-                            (file_name, uploaded_by, len(chunks), version_id),
+                            (version_id, file_name, uploaded_by, len(chunks), previous_version_id),
                         )
                     else:
                         cursor.execute(
