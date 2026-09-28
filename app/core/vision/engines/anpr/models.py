@@ -7,6 +7,7 @@ import threading
 from typing import Any, Dict, Optional
 
 from app.config import get_config
+from app.infra.ocr.reader import get_easyocr_reader
 from app.infra.model_registry import (
     ArtifactResolutionError,
     ModelArtifactSpec,
@@ -40,12 +41,7 @@ def ensure_models_loaded() -> None:
 
         if _state["ocr_reader"] is None:
             try:
-                import easyocr
-
-                ocr_kwargs = {}
-                if vision.ocr_model_storage_dir.strip():
-                    ocr_kwargs["model_storage_directory"] = vision.ocr_model_storage_dir
-                _state["ocr_reader"] = easyocr.Reader(vision.ocr_language_list, **ocr_kwargs)
+                _state["ocr_reader"] = get_easyocr_reader()
                 logger.info(f"EasyOCR loaded: languages={vision.ocr_language_list}")
             except Exception as exc:
                 logger.error(f"Failed to load EasyOCR: {exc}")

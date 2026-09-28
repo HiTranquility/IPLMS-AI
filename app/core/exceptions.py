@@ -72,11 +72,7 @@ class UnsupportedFormatError(AiServiceError):
 
 
 class NoTextLayerError(AiServiceError):
-    """Tài liệu không có lớp văn bản — gần như chắc chắn là bản scan/ảnh chụp.
-
-    Tách riêng khỏi ``UnsupportedFormatError`` vì hướng xử lý của owner khác hẳn:
-    đây là file ĐÚNG định dạng nhưng cần bản gốc số hoá, không phải đổi định dạng.
-    """
+    """Định dạng hợp lệ nhưng không có chữ đọc được, kể cả sau khi OCR PDF."""
 
 
 class DocumentTooLargeError(AiServiceError):

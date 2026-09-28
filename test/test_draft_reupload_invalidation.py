@@ -13,6 +13,50 @@ from app.infra.database.pgvector_client import PgVectorClient
 
 @unittest.skipUnless(os.getenv("AI_TEST_DATABASE_URL"), "requires AI_TEST_DATABASE_URL")
 class DraftReuploadInvalidationTest(unittest.TestCase):
+    def test_archived_chunks_are_readable_only_in_their_scope(self):
+        import psycopg2
+
+        url = os.environ["AI_TEST_DATABASE_URL"]
+        vector = PgVectorClient(url)
+        doc_id = str(uuid4())
+        scope = f"version-history-{uuid4()}"
+
+        async def scenario():
+            await vector.ensure_schema()
+            base = {
+                "document_id": doc_id,
+                "file_name": "rules.txt",
+                "category": "regulation",
+                "parking_lot_id": scope,
+                "uploaded_by": "test-owner",
+            }
+            embedding = [0.0] * vector.dimensions
+            first = await vector.save_draft_version(
+                **base, chunks=[{"content": "Old published rule", "ordinal": 0, "embedding": embedding}]
+            )
+            await vector.publish_versions(scope, [first["version_id"]], "test-owner")
+            second = await vector.save_draft_version(
+                **base, chunks=[{"content": "New published rule", "ordinal": 0, "embedding": embedding}]
+            )
+            await vector.publish_versions(scope, [second["version_id"]], "test-owner")
+            return (
+                await vector.list_document_chunks(doc_id, scope, 1),
+                await vector.list_document_chunks(doc_id, scope, 2),
+                await vector.list_document_chunks(doc_id, "another-area", 1),
+            )
+
+        try:
+            old, current, foreign = asyncio.run(scenario())
+            self.assertEqual((1, "ARCHIVED", "Old published rule"),
+                             (old["version_no"], old["status"], old["chunks"][0]["content"]))
+            self.assertEqual((2, "PUBLISHED", "New published rule"),
+                             (current["version_no"], current["status"], current["chunks"][0]["content"]))
+            self.assertEqual(0, foreign["version_no"])
+            self.assertEqual([], foreign["versions"])
+        finally:
+            with psycopg2.connect(url) as conn, conn.cursor() as cur:
+                cur.execute("DELETE FROM knowledge_documents WHERE id = %s", (doc_id,))
+
     def test_reupload_rotates_version_identity_and_blocks_old_run(self):
         import psycopg2
 

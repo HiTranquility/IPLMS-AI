@@ -31,7 +31,7 @@ KNOWLEDGE_MAX_FILE_BYTES = 8 * 1024 * 1024
 # mà để CHẶN DoS: pypdf đã có 6 CVE trong năm 2026 dạng "PDF crafted khiến parser
 # treo vòng lặp vô hạn / ngốn sạch RAM". Ghim phiên bản chỉ chặn được CVE đã biết,
 # trần thời gian chặn được cả loại chưa ai đặt tên.
-DOCUMENT_PARSE_TIMEOUT_SECONDS = 20.0
+DOCUMENT_PARSE_TIMEOUT_SECONDS = 60.0
 
 # Cắt đoạn đo bằng KÝ TỰ chứ không phải token: đếm token đúng cần thêm `tiktoken`,
 # một dependency nữa chỉ để làm mịn một ngưỡng vốn đã là áng chừng. Với tiếng Việt

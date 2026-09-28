@@ -37,6 +37,6 @@ class KnowledgeHandler(_pb2_grpc.KnowledgeServiceServicer):
 
     async def ListDocumentChunks(self, request, context):
         chunks = await ingestion_service.list_chunks(
-            request.document_id, request.parking_lot_id or None
+            request.document_id, request.parking_lot_id or None, request.version_no
         )
         return to_chunks_response(chunks)

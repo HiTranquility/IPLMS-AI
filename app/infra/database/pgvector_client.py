@@ -652,16 +652,18 @@ class PgVectorClient:
         return await asyncio.to_thread(self._list_documents_sync, parking_lot_id)
 
     async def list_document_chunks(
-        self, document_id: str, parking_lot_id: Optional[str]
+        self, document_id: str, parking_lot_id: Optional[str], version_no: int = 0
     ) -> Dict[str, Any]:
-        """Đọc tối đa 100 đoạn của bản đang xét; ràng buộc scope ngay tại SQL."""
+        """Đọc tối đa 100 đoạn của một phiên bản; ràng buộc scope ngay tại SQL."""
+        if version_no < 0:
+            raise ValueError("Số phiên bản phải lớn hơn 0.")
         await self.ensure_schema()
         return await asyncio.to_thread(
-            self._list_document_chunks_sync, document_id, parking_lot_id
+            self._list_document_chunks_sync, document_id, parking_lot_id, version_no
         )
 
     def _list_document_chunks_sync(
-        self, document_id: str, parking_lot_id: Optional[str]
+        self, document_id: str, parking_lot_id: Optional[str], version_no: int = 0
     ) -> Dict[str, Any]:
         connection = self._connect_sync()
         try:
@@ -683,16 +685,18 @@ class PgVectorClient:
                      "published_at": row[4].isoformat() if row[4] else ""}
                     for row in cursor.fetchall()
                 ]
+                version_filter = "AND v.version_no = %s" if version_no else "AND v.status <> 'ARCHIVED'"
+                params = (document_id, parking_lot_id, version_no) if version_no else (document_id, parking_lot_id)
                 cursor.execute(
-                    """
+                    f"""
                     SELECT v.id, v.version_no, v.status, v.chunk_count
                     FROM knowledge_documents d
                     JOIN knowledge_document_versions v ON v.document_id = d.id
                     WHERE d.id = %s AND d.parking_lot_id IS NOT DISTINCT FROM %s
-                      AND v.status <> 'ARCHIVED'
+                      {version_filter}
                     ORDER BY v.version_no DESC LIMIT 1
                     """,
-                    (document_id, parking_lot_id),
+                    params,
                 )
                 version = cursor.fetchone()
                 if not version:

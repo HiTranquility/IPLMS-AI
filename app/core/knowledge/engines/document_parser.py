@@ -12,16 +12,15 @@ Ba điều đáng nói về thiết kế ở đây:
    TXT/MD chạy được kể cả khi chưa cài hai gói đó, và test cắt đoạn không bị
    kéo theo cả một cây phụ thuộc.
 
-3. **Rỗng là lỗi, không phải kết quả.** PDF scan tách ra chuỗi rỗng. Nếu cứ thế
-   đi tiếp, ta sẽ ghi vào kho một tài liệu không có chữ nào rồi báo owner
-   "đã nạp xong" — họ tin là quy chế đã vào hệ thống, trong khi Copilot không
-   bao giờ tìm thấy gì. Thà báo lỗi rõ ràng.
+3. **Rỗng là lỗi, không phải kết quả.** Trang PDF không có lớp chữ được OCR;
+   nếu OCR vẫn không tìm được chữ thì từ chối nạp thay vì ghi tài liệu trống.
 
 [GOTCHA] Trần thời gian parse KHÔNG áp ở đây mà ở tầng service điều phối, vì
 việc canh giờ thuộc về người biết cả lượt nạp kéo dài bao lâu. Xem
 ``DOCUMENT_PARSE_TIMEOUT_SECONDS`` trong ``app/core/constants.py``.
 """
 import io
+import math
 import os
 from typing import List
 
@@ -30,10 +29,16 @@ from app.core.enums import DocumentFormat
 from app.core.exceptions import (
     DocumentTooLargeError,
     NoTextLayerError,
+    RagPipelineError,
     UnsupportedFormatError,
 )
 from app.core.knowledge.dtos.knowledge_dto import ParsedDocument
+from app.infra.ocr.reader import get_easyocr_reader
 from app.util.logger import logger
+
+_PDF_OCR_MAX_PAGES = 8
+_PDF_OCR_MAX_PIXELS = 4_000_000
+_PDF_OCR_SCALE = 1.5
 
 _THEO_DUOI_FILE = {
     ".pdf": DocumentFormat.PDF,
@@ -80,20 +85,38 @@ def _tach_pdf(file_data: bytes) -> ParsedDocument:
     if getattr(reader, "is_encrypted", False):
         # Một số PDF mã hoá rỗng mở được bằng mật khẩu trắng; thử một lần rồi thôi.
         try:
-            reader.decrypt("")
+            unlocked = reader.decrypt("")
+            if not unlocked:
+                raise ValueError("PDF vẫn được mã hoá")
         except Exception:
             raise UnsupportedFormatError(
                 "File PDF được đặt mật khẩu nên không đọc được nội dung."
             )
 
     cac_trang: List[str] = []
+    can_ocr: List[int] = []
     for so_trang, trang in enumerate(reader.pages, start=1):
         try:
-            cac_trang.append(trang.extract_text() or "")
+            noi_dung = trang.extract_text() or ""
+            cac_trang.append(noi_dung)
+            if len(noi_dung.strip()) < 25:
+                can_ocr.append(so_trang - 1)
         except Exception as exc:
             # Một trang hỏng không nên giết cả tài liệu 200 trang.
             canh_bao.append(f"Trang {so_trang} không đọc được: {exc}")
             cac_trang.append("")
+            can_ocr.append(so_trang - 1)
+
+    if can_ocr:
+        if len(can_ocr) > _PDF_OCR_MAX_PAGES:
+            raise UnsupportedFormatError(
+                f"PDF có {len(can_ocr)} trang cần OCR, vượt giới hạn "
+                f"{_PDF_OCR_MAX_PAGES} trang mỗi lần nạp. Hãy chia tài liệu thành các file nhỏ hơn."
+            )
+        for index, noi_dung in _ocr_pdf_pages(file_data, can_ocr).items():
+            if noi_dung:
+                cac_trang[index] = "\n".join(part for part in (cac_trang[index], noi_dung) if part.strip())
+                canh_bao.append(f"Trang {index + 1} được nhận dạng chữ từ ảnh; hãy kiểm tra lại nội dung.")
 
     return ParsedDocument(
         text="\n\n".join(p for p in cac_trang if p.strip()),
@@ -101,6 +124,63 @@ def _tach_pdf(file_data: bytes) -> ParsedDocument:
         page_count=len(reader.pages),
         warnings=canh_bao,
     )
+
+
+def _ocr_pdf_pages(file_data: bytes, page_indices: List[int]) -> dict[int, str]:
+    import numpy as np
+    import pypdfium2 as pdfium
+
+    try:
+        ocr = get_easyocr_reader()
+    except Exception as exc:
+        raise RagPipelineError("OCR chưa sẵn sàng để đọc PDF scan. Vui lòng thử lại sau.") from exc
+
+    try:
+        document = pdfium.PdfDocument(file_data)
+    except Exception as exc:
+        raise UnsupportedFormatError("Không dựng được trang PDF scan để nhận dạng chữ.") from exc
+    results: dict[int, str] = {}
+    try:
+        for index in page_indices:
+            page = document[index]
+            try:
+                width, height = page.get_size()
+                if width <= 0 or height <= 0:
+                    raise UnsupportedFormatError(f"Trang PDF {index + 1} có kích thước không hợp lệ.")
+                scale = min(_PDF_OCR_SCALE, math.sqrt(_PDF_OCR_MAX_PIXELS / (width * height)))
+                if scale < 0.75:
+                    raise UnsupportedFormatError(
+                        f"Trang PDF {index + 1} quá lớn để OCR an toàn. Hãy xuất lại trang ở kích thước nhỏ hơn."
+                    )
+                try:
+                    bitmap = page.render(scale=scale)
+                except Exception as exc:
+                    raise UnsupportedFormatError(
+                        f"Không dựng được trang PDF {index + 1} để OCR."
+                    ) from exc
+                try:
+                    image = bitmap.to_pil()
+                    try:
+                        rgb = image.convert("RGB")
+                        try:
+                            try:
+                                lines = ocr.readtext(np.array(rgb), detail=0, paragraph=True)
+                            except Exception as exc:
+                                raise RagPipelineError(
+                                    f"OCR lỗi khi đọc trang PDF {index + 1}. Vui lòng thử lại sau."
+                                ) from exc
+                        finally:
+                            rgb.close()
+                    finally:
+                        image.close()
+                finally:
+                    bitmap.close()
+                results[index] = "\n".join(str(line).strip() for line in lines if str(line).strip())
+            finally:
+                page.close()
+    finally:
+        document.close()
+    return results
 
 
 def _tach_docx(file_data: bytes) -> ParsedDocument:
@@ -150,7 +230,7 @@ def parse_document(file_data: bytes, file_name: str) -> ParsedDocument:
     Raises:
         DocumentTooLargeError: vượt ``KNOWLEDGE_MAX_FILE_BYTES``.
         UnsupportedFormatError: đuôi lạ, nội dung không khớp đuôi, hoặc PDF khoá.
-        NoTextLayerError: đọc được file nhưng không có chữ nào (bản scan).
+        NoTextLayerError: PDF đã OCR hoặc file khác nhưng vẫn không có chữ nào.
     """
     if not file_data:
         raise NoTextLayerError("File rỗng.")
@@ -173,8 +253,8 @@ def parse_document(file_data: bytes, file_name: str) -> ParsedDocument:
 
     if not ket_qua.text.strip():
         raise NoTextLayerError(
-            "Tài liệu không có lớp văn bản — nhiều khả năng đây là bản scan hoặc "
-            "ảnh chụp. Vui lòng tải lên bản gốc số hoá."
+            "Tài liệu không có chữ đọc được, kể cả sau khi nhận dạng PDF scan. "
+            "Vui lòng tải lên bản rõ nét hơn."
         )
 
     logger.info(
