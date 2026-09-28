@@ -1,6 +1,7 @@
 """Grounded retrieval-augmented generation pipeline for Copilot."""
 from __future__ import annotations
 
+import re
 from typing import Any, AsyncGenerator, Dict, Iterable
 
 from app.config import get_config
@@ -26,8 +27,17 @@ NO_CONTEXT_ANSWER = (
 )
 
 
-def _sources(chunks: Iterable[dict[str, Any]]) -> list[str]:
-    return list(dict.fromkeys(str(chunk["source"]) for chunk in chunks if chunk.get("source")))
+def _cited_sources(answer: str, chunks: Iterable[dict[str, Any]]) -> list[str]:
+    """Only report citations actually written in the answer and present in context."""
+    available = {
+        str(chunk["source"]).casefold(): str(chunk["source"])
+        for chunk in chunks if chunk.get("source")
+    }
+    cited = re.findall(r"\[\s*Nguồn\s*:\s*([^\]]+)\]", answer, flags=re.IGNORECASE)
+    return list(dict.fromkeys(
+        available[name.strip().casefold()]
+        for name in cited if name.strip().casefold() in available
+    ))
 
 
 def _context(chunks: Iterable[dict[str, Any]]) -> str:
@@ -90,7 +100,6 @@ class RagPipelineEngine:
             bool(parking_lot_id),
         )
         chunks = await self._retrieve(query_text, parking_lot_id, preview)
-        sources = _sources(chunks)
         if not chunks:
             return {"answer": NO_CONTEXT_ANSWER, "sources": [], "confidence": 0.0}
 
@@ -104,7 +113,7 @@ class RagPipelineEngine:
         )
         return {
             "answer": answer,
-            "sources": sources,
+            "sources": _cited_sources(answer, chunks),
             "confidence": _confidence(chunks),
             "model_revision": getattr(llm, "profile_revision", ""),
         }
@@ -118,21 +127,22 @@ class RagPipelineEngine:
             bool(parking_lot_id),
         )
         chunks = await self._retrieve(query_text, parking_lot_id, preview)
-        sources = _sources(chunks)
         if not chunks:
             yield {"token": NO_CONTEXT_ANSWER, "is_finished": False, "sources": []}
             yield {"token": "", "is_finished": True, "sources": []}
             return
 
         llm = await self.llm.for_task("copilot_answer") if isinstance(self.llm, LlmFactory) else self.llm
+        answer_parts: list[str] = []
         async for token in llm.stream_response(
             SYSTEM_PROMPT,
             query_text.strip(),
             _context(chunks),
         ):
+            answer_parts.append(token)
             yield {"token": token, "is_finished": False, "sources": []}
 
-        yield {"token": "", "is_finished": True, "sources": sources,
+        yield {"token": "", "is_finished": True, "sources": _cited_sources("".join(answer_parts), chunks),
                "model_revision": getattr(llm, "profile_revision", "")}
 
 

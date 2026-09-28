@@ -34,7 +34,7 @@ class FakeLlm:
 
     async def stream_response(self, system_prompt, user_query, context):
         self.context = context
-        for token in ("Phí ", "20.000đ"):
+        for token in ("Phí ", "20.000đ", " [Nguồn: ", "quy-che.md]"):
             yield token
 
 
@@ -46,10 +46,11 @@ class RagPipelineTest(unittest.TestCase):
         self.assertEqual([], result["sources"])
         self.assertEqual(0.0, result["confidence"])
 
-    def test_real_retrieval_is_scoped_and_sources_are_deduplicated(self):
+    def test_real_retrieval_is_scoped_and_only_cited_sources_are_returned(self):
         chunks = [
             {"content": "Phí 20.000đ", "source": "quy-che.md", "similarity": 0.9},
             {"content": "Áp dụng ô tô", "source": "quy-che.md", "similarity": 0.8},
+            {"content": "Nội quy khác", "source": "khac.md", "similarity": 0.7},
         ]
         store = FakeStore(chunks)
         llm = FakeLlm()
@@ -60,6 +61,16 @@ class RagPipelineTest(unittest.TestCase):
         self.assertIn("[Nguồn: quy-che.md]", llm.context)
         self.assertGreater(result["confidence"], 0.8)
 
+    def test_uncited_or_fabricated_sources_are_not_reported(self):
+        class UncitedLlm(FakeLlm):
+            async def generate_response(self, system_prompt, user_query, context):
+                return "Phí 20.000đ [Nguồn: tai-lieu-khong-truy-xuat.md]"
+
+        chunks = [{"content": "Phí 20.000đ", "source": "quy-che.md", "similarity": 0.9}]
+        engine = RagPipelineEngine(FakeEmbedder(), FakeStore(chunks), UncitedLlm())
+        result = asyncio.run(engine.query("phí?"))
+        self.assertEqual([], result["sources"])
+
     def test_stream_emits_sources_only_on_terminal_chunk(self):
         chunks = [{"content": "Phí 20.000đ", "source": "quy-che.md", "similarity": 0.9}]
         engine = RagPipelineEngine(FakeEmbedder(), FakeStore(chunks), FakeLlm())
@@ -68,7 +79,7 @@ class RagPipelineTest(unittest.TestCase):
             return [item async for item in engine.stream_query("phí?")]
 
         events = asyncio.run(collect())
-        self.assertEqual([[], []], [events[0]["sources"], events[1]["sources"]])
+        self.assertTrue(all(event["sources"] == [] for event in events[:-1]))
         self.assertTrue(events[-1]["is_finished"])
         self.assertEqual(["quy-che.md"], events[-1]["sources"])
 
