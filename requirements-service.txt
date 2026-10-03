@@ -11,7 +11,7 @@ opencv-python-headless>=4.9
 easyocr>=1.7
 ultralytics>=8.3
 fastapi>=0.110
-uvicorn[standard]>=0.27
+uvicorn[standard]>=0.54.0
 python-multipart>=0.0.9
 # Keep generated stubs and the protobuf runtime on the same compatible line.
 grpcio==1.71.0
