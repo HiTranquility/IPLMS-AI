@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package iplms.ai.copilot.v1;
+
+// ============================================================================
+// COPILOT SERVICE (RAG Assistant & Dispute Resolution)
+// ============================================================================
+service CopilotService {
+  // Hỏi đáp cơ bản (Unary)
+  rpc AskQuestion (AskQuestionRequest) returns (AskQuestionResponse);
+
+  // Hỏi đáp theo dạng Server-Streaming token-by-token ra Chat UI
+  rpc StreamAnswer (AskQuestionRequest) returns (stream AnswerChunk);
+
+  // Trọng tài AI tự động thẩm định và phân xử tranh chấp vé phạt
+  rpc ArbitrateDispute (ArbitrateDisputeRequest) returns (ArbitrateDisputeResponse);
+}
+
+// Phán quyết tranh chấp — từ vựng do AI service sở hữu.
+enum ArbitrationVerdict {
+  ARBITRATION_VERDICT_UNSPECIFIED = 0;
+  APPROVE_REFUND = 1;
+  REJECT = 2;
+  PARTIAL_REFUND = 3;
+}
+
+message AskQuestionRequest {
+  string query = 1;            // Câu hỏi của người dùng
+  string user_id = 2;          // ID người hỏi
+  string user_role = 3;        // "member" | "operator" | "admin" (vai trò do backend sở hữu)
+  string parking_lot_id = 4;   // Bãi xe liên quan
+  string session_id = 5;       // Mã phiên gửi xe (nếu hỏi về phiên cụ thể)
+}
+
+message AskQuestionResponse {
+  string answer = 1;           // Câu trả lời hoàn chỉnh
+  repeated string sources = 2; // Các điều khoản quy chế trích dẫn
+  double confidence = 3;
+}
+
+message AnswerChunk {
+  string token = 1;            // Từng từ stream về theo thời gian thực
+  bool is_finished = 2;
+  repeated string sources = 3;
+}
+
+message ArbitrateDisputeRequest {
+  string dispute_id = 1;
+  string session_id = 2;
+  string claim_reason = 3;
+  double claimed_amount = 4;
+}
+
+message ArbitrateDisputeResponse {
+  ArbitrationVerdict verdict = 1;
+  double recommended_refund = 2;
+  string justification = 3;    // Lập luận chi tiết đối chiếu quy chế
+  repeated string evidence_urls = 4;
+}

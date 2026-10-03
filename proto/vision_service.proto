@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+// Mỗi domain một package riêng + version: đổi breaking sau này thêm `v2` song song,
+// và tên message không phải unique toàn cục giữa các domain.
+package iplms.ai.vision.v1;
+
+// ============================================================================
+// VISION SERVICE (ANPR, Vehicle Classification & Anti-Fraud Gatekeeper)
+// ============================================================================
+service VisionService {
+  // Nhận diện biển số và phân loại xe từ raw image buffer
+  rpc RecognizePlate (RecognizePlateRequest) returns (RecognizePlateResponse);
+
+  // So khớp đối chiếu xe lúc Check-in và Check-out để chống tráo xe/tráo biển
+  rpc VerifyVehicleMatch (VerifyVehicleMatchRequest) returns (VerifyVehicleMatchResponse);
+}
+
+// Lý do đối chiếu xe thất bại. Từ vựng này do AI service sở hữu nên nằm ở proto.
+// Tên giá trị KHÔNG mang tiền tố (lệch style guide có chủ đích): đây đã là hợp đồng
+// backend đang đọc, thêm tiền tố sẽ đổi giá trị trên dây mà không được lợi gì.
+enum MismatchReason {
+  MISMATCH_REASON_UNSPECIFIED = 0;
+  OK = 1;
+  VEHICLE_TYPE_MISMATCH = 2;
+  PLATE_TAMPERING_SUSPECTED = 3;
+}
+
+message RecognizePlateRequest {
+  bytes image_data = 1;        // Raw image binary buffer (JPEG/PNG)
+  string lane_id = 2;          // ID cổng vào/ra (e.g. gate_in_01)
+  bool classify_vehicle = 3;   // Có chạy model CNN phân loại xe không
+}
+
+message RecognizePlateResponse {
+  string event_id = 1;
+  string plate_number = 2;
+  float confidence = 3;
+  // CỐ Ý để `string`, không phải enum: từ vựng loại xe thuộc bảng
+  // `parking.vehicle_types` bên backend, không phải của AI service. Enum hoá ở
+  // đây sẽ tạo ra nguồn sự thật thứ hai đá nhau với DB.
+  string vehicle_type = 4;
+  // URL do AI service tự phục vụ từ static/ — CHỈ dùng cho công cụ vận hành.
+  // Nó nằm trên ổ đĩa tạm của pod nên KHÔNG bền; backend đừng lưu URL này.
+  string crop_image_url = 5;
+  double process_time_ms = 6;
+  // Ảnh crop dạng bytes để backend tự đẩy lên StorageProvider (S3/Cloudinary).
+  // Đây mới là bản bền dùng cho VerifyVehicleMatch lúc check-out.
+  bytes crop_image = 7;
+}
+
+message VerifyVehicleMatchRequest {
+  string checkin_crop_url = 1;
+  string checkout_crop_url = 2;
+  string expected_vehicle_type = 3;
+  string current_vehicle_type = 4;
+}
+
+message VerifyVehicleMatchResponse {
+  bool is_matched = 1;
+  float similarity_score = 2;
+  MismatchReason mismatch_reason = 3;
+}

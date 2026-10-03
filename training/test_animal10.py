@@ -51,7 +51,8 @@ def get_args():
 def load_checkpoint(checkpoint_path, device):
     """Load model from checkpoint"""
     print(f"Loading checkpoint from {checkpoint_path}...")
-    checkpoint = torch.load(checkpoint_path, map_location=device)
+    # torch>=2.6 mặc định weights_only=True; checkpoint do chính ta train (xem train_imagefolder.py).
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
     state_dict = checkpoint.get('state_dict', checkpoint)
     
     # Remove 'module.' prefix if present (from DataParallel)
