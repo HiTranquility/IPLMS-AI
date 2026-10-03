@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+// Mỗi domain một package riêng + version: đổi breaking sau này thêm `v2` song song,
+// và tên message không phải unique toàn cục giữa các domain.
+package iplms.ai.knowledge.v1;
+
+// ============================================================================
+// KNOWLEDGE SERVICE (Nạp liệu tri thức quy chế bãi xe vào pgvector cho RAG)
+// ============================================================================
+// Owner tải quy chế/biểu phí của bãi mình lên → NestJS kiểm quyền + lưu S3 →
+// gọi sang đây để tách text, cắt đoạn, sinh embedding và ghi `knowledge_chunks`.
+// Xem docs/suggestions/09-2026/SUGGESTION-008-knowledge-ingestion-pipeline.md
+service KnowledgeService {
+  // Nạp 1 tài liệu: parse → chunk → embed → ghi pgvector.
+  rpc IngestDocument (IngestDocumentRequest) returns (IngestDocumentResponse);
+
+  // Gỡ toàn bộ chunk sinh ra từ 1 tài liệu (owner xoá quy chế cũ).
+  rpc DeleteDocument (DeleteDocumentRequest) returns (DeleteDocumentResponse);
+}
+
+// Định dạng tài liệu service này đọc được. KHÔNG nhận PDF scan (không có lớp
+// văn bản) — nó cần OCR toàn trang, là bài toán khác, xem Non-goals của SUGGESTION-008.
+enum DocumentFormat {
+  DOCUMENT_FORMAT_UNSPECIFIED = 0;
+  PDF = 1;
+  DOCX = 2;
+  TXT = 3;
+  MARKDOWN = 4;
+}
+
+// Kết quả một lượt nạp. Phân biệt "nạp được nhưng rỗng" với "hỏng" — bên gọi
+// cần nói cho owner biết chính xác vì sao tài liệu của họ không vào được.
+enum IngestStatus {
+  INGEST_STATUS_UNSPECIFIED = 0;
+  SUCCESS = 1;
+  // Parse ra chuỗi rỗng: gần như chắc chắn là PDF scan/ảnh chụp.
+  NO_TEXT_LAYER = 2;
+  // Định dạng không nằm trong DocumentFormat.
+  UNSUPPORTED_FORMAT = 3;
+  // Gọi API embedding thất bại → đã rollback, KHÔNG có chunk nào được ghi.
+  EMBEDDING_FAILED = 4;
+  // File vượt ngưỡng hoặc parse quá lâu (chống PDF độc gây treo).
+  FILE_TOO_LARGE = 5;
+}
+
+message IngestDocumentRequest {
+  // Raw bytes của file, đi thẳng trong message giống `RecognizePlateRequest`:
+  // backend đã sở hữu Storage/S3, AI service không cần credential kho lưu trữ.
+  //
+  // [GOTCHA] `grpc_max_message_length` đang là ĐÚNG 10MB (server_config.py), nên
+  // ngưỡng file thật phải nhỏ hơn để còn chỗ cho phần khung message + các field
+  // khác. Chốt 8MB — xem KNOWLEDGE_MAX_FILE_BYTES trong core/constants.py.
+  bytes file_data = 1;
+
+  // Tên file gốc. Vừa để đoán định dạng, vừa làm `source` của chunk để câu trả
+  // lời của Copilot trích được nguồn ("theo Quy_che_bai_xe_ABC.pdf").
+  string file_name = 2;
+
+  // Bãi áp dụng. RỖNG = quy chế toàn hệ thống, mọi bãi đều tra được.
+  // Có giá trị = chỉ bãi đó thấy (Rule 1 — cách ly theo bãi).
+  string parking_lot_id = 3;
+
+  // 'tariff' | 'regulation' | 'fine_policy' | 'ev_charging' — khớp cột
+  // `category` của knowledge_chunks. CỐ Ý để string chứ không enum hoá: danh
+  // mục quy chế là thứ nghiệp vụ thêm bớt thường xuyên, enum hoá ở proto sẽ
+  // bắt deploy lại cả hai service chỉ để thêm một loại giấy tờ.
+  string category = 4;
+
+  // User id của owner thực hiện nạp — ghi vào knowledge_documents để truy vết.
+  // Quy chế sai dẫn tới kết luận hoàn tiền sai, nên phải biết ai đã đưa vào.
+  string uploaded_by = 5;
+
+  // UUID idempotency do backend sinh và lưu cùng metadata tài liệu. Retry cùng
+  // UUID sẽ thay thế chunks trong một transaction thay vì tạo tài liệu trùng.
+  // Bỏ trống vẫn được: AI service sẽ sinh UUID mới để tương thích caller cũ.
+  string document_id = 6;
+}
+
+message IngestDocumentResponse {
+  string document_id = 1;
+  IngestStatus status = 2;
+  // Số đoạn đã ghi. 0 với mọi status khác SUCCESS.
+  int32 chunk_count = 3;
+  // Mô tả lỗi cho người đọc, đã sẵn sàng hiển thị cho owner.
+  string message = 4;
+  double process_time_ms = 5;
+}
+
+message DeleteDocumentRequest {
+  string document_id = 1;
+  // Chốt chặn: caller phải nói rõ tài liệu thuộc bãi nào, để backend không xoá
+  // nhầm tài liệu của bãi khác khi document_id bị truyền sai.
+  string parking_lot_id = 2;
+}
+
+message DeleteDocumentResponse {
+  bool deleted = 1;
+  int32 removed_chunk_count = 2;
+}
