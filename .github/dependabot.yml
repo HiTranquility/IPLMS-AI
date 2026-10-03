@@ -1,0 +1,31 @@
+# Dependabot (GitHub gốc, không phải action bên thứ ba) — DevSecOps ADR-0006 / ISSUE-007.
+# Gom PR theo nhóm để không ngập: minor+patch chung 1 PR/tuần; major tách riêng để review.
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      pip-minor-patch:
+        update-types: ["minor", "patch"]
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      docker-minor-patch:
+        update-types: ["minor", "patch"]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      github_actions-minor-patch:
+        update-types: ["minor", "patch"]
