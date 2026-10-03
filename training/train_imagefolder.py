@@ -171,7 +171,9 @@ def main():
         pathcheckpoint = "./model/checkpoint/%s/model_best.pth.tar" % args.checkpoint_dir
         if os.path.isfile(pathcheckpoint):
             print("=> loading checkpoint '{}'".format(pathcheckpoint))
-            checkpoint = torch.load(pathcheckpoint)
+            # torch>=2.6 mặc định weights_only=True; checkpoint này do chính ta train ra (có
+            # optimizer/epoch), nên nạp đầy đủ. [NEVER] trỏ vào file tải từ nguồn lạ.
+            checkpoint = torch.load(pathcheckpoint, weights_only=False)
             model.load_state_dict(checkpoint['state_dict'])
             del checkpoint
         else:
@@ -180,7 +182,9 @@ def main():
     if args.resume:
         if os.path.isfile(args.resume):
             print("=> loading checkpoint '{}'".format(args.resume))
-            checkpoint = torch.load(args.resume)
+            # torch>=2.6 mặc định weights_only=True; checkpoint này do chính ta train ra (có
+            # optimizer/epoch), nên nạp đầy đủ. [NEVER] trỏ vào file tải từ nguồn lạ.
+            checkpoint = torch.load(args.resume, weights_only=False)
             args.start_epoch = checkpoint['epoch']
             best_prec1 = checkpoint['best_prec1']
             model.load_state_dict(checkpoint['state_dict'])
