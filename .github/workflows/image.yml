@@ -41,7 +41,7 @@ jobs:
       # ai/Dockerfile dùng context = GỐC repo cha (COPY ai/... + COPY proto). Dựng lại đúng
       # layout đó: repo này vào ./ai, bản proto/ vendor (ADR-0006, PR AI#1) ra ./proto.
       - name: Checkout (as ./ai)
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: ai
 
