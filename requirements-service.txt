@@ -16,7 +16,7 @@ python-multipart>=0.0.9
 # Keep generated stubs and the protobuf runtime on the same compatible line.
 grpcio==1.71.0
 grpcio-tools==1.71.0
-protobuf==5.29.5
+protobuf==7.36.2
 pydantic-settings>=2.0.0
 pgvector>=0.2.5
 psycopg2-binary>=2.9.9
