@@ -27,7 +27,7 @@ psycopg2-binary>=2.9.9
 # ghi chú dài ở requirements.txt.
 pypdf>=6.19.0
 python-docx>=1.2.0
-openai>=1.68.0,<2.0.0
+openai>=3.22.1,<4.0.0
 
 # Bounded, persisted Copilot workflows. Keep the security floors aligned with
 # requirements.txt (CVE-2026-48775 and CVE-2026-71433).

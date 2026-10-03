@@ -36,7 +36,7 @@ psycopg2-binary>=2.9.9
 pypdf>=6.19.0
 python-docx>=1.2.0
 # Responses API + typed streaming events are required by LlmFactory.
-openai>=1.68.0,<2.0.0
+openai>=3.22.1,<4.0.0
 
 # Stateful Copilot workflow. Security floors include fixes for checkpoint
 # deserialization (CVE-2026-48775) and Postgres namespace isolation
