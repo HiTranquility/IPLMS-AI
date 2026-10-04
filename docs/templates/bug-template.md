@@ -1,26 +1,29 @@
-# 🐛 BUG-NNN: <Bug title>
+# 🐛 bug-NNN: <Tên lỗi>
 
-> Status: 🆕 New
-> Reported by: <name>
-> Environment: <local / develop / production>
+> **Đích:** `docs/projects/bugs/bug-NNN-slug/bug.md` · **Luật chung:** [templates/README](README.md)
 
-## Observed behavior
+| | |
+|---|---|
+| **Trạng thái** | 🆕 New / 🛠️ Fixing / ✅ Fixed / ❌ Won't fix |
+| **Người báo** | <tên> |
+| **Môi trường** | <local / develop / production> |
 
-<What happened?>
+## Hành vi thực tế
 
-## Expected behavior
+<Đã xảy ra gì?>
 
-<What should happen?>
+## Hành vi mong đợi
 
-## Reproduction
+<Lẽ ra phải xảy ra gì?>
 
-1. <step>
+## Tái hiện
 
-## Evidence
+1. <bước> — không tái hiện được bằng UI thì ghi dẫn chứng code `file:line`
 
-<Logs, screenshots, file:line, or commit. Remove secrets and personal data.>
+## Bằng chứng
 
-## Fix / verification
+<Log, ảnh chụp, file:line hoặc commit. Xoá secret và dữ liệu cá nhân.>
 
-<Fill in after the fix.>
+## Sửa / kiểm chứng
 
+<Điền sau khi sửa: thay đổi gì, test nào chứng minh.>

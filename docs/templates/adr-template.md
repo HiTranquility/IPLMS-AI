@@ -1,33 +1,36 @@
-# 📐 ADR-NNNN: <Decision title>
+# 📐 ADR-NNNN: <Tên quyết định>
 
-> Status: 💡 Proposed
-> Date: YYYY-MM-DD
-> Decision owner: <name>
-> Scope: <this repository>
+> **Đích:** `docs/projects/adrs/NNNN-slug.md` · **Luật chung:** [templates/README](README.md)
 
-## Context
+| | |
+|---|---|
+| **Trạng thái** | 💡 Proposed / ✅ Accepted / 🗄️ Superseded |
+| **Ngày** | YYYY-MM-DD |
+| **Người quyết định** | <tên> |
+| **Phạm vi** | <repo này> |
 
-<What problem or constraint requires a decision?>
+## Bối cảnh
 
-## Decision
+<Vấn đề hoặc ràng buộc nào buộc phải quyết định?>
 
-<What was decided?>
+## Quyết định
 
-## Alternatives considered
+<Đã quyết định gì?>
 
-<What alternatives were evaluated and why were they not selected?>
+## Các phương án đã cân nhắc
 
-## Consequences
+<Phương án nào đã xét, vì sao không chọn?>
 
-### Positive
+## Hệ quả
 
-- <benefit>
+### Được
 
-### Trade-offs
+- <lợi ích>
 
-- <cost, risk, or follow-up>
+### Đánh đổi
 
-## Evidence and links
+- <chi phí, rủi ro hoặc việc phải làm tiếp>
 
-- <file, issue, PR, or related ADR>
+## Bằng chứng và liên kết
 
+- <file, issue, PR hoặc ADR liên quan>
