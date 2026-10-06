@@ -1,6 +1,6 @@
 # 📐 ADR-NNNN: <Tên quyết định>
 
-> **Đích:** `docs/projects/adrs/NNNN-slug.md` · **Luật chung:** [templates/README](README.md)
+> **Đích:** `docs/projects/adrs/MM-YYYY/NNNN-slug.md` · **Luật chung:** [templates/README](README.md)
 
 | | |
 |---|---|
