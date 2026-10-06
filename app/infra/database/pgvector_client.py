@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 
 from app.config import get_config
 from app.core.exceptions import RagPipelineError
+from app.infra.database.keyword_search import FOLDED_CONTENT_TSVECTOR, build_keyword_tsquery
 from app.util.logger import logger
 
 
@@ -161,10 +162,13 @@ class PgVectorClient:
                         WHERE embedding IS NOT NULL
                         """
                     )
+                    # Index cũ (có dấu) không còn câu truy vấn nào dùng; giữ lại chỉ
+                    # tốn chi phí ghi mỗi lần nạp chunk.
+                    cursor.execute("DROP INDEX IF EXISTS idx_knowledge_chunks_content_fts")
                     cursor.execute(
-                        """
-                        CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_content_fts
-                        ON knowledge_chunks USING gin (to_tsvector('simple', content))
+                        f"""
+                        CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_content_folded_fts
+                        ON knowledge_chunks USING gin ({FOLDED_CONTENT_TSVECTOR})
                         """
                     )
                     self._ensure_version_schema(cursor)
@@ -326,7 +330,7 @@ class PgVectorClient:
                     else "parking_lot_id IS NULL"
                 )
                 params: Dict[str, Any] = {
-                    "q": query_text,
+                    "q": build_keyword_tsquery(query_text),
                     "emb": query_embedding,
                     "lot": parking_lot_id,
                     "min_sim": min_similarity,
@@ -338,7 +342,7 @@ class PgVectorClient:
                     f"""
                     WITH visible AS ({self._visible_versions_sql(preview)}),
                     search_query AS (
-                        SELECT websearch_to_tsquery('simple', %(q)s) AS value
+                        SELECT to_tsquery('simple', %(q)s) AS value
                     ),
                     scoped AS NOT MATERIALIZED (
                         SELECT * FROM knowledge_chunks
@@ -358,14 +362,14 @@ class PgVectorClient:
                     keyword_candidates AS (
                         SELECT kc.id,
                                ROW_NUMBER() OVER (
-                                   ORDER BY ts_rank_cd(
-                                       to_tsvector('simple', kc.content), sq.value
-                                   ) DESC
+                                   ORDER BY ts_rank_cd(kc.folded, sq.value) DESC
                                ) AS rank
-                        FROM scoped kc
+                        FROM (
+                            SELECT id, {FOLDED_CONTENT_TSVECTOR} AS folded FROM scoped
+                        ) kc
                         CROSS JOIN search_query sq
-                        WHERE to_tsvector('simple', kc.content) @@ sq.value
-                        ORDER BY ts_rank_cd(to_tsvector('simple', kc.content), sq.value) DESC
+                        WHERE kc.folded @@ sq.value
+                        ORDER BY ts_rank_cd(kc.folded, sq.value) DESC
                         LIMIT %(cand)s
                     ),
                     fused AS (

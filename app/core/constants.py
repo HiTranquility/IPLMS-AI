@@ -6,6 +6,11 @@ FALLBACK_PLATE_NUMBER = "UNKNOWN"
 # Ràng buộc biển số Việt Nam (tối đa 11 ký tự, ít nhất 1 chữ cái).
 PLATE_MAX_LENGTH = 11
 PLATE_MIN_ALPHA = 1
+# Tối thiểu 6 ký tự chữ/số (bỏ dấu): biển ngắn nhất thật — quân sự `TM-12-34` —
+# có 6. Ngắn hơn là mảnh đọc sót ("A", "7A"), không được trả như một biển số.
+PLATE_MIN_ALNUM = 6
+# EasyOCR (vi) đọc được chữ có dấu/ký hiệu; biển số chỉ có các ký tự này.
+PLATE_OCR_ALLOWLIST = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-."
 
 # ── Forecast ──────────────────────────────────────────────────────────────────
 FORECAST_SLOT_SECONDS = 1800  # 30 phút

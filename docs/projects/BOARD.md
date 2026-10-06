@@ -8,7 +8,7 @@
 | | |
 |---|---|
 | **Người giữ bảng** | Chủ đồ án |
-| **Cập nhật lần cuối** | 2026-10-04 |
+| **Cập nhật lần cuối** | 2026-10-06 |
 
 ## 📏 Luật dùng bảng
 
@@ -52,4 +52,4 @@
 
 | Việc | Hồ sơ | Người làm | Ngày |
 |---|---|---|---|
-| *(trống — bảng lập 2026-10-04)* |  |  |  |
+| Sửa 4 lỗi sai im lặng (grader tiền, occupancy 0%, seasonal baseline, phân loại xe) + nâng ANPR/keyword/Forecast | bug-001 · IPLMS PROB-045 | Claude | 2026-10-06 |

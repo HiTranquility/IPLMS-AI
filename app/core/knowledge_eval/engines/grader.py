@@ -50,6 +50,20 @@ def normalize(text: str) -> str:
     return re.sub(r"\s+", " ", value).strip()
 
 
+def contains_fact(normalized_answer: str, normalized_fact: str) -> bool:
+    """Tìm `fact` trong câu trả lời, KHÔNG cho số dính liền chữ số khác.
+
+    So chuỗi con trần thì đáp án ``25000đ`` "có mặt" trong câu trả lời sai
+    ``125000đ`` — đúng loại sai tiền mà cổng xuất bản sinh ra để chặn.
+    """
+    pattern = re.escape(normalized_fact)
+    if normalized_fact[:1].isdigit():
+        pattern = r"(?<!\d)" + pattern
+    if normalized_fact[-1:].isdigit():
+        pattern += r"(?!\d)"
+    return re.search(pattern, normalized_answer) is not None
+
+
 def is_refusal(answer: str) -> bool:
     plain = _strip_accents(normalize(answer))
     return any(marker in plain for marker in _REFUSAL_MARKERS)
@@ -83,7 +97,11 @@ def grade(
     if abstained:
         reasons.append("Copilot từ chối trả lời dù tài liệu có đáp án.")
     normalized_answer = normalize(answer)
-    missing = [fact for fact in expected_facts if normalize(fact) and normalize(fact) not in normalized_answer]
+    missing = [
+        fact
+        for fact in expected_facts
+        if normalize(fact) and not contains_fact(normalized_answer, normalize(fact))
+    ]
     if missing:
         reasons.append("Thiếu hoặc sai thông tin bắt buộc: " + ", ".join(missing))
     if expected_source and not any(expected_source.lower() in s.lower() for s in sources):

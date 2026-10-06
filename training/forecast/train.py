@@ -11,7 +11,7 @@ from typing import Any
 
 from training.forecast.build_features import load_feature_dataset
 from training.forecast.ridge_model import (
-    beats_persistence_every_horizon,
+    beats_baselines_every_horizon,
     evaluate_models,
     fit_ridge_models,
 )
@@ -27,7 +27,7 @@ def write_candidate(
     test_metrics: list[dict[str, Any]],
     alpha: float,
 ) -> tuple[Path, dict[str, Any]]:
-    passed = beats_persistence_every_horizon(
+    passed = beats_baselines_every_horizon(
         validation_metrics,
         required_horizons=[int(value) for value in models],
     )

@@ -72,7 +72,7 @@ sequenceDiagram
     participant ST as Storage
     S->>B: ảnh cổng (preview)
     B->>AI: RecognizePlate (deadline 30s)
-    AI->>AI: OCR cả ảnh → YOLO cắt biển → OCR ảnh cắt → (làm nét nếu cần) → chọn ứng viên
+    AI->>AI: YOLO cắt biển → OCR ảnh cắt → (chưa chắc định dạng) OCR cả ảnh → (làm nét nếu cần) → chọn ứng viên
     AI-->>B: biển, confidence, ảnh cắt (bytes)
     B->>ST: ảnh cắt → Sessions
     B-->>S: gợi ý + ảnh cắt; <75% bắt đối chiếu
@@ -119,6 +119,8 @@ flowchart LR
 |---|---|
 | Không nạp model mỗi request | Nạp lười có khoá luồng + warmup; `initialized` chỉ bật khi OCR thật sự nạp được |
 | Không làm nét thừa | Chuỗi enhance chỉ chạy khi ảnh cắt hỏng hoặc hai ứng viên bất đồng |
+| Không OCR cả khung hình thừa | Ảnh cắt đã đọc đủ hai dấu phân cách với điểm tốt (`strong_format`) thì bỏ bước OCR cả ảnh |
+| OCR chỉ ra ký tự biển số | `allowlist` A–Z, 0–9, `-`, `.`; xếp cụm theo dòng cho biển hai dòng; sửa nhầm chữ↔số ở vị trí mã tỉnh/sê-ri/số cuối (`plate_text.correct_plate_confusions`) |
 | Không ghi đĩa pod | gRPC trả **bytes** ảnh cắt; backend đẩy lên Storage bền (URL pod mất khi restart) |
 | Không kẹt request | Mọi unary gRPC có deadline (`AI_GRPC_TIMEOUT_MS=30000`) |
 | Không retry vô ích | Fallback REST chỉ cho lỗi transport (`isAiTransportError`) |
@@ -127,7 +129,7 @@ flowchart LR
 
 | Khi nào | Tối ưu |
 |---|---|
-| p95 `benchmark_vision_grpc.py` vượt ngân sách cổng | Xuất YOLO sang ONNX/OpenVINO; bỏ bước OCR cả ảnh khi detector tự tin cao |
+| p95 `benchmark_vision_grpc.py` vượt ngân sách cổng | Xuất YOLO sang ONNX/OpenVINO |
 | Nhiều làn quét cùng lúc | Gom batch inference theo cửa sổ vài chục ms; tăng replica ai thay vì tăng thread |
 | Có test-golden (≥200 ảnh CONFIRMED từ ISSUE-010) | Đo accuracy bằng `training/eval_plates.py`, chỉnh ngưỡng 0.75 và ngưỡng preprocess theo số đo |
 | Đủ ảnh LABELED | Fine-tune `best.pt`/OCR từ snapshot, so với bản cũ trên cùng test-golden trước khi thay |

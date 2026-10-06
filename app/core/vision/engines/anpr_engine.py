@@ -1,8 +1,9 @@
 # core/vision/engines/anpr_engine.py
 """Façade ANPR — phối hợp các tầng trong `engines/anpr/`, không tự làm việc của tầng nào.
 
-Luồng một ảnh: OCR cả ảnh → YOLO cắt biển → (ảnh cắt đủ tốt?) OCR ảnh cắt →
-(chưa đọc được / hai nhánh bất đồng?) làm nét rồi OCR lại → chọn bằng đồng thuận.
+Luồng một ảnh: YOLO cắt biển → (ảnh cắt đủ tốt?) OCR ảnh cắt → (chưa có bằng
+chứng định dạng mạnh?) OCR cả ảnh → (chưa đọc được / hai nhánh bất đồng?) làm nét
+rồi OCR lại → chọn bằng đồng thuận.
 Chi tiết từng bước nằm ở module tương ứng (xem `engines/anpr/__init__.py`).
 """
 import time
@@ -49,27 +50,40 @@ def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
         raise InvalidImageError("Không thể decode ảnh đầu vào.")
 
     candidates: List[PlateCandidate] = []
-    full_text, full_conf = read_with_confidence(img_cv)
-    if is_valid_plate(full_text):
-        candidates.append(PlateCandidate(full_text, full_conf, None, "full", img_cv))
 
     # Ảnh cắt biển số thật từ detector — dùng làm ảnh BẰNG CHỨNG (check-in/out,
     # khiếu nại) dù chữ cuối cùng lấy từ nhánh nào.
     plate_crop: Optional[np.ndarray] = None
+    crop_is_valid = False
+    crop_candidate: Optional[PlateCandidate] = None
+    det_conf: Optional[float] = None
     try:
         crop, det_conf = detect_plate(img_cv)
         # Không có detector: detect_plate trả đúng object ảnh gốc. Không OCR lại
         # cùng ảnh rồi tính đó là một "nhánh đồng thuận" độc lập giả.
         if isinstance(crop, np.ndarray) and not (det_conf is None and crop is img_cv):
             plate_crop = crop
-            crop_candidate = None
             crop_is_valid = is_valid_crop(crop)
             if crop_is_valid:
                 crop_text, crop_conf = read_with_confidence(crop)
                 if is_valid_plate(crop_text):
                     crop_candidate = PlateCandidate(crop_text, crop_conf, det_conf, "crop", crop)
                     candidates.append(crop_candidate)
+    except PlateRecognitionError:
+        pass
+    except Exception as exc:
+        logger.warning(f"YOLO/OCR pipeline error (non-fatal): {exc}")
 
+    # OCR cả khung hình là bước đắt nhất và dễ đọc nhầm chữ biển hiệu. Ảnh cắt
+    # đã đọc ra biển đủ hai dấu phân cách với điểm tốt thì không cần "trọng tài".
+    full_text = ""
+    if crop_candidate is None or not crop_candidate.strong_format:
+        full_text, full_conf = read_with_confidence(img_cv)
+        if is_valid_plate(full_text):
+            candidates.append(PlateCandidate(full_text, full_conf, None, "full", img_cv))
+
+    if plate_crop is not None:
+        try:
             # Làm nét vốn đắt. Chỉ chạy khi ảnh cắt chưa đủ chất lượng / không đọc
             # được, hoặc ảnh gốc và ảnh cắt bất đồng — đúng lúc cần "trọng tài".
             full_key = plate_key(full_text) if is_valid_plate(full_text) else ""
@@ -85,16 +99,14 @@ def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
                 )
             )
             if should_enhance:
-                enhanced_img = enhance_for_ocr(crop)
+                enhanced_img = enhance_for_ocr(plate_crop)
                 enhanced_text, enhanced_conf = read_with_confidence(enhanced_img)
                 if is_valid_plate(enhanced_text):
                     candidates.append(
                         PlateCandidate(enhanced_text, enhanced_conf, det_conf, "enhanced", enhanced_img)
                     )
-    except PlateRecognitionError:
-        pass
-    except Exception as exc:
-        logger.warning(f"YOLO/OCR pipeline error (non-fatal): {exc}")
+        except Exception as exc:
+            logger.warning(f"Enhance/OCR pipeline error (non-fatal): {exc}")
 
     selected = select_plate_candidate(candidates)
     if selected is None:

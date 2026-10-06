@@ -31,7 +31,7 @@ class _FakeReader:
     def __init__(self, results):
         self._results = results
 
-    def readtext(self, _img):
+    def readtext(self, _img, **_kwargs):
         return self._results
 
 
@@ -90,6 +90,12 @@ class ReadWithConfidenceTest(unittest.TestCase):
         # 8 ký tự @0.50 + 1 ký tự @1.00 -> (0.5*8 + 1.0*1) / 9
         _text, conf = self._read([(None, "51H98888", 0.50), (None, "X", 1.00)])
         self.assertAlmostEqual(conf, 5.0 / 9.0)
+
+    def test_bien_hai_dong_ghep_tren_truoc_duoi_sau(self):
+        bottom = [[10, 60], [90, 60], [90, 90], [10, 90]]
+        top = [[20, 10], [80, 10], [80, 40], [20, 40]]
+        text, _conf = self._read([(bottom, "123.45", 0.9), (top, "59-C1", 0.9)])
+        self.assertEqual(text, "59-C1123.45")
 
     def test_text_duoc_chuan_hoa_va_ghep_lien(self):
         text, _conf = self._read([(None, "51h-988", 0.9), (None, ".88", 0.9)])
