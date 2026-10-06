@@ -108,4 +108,4 @@ Runbook: [Google Colab training](../docs/guides/06-google-colab-training-runbook
 - Dataset mới tạo `dataset_id` mới; không sửa âm thầm snapshot cũ để làm metric
   đẹp hơn.
 
-Quyết định nền: [ADR-0003](../../docs/projects/adrs/0003-duong-du-lieu-vision-tu-phien-do-toi-checkpoint.md).
+Quyết định nền: [ADR-0003](../../docs/projects/adrs/09-2026/0003-duong-du-lieu-vision-tu-phien-do-toi-checkpoint.md).
