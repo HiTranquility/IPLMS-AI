@@ -32,6 +32,13 @@ class GradeTest(unittest.TestCase):
         self.assertFalse(g.passed)
         self.assertIn("25.000đ", g.reasons[0])
 
+    def test_fact_number_must_not_be_part_of_a_larger_number(self):
+        self.assertFalse(grade("fact", "Phí tháng là 125.000đ", [], ["25.000đ"]).passed)
+        self.assertFalse(grade("fact", "Nộp đơn trong 17 ngày", [], ["7 ngày"]).passed)
+        self.assertFalse(grade("fact", "Phí là 25.0000đ", [], ["25.000đ"]).passed)
+        self.assertTrue(grade("fact", "Phí (25.000đ) mỗi lượt", [], ["25.000đ"]).passed)
+        self.assertTrue(grade("fact", "Mở cửa 6h, đóng 22h", [], ["22:00"]).passed)
+
     def test_wrong_source_fails(self):
         g = grade("fact", "Phí là 25.000đ", ["khac.pdf"], ["25.000đ"], "qc.pdf")
         self.assertFalse(g.passed)

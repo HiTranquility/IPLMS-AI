@@ -106,12 +106,17 @@ def evaluate_models(
             continue
         actual = float(row["target_occupancy"])
         lot_id = str(row["parking_lot_id"])
+        persistence = float(row["last_occupancy"])
+        # Seasonal-naive = cùng khung tuần trước tính từ GIỜ ĐÍCH. `lag_336` là
+        # tuần trước tính từ thời điểm dự báo — lệch đúng `horizon` ô, thành một
+        # baseline yếu giả. Thiếu giá trị thì rơi về persistence để mọi model
+        # được chấm trên cùng một tập dòng.
+        seasonal = row.get("target_same_slot_336")
         predictions = {
             "ridge": predict(row, model),
-            "persistence": float(row["last_occupancy"]),
+            "persistence": persistence,
+            "seasonal_naive": persistence if seasonal is None else float(seasonal),
         }
-        if row.get("lag_336") is not None:
-            predictions["seasonal_naive"] = float(row["lag_336"])
         for name, predicted in predictions.items():
             error = predicted - actual
             errors[(name, horizon, lot_id)].append(error)
@@ -132,11 +137,19 @@ def evaluate_models(
     return summary
 
 
-def beats_persistence_every_horizon(
+BASELINE_MODELS = ("persistence", "seasonal_naive")
+
+
+def beats_baselines_every_horizon(
     summary: Sequence[dict[str, Any]],
     *,
     required_horizons: Sequence[int] | None = None,
 ) -> bool:
+    """Ridge phải có MAE thấp hơn baseline TỐT NHẤT ở mọi horizon yêu cầu.
+
+    Chỉ thắng persistence là chưa đủ: ở bãi xe, "giống tuần trước" thường mạnh
+    hơn hẳn "giống lúc này" với horizon vài giờ.
+    """
     overall = {
         (str(row["model"]), int(row["horizon_slots"])): float(row["mae"])
         for row in summary
@@ -149,6 +162,9 @@ def beats_persistence_every_horizon(
     )
     return bool(horizons) and all(
         overall.get(("ridge", horizon), float("inf"))
-        < overall.get(("persistence", horizon), float("inf"))
+        < min(
+            overall.get((baseline, horizon), float("inf"))
+            for baseline in BASELINE_MODELS
+        )
         for horizon in horizons
     )

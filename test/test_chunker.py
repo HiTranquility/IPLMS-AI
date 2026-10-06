@@ -99,5 +99,14 @@ class TruongHopBienTest(unittest.TestCase):
         self.assertFalse(chunks[0].content.endswith(" "))
 
 
+
+class ChuanHoaUnicodeTest(unittest.TestCase):
+    def test_chu_viet_dau_tach_roi_duoc_gop_ve_nfc(self):
+        import unicodedata
+
+        decomposed = unicodedata.normalize("NFD", "Phí gửi xe máy là 5.000đ mỗi lượt.")
+        [chunk] = chunk_text(decomposed, min_chars=1)
+        self.assertEqual(chunk.content, "Phí gửi xe máy là 5.000đ mỗi lượt.")
+
 if __name__ == "__main__":
     unittest.main()

@@ -11,7 +11,7 @@ backend AiCopilotController (/v1/ai/copilot/stream — SSE; preview chỉ cho ng
             └─ engines/rag_pipeline.py
                  ├─ infra/embedding/embedding_client.embed_query     câu hỏi → vector 1536 (text-embedding-3-small)
                  ├─ infra/database/pgvector_client.search_similar_chunks
-                 │     Hybrid: HNSW cosine (≥0.35) + full-text 'simple' → RRF k=60 → top 5
+                 │     Hybrid: cosine (≥0.35) + full-text 'simple' bỏ dấu, từ khoá OR → RRF k=60 → top 5
                  │     phạm vi: bãi + tài liệu chung; không có bãi → chỉ chung
                  │     góc nhìn: khách = bản PUBLISHED; preview = bản mới nhất của scope
                  ├─ không có đoạn nào → trả câu "chưa tìm thấy…", KHÔNG gọi LLM

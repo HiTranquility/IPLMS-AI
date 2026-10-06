@@ -35,6 +35,8 @@ class VisionConfig(BaseConfig):
     vehicle_num_classes: int = 4
     vehicle_img_size: int = 32
     vehicle_labels: str = "car_sedan,car_suv,motorbike,truck"
+    # Xác suất softmax cao nhất dưới ngưỡng → trả "không rõ" (None) thay vì đoán.
+    vehicle_min_confidence: float = 0.6
 
     @property
     def ocr_language_list(self) -> List[str]:

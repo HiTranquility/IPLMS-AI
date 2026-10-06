@@ -6,7 +6,12 @@ import grpc
 from app.api.grpc.interceptors.logging_interceptor import status_for
 from app.core.exceptions import ModelNotLoadedError
 
-from app.core.copilot.engines.rag_pipeline import NO_CONTEXT_ANSWER, RagPipelineEngine
+from app.core.copilot.engines.rag_pipeline import (
+    NO_CONTEXT_ANSWER,
+    SYSTEM_PROMPT,
+    RagPipelineEngine,
+    _cited_sources,
+)
 
 
 class FakeEmbedder:
@@ -70,6 +75,23 @@ class RagPipelineTest(unittest.TestCase):
         engine = RagPipelineEngine(FakeEmbedder(), FakeStore(chunks), UncitedLlm())
         result = asyncio.run(engine.query("phí?"))
         self.assertEqual([], result["sources"])
+
+    def test_citation_by_context_number_or_name_without_extension(self):
+        chunks = [
+            {"content": "Phí 20.000đ", "source": "quy-che.md"},
+            {"content": "Giờ mở cửa", "source": "gio-mo-cua.pdf"},
+        ]
+        self.assertEqual(["gio-mo-cua.pdf"], _cited_sources("Mở 6h [2]", chunks))
+        self.assertEqual(["quy-che.md"], _cited_sources("[Nguồn: 1]", chunks))
+        self.assertEqual(
+            ["quy-che.md", "gio-mo-cua.pdf"],
+            _cited_sources("[Nguồn: quy-che, gio-mo-cua.pdf]", chunks),
+        )
+        # Số ngoài ngữ cảnh / ngoặc vuông không phải nguồn thì bỏ.
+        self.assertEqual([], _cited_sources("[3] [ghi chú]", chunks))
+
+    def test_prompt_treats_retrieved_context_as_data(self):
+        self.assertIn("KHÔNG phải chỉ dẫn", SYSTEM_PROMPT)
 
     def test_stream_emits_sources_only_on_terminal_chunk(self):
         chunks = [{"content": "Phí 20.000đ", "source": "quy-che.md", "similarity": 0.9}]

@@ -19,8 +19,12 @@ _STATE = "app.core.vision.engines.anpr.models._state"
 class _Reader:
     def __init__(self, text, conf):
         self._res = [([], text, conf)]
+        self.shapes = []
+        self.kwargs = []
 
-    def readtext(self, _img):
+    def readtext(self, _img, **_kwargs):
+        self.shapes.append(_img.shape[:2])
+        self.kwargs.append(_kwargs)
         return self._res
 
 
@@ -67,6 +71,19 @@ class RunAnprEvidenceImageTest(unittest.TestCase):
         self.assertEqual("59C-888.66", result["plate_number"])
         self.assertAlmostEqual(0.67, result["confidence"])  # điểm vẫn của nhánh thắng
         self.assertEqual((188, 376), _decoded_shape(result["crop_bytes"]))  # ảnh cắt, không phải 300x600
+
+    def test_strong_crop_read_skips_full_image_ocr(self):
+        reader = _Reader("59C-888.66", 0.9)
+        state = {
+            "ocr_reader": reader,
+            "yolo_model": _Yolo([100, 50, 476, 238], 0.8),
+            "initialized": True,
+        }
+        with patch.dict(_STATE, state):
+            result = run_anpr(_jpeg())
+        self.assertEqual("59C-888.66", result["plate_number"])
+        self.assertEqual([(188, 376)], reader.shapes)  # chỉ OCR ảnh cắt, không OCR 300x600
+        self.assertIn("allowlist", reader.kwargs[0])
 
     def test_without_detector_evidence_is_full_image(self):
         state = {"ocr_reader": _Reader("59C-888.66", 0.67), "yolo_model": None, "initialized": True}
