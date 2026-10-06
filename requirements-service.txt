@@ -2,8 +2,9 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 # Keep the matching CPU wheels in lockstep; a mismatched torchvision prevents
 # EasyOCR from loading its reader at runtime.
-torch==2.5.1
-torchvision==0.20.1
+# 2.6.0: vá CVE-2025-32434 (RCE qua torch.load) — cổng Trivy chặn 2.5.1 (ADR-0006).
+torch==2.6.0
+torchvision==0.21.0
 numpy>=1.24
 pillow>=10.0
 opencv-python-headless>=4.9

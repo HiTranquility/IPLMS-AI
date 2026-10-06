@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package iplms.ai.forecast.v1;
+
+// ============================================================================
+// FORECAST SERVICE (Occupancy Prediction & Dynamic Tariff)
+// ============================================================================
+service ForecastService {
+  // Dự báo tỷ lệ lấp đầy chỗ đỗ theo các mốc 30 phút trong tương lai
+  rpc GetOccupancyForecast (OccupancyForecastRequest) returns (OccupancyForecastResponse);
+
+  // Đề xuất hệ số định giá động tối ưu doanh thu
+  rpc GetDynamicTariffRecommendation (TariffRecommendationRequest) returns (TariffRecommendationResponse);
+}
+
+// Mức tải bãi đỗ — từ vựng do AI service sở hữu.
+enum OccupancyStatus {
+  OCCUPANCY_STATUS_UNSPECIFIED = 0;
+  LOW = 1;
+  MEDIUM = 2;
+  HIGH = 3;
+  CRITICAL = 4;
+}
+
+message OccupancyForecastRequest {
+  string parking_lot_id = 1;
+  int64 target_timestamp = 2;
+  int32 forecast_hours = 3;    // Số tiếng cần dự báo (e.g. 4)
+}
+
+message ForecastSlot {
+  int64 timestamp = 1;
+  double predicted_occupancy_percent = 2; // e.g. 85.5
+  int32 estimated_free_spots = 3;
+  OccupancyStatus status_level = 4;
+}
+
+message OccupancyForecastResponse {
+  string parking_lot_id = 1;
+  repeated ForecastSlot slots = 2;
+  double confidence_score = 3;
+}
+
+message TariffRecommendationRequest {
+  string parking_lot_id = 1;
+  double base_hourly_rate = 2;
+}
+
+message TariffRecommendationResponse {
+  string parking_lot_id = 1;
+  double recommended_multiplier = 2; // e.g. 1.2 (+20%) hoặc 0.8 (-20%)
+  string reason = 3;                 // Lý do đề xuất (dựa trên % lấp đầy dự kiến)
+}
