@@ -7,7 +7,7 @@ docs/projects/
 ├── BOARD.md                                      # ai nhận việc gì, hạn, tới đâu — một dòng mỗi việc
 ├── suggestions/MM-YYYY/SUGGESTION-NNN-slug.md   # đề xuất chỉ trong repo này
 ├── usecases/UC-NNN-slug.md                      # đặc tả cho dev: bảng + sơ đồ sequence/state/ER
-├── adrs/NNNN-slug.md
+├── adrs/MM-YYYY/NNNN-slug.md
 ├── issues/MM-YYYY/ISSUE-NNN-slug/issue.md
 ├── bugs/bug-NNN-slug/bug.md
 └── qas/MM-YYYY/QA-NNN-slug.md
