@@ -1,3 +1,7 @@
 # Tài liệu nhị phân: KHÔNG đổi xuống dòng (autocrlf làm lệch offset xref của PDF → file hỏng).
 *.pdf binary
 *.docx binary
+
+# Script chạy trong container Linux (mount thẳng ở compose dev): luôn LF, kể cả checkout trên Windows
+# với core.autocrlf=true — CRLF biến shebang thành "/bin/bash<CR>" nên exec báo "no such file or directory" (bug-002).
+*.sh text eol=lf

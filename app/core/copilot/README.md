@@ -45,7 +45,7 @@ Tài liệu Copilot đọc được quản lý ở [core/knowledge](../knowledge
 `AI_LLM_BASE_URL=http://host.docker.internal:11434/v1` (ai chạy trong Docker; chạy thẳng trên máy thì `http://localhost:11434/v1`), `AI_LLM_MODEL=<model>`, `AI_LLM_API_KEY` để trống (tự dùng key giả). Hỏi đáp đi Responses API như OpenAI (Ollama ≥ v0.13.3); **JSON có cấu trúc** (AI đề xuất câu hỏi, giám khảo AI) tự chuyển sang Chat Completions + `response_format` vì Ollama không tài liệu hoá `text.format` ở `/v1/responses`. Embedding vẫn đi OpenAI trừ khi đặt `AI_EMBEDDING_BASE_URL` — đổi model embedding = nạp lại toàn bộ tài liệu (ISSUE-011 phase 2).
 
 
-`AI_LLM_API_KEY`, `AI_LLM_MODEL` (mặc định `gpt-5.6-luna`), `AI_RAG_TOP_K=5`, `AI_RAG_MIN_SIMILARITY=0.35`, `AI_EMBEDDING_*`, `AI_DATABASE_URL` (ai-db pgvector). Test: `test_rag_pipeline.py`, `test_llm_factory.py`, `test_arbitrate_dispute.py`, `test_dispute_workflow.py`. Smoke: `python app/script/smoke_copilot_stream.py`.
+`AI_LLM_API_KEY`, `AI_LLM_MODEL` (mặc định `gpt-5.6-luna`), `AI_RAG_TOP_K=5`, `AI_RAG_MIN_SIMILARITY=0.35`, `AI_EMBEDDING_*`, `AI_DATABASE_URL` (ai-db pgvector). Test: `test_rag_pipeline.py`, `test_llm_factory.py`, `test_arbitrate_dispute.py`, `test_dispute_workflow.py`. Smoke: `python app/script/smoke_copilot_stream.py`. Bộ tấn công hồi quy (ADR-0029: đổi prompt/guard/model thì chạy lại): `python -m app.script.redteam_copilot -n 10` — gọi LLM thật `n × 8` lần.
 
 ## 🎬 Viễn cảnh
 

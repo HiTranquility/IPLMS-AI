@@ -35,6 +35,7 @@ Trạng thái trả về: `SUCCESS` · `NO_TEXT_LAYER` · `UNSUPPORTED_FORMAT` �
 - CLI: `python -m app.script.ingest_knowledge <file> --parking-lot-id <bãi> [--publish]` — `--publish` bỏ qua bộ test, chỉ cho vận hành phía server. Seed demo: `python app/script/seed_regulations.py` (xuất bản luôn).
 - File mẫu thử nạp: `data/knowledge/demo-upload/` (MD/TXT/DOCX/PDF + 2 file phải bị từ chối).
 - Test: `test_document_parser.py`, `test_chunker.py`, `test_ingestion_service.py`, `test_embedding_client.py`, `test_injection_scan.py`.
+- Quét lại tài liệu đã nạp (khi sửa luật quét hoặc dữ liệu cũ): `python -m app.script.rescan_knowledge_injection` (chỉ báo cáo) · `--apply` để ghi cờ; mã thoát 1 nếu còn bản PUBLISHED bị gắn cờ.
 
 ## 🎬 Viễn cảnh
 
