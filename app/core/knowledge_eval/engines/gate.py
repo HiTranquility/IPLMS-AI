@@ -38,6 +38,15 @@ def run_verdict(
     return not reasons, reasons
 
 
+def injection_reasons(flagged: Iterable[Tuple[str, int, str]]) -> List[str]:
+    """Tài liệu có đoạn giống lệnh cho AI thì chặn (PROB-046, ADR-0029) — không có đường bỏ qua."""
+    return [
+        f"Tài liệu {source}: {count} đoạn giống lệnh gửi cho trợ lý AI (vd “{sample}”) — "
+        "xoá chỗ đó rồi nạp lại."
+        for source, count, sample in flagged
+    ]
+
+
 def readiness(
     latest_run: Optional[Dict[str, Any]],
     current_docs_fingerprint: str,

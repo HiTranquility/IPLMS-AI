@@ -28,6 +28,7 @@ Chạy test    start_run: bộ test ≤30 câu · có tài liệu · store.creat
              nhịp tim quá 180s (replica chết) → đọc ra ABORTED
 
 Xuất bản     readiness: lượt gần nhất PASSED + vân tay (phiên bản mới nhất, bộ test) khớp + còn nháp
+                        + không tài liệu nào còn đoạn injection_flags (gate.injection_reasons, PROB-046)
              publish: readiness đạt → pgvector.publish_versions (một transaction, bản cũ → ARCHIVED)
              KHÔNG có đường bỏ qua cổng.
 ```

@@ -20,9 +20,26 @@ from app.core.knowledge.dtos.knowledge_dto import (
 )
 from app.core.knowledge.engines.chunker import chunk_text
 from app.core.knowledge.engines.document_parser import parse_document
+from app.core.knowledge.engines.injection_scan import find_instructions
 from app.infra.database.pgvector_client import pgvector_client
 from app.infra.embedding import embedding_client
 from app.util.logger import logger
+
+
+def _injection_flags(content: str) -> dict:
+    # Cổng xuất bản đọc khoá này (PROB-046 phase 2); đoạn sạch thì không có khoá.
+    flags = find_instructions(content)
+    return {"injection_flags": flags} if flags else {}
+
+
+def _ingest_message(flagged: list[str]) -> str:
+    if not flagged:
+        return "Đã nạp bản nháp — chạy test rồi xuất bản để khách thấy."
+    return (
+        f"Đã nạp bản nháp nhưng có {len(flagged)} chỗ giống lệnh gửi cho trợ lý AI "
+        f"(vd “{flagged[0]}”). Bản này sẽ không xuất bản được cho tới khi bạn xoá "
+        "những chỗ đó và nạp lại."
+    )
 
 
 class IngestionService:
@@ -83,10 +100,12 @@ class IngestionService:
                     "document_format": parsed.doc_format.value,
                     "page_count": parsed.page_count,
                     "warnings": parsed.warnings,
+                    **_injection_flags(chunk.content),
                 },
             }
             for chunk, vector in zip(text_chunks, vectors, strict=True)
         ]
+        flagged = [s for c in chunks for s in c["metadata"].get("injection_flags", [])]
         version = await self.vector_store.save_draft_version(
             document_id=document_id,
             file_name=command.file_name,
@@ -99,7 +118,7 @@ class IngestionService:
             document_id=document_id,
             status=IngestStatus.SUCCESS,
             chunk_count=len(chunks),
-            message="Đã nạp bản nháp — chạy test rồi xuất bản để khách thấy.",
+            message=_ingest_message(flagged),
             process_time=time.perf_counter() - started,
             version_id=version["version_id"],
             version_no=version["version_no"],
