@@ -33,10 +33,11 @@ def _injection_flags(content: str) -> dict:
 
 
 def _ingest_message(flagged: list[str]) -> str:
+    # UI ghép sau câu "Đã nạp <file> thành bản nháp vN (M đoạn)." nên không lặp lại ý đó.
     if not flagged:
-        return "Đã nạp bản nháp — chạy test rồi xuất bản để khách thấy."
+        return "Chạy test rồi xuất bản để khách thấy."
     return (
-        f"Đã nạp bản nháp nhưng có {len(flagged)} chỗ giống lệnh gửi cho trợ lý AI "
+        f"Lưu ý: có {len(flagged)} chỗ giống lệnh gửi cho trợ lý AI "
         f"(vd “{flagged[0]}”). Bản này sẽ không xuất bản được cho tới khi bạn xoá "
         "những chỗ đó và nạp lại."
     )
