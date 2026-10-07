@@ -237,7 +237,7 @@ class KnowledgeEvalService:
 
     # ── cổng xuất bản ────────────────────────────────────────────────────────
     def _readiness_reasons(self, latest, version_ids, cases, review, unpublished,
-                           active_profile_ids=None):
+                           active_profile_ids=None, flagged=None):
         reasons = gate.readiness(
             latest,
             gate.fingerprint(version_ids),
@@ -256,6 +256,7 @@ class KnowledgeEvalService:
                 )
             if review["rejected"]:
                 reasons.append(f"{review['rejected']} câu được đánh dấu Không OK — sửa tài liệu và chạy lại test.")
+        reasons.extend(gate.injection_reasons(flagged or []))
         return reasons
 
     async def readiness(self, scope: Optional[str]) -> Dict[str, Any]:
@@ -265,13 +266,14 @@ class KnowledgeEvalService:
         cases = await self.store.list_cases(scope)
         unpublished = await self.store.count_unpublished(latest["version_ids"]) if latest else 0
         review = await self.store.review_summary(latest["id"]) if latest else {"reviewed": 0, "rejected": 0}
+        flagged = await self.store.flagged_sources(version_ids) if version_ids else []
         active_profile_ids = {}
         if isinstance(self.llm, LlmFactory) and model_policy_store.db_url:
             for task in ("copilot_answer", "test_judge"):
                 active = await model_policy_store.get_active(task)
                 active_profile_ids[task] = active["id"] if active else ""
         reasons = self._readiness_reasons(
-            latest, version_ids, cases, review, unpublished, active_profile_ids
+            latest, version_ids, cases, review, unpublished, active_profile_ids, flagged
         )
         return {
             "ready": not reasons,

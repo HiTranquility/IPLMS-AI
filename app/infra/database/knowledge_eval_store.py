@@ -33,6 +33,15 @@ def _iso(value) -> str:
     return value.isoformat() if value else ""
 
 
+# Đoạn bị quét lúc nạp gắn cờ "giống lệnh cho AI" (PROB-046 phase 2), gom theo tài liệu.
+_FLAGGED_SQL = """
+    SELECT source, COUNT(*), MIN(metadata->'injection_flags'->>0)
+      FROM knowledge_chunks
+     WHERE version_id = ANY(%s::uuid[]) AND metadata ? 'injection_flags'
+     GROUP BY source ORDER BY source
+"""
+
+
 def _run_row(row) -> Dict[str, Any]:
     status = row[2]
     # Nhịp tim quá hạn = replica chạy lượt này đã chết. Không có hook lúc khởi
@@ -569,7 +578,10 @@ class KnowledgeEvalStore:
                     (list(latest["version_ids"]),),
                 )
                 unpublished = int(cur.fetchone()[0])
-            reasons = validate(latest, current_ids, cases, review, unpublished, active_profile_ids)
+            cur.execute(_FLAGGED_SQL, (current_ids,))
+            flagged = [tuple(row) for row in cur.fetchall()]
+            reasons = validate(latest, current_ids, cases, review, unpublished, active_profile_ids,
+                              flagged)
             if reasons:
                 raise KnowledgeGateError("Chưa được xuất bản: " + " ".join(reasons))
             cur.execute(
@@ -605,6 +617,14 @@ class KnowledgeEvalStore:
         return await self._run(work)
 
     # ── phiên bản (đọc cho cổng xuất bản + sinh câu hỏi) ────────────────────
+    async def flagged_sources(self, version_ids: List[str]) -> List[tuple]:
+        """(tên tài liệu, số đoạn bị gắn cờ, một trích dẫn) cho các phiên bản đang xét."""
+        def work(cur):
+            cur.execute(_FLAGGED_SQL, (list(version_ids),))
+            return [tuple(row) for row in cur.fetchall()]
+
+        return await self._run(work)
+
     async def count_unpublished(self, version_ids: List[str]) -> int:
         def work(cur):
             cur.execute(

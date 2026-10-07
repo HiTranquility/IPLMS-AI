@@ -14,6 +14,8 @@ backend owner|admin/knowledge-documents (POST, multipart ≤8MB, .pdf/.docx/.txt
             ├─ engines/chunker.chunk_text
             │     cắt theo "Điều/Chương/Mục/Phần N" hoặc heading Markdown; dài quá mới cắt tiếp
             │     theo đoạn văn; ~1500 ký tự, chồng 200, bỏ đoạn <100
+            ├─ engines/injection_scan.find_instructions   mỗi đoạn: câu ra lệnh cho trợ lý AI (bỏ dấu,
+            │     bỏ zero-width) → metadata.injection_flags + cảnh báo trong message; cổng xuất bản chặn (PROB-046)
             ├─ infra/embedding/embedding_client.embed_texts  lô 64, retry 429/5xx
             └─ infra/database/pgvector_client.save_draft_version   MỘT transaction:
                   tài liệu đang có nháp → thay nháp tại chỗ; chưa có → phiên bản mới (max+1)
@@ -32,7 +34,7 @@ Trạng thái trả về: `SUCCESS` · `NO_TEXT_LAYER` · `UNSUPPORTED_FORMAT` �
 - `ListDocuments` (phiên bản mới nhất + bản khách đang thấy), `DeleteDocument(draft_only)`.
 - CLI: `python -m app.script.ingest_knowledge <file> --parking-lot-id <bãi> [--publish]` — `--publish` bỏ qua bộ test, chỉ cho vận hành phía server. Seed demo: `python app/script/seed_regulations.py` (xuất bản luôn).
 - File mẫu thử nạp: `data/knowledge/demo-upload/` (MD/TXT/DOCX/PDF + 2 file phải bị từ chối).
-- Test: `test_document_parser.py`, `test_chunker.py`, `test_ingestion_service.py`, `test_embedding_client.py`.
+- Test: `test_document_parser.py`, `test_chunker.py`, `test_ingestion_service.py`, `test_embedding_client.py`, `test_injection_scan.py`.
 
 ## 🎬 Viễn cảnh
 
