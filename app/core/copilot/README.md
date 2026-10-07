@@ -17,6 +17,9 @@ backend AiCopilotController (/v1/ai/copilot/stream — SSE; preview chỉ cho ng
                  ├─ không có đoạn nào → trả câu "chưa tìm thấy…", KHÔNG gọi LLM
                  └─ infra/llm/llm_factory.stream_response / generate_response
                        Responses API, SYSTEM_PROMPT: chỉ trả lời từ ngữ cảnh, trích [Nguồn], store=False
+            └─ engines/output_guard.py   chặn câu trả lời có "miễn phí/0đ", link, SĐT/STK không có trong
+                 các đoạn đã truy xuất → thay bằng GUARD_NOTICE, bỏ nguồn (stream: giữ đuôi 40 ký tự,
+                 dừng trước khi phát phần vi phạm). Lý do và số đo: PROB-046 ở repo gốc
             confidence = 0.7×sim(top1) + 0.3×mean(sim)   (điểm truy xuất, không phải "độ chắc" của LLM)
 ```
 
@@ -30,6 +33,7 @@ backend AiCopilotController (/v1/ai/copilot/stream — SSE; preview chỉ cho ng
 |---|---|
 | `services/copilot_service.py` | Điểm vào nghiệp vụ; chặn arbitrate |
 | `engines/rag_pipeline.py` | Truy xuất → (không có ngữ cảnh thì dừng) → sinh câu trả lời; prompt + confidence |
+| `engines/output_guard.py` | Kiểm đầu ra tất định chống prompt injection (PROB-046) |
 | `engines/dispute_workflow/{graph,nodes,state,dependencies}.py` | Khung LangGraph phân xử (chưa nối) |
 | `dtos/copilot_dto.py` | `AskQuestionRequest` (có `preview`), `CopilotAnswer`, `AnswerChunk` |
 

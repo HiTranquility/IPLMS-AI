@@ -5,6 +5,7 @@ import re
 from typing import Any, AsyncGenerator, Dict, Iterable
 
 from app.config import get_config
+from app.core.copilot.engines import output_guard
 from app.core.exceptions import EmbeddingError, ModelNotLoadedError, RagPipelineError
 from app.infra.database.pgvector_client import pgvector_client
 from app.infra.embedding import embedding_client
@@ -85,6 +86,11 @@ def _confidence(chunks: list[dict[str, Any]]) -> float:
     return round(value, 4)
 
 
+def _log_guard(rule: str) -> None:
+    # Không log câu hỏi/câu trả lời (có thể chứa dữ liệu khách), chỉ tên luật.
+    logger.warning("Copilot output guard blocked answer rule=%s", rule)
+
+
 class RagPipelineEngine:
     def __init__(self, embedder=None, vector_store=None, llm=None) -> None:
         self.embedder = embedder or embedding_client
@@ -133,11 +139,13 @@ class RagPipelineEngine:
         llm = llm_override or (
             await self.llm.for_task("copilot_answer") if isinstance(self.llm, LlmFactory) else self.llm
         )
-        answer = await llm.generate_response(
-            SYSTEM_PROMPT,
-            query_text.strip(),
-            _context(chunks),
-        )
+        context = _context(chunks)
+        answer = await llm.generate_response(SYSTEM_PROMPT, query_text.strip(), context)
+        rule = output_guard.violation(answer, context)
+        if rule:
+            _log_guard(rule)
+            return {"answer": output_guard.GUARD_NOTICE, "sources": [],
+                    "confidence": 0.0, "model_revision": getattr(llm, "profile_revision", "")}
         return {
             "answer": answer,
             "sources": _cited_sources(answer, chunks),
@@ -160,16 +168,19 @@ class RagPipelineEngine:
             return
 
         llm = await self.llm.for_task("copilot_answer") if isinstance(self.llm, LlmFactory) else self.llm
+        context = _context(chunks)
+        tripped: list[str] = []
         answer_parts: list[str] = []
-        async for token in llm.stream_response(
-            SYSTEM_PROMPT,
-            query_text.strip(),
-            _context(chunks),
+        async for token in output_guard.guard_stream(
+            llm.stream_response(SYSTEM_PROMPT, query_text.strip(), context),
+            context,
+            lambda rule: (tripped.append(rule), _log_guard(rule)),
         ):
             answer_parts.append(token)
             yield {"token": token, "is_finished": False, "sources": []}
 
-        yield {"token": "", "is_finished": True, "sources": _cited_sources("".join(answer_parts), chunks),
+        sources = [] if tripped else _cited_sources("".join(answer_parts), chunks)
+        yield {"token": "", "is_finished": True, "sources": sources,
                "model_revision": getattr(llm, "profile_revision", "")}
 
 
