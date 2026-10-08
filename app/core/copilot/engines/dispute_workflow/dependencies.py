@@ -35,6 +35,10 @@ class PolicyRetriever(Protocol):
 
 
 class RecommendationWriter(Protocol):
+    """LLM soạn nháp. `claim_reason` là lời member — đưa vào prompt như dữ liệu,
+    không như chỉ dẫn. Trả JSON schema {verdict, recommended_refund, justification,
+    cited_sources}; node `draft_recommendation` kiểm lại bằng `validate_recommendation`."""
+
     async def draft(self, state: DisputeWorkflowState) -> dict[str, Any]: ...
 
 
