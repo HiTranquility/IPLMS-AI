@@ -30,18 +30,23 @@ message AskQuestionRequest {
   string user_role = 3;        // "member" | "operator" | "admin" (vai trò do backend sở hữu)
   string parking_lot_id = 4;   // Bãi xe liên quan
   string session_id = 5;       // Mã phiên gửi xe (nếu hỏi về phiên cụ thể)
+  // true = trả lời trên BẢN XEM TRƯỚC của scope parking_lot_id (rỗng = tài liệu
+  // chung) thay vì bản khách thấy. Backend chỉ bật cho người quản lý scope đó.
+  bool preview = 6;
 }
 
 message AskQuestionResponse {
   string answer = 1;           // Câu trả lời hoàn chỉnh
   repeated string sources = 2; // Các điều khoản quy chế trích dẫn
   double confidence = 3;
+  string model_revision = 4;
 }
 
 message AnswerChunk {
   string token = 1;            // Từng từ stream về theo thời gian thực
   bool is_finished = 2;
   repeated string sources = 3;
+  string model_revision = 4;
 }
 
 message ArbitrateDisputeRequest {
