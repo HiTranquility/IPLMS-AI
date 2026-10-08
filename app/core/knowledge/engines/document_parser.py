@@ -36,7 +36,8 @@ from app.core.knowledge.dtos.knowledge_dto import ParsedDocument
 from app.infra.ocr.reader import get_easyocr_reader
 from app.util.logger import logger
 
-_PDF_OCR_MAX_PAGES = 8
+# Phải OCR xong trong DOCUMENT_PARSE_TIMEOUT_SECONDS kể cả lần đầu nạp model (bug-026).
+_PDF_OCR_MAX_PAGES = 6
 _PDF_OCR_MAX_PIXELS = 4_000_000
 _PDF_OCR_SCALE = 1.5
 
