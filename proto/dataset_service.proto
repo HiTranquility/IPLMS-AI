@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+// Mỗi domain một package riêng + version.
+package iplms.ai.dataset.v1;
+
+// ============================================================================
+// DATASET SERVICE (ISSUE-010 — vòng dữ liệu ANPR)
+// ============================================================================
+// ai/ giữ LUẬT (chất lượng ảnh, chọn mẫu cho người review, khoá snapshot);
+// backend giữ hàng đợi, nhãn, quyền, audit và ảnh. Dự đoán máy KHÔNG bao giờ
+// tự thành nhãn — service này chỉ nói "ảnh này đáng để người xem" và khoá
+// manifest từ những mẫu người đã gán.
+service DatasetService {
+  rpc EvaluateCapture (EvaluateCaptureRequest) returns (EvaluateCaptureResponse);
+  rpc BuildSnapshot (BuildSnapshotRequest) returns (BuildSnapshotResponse);
+  // ISSUE-013: đo ANPR trên split test-golden của một snapshot. Stream vì một lượt
+  // có thể vài phút (vượt deadline unary): mỗi ảnh một `progress`, cuối cùng `result`.
+  rpc EvaluateSnapshot (EvaluateSnapshotRequest) returns (stream EvaluateSnapshotEvent);
+}
+
+message EvaluateCaptureRequest {
+  // Ảnh CẮT biển số (không phải khung hình đầy đủ — SUGGESTION-010 R6).
+  bytes image_data = 1;
+  // Điểm tin cậy ANPR 0..1; bỏ qua khi has_model_confidence = false.
+  double model_confidence = 2;
+  bool has_model_confidence = 3;
+  // Nhân viên đã sửa biển máy đọc ở cổng — mẫu quý nhất.
+  bool human_corrected = 4;
+  // Chính sách do backend giữ (admin chỉnh), gửi kèm mỗi lượt.
+  double low_confidence_threshold = 5;
+  // Tỉ lệ bốc kiểm ngẫu nhiên ảnh ĐẠT chất lượng, 0..1.
+  double random_audit_rate = 6;
+}
+
+message ImageQuality {
+  bool decoded = 1;
+  int32 width = 2;
+  int32 height = 3;
+  double brightness = 4;
+  double blur_score = 5;
+  bool acceptable = 6;
+  // too_small | too_dark | too_bright | too_blurry | empty | decode_failed
+  repeated string reasons = 7;
+}
+
+message EvaluateCaptureResponse {
+  bool selected = 1;
+  // human_correction | low_confidence | random_audit | quality_edge_case | invalid_image
+  repeated string reasons = 2;
+  ImageQuality quality = 3;
+}
+
+message SnapshotSample {
+  string sample_id = 1;
+  string object_key = 2;
+  string sha256 = 3;
+  // Nhãn do NGƯỜI gán (biển số đã chuẩn hoá).
+  string label = 4;
+  // train | val | test-golden
+  string split = 5;
+  // Cùng group (cùng phiên đỗ) phải cùng split — chống rò giữa train và test.
+  string group_id = 6;
+}
+
+message BuildSnapshotRequest {
+  string dataset_id = 1;
+  repeated SnapshotSample samples = 2;
+}
+
+message BuildSnapshotResponse {
+  string dataset_id = 1;
+  int32 sample_count = 2;
+  string samples_sha256 = 3;
+  // Manifest khoá đầy đủ (JSON) — backend lưu nguyên văn.
+  string manifest_json = 4;
+}
+
+message EvaluationSample {
+  string sample_id = 1;
+  // URL ảnh cắt trong Storage — backend dựng từ key, KHÔNG nhận từ người dùng.
+  string image_url = 2;
+  // Nhãn người gán (biển đúng).
+  string label = 3;
+}
+
+message EvaluateSnapshotRequest {
+  string evaluation_id = 1;
+  repeated EvaluationSample samples = 2;
+}
+
+message EvaluationProgress {
+  int32 done = 1;
+  int32 total = 2;
+}
+
+message EvaluationResult {
+  // yolo:<sha256 weights 12 ký tự>+easyocr:<phiên bản>
+  string model_version = 1;
+  // Bảng số (plate_metrics.aggregate) + phân bố độ tin cậy đúng/sai + ca sai.
+  string summary_json = 2;
+}
+
+message EvaluateSnapshotEvent {
+  oneof event {
+    EvaluationProgress progress = 1;
+    EvaluationResult result = 2;
+  }
+}
