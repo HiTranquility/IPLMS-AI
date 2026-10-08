@@ -3,12 +3,17 @@
 Nhãn loại xe đi thẳng vào so khớp chống gian lận lúc check-out, nên nhãn rác
 (trọng số ngẫu nhiên, hoặc xác suất sát ngưỡng đoán bừa) tệ hơn không có nhãn.
 """
+import importlib.util
 import io
 import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
+
+# CI repo AI không cài torch (nặng); thiếu thì bỏ qua cả module như các test phụ thuộc khác.
+if importlib.util.find_spec("torch") is None or importlib.util.find_spec("PIL") is None:
+    raise unittest.SkipTest("torch/Pillow chưa được cài")
 
 import torch
 from PIL import Image
