@@ -21,10 +21,11 @@ việc canh giờ thuộc về người biết cả lượt nạp kéo dài bao 
 """
 import io
 import math
+import multiprocessing
 import os
-from typing import List
+from typing import Any, Callable, List, Tuple
 
-from app.core.constants import KNOWLEDGE_MAX_FILE_BYTES
+from app.core.constants import KNOWLEDGE_MAX_FILE_BYTES, PDF_TEXT_TIMEOUT_SECONDS
 from app.core.enums import DocumentFormat
 from app.core.exceptions import (
     DocumentTooLargeError,
@@ -77,7 +78,56 @@ def _doi_chieu_chu_ky(file_data: bytes, dinh_dang: DocumentFormat) -> None:
         )
 
 
-def _tach_pdf(file_data: bytes) -> ParsedDocument:
+def _child_entry(conn, target: Callable[..., Any], args: tuple) -> None:
+    try:
+        conn.send((True, target(*args)))
+    except BaseException as exc:  # gửi lỗi về thay vì chết im lặng
+        try:
+            conn.send((False, exc))
+        except Exception:
+            conn.send((False, RagPipelineError(f"Lỗi khi đọc tài liệu: {exc}")))
+    finally:
+        conn.close()
+
+
+def _run_isolated(target: Callable[..., Any], args: tuple, timeout: float) -> Any:
+    """Chạy ``target`` trong process con và GIẾT nó nếu quá ``timeout``.
+
+    ``asyncio.wait_for(to_thread(...))`` ở tầng service chỉ trả lỗi cho request;
+    Python không giết được thread, nên một PDF độc làm pypdf treo sẽ giam thread
+    đó mãi, đủ nhiều file thì cạn pool dùng chung của cả service (đã thử
+    2026-10-09). Process thì giết được. ``spawn`` (không ``fork``) vì process cha
+    có thread gRPC — fork từ process nhiều thread dễ deadlock.
+    """
+    ctx = multiprocessing.get_context("spawn")
+    parent, child = ctx.Pipe(duplex=False)
+    proc = ctx.Process(target=_child_entry, args=(child, target, args), daemon=True)
+    proc.start()
+    child.close()
+    try:
+        if not parent.poll(timeout):
+            raise DocumentTooLargeError(
+                "Tài liệu mất quá nhiều thời gian để đọc chữ. Vui lòng kiểm tra lại file."
+            )
+        try:
+            ok, payload = parent.recv()
+        except EOFError as exc:  # process con chết (vd hết RAM) trước khi kịp gửi
+            raise UnsupportedFormatError("Không đọc được nội dung file PDF.") from exc
+    finally:
+        if proc.is_alive():
+            proc.kill()
+        proc.join(5)
+        parent.close()
+    if ok:
+        return payload
+    raise payload
+
+
+def _pdf_text_layer(file_data: bytes) -> Tuple[List[str], List[int], List[str], int]:
+    """Phần dùng pypdf (nơi có các CVE "PDF làm parser treo"): chạy trong process con.
+
+    Trả (chữ từng trang, chỉ số trang cần OCR, cảnh báo, số trang).
+    """
     from pypdf import PdfReader
 
     reader = PdfReader(io.BytesIO(file_data))
@@ -107,7 +157,13 @@ def _tach_pdf(file_data: bytes) -> ParsedDocument:
             canh_bao.append(f"Trang {so_trang} không đọc được: {exc}")
             cac_trang.append("")
             can_ocr.append(so_trang - 1)
+    return cac_trang, can_ocr, canh_bao, len(reader.pages)
 
+
+def _tach_pdf(file_data: bytes) -> ParsedDocument:
+    cac_trang, can_ocr, canh_bao, so_trang = _run_isolated(
+        _pdf_text_layer, (file_data,), PDF_TEXT_TIMEOUT_SECONDS
+    )
     if can_ocr:
         if len(can_ocr) > _PDF_OCR_MAX_PAGES:
             raise UnsupportedFormatError(
@@ -122,7 +178,7 @@ def _tach_pdf(file_data: bytes) -> ParsedDocument:
     return ParsedDocument(
         text="\n\n".join(p for p in cac_trang if p.strip()),
         doc_format=DocumentFormat.PDF,
-        page_count=len(reader.pages),
+        page_count=so_trang,
         warnings=canh_bao,
     )
 
