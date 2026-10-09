@@ -153,5 +153,47 @@ class DocxTest(unittest.TestCase):
         self.assertIn("6000", ket_qua.text)
 
 
+def _treo_mai():
+    """Giả lập PDF độc làm pypdf treo. Ở cấp module để process con (spawn) import được."""
+    import time
+    while True:
+        time.sleep(1)
+
+
+def _bao_loi_dinh_dang():
+    raise UnsupportedFormatError("File PDF được đặt mật khẩu nên không đọc được nội dung.")
+
+
+class XuLyCachLyTest(unittest.TestCase):
+    """bug-026: bước pypdf chạy trong process con, quá hạn thì bị GIẾT — thread thì không giết được."""
+
+    def test_process_treo_bi_giet_khi_qua_han(self):
+        import multiprocessing
+        import time
+        from app.core.knowledge.engines.document_parser import _run_isolated
+
+        bat_dau = time.perf_counter()
+        with self.assertRaises(DocumentTooLargeError):
+            _run_isolated(_treo_mai, (), timeout=2)
+        self.assertLess(time.perf_counter() - bat_dau, 15)
+        self.assertEqual([], [p for p in multiprocessing.active_children() if p.is_alive()])
+
+    def test_loi_nghiep_vu_tra_ve_dung_kieu(self):
+        from app.core.knowledge.engines.document_parser import _run_isolated
+
+        with self.assertRaises(UnsupportedFormatError) as raised:
+            _run_isolated(_bao_loi_dinh_dang, (), timeout=30)
+        self.assertIn("mật khẩu", str(raised.exception))
+
+    @unittest.skipUnless(CO_PYPDF, "Cần pypdf")
+    def test_pdf_co_lop_chu_doc_qua_process_con(self):
+        duong_dan = os.path.join(os.path.dirname(__file__), "..", "data", "knowledge", "demo-upload", "04-an-ninh-demo.pdf")
+        with open(duong_dan, "rb") as f:
+            ket_qua = parse_document(f.read(), "an-ninh.pdf")
+        self.assertEqual(DocumentFormat.PDF, ket_qua.doc_format)
+        self.assertGreater(len(ket_qua.text.strip()), 20)
+        self.assertGreaterEqual(ket_qua.page_count, 1)
+
+
 if __name__ == "__main__":
     unittest.main()
