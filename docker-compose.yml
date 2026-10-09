@@ -108,10 +108,11 @@ services:
     logging: *default-logging
     environment:
       - DOCKER_API_VERSION=1.45
+    # bug-032: chỉ bind localhost — AI không có xác thực; backend đi qua alias mạng Docker.
     ports:
-      - "${AI_GATEWAY_REST_PORT:-8000}:8000"      # REST Entrypoint
-      - "${AI_GATEWAY_GRPC_PORT:-50051}:50051"    # gRPC Entrypoint (h2c L7 Load Balanced)
-      - "${AI_GATEWAY_DASHBOARD_PORT:-8080}:8080" # Web Dashboard UI & API
+      - "127.0.0.1:${AI_GATEWAY_REST_PORT:-8000}:8000"      # REST Entrypoint
+      - "127.0.0.1:${AI_GATEWAY_GRPC_PORT:-50051}:50051"    # gRPC Entrypoint (h2c L7 Load Balanced)
+      - "127.0.0.1:${AI_GATEWAY_DASHBOARD_PORT:-8080}:8080" # Web Dashboard UI & API
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
