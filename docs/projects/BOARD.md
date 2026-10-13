@@ -33,7 +33,6 @@
 | Restart container `ai` để đường gRPC nạp code mới, rồi verify ANPR | IPLMS bug-006 | Khoa | 2026-10-14 | REST đã verify; chuẩn bị đo gRPC & warmup |
 | Đo ANPR trên test-golden snapshot & đối chiếu xe chống tráo | IPLMS ISSUE-010 | Khoa | 2026-10-17 | Chuẩn bị test suite & dữ liệu snapshot |
 | Chạy bộ test Knowledge Base với LLM thật (cần `AI_LLM_API_KEY`) | IPLMS ISSUE-009 | Dương | 2026-10-15 | 299 test unit/mock đã pass; chờ key/ollama chạy live |
-| Lỗi model không tồn tại bị nuốt thành "AI service unreachable" | IPLMS bug-014 | Dương | 2026-10-15 | Sửa `llm_factory.py` map sang FAILED_PRECONDITION |
 | LangGraph workflow cho Copilot tranh chấp (Phase 3) | IPLMS ISSUE-005 | Dương | 2026-10-18 | Xong phase 2; đang làm tiếp state interrupt/resume |
 | Nạp liệu tri thức RAG — phần AI & hoàn tất E2E | IPLMS ISSUE-004 | Dương | 2026-10-16 | Nhóm 5 code xong; chờ E2E container & nối FE |
 | Sửa vi phạm so với AI_CONVENTIONS (bổ sung luật lỗi & test doc) | IPLMS AUDIT-004 | Dương | 2026-10-19 | Đã có báo cáo AUDIT-004; cập nhật doc & gRPC mapping |
@@ -54,4 +53,5 @@
 
 | Việc | Hồ sơ | Người làm | Ngày |
 |---|---|---|---|
+| Lỗi model không tồn tại bị nuốt thành "AI service unreachable" | IPLMS bug-014 | Dương | 2026-10-13 |
 | Sửa 4 lỗi sai im lặng (grader tiền, occupancy 0%, seasonal baseline, phân loại xe) + nâng ANPR/keyword/Forecast | bug-001 · IPLMS PROB-045 | Claude | 2026-10-06 |

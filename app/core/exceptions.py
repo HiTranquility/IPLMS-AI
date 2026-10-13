@@ -57,6 +57,10 @@ class RagPipelineError(AiServiceError):
     """Lỗi trong quá trình truy vấn RAG (embedding, LLM, pgvector)."""
 
 
+class ModelConfigurationError(AiServiceError):
+    """Cấu hình model hoặc kết nối tới provider LLM không hợp lệ (sai tên model, provider không phản hồi...)."""
+
+
 class WorkflowConfigurationError(AiServiceError):
     """Workflow chưa được cấu hình an toàn hoặc thiếu dependency runtime."""
 
