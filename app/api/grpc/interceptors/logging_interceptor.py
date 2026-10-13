@@ -15,6 +15,7 @@ from app.core.exceptions import (
     FraudDetectedError,
     InvalidImageError,
     KnowledgeGateError,
+    ModelConfigurationError,
     ModelNotLoadedError,
     PlateRecognitionError,
     RagPipelineError,
@@ -35,6 +36,8 @@ _STATUS_BY_EXCEPTION: tuple[tuple[type[Exception], grpc.StatusCode], ...] = (
     # Cổng nghiệp vụ Knowledge Base (bộ test trống, chưa đạt ngưỡng…) → message
     # đi thẳng tới người dùng qua backend.
     (KnowledgeGateError, grpc.StatusCode.FAILED_PRECONDITION),
+    # Lỗi cấu hình model/provider (không có model, không kết nối được provider)
+    (ModelConfigurationError, grpc.StatusCode.FAILED_PRECONDITION),
     # Hạ tầng phía sau (pgvector, LLM) hỏng.
     (RagPipelineError, grpc.StatusCode.UNAVAILABLE),
     # Khai trong proto nhưng nghiệp vụ chưa có thật. UNIMPLEMENTED chứ không phải

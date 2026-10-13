@@ -5,8 +5,17 @@ import json
 from typing import Any, AsyncGenerator
 
 from app.config import get_config
-from app.core.exceptions import ModelNotLoadedError, RagPipelineError
+from app.core.exceptions import ModelConfigurationError, ModelNotLoadedError, RagPipelineError
 from app.util.logger import logger
+
+try:
+    from openai import APIConnectionError, NotFoundError
+except ImportError:
+    class NotFoundError(Exception):  # type: ignore[no-redef]
+        pass
+
+    class APIConnectionError(Exception):  # type: ignore[no-redef]
+        pass
 
 
 class LlmFactory:
@@ -93,8 +102,15 @@ class LlmFactory:
             if not answer:
                 raise RagPipelineError("Mô hình không trả về nội dung văn bản.")
             return answer
-        except (RagPipelineError, ModelNotLoadedError):
+        except (RagPipelineError, ModelNotLoadedError, ModelConfigurationError):
             raise
+        except NotFoundError as exc:
+            logger.warning(f"Model '{self.model}' not found on provider: {exc}")
+            raise ModelConfigurationError(f"Provider không có model '{self.model}'.") from exc
+        except APIConnectionError as exc:
+            logger.warning(f"Cannot connect to provider '{self.base_url or 'OpenAI'}': {exc}")
+            target = self.base_url or "OpenAI"
+            raise ModelConfigurationError(f"Không kết nối được provider '{target}'.") from exc
         except Exception as exc:
             logger.exception("Responses API request failed")
             raise RagPipelineError("Không sinh được câu trả lời từ OpenAI.") from exc
@@ -111,13 +127,14 @@ class LlmFactory:
 
         Không log prompt/nội dung; `store=False` như đường trả lời khách.
         """
+        target_model = model or self.model
         if not self.uses_openai:
             return await self._generate_json_via_chat(
-                instructions, input_text, schema_name, schema, model
+                instructions, input_text, schema_name, schema, target_model
             )
         try:
             kwargs = dict(
-                model=model or self.model,
+                model=target_model,
                 instructions=instructions,
                 input=input_text,
                 max_output_tokens=self.max_output_tokens if self._profile else max(self.max_output_tokens, 4000),
@@ -138,8 +155,15 @@ class LlmFactory:
             if not isinstance(payload, dict):
                 raise RagPipelineError("Mô hình không trả về JSON đúng định dạng.")
             return payload
-        except (RagPipelineError, ModelNotLoadedError):
+        except (RagPipelineError, ModelNotLoadedError, ModelConfigurationError):
             raise
+        except NotFoundError as exc:
+            logger.warning(f"Model '{target_model}' not found on provider: {exc}")
+            raise ModelConfigurationError(f"Provider không có model '{target_model}'.") from exc
+        except APIConnectionError as exc:
+            logger.warning(f"Cannot connect to provider '{self.base_url or 'OpenAI'}': {exc}")
+            target = self.base_url or "OpenAI"
+            raise ModelConfigurationError(f"Không kết nối được provider '{target}'.") from exc
         except Exception as exc:
             logger.exception("Responses API JSON request failed")
             raise RagPipelineError("Không nhận được kết quả JSON từ OpenAI.") from exc
@@ -158,9 +182,10 @@ class LlmFactory:
         tham số bị bỏ qua thì model trả văn bản tự do. `response_format` của Chat
         Completions thì được hỗ trợ. JSON sai vẫn là lỗi, không nuốt.
         """
+        target_model = model or self.model
         try:
             completion = await self._get_client().chat.completions.create(
-                model=model or self.model,
+                model=target_model,
                 messages=[
                     {"role": "system", "content": instructions},
                     {"role": "user", "content": input_text},
@@ -173,8 +198,15 @@ class LlmFactory:
             )
             content = (completion.choices[0].message.content or "").strip()
             payload = json.loads(content or "null")
-        except (RagPipelineError, ModelNotLoadedError):
+        except (RagPipelineError, ModelNotLoadedError, ModelConfigurationError):
             raise
+        except NotFoundError as exc:
+            logger.warning(f"Model '{target_model}' not found on provider: {exc}")
+            raise ModelConfigurationError(f"Provider không có model '{target_model}'.") from exc
+        except APIConnectionError as exc:
+            logger.warning(f"Cannot connect to provider '{self.base_url or 'Ollama'}': {exc}")
+            target = self.base_url or "Ollama"
+            raise ModelConfigurationError(f"Không kết nối được provider '{target}'.") from exc
         except Exception as exc:
             logger.exception("Chat Completions JSON request failed")
             raise RagPipelineError("Không nhận được kết quả JSON từ mô hình ngôn ngữ.") from exc
@@ -206,8 +238,15 @@ class LlmFactory:
                     raise RagPipelineError(str(message))
             if not completed:
                 raise RagPipelineError("Luồng OpenAI kết thúc trước sự kiện response.completed.")
-        except (RagPipelineError, ModelNotLoadedError):
+        except (RagPipelineError, ModelNotLoadedError, ModelConfigurationError):
             raise
+        except NotFoundError as exc:
+            logger.warning(f"Model '{self.model}' not found on provider: {exc}")
+            raise ModelConfigurationError(f"Provider không có model '{self.model}'.") from exc
+        except APIConnectionError as exc:
+            logger.warning(f"Cannot connect to provider '{self.base_url or 'OpenAI'}': {exc}")
+            target = self.base_url or "OpenAI"
+            raise ModelConfigurationError(f"Không kết nối được provider '{target}'.") from exc
         except Exception as exc:
             logger.exception("Responses API stream failed")
             raise RagPipelineError("Luồng trả lời từ OpenAI bị gián đoạn.") from exc

@@ -107,6 +107,61 @@ class LlmProviderTest(unittest.TestCase):
         with self.assertRaises(RagPipelineError):
             asyncio.run(factory.generate_json("i", "x", "s", {"type": "object"}))
 
+    def test_model_not_found_raises_model_configuration_error_with_model_name(self):
+        import httpx
+        from openai import NotFoundError
+        from app.core.exceptions import ModelConfigurationError
+
+        req = httpx.Request("POST", "http://localhost:11434/v1/chat/completions")
+        res = httpx.Response(404, request=req)
+        err = NotFoundError("model 'khong-ton-tai:1b' not found", response=res, body=None)
+
+        class FailingChat:
+            completions = None
+            def __init__(self):
+                self.completions = self
+            async def create(self, **kwargs):
+                raise err
+
+        factory = self._factory(
+            base_url="http://localhost:11434/v1",
+            client=SimpleNamespace(chat=FailingChat()),
+        )
+        factory.model = "khong-ton-tai:1b"
+
+        with self.assertRaises(ModelConfigurationError) as ctx:
+            asyncio.run(factory.generate_json("i", "x", "s", {"type": "object"}))
+
+        self.assertIn("khong-ton-tai:1b", str(ctx.exception))
+        self.assertIn("Provider không có model", str(ctx.exception))
+
+    def test_connection_error_raises_model_configuration_error_with_provider_url(self):
+        import httpx
+        from openai import APIConnectionError
+        from app.core.exceptions import ModelConfigurationError
+
+        req = httpx.Request("POST", "http://localhost:11434/v1/chat/completions")
+        err = APIConnectionError(request=req)
+
+        class FailingChat:
+            completions = None
+            def __init__(self):
+                self.completions = self
+            async def create(self, **kwargs):
+                raise err
+
+        factory = self._factory(
+            base_url="http://localhost:11434/v1",
+            client=SimpleNamespace(chat=FailingChat()),
+        )
+
+        with self.assertRaises(ModelConfigurationError) as ctx:
+            asyncio.run(factory.generate_json("i", "x", "s", {"type": "object"}))
+
+        self.assertIn("http://localhost:11434/v1", str(ctx.exception))
+        self.assertIn("Không kết nối được provider", str(ctx.exception))
+
 
 if __name__ == "__main__":
     unittest.main()
+
