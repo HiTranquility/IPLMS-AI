@@ -8,7 +8,7 @@
 | | |
 |---|---|
 | **Người giữ bảng** | Chủ đồ án |
-| **Cập nhật lần cuối** | 2026-10-06 |
+| **Cập nhật lần cuối** | 2026-10-13 |
 
 ## 📏 Luật dùng bảng
 
@@ -23,18 +23,20 @@
 
 | Việc | Hồ sơ | Ưu tiên | Ghi chú |
 |---|---|---|---|
-| Chạy bộ test Knowledge Base với LLM thật (cần `AI_LLM_API_KEY`) | IPLMS ISSUE-009 | 🟢 | phần UI bằng tài khoản thật ở bảng frontend |
-| Lỗi model không tồn tại bị nuốt thành "AI service is unreachable" (`app/infra/llm/llm_factory.py:178-180`) | IPLMS bug-014 | 🟢 |  |
-| Restart container `ai` để đường gRPC nạp code mới, rồi verify | IPLMS bug-006 | 🟢 | REST đã verify |
-| Làm nốt 1.3 `materialize_dataset` | IPLMS ISSUE-013 | 🟢 |  |
-| Sửa vi phạm so với AI_CONVENTIONS | IPLMS AUDIT-004 | 🟢 | đã báo cáo, chưa khắc phục |
+| Đánh giá & calibration phân bố confidence ANPR theo camera | IPLMS PROB-045 | 🟢 | Chuẩn bị dữ liệu sau khi materialize xong |
 
 ## 🚧 Đang làm
 
 | Việc | Hồ sơ | Người nhận | Hạn | Tới đâu |
 |---|---|---|---|---|
-| Nạp liệu tri thức RAG — phần AI | IPLMS ISSUE-004 | *(chưa ghi)* |  | nhóm 5 code xong; còn E2E với container rebuild + 4.3 |
-| LangGraph workflow cho Copilot tranh chấp | IPLMS ISSUE-005 | *(chưa ghi)* |  | xong phase 2 |
+| Làm nốt 1.3 `materialize_dataset` (tải theo manifest + sha256) | IPLMS ISSUE-013 | Khoa | 2026-10-16 | Đang viết CLI & loader từ private storage |
+| Restart container `ai` để đường gRPC nạp code mới, rồi verify ANPR | IPLMS bug-006 | Khoa | 2026-10-14 | REST đã verify; chuẩn bị đo gRPC & warmup |
+| Đo ANPR trên test-golden snapshot & đối chiếu xe chống tráo | IPLMS ISSUE-010 | Khoa | 2026-10-17 | Chuẩn bị test suite & dữ liệu snapshot |
+| Chạy bộ test Knowledge Base với LLM thật (cần `AI_LLM_API_KEY`) | IPLMS ISSUE-009 | Dương | 2026-10-15 | 299 test unit/mock đã pass; chờ key/ollama chạy live |
+| Lỗi model không tồn tại bị nuốt thành "AI service unreachable" | IPLMS bug-014 | Dương | 2026-10-15 | Sửa `llm_factory.py` map sang FAILED_PRECONDITION |
+| LangGraph workflow cho Copilot tranh chấp (Phase 3) | IPLMS ISSUE-005 | Dương | 2026-10-18 | Xong phase 2; đang làm tiếp state interrupt/resume |
+| Nạp liệu tri thức RAG — phần AI & hoàn tất E2E | IPLMS ISSUE-004 | Dương | 2026-10-16 | Nhóm 5 code xong; chờ E2E container & nối FE |
+| Sửa vi phạm so với AI_CONVENTIONS (bổ sung luật lỗi & test doc) | IPLMS AUDIT-004 | Dương | 2026-10-19 | Đã có báo cáo AUDIT-004; cập nhật doc & gRPC mapping |
 
 ## ⏳ Chờ duyệt
 
