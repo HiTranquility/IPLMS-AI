@@ -1,4 +1,4 @@
-"""Healthcheck and Liveness probe endpoints."""
+"""Healthcheck and liveness probe endpoints (REST controller)."""
 from fastapi import APIRouter
 
 router = APIRouter(tags=["Health"])

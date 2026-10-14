@@ -4,7 +4,8 @@
 # Cung cấp bộ cân bằng tải L7 cho:
 #   - REST HTTP/1.1 (port 8000)
 #   - gRPC HTTP/2 h2c (port 50051)
-#   - Web Dashboard & API (port 8080)
+#   - Internal ping (port 8080); dashboard API disabled in base/production
+# Base config. Compose selects a complete develop/production config explicitly.
 # ==============================================================================
 
 global:

@@ -33,3 +33,5 @@ services:
 
   gateway:
     restart: always
+    volumes:
+      - ./traefik/traefik.production.yml:/etc/traefik/traefik.yml:ro
