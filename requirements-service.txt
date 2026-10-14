@@ -12,7 +12,7 @@ easyocr>=1.7
 ultralytics>=8.3
 fastapi>=0.110
 uvicorn[standard]>=0.27
-python-multipart>=0.0.9
+python-multipart>=0.0.32
 # Keep generated stubs and the protobuf runtime on the same compatible line.
 grpcio==1.71.0
 grpcio-tools==1.71.0

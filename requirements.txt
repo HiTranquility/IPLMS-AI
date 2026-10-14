@@ -16,7 +16,7 @@ torchsummary>=1.5.1
 ptflops>=0.7
 fastapi>=0.110
 uvicorn[standard]>=0.27
-python-multipart>=0.0.9
+python-multipart>=0.0.32
 # Pin generator/runtime together. Newer grpcio-tools emits protobuf 7 code,
 # which cannot run with the protobuf 5 runtime used by the rest of this stack.
 grpcio==1.71.0
