@@ -19,7 +19,7 @@ grpcio-tools==1.71.0
 protobuf==5.29.5
 pydantic-settings>=2.0.0
 pgvector>=0.2.5
-psycopg2-binary>=2.9.9
+psycopg2-binary>=2.9.13
 
 # ── Nạp liệu tri thức (RAG) — xem SUGGESTION-008 ───────────────────────────────────
 # Service runtime CẦN cả ba (AI_CONVENTIONS §5: dependency runtime ⇒ thêm vào

@@ -24,7 +24,7 @@ grpcio-tools==1.71.0
 protobuf==5.29.5
 pydantic-settings>=2.0.0
 pgvector>=0.2.5
-psycopg2-binary>=2.9.9
+psycopg2-binary>=2.9.13
 
 # ── Nạp liệu tri thức (RAG) — xem SUGGESTION-008 ───────────────────────────────────
 # [MUST] pypdf phải >=6.19.0. Năm 2026 nó có 6 CVE cùng một dạng: PDF crafted
