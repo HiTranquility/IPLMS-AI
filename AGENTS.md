@@ -41,6 +41,8 @@ Khi User đưa vào **bất kỳ ý tưởng (Idea), vấn đề mới (Problem)
 
 ## Stack và quy ước
 
+- Đọc [DESIGN.md](DESIGN.md) trước khi đổi kiến trúc/runtime; cập nhật DESIGN và ngoại lệ cùng thay đổi. README giữ phần vào nhanh, conventions giữ luật code.
+
 - Python: FastAPI + gRPC cho ANPR, Forecast, Copilot/RAG; huấn luyện ở `training/`, notebook ở `notebook/`.
 - Quy ước: [AI_CONVENTIONS](docs/AI_CONVENTIONS.md). Hợp đồng ANPR lấy từ tài liệu này, proto và code; skill `anpr-pipeline` ở repo gốc là bản cũ viết cho C#.
 - Mở 1–2 file cùng loại trong cùng thư mục và theo đúng cách đang làm trước khi viết mới.

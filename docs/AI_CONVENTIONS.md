@@ -7,6 +7,10 @@ verified-against-code: 2026-09-11 — mọi đường dẫn, tên file, hướng
 
 # 🧠 AI Conventions — IPLMS
 
+**[MUST]** Đọc [DESIGN](../DESIGN.md) cho kiến trúc cụ thể, ma trận base/develop/production và ngoại lệ; [README](../README.md) chỉ là điểm vào nhanh. Naming chung khi mở từ umbrella: [NAMING_CONVENTIONS](../../docs/standards/NAMING_CONVENTIONS.md).
+
+Python dùng `snake_case` cho file/hàm, `PascalCase` cho class, `UPPER_SNAKE_CASE` cho hằng và env key. File REST dùng `<domain>_controller.py`; config dùng `<concern>_config.py`. Thêm project độc lập phải có README + DESIGN + conventions liên kết nhau.
+
 Luật viết code cho plane `ai/`. Stack: Python · FastAPI · gRPC · YOLO + EasyOCR · pgvector · Parquet.
 
 > Kiến trúc hiện tại **sạch** — quét ngày 2026-09-11 không thấy vi phạm phân tầng nào.
@@ -93,7 +97,7 @@ api/rest/routes/anpr_controller.py  ─┘
 
 `routes/` (endpoint) · `schemas/` (body/response Pydantic) · `middlewares/` · `router.py` (gom route).
 
-**[GOTCHA] Đang có lệch tên:** `routes/` chứa `anpr_controller.py` và `health.py` — một cái có hậu tố `_controller`, một cái không. **[MUST]** file mới đặt `<domain>_controller.py`; `health.py` là ngoại lệ lịch sử, đổi tên nó thì phải sửa `router.py`.
+**[MUST]** File REST đặt `<domain>_controller.py`: `anpr_controller.py`, `health_controller.py`. Đổi tên file phải sửa import ở `router.py`; tên file không đổi URL public. Ngoại lệ `health.py` đã được gỡ ngày 2026-10-14.
 
 ## 4. Config
 
