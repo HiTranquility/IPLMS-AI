@@ -16,15 +16,26 @@ from app.core.constants import FALLBACK_PLATE_NUMBER
 from app.core.exceptions import InvalidImageError, PlateRecognitionError
 from app.core.vision.engines.anpr import models
 from app.core.vision.engines.anpr.detector import detect_plate
-from app.core.vision.engines.anpr.ocr import read_with_confidence
+from app.core.vision.engines.anpr.ocr import read_plate_details, read_with_confidence
 from app.core.vision.engines.anpr.plate_text import is_valid_plate, plate_key
 from app.core.vision.engines.anpr.preprocess import enhance_for_ocr, is_valid_crop
 from app.core.vision.engines.anpr.scoring import PlateCandidate, select_plate_candidate
+from app.core.vision.engines.anpr_onnx_engine import AnprOnnxEngine
+from app.core.vision.engines.two_line_plate_parser import parse_two_line_vietnam_plate
 from app.util.logger import logger
 
 warmup = models.warmup
+_onnx_engine: Optional[AnprOnnxEngine] = None
 
-__all__ = ["run_anpr", "warmup"]
+
+def get_anpr_detector() -> AnprOnnxEngine:
+    global _onnx_engine
+    if _onnx_engine is None:
+        _onnx_engine = AnprOnnxEngine()
+    return _onnx_engine
+
+
+__all__ = ["run_anpr", "warmup", "AnprOnnxEngine", "parse_two_line_vietnam_plate"]
 
 
 def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
@@ -58,16 +69,18 @@ def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
     crop_candidate: Optional[PlateCandidate] = None
     det_conf: Optional[float] = None
     try:
-        crop, det_conf = detect_plate(img_cv)
+        crop, det_conf = get_anpr_detector().detect_plate(img_cv)
         # Không có detector: detect_plate trả đúng object ảnh gốc. Không OCR lại
         # cùng ảnh rồi tính đó là một "nhánh đồng thuận" độc lập giả.
         if isinstance(crop, np.ndarray) and not (det_conf is None and crop is img_cv):
             plate_crop = crop
             crop_is_valid = is_valid_crop(crop)
             if crop_is_valid:
-                crop_text, crop_conf = read_with_confidence(crop)
+                crop_text, crop_conf, crop_is_2line, _ = read_plate_details(crop)
                 if is_valid_plate(crop_text):
-                    crop_candidate = PlateCandidate(crop_text, crop_conf, det_conf, "crop", crop)
+                    crop_candidate = PlateCandidate(
+                        crop_text, crop_conf, det_conf, "crop", crop, is_two_line=crop_is_2line
+                    )
                     candidates.append(crop_candidate)
     except PlateRecognitionError:
         pass
@@ -78,9 +91,11 @@ def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
     # đã đọc ra biển đủ hai dấu phân cách với điểm tốt thì không cần "trọng tài".
     full_text = ""
     if crop_candidate is None or not crop_candidate.strong_format:
-        full_text, full_conf = read_with_confidence(img_cv)
+        full_text, full_conf, full_is_2line, _ = read_plate_details(img_cv)
         if is_valid_plate(full_text):
-            candidates.append(PlateCandidate(full_text, full_conf, None, "full", img_cv))
+            candidates.append(
+                PlateCandidate(full_text, full_conf, None, "full", img_cv, is_two_line=full_is_2line)
+            )
 
     if plate_crop is not None:
         try:
@@ -100,10 +115,12 @@ def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
             )
             if should_enhance:
                 enhanced_img = enhance_for_ocr(plate_crop)
-                enhanced_text, enhanced_conf = read_with_confidence(enhanced_img)
+                enhanced_text, enhanced_conf, enh_is_2line, _ = read_plate_details(enhanced_img)
                 if is_valid_plate(enhanced_text):
                     candidates.append(
-                        PlateCandidate(enhanced_text, enhanced_conf, det_conf, "enhanced", enhanced_img)
+                        PlateCandidate(
+                            enhanced_text, enhanced_conf, det_conf, "enhanced", enhanced_img, is_two_line=enh_is_2line
+                        )
                     )
         except Exception as exc:
             logger.warning(f"Enhance/OCR pipeline error (non-fatal): {exc}")
@@ -112,9 +129,11 @@ def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
     if selected is None:
         plate_number = FALLBACK_PLATE_NUMBER
         plate_confidence = 0.0
+        is_two_line = False
     else:
         plate_number = selected.text
         plate_confidence = selected.confidence
+        is_two_line = getattr(selected, "is_two_line", False)
 
     # Trước đây trả `selected.image`: khi nhánh ảnh gốc thắng, "ảnh crop" gửi về
     # backend là NGUYÊN khung hình (đo 2026-09-25: ảnh 600x300 thay vì biển
@@ -132,4 +151,5 @@ def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
         "plate_number": plate_number,
         "confidence": round(plate_confidence, 4),
         "process_time": round(time.perf_counter() - start_time, 3),
+        "is_two_line": is_two_line,
     }

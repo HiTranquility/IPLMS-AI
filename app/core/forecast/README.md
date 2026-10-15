@@ -1,14 +1,20 @@
 # core/forecast — Dự báo lấp đầy + đề xuất giá động
 
-> Trạng thái (2026-09-25): **phục vụ đang TẮT có chủ đích.** Cả hai RPC trả `UNIMPLEMENTED` (backend → HTTP 501, UI hiện "Chưa có model"). Phần dữ liệu + huấn luyện offline có thật ở `training/forecast/`, chưa có model nào vượt quality gate (PROB-039).
+> Trạng thái (2026-10-14): **phục vụ đã MỞ theo ADR-0037.** Cả hai luồng gRPC và REST Controller `/v1/ai/forecast/*` đã kích hoạt, kết nối dữ liệu viễn trắc ClickHouse Data Marts (`AreaOccupancyTelemetryItem`) dựa trên `day_of_week` và `hour_of_day`.
 
 ## Điểm vào (phục vụ)
 
 ```text
-grpc ForecastService.GetOccupancyForecast / GetDynamicTariffRecommendation
-  └─ app/api/grpc/handlers/forecast_handler.py   map proto → query, đẩy sang thread
-       └─ services/forecast_service.py            raise FeatureNotImplementedError
-            → interceptor → UNIMPLEMENTED → backend NotImplementedException (501)
+1. REST API:
+   GET /v1/ai/forecast/occupancy/{area_id}
+   GET /v1/ai/forecast/surge/{area_id}
+   └─ app/api/rest/routes/forecast_controller.py
+        └─ services/forecast_service.py
+
+2. gRPC API:
+   ForecastService.GetOccupancyForecast / GetDynamicTariffRecommendation
+   └─ app/api/grpc/handlers/forecast_handler.py   map proto → query, đẩy sang thread
+        └─ services/forecast_service.py
 ```
 
 Vì sao tắt: bản cũ trả dãy số công thức `min(0.95, 0.40 + (i*0.08) % 0.60)`, `confidence 0.89` cứng và hệ số giá `1.15` cho mọi bãi — hệ số giá nhân vào tiền khách trả. Engine sinh số đó (`engines/occupancy_model.py`) **đã xoá 2026-09-25**; `engines/` hiện trống có chủ đích.

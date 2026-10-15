@@ -26,6 +26,10 @@ class VisionConfig(BaseConfig):
     vision_warmup_on_start: bool = True
     device: str = "cpu"
 
+    # Tăng tốc ANPR bằng ONNX Runtime (AI_ONNX_ENABLED và AI_ONNX_MODEL_DIR)
+    onnx_enabled: bool = True
+    onnx_model_dir: str = "data/models"
+
     # CNN phân loại loại xe (stage tùy chọn — tắt khi không có checkpoint).
     vehicle_model: str = "NetV2"
     vehicle_checkpoint: str = ""

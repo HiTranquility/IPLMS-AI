@@ -9,7 +9,8 @@ FROM python:3.10-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    ONNXRUNTIME_EXECUTION_PROVIDERS=CPUExecutionProvider
 
 WORKDIR /app
 
@@ -21,12 +22,16 @@ RUN apt-get update \
 COPY ai/requirements-service.txt .
 RUN pip install -r requirements-service.txt
 
-# model/ chứa kiến trúc, bootstrap YOLO và workspace train; image chỉ cần model.
+# model/ chứa kiến trúc, bootstrap YOLO và workspace train; data/ chứa dữ liệu và ONNX models.
 COPY ai/app ./app
 COPY ai/model ./model
 COPY ai/static ./static
 COPY ai/data ./data
 COPY proto ./proto
+
+# Đảm bảo các thư mục model và data ONNX tồn tại và gán quyền phù hợp
+RUN mkdir -p /app/data/models /app/model/artifacts /app/var/model-cache \
+    && chmod -R 755 /app/model /app/data /app/var
 
 # Sinh stub gRPC ngay lúc build — nếu thiếu, server sẽ chết ở entrypoint chứ
 # không phải giữa một request nhận diện.

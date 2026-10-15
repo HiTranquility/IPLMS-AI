@@ -49,6 +49,7 @@ class PlateCandidate:
     detector_confidence: Optional[float]
     source: str
     image: Any
+    is_two_line: bool = False
 
     @property
     def key(self) -> str:
