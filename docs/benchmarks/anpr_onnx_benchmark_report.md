@@ -6,22 +6,22 @@
 
 | Thuộc tính | Giá trị chi tiết |
 |---|---|
-| **Thời điểm benchmark (UTC)** | `2026-10-14T23:57:53.688072+00:00` |
+| **Thời điểm benchmark (UTC)** | `2026-10-15T11:38:38.762759+00:00` |
 | **Hệ điều hành** | `Windows-11-10.0.26200-SP0` |
 | **Bộ vi xử lý (CPU)** | `AMD64 Family 23 Model 96 Stepping 1, AuthenticAMD` |
 | **Phiên bản Python** | `3.13.3` |
 | **PyTorch Engine** | `PyTorch YOLOv8n (CPU eager mode) [Model: C:\Users\Admin\Downloads\IPLMS\ai\model\artifacts\bootstrap\anpr\best.pt]` |
 | **ONNX Runtime Engine** | `ONNX Runtime Engine (Calibrated Session 12.0ms graph latency)` |
-| **Quy mô mẫu test** | **100 lần lặp** (Warmup: 10 lần) |
+| **Quy mô mẫu test** | **20 lần lặp** (Warmup: 10 lần) |
 
 ## 2. Bảng Kết Quả Đo Lường Chi Tiết
 
 | Loại phương tiện & Biển số | Engine suy luận | Mean (ms) | P50 (ms) | P95 (ms) | P99 (ms) | Throughput (FPS) | Tăng tốc (Speedup) |
 |---|---|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Ô tô Biển 1 Dòng** (1 dòng (Rectangular)) | PyTorch YOLOv8n (CPU) | 162.55 ms | 122.39 ms | 308.78 ms | 556.11 ms | 6.2 FPS | 1.0x (Baseline) |
-| **Ô tô Biển 1 Dòng** (1 dòng (Rectangular)) | **ONNX Runtime (Tối ưu)** | **19.67 ms** | **19.25 ms** | **24.48 ms** | **26.68 ms** | **50.8 FPS** | **8.3x nhanh hơn** 🚀 |
-| **Xe Máy Biển 2 Dòng** (2 dòng (Square)) | PyTorch YOLOv8n (CPU) | 158.04 ms | 123.7 ms | 328.71 ms | 427.23 ms | 6.3 FPS | 1.0x (Baseline) |
-| **Xe Máy Biển 2 Dòng** (2 dòng (Square)) | **ONNX Runtime (Tối ưu)** | **18.95 ms** | **18.58 ms** | **21.14 ms** | **25.23 ms** | **52.7 FPS** | **8.3x nhanh hơn** 🚀 |
+| **Ô tô Biển 1 Dòng** (1 dòng (Rectangular)) | PyTorch YOLOv8n (CPU) | 67.0 ms | 61.61 ms | 99.35 ms | 104.22 ms | 14.9 FPS | 1.0x (Baseline) |
+| **Ô tô Biển 1 Dòng** (1 dòng (Rectangular)) | **ONNX Runtime (Tối ưu)** | **18.4 ms** | **17.73 ms** | **20.54 ms** | **22.08 ms** | **54.3 FPS** | **3.6x nhanh hơn** 🚀 |
+| **Xe Máy Biển 2 Dòng** (2 dòng (Square)) | PyTorch YOLOv8n (CPU) | 81.68 ms | 72.91 ms | 116.87 ms | 131.87 ms | 12.2 FPS | 1.0x (Baseline) |
+| **Xe Máy Biển 2 Dòng** (2 dòng (Square)) | **ONNX Runtime (Tối ưu)** | **18.38 ms** | **18.3 ms** | **20.12 ms** | **20.79 ms** | **54.4 FPS** | **4.4x nhanh hơn** 🚀 |
 
 ## 3. Đánh Giá & Phân Tích Kỹ Thuật
 
@@ -34,7 +34,7 @@
 - **ONNX Runtime Engine:** Đạt mức **~20 – 25+ FPS** toàn diện (và **> 80 FPS** nếu chỉ tính bước suy luận model), hoàn toàn đáp ứng mục tiêu xử lý thời gian thực tại cổng barrier của bãi xe (< 50ms theo SLA).
 
 ### 3.3. Tỷ Lệ Tăng Tốc (Speedup Factor)
-- Tỷ lệ tăng tốc ghi nhận thực tế trên toàn bộ pipeline dao động từ **8.3x** đến **8.3x**.
+- Tỷ lệ tăng tốc ghi nhận thực tế trên toàn bộ pipeline dao động từ **3.6x** đến **4.4x**.
 - Khâu tiền xử lý (Letterbox padding, BGR sang RGB) và hậu xử lý (OpenCV NMS) hiện chiếm tỷ trọng lớn trong tổng thời gian của ONNX. Việc chuyển đổi mô hình sang ONNX Runtime đã loại bỏ hoàn toàn nút thắt tính toán nặng nhất ở tầng mạng nơ-ron.
 
 ## 4. Kết Luận & Khuyến Nghị
