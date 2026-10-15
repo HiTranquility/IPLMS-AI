@@ -14,9 +14,9 @@ Nguồn đối chiếu: [REST router](app/api/rest/router.py), [gRPC server](app
 
 | Vai trò | Compose ghép với base | Static Traefik được mount | Dashboard / trace |
 |---|---|---|---|
-| Base local | `docker-compose.yml` | [traefik.yml](traefik/traefik.yml) | `insecure: false`, sample 0.1 |
-| Develop | [docker-compose.develop.yml](docker-compose.develop.yml) | [traefik.develop.yml](traefik/traefik.develop.yml) | `insecure: true`, sample 1.0; host bind localhost |
-| Production | [docker-compose.production.yml](docker-compose.production.yml) | [traefik.production.yml](traefik/traefik.production.yml) | `insecure: false`, sample 0.1 |
+| Base local | `docker-compose.yml` | [traefik.yml](docker/traefik/traefik.yml) | `insecure: false`, sample 0.1 |
+| Develop | [docker-compose.develop.yml](docker-compose.develop.yml) | [traefik.develop.yml](docker/traefik/traefik.develop.yml) | `insecure: true`, sample 1.0; host bind localhost |
+| Production | [docker-compose.production.yml](docker-compose.production.yml) | [traefik.production.yml](docker/traefik/traefik.production.yml) | `insecure: false`, sample 0.1 |
 
 Mỗi static Traefik file là một cấu hình **đầy đủ**, không phải YAML overlay. Compose chọn file source theo môi trường nhưng target luôn `/etc/traefik/traefik.yml`; mount Docker socket kế thừa base. REST `8000`, gRPC `50051`, ping/dashboard `8080`, Prometheus `8082`; metrics và Tempo thuộc mạng nội bộ. Production giữ ping cho healthcheck nhưng không bật API dashboard không xác thực. Tên file `production` không tự cung cấp TLS hay xác thực cho AI: gateway vẫn chỉ bind host localhost, backend gọi mạng nội bộ.
 
