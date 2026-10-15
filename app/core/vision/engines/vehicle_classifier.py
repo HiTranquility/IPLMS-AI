@@ -42,7 +42,7 @@ def _ensure_loaded() -> bool:
             )
         )
         model_cls = {"NetV1": NetV1, "NetV2": NetV2}.get(vision.vehicle_model, NetV2)
-        device = torch.device("cuda" if vision.device.lower() == "cuda" and torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda" if vision.device.lower() in ("cuda", "gpu", "auto") and torch.cuda.is_available() else "cpu")
         model = model_cls(n_class=vision.vehicle_num_classes).to(device)
 
         try:
@@ -63,15 +63,88 @@ def _ensure_loaded() -> bool:
         )
         return True
 
-def classify_vehicle(image_bytes: bytes) -> Optional[str]:
-    if not _ensure_loaded():
-        return None
+def classify_vehicle(
+    image_bytes: bytes,
+    plate_number: Optional[str] = None,
+    plate_color: Optional[str] = None,
+) -> Optional[str]:
+    """Phân loại loại phương tiện kết hợp mô hình CNN (NetV2) và quy chuẩn biển số Việt Nam."""
+    import re
+    from app.util.logger import logger
+
+    # 1. Trích xuất đặc trưng từ quy chuẩn biển số Việt Nam (Vietnamese Plate Prior)
+    plate_prior = None
+    if plate_number and plate_number != "UNKNOWN":
+        p = plate_number.upper().strip()
+        clean = re.sub(r'[^A-Z0-9]', '', p)
+
+        # 1. Nhận diện xe máy (mô tô 2 bánh): sê-ri 2 ký tự (vd: 59-V1-, 59V1- hoặc không dấu 9 ký tự: 59V179379)
+        is_moto = False
+        if re.match(r'^\d{2}-[A-Z][0-9A-Z]-', p):
+            is_moto = True
+        elif re.match(r'^\d{2}[A-Z][0-9A-Z]-', p):
+            is_moto = True
+        elif len(clean) == 9 and re.match(r'^\d{2}[A-Z][0-9A-Z]\d{5}$', clean):
+            is_moto = True
+
+        if is_moto:
+            plate_prior = "motorbike"
+        else:
+            # 2. Nhận diện ô tô (xe tải / xe con / xe khách)
+            truck_series = False
+            if re.match(r'^\d{2}[CH]-?', p) or re.match(r'^\d{2}-[CH]-?', p):
+                truck_series = True
+            elif len(clean) in (7, 8) and re.match(r'^\d{2}[CH]\d{4,5}$', clean):
+                truck_series = True
+            # Biển vàng sê-ri C, H (tải), D (xe van / bán tải chở hàng), B (xe khách / bus)
+            elif plate_color == "yellow" and (re.match(r'^\d{2}[CHDB]', clean) or re.match(r'^\d{2}-[CHDB]', p)):
+                truck_series = True
+
+            if truck_series:
+                plate_prior = "truck"
+            elif re.match(r'^\d{2}[A-Z]-?', p) or re.match(r'^\d{2}-[A-Z]-?', p):
+                plate_prior = "car_sedan"
+            elif len(clean) in (7, 8) and re.match(r'^\d{2}[A-Z]\d{4,5}$', clean):
+                plate_prior = "car_sedan"
+
+    # 2. Suy luận bằng CNN (NetV2)
+    has_model = _ensure_loaded()
+    if not has_model:
+        return plate_prior
+
     import torch
     from PIL import Image
 
-    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    x = _state["tf"](img).unsqueeze(0).to(_state["device"])
-    with torch.no_grad():
-        idx = int(_state["model"](x).argmax(dim=1).item())
-    labels = _state["labels"]
-    return labels[idx] if idx < len(labels) else str(idx)
+    cnn_label = None
+    cnn_conf = 0.0
+    try:
+        img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        x = _state["tf"](img).unsqueeze(0).to(_state["device"])
+        with torch.no_grad():
+            logits = _state["model"](x)
+            probs = torch.softmax(logits, dim=1)
+            max_prob, idx = probs.max(dim=1)
+            idx = int(idx.item())
+            cnn_conf = float(max_prob.item())
+        labels = _state["labels"]
+        cnn_label = labels[idx] if idx < len(labels) else str(idx)
+    except Exception as exc:
+        logger.warning(f"CNN classification inference failed: {exc}")
+
+    # 3. Kết hợp tiên nghiệm biển số và phân loại CNN (Prior Fusion)
+    if plate_prior:
+        # Nếu biển số xe máy rõ ràng (ví dụ 59V1), ưu tiên quy chuẩn pháp lý
+        if plate_prior == "motorbike":
+            return "motorbike"
+        if plate_prior == "truck":
+            return "truck"
+        # Biển xe con dân sự (A, E, F, G, K, S...):
+        # Tuyệt đối không cho phép mô hình CNN chưa hội tụ ghi đè thành truck.
+        # Chỉ tinh chỉnh chi tiết sedan vs suv nếu CNN có độ tự tin cao (>= 0.45).
+        if plate_prior == "car_sedan":
+            if cnn_label in ("car_sedan", "car_suv") and cnn_conf >= 0.45:
+                return cnn_label
+            return "car_sedan"
+        return plate_prior
+
+    return cnn_label

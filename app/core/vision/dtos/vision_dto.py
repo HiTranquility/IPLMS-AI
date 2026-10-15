@@ -23,6 +23,7 @@ class PlateResult:
     # Ảnh crop dạng bytes để backend đẩy lên kho lưu trữ bền. Không dùng cho
     # đường REST (đường đó đã ghi file và trả URL).
     crop_bytes: Optional[bytes] = None
+    plate_color: Optional[str] = "white"
 
 
 class AnprItem(BaseModel):
@@ -37,6 +38,7 @@ class AnprItem(BaseModel):
     original_image_url: Optional[str] = None
     process_time: Optional[float] = None
     timestamp: str
+    plate_color: Optional[str] = "white"
 
     @classmethod
     def from_result(cls, result: PlateResult) -> "AnprItem":
@@ -50,6 +52,7 @@ class AnprItem(BaseModel):
             original_image_url=result.original_image_url,
             process_time=result.process_time,
             timestamp=result.timestamp,
+            plate_color=result.plate_color or "white",
         )
 
 

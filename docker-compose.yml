@@ -24,8 +24,8 @@ services:
   # ─── AI Service (REST :8000 + gRPC :50051) ─────────────────────────────────
   ai:
     build:
-      context: ..
-      dockerfile: ai/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     image: ${AI_IMAGE:-iplms-ai:latest}
     restart: unless-stopped
     logging: *default-logging

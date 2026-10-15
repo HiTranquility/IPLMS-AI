@@ -10,6 +10,10 @@
     Script này KHÔNG thay đổi code hay cấu hình — chỉ chuẩn bị để chạy được.
 #>
 
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+$env:PYTHONIOENCODING = "utf-8"
+$env:PYTHONUTF8 = "1"
 $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $ScriptDir
@@ -24,19 +28,52 @@ function Write-Sep   { Write-Host "───────────────
 Write-Sep
 Write-Info "Bước 1/6: Tạo .venv & cài dependencies"
 
-if (-not (Test-Path ".venv")) {
+$VenvPython = Join-Path $ScriptDir ".venv\Scripts\python.exe"
+$VenvPip    = Join-Path $ScriptDir ".venv\Scripts\pip.exe"
+
+if (-not (Test-Path $VenvPython)) {
+    Write-Info "Đang tạo .venv..."
     python -m venv .venv
     Write-Ok "Đã tạo .venv"
 } else {
     Write-Ok ".venv đã tồn tại, bỏ qua"
 }
 
-# Activate venv
-& .\.venv\Scripts\Activate.ps1
-Write-Ok "Đã activate venv"
+# Activate venv trong session nếu có thể
+if (Test-Path ".\.venv\Scripts\Activate.ps1") {
+    try {
+        & .\.venv\Scripts\Activate.ps1
+        Write-Ok "Đã activate venv"
+    } catch {
+        Write-Warn "Bỏ qua dot-source Activate.ps1, dùng trực tiếp binary trong .venv"
+    }
+}
 
-pip install --upgrade pip -q 2>$null
-pip install -r requirements.txt -q 2>$null
+& $VenvPip install --upgrade pip -q
+
+# Kiểm tra xem máy có GPU NVIDIA không
+$hasNvidiaGpu = $false
+try {
+    $smi = Get-Command "nvidia-smi" -ErrorAction SilentlyContinue
+    if ($smi) {
+        $gpuOut = & nvidia-smi --query-gpu=name --format=csv,noheader 2>$null
+        if ($LASTEXITCODE -eq 0 -and $gpuOut) {
+            $hasNvidiaGpu = $true
+            Write-Ok "Phát hiện GPU NVIDIA: $gpuOut"
+        }
+    }
+} catch { }
+
+if ($hasNvidiaGpu) {
+    Write-Info "Đang cài đặt PyTorch với hỗ trợ CUDA 12.4..."
+    & $VenvPip install torch==2.6.0+cu124 torchvision==0.21.0+cu124 --index-url https://download.pytorch.org/whl/cu124 --default-timeout=1000 --retries=10
+}
+
+& $VenvPip install -r requirements.txt --default-timeout=1000 --retries=10
+if ($LASTEXITCODE -ne 0) {
+    Write-Fail "Cài đặt dependencies thất bại!"
+    exit $LASTEXITCODE
+}
 Write-Ok "Đã cài đặt dependencies (requirements.txt)"
 
 # ── 2. gRPC stubs ────────────────────────────────────────────────────────────
@@ -47,7 +84,7 @@ $StubDir = "app\api\grpc\generated"
 if ((Test-Path $StubDir) -and (Get-ChildItem $StubDir -ErrorAction SilentlyContinue | Measure-Object).Count -gt 0) {
     Write-Ok "gRPC stubs đã tồn tại"
 } else {
-    python app\script\compile_proto.py
+    & $VenvPython app\script\compile_proto.py
     Write-Ok "Đã sinh gRPC stubs"
 }
 
@@ -79,7 +116,7 @@ if ((Test-Path $EasyOcrModelDir) -and (Get-ChildItem $EasyOcrModelDir -ErrorActi
 } else {
     Write-Info "Đang tải EasyOCR models (cần Internet, ~113MB)..."
     try {
-        python -c @"
+        & $VenvPython -c @"
 import os
 os.environ['EASYOCR_MODULE_PATH'] = r'$EasyOcrDir'
 import easyocr
@@ -108,7 +145,7 @@ Write-Sep
 Write-Info "Bước 6/6: Smoke test"
 
 try {
-    python -c @"
+    & $VenvPython -c @"
 from app.config import get_config
 cfg = get_config()
 print(f'  YOLO path:    {cfg.vision.yolo_model_path}')
@@ -126,8 +163,11 @@ Write-Sep
 Write-Host ""
 Write-Ok "Setup hoàn tất! Chạy service:"
 Write-Host ""
-Write-Host "  # REST (FastAPI)" -ForegroundColor DarkGray
-Write-Host '  cd ai; .\.venv\Scripts\Activate.ps1'
+Write-Host "  # Chạy nhanh toàn bộ hệ thống (Recommended)" -ForegroundColor Green
+Write-Host '  .\start-dev.ps1'
+Write-Host ""
+Write-Host "  # Hoặc chạy thủ công REST (FastAPI)" -ForegroundColor DarkGray
+Write-Host '  .\.venv\Scripts\Activate.ps1'
 Write-Host "  `$env:EASYOCR_MODULE_PATH='$EasyOcrDir'"
 Write-Host '  uvicorn app.main:app --reload --port 8000'
 Write-Host ""

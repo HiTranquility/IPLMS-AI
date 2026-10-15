@@ -3,8 +3,9 @@
 # ── Vision ────────────────────────────────────────────────────────────────────
 FALLBACK_PLATE_NUMBER = "UNKNOWN"
 
-# Ràng buộc biển số Việt Nam (tối đa 11 ký tự, ít nhất 1 chữ cái).
-PLATE_MAX_LENGTH = 11
+# Ràng buộc biển số Việt Nam (tối đa 12 ký tự, ít nhất 1 chữ cái).
+# Ví dụ: 59-V1-793.79 gồm 2 dấu gạch nối và 1 dấu chấm = 12 ký tự.
+PLATE_MAX_LENGTH = 12
 PLATE_MIN_ALPHA = 1
 
 # ── Forecast ──────────────────────────────────────────────────────────────────
