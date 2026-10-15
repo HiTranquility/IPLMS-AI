@@ -54,7 +54,7 @@ ai/model/checkpoint/<dataset>_<size>_<Net>/
 ├── checkpoint.pth.tar      # (M1) epoch cuối
 └── checkpoint_epochXXXX.pth # (M2) — key: model_state_dict
 ```
-Chi tiết định dạng key checkpoint: [`../checkpoint_config_guide.md`](../checkpoint_config_guide.md).
+Chi tiết định dạng key checkpoint: [`../checkpoint-config-guide.md`](../checkpoint-config-guide.md).
 
 ## 4. Xem / kiểm tra model
 
@@ -141,7 +141,7 @@ Phần nhận diện **biển số** do YOLO+EasyOCR trong [`../app/core/vision/
 | `draw_graph.py` | Vẽ biểu đồ acc/loss từ log |
 | `prepare_cifar.py` | Tạo CIFAR ImageFolder (cho train_imagefolder) |
 | `split_data.py` | Chia Animal-10 raw-img → train/val |
-| `writeLogAcc.py` · `calculate_w_h.py` | Tiện ích (ghi log / tính W-H feature map) |
+| `write_log_acc.py` · `calculate_w_h.py` | Tiện ích (ghi log / tính W-H feature map) |
 | `import_plate_dataset.py` | Nạp dataset biển số công khai → bộ vàng (`data/golden/plates/`) |
 | `eval_plates.py` | Đo `exact-match` / CER / latency của pipeline đọc biển trên bộ vàng |
 | `plate_metrics.py` | Hàm thuần tính CER / exact-match (không nạp model — `test/` import được) |
