@@ -1,5 +1,6 @@
 """FastAPI entrypoint for the IPLMS AI service."""
 import os
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -37,9 +38,18 @@ app = FastAPI(title="IPLMS AI — Microservice API", version="0.3.0", lifespan=l
 register_cors(app)
 app.add_exception_handler(AiServiceError, ai_service_error_handler)
 app.add_exception_handler(Exception, generic_error_handler)
+from fastapi.responses import FileResponse, HTMLResponse
+
 app.include_router(api_router, prefix="/api")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok", "service": "iplms-ai"}
+
+@app.get("/", include_in_schema=False)
+@app.get("/dashboard", include_in_schema=False)
+@app.get("/ui", include_in_schema=False)
+def dashboard() -> FileResponse:
+    index_file = os.path.join(STATIC_DIR, "index.html")
+    return FileResponse(index_file)

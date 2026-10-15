@@ -18,14 +18,14 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends libglib2.0-0 libgomp1 libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY ai/requirements-service.txt .
+COPY requirements-service.txt .
 RUN pip install -r requirements-service.txt
 
 # model/ chứa kiến trúc, bootstrap YOLO và workspace train; image chỉ cần model.
-COPY ai/app ./app
-COPY ai/model ./model
-COPY ai/static ./static
-COPY ai/data ./data
+COPY app ./app
+COPY model ./model
+COPY static ./static
+COPY data ./data
 COPY proto ./proto
 
 # Sinh stub gRPC ngay lúc build — nếu thiếu, server sẽ chết ở entrypoint chứ
@@ -48,8 +48,8 @@ RUN if [ "$PRELOAD_EASYOCR_MODELS" = "true" ]; then \
       echo "Bo qua preload EasyOCR cho image dev; model se tai khi ANPR duoc goi lan dau."; \
     fi
 
-COPY ai/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh && chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 8000 50051
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

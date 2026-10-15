@@ -24,7 +24,7 @@ class VisionConfig(BaseConfig):
     # Production warm-up trước readiness; dev có thể tắt để khởi động nhanh và
     # lazy-load vào cache volume ở request ANPR đầu tiên.
     vision_warmup_on_start: bool = True
-    device: str = "cpu"
+    device: str = "cuda"
 
     # CNN phân loại loại xe (stage tùy chọn — tắt khi không có checkpoint).
     vehicle_model: str = "NetV2"
