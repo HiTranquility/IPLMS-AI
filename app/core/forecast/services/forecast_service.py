@@ -164,17 +164,13 @@ class ForecastService:
             return 6
         return max(0, min(6, dow))
 
-    def get_projected_occupancy_ratio(
+    def get_projected_occupancy_ratio_detail(
         self,
         area_id: str,
         day_of_week: int,
         hour_of_day: int,
-    ) -> Tuple[float, float]:
-        """Tính toán projected_occupancy_ratio (0.0% - 100.0%) và confidence score.
-        
-        Returns:
-            Tuple[projected_occupancy_ratio, confidence_score]
-        """
+    ) -> Dict[str, Any]:
+        """Tính toán chi tiết projected_occupancy_ratio kèm provenance data_source và is_fallback."""
         dow = self._normalize_day_of_week(day_of_week)
         hour = hour_of_day % 24
         key = (area_id.strip(), dow, hour)
@@ -192,7 +188,13 @@ class ForecastService:
                 ratio = ratio * 100.0
             ratio = max(0.0, min(100.0, ratio))
             confidence = min(0.98, 0.82 + 0.04 * min(telemetry.sample_count, 4))
-            return round(ratio, 2), round(confidence, 2)
+            data_source = "lakehouse_parquet" if self._lake_loaded else "clickhouse_marts"
+            return {
+                "ratio": round(ratio, 2),
+                "confidence": round(confidence, 2),
+                "data_source": data_source,
+                "is_fallback": False,
+            }
 
         # 3. Fallback sang baseline theo chu kỳ ngày trong tuần và giờ
         if dow in (5, 6):  # Thứ 7, Chủ nhật
@@ -200,8 +202,29 @@ class ForecastService:
         else:
             ratio = _WEEKDAY_HOURLY_BASELINES.get(hour, 50.0)
 
-        confidence = 0.85
-        return round(max(0.0, min(100.0, ratio)), 2), confidence
+        # Fallback không có dữ liệu lịch sử phản ánh đúng confidence mức sàn 0.55
+        confidence = 0.55
+        return {
+            "ratio": round(max(0.0, min(100.0, ratio)), 2),
+            "confidence": confidence,
+            "data_source": "heuristic_baseline",
+            "is_fallback": True,
+        }
+
+    def get_projected_occupancy_ratio(
+        self,
+        area_id: str,
+        day_of_week: int,
+        hour_of_day: int,
+    ) -> Tuple[float, float]:
+        """Tính toán projected_occupancy_ratio (0.0% - 100.0%) và confidence score.
+        
+        Returns:
+            Tuple[projected_occupancy_ratio, confidence_score]
+        """
+        detail = self.get_projected_occupancy_ratio_detail(area_id, day_of_week, hour_of_day)
+        return detail["ratio"], detail["confidence"]
+
 
 
     @staticmethod
@@ -326,7 +349,9 @@ class ForecastService:
         dow = dt.weekday()
         hour = dt.hour
 
-        ratio, conf = self.get_projected_occupancy_ratio(area_id, dow, hour)
+        detail = self.get_projected_occupancy_ratio_detail(area_id, dow, hour)
+        ratio = detail["ratio"]
+        conf = detail["confidence"]
         free_spots = max(0, int(total_capacity * (1.0 - ratio / 100.0)))
         status = self._status_from_ratio(ratio)
 
@@ -350,6 +375,8 @@ class ForecastService:
             estimated_free_spots=free_spots,
             confidence_score=conf,
             slots=forecast.slots,
+            data_source=detail["data_source"],
+            is_fallback=detail["is_fallback"],
         )
 
     def get_surge_quote(
@@ -364,7 +391,8 @@ class ForecastService:
         dow = dt.weekday()
         hour = dt.hour
 
-        ratio, _ = self.get_projected_occupancy_ratio(area_id, dow, hour)
+        detail = self.get_projected_occupancy_ratio_detail(area_id, dow, hour)
+        ratio = detail["ratio"]
         multiplier, reason = self.calculate_surge_multiplier(ratio)
         adjusted_rate = round(base_hourly_rate * multiplier, 2)
 
@@ -375,7 +403,10 @@ class ForecastService:
             base_hourly_rate=base_hourly_rate,
             adjusted_hourly_rate=adjusted_rate,
             reason=reason,
+            data_source=detail["data_source"],
+            is_fallback=detail["is_fallback"],
         )
+
 
 
 forecast_service = ForecastService()

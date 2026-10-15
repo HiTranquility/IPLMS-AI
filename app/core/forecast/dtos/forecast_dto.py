@@ -60,6 +60,8 @@ class AreaOccupancyForecastResult(BaseModel):
     estimated_free_spots: int
     confidence_score: float
     slots: List[ForecastSlot] = []
+    data_source: str = "heuristic_baseline"
+    is_fallback: bool = False
 
 
 class SurgeMultiplierResult(BaseModel):
@@ -70,3 +72,6 @@ class SurgeMultiplierResult(BaseModel):
     base_hourly_rate: float
     adjusted_hourly_rate: float
     reason: str
+    data_source: str = "heuristic_baseline"
+    is_fallback: bool = False
+
