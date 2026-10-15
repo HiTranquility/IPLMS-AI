@@ -259,6 +259,7 @@ class ForecastService:
 
         slots: List[ForecastSlot] = []
         confidences: List[float] = []
+        capacity = query.total_capacity if (query.total_capacity is not None and query.total_capacity > 0) else 100
 
         for i in range(total_slots):
             slot_ts = base_ts + i * FORECAST_SLOT_SECONDS
@@ -267,7 +268,7 @@ class ForecastService:
             hour = dt.hour
 
             ratio, conf = self.get_projected_occupancy_ratio(query.parking_lot_id, dow, hour)
-            free_spots = max(0, int(100 * (1.0 - ratio / 100.0)))
+            free_spots = max(0, int(capacity * (1.0 - ratio / 100.0)))
             status = self._status_from_ratio(ratio)
 
             slots.append(
@@ -329,12 +330,13 @@ class ForecastService:
         free_spots = max(0, int(total_capacity * (1.0 - ratio / 100.0)))
         status = self._status_from_ratio(ratio)
 
-        # Lấy forecast slots cho các giờ tiếp theo
+        # Lấy forecast slots cho các giờ tiếp theo với đúng total_capacity
         forecast = self.get_occupancy_forecast(
             OccupancyForecastQuery(
                 parking_lot_id=area_id,
                 target_timestamp=ts,
                 forecast_hours=forecast_hours,
+                total_capacity=total_capacity,
             )
         )
 
