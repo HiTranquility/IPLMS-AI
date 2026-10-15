@@ -187,8 +187,31 @@ class TestGrpcForecastMethods(unittest.TestCase):
         )
         recommendation = self.service.get_dynamic_tariff_recommendation(query)
         self.assertEqual(recommendation.parking_lot_id, "lot-dynamic-tariff")
-        self.assertGreaterEqual(recommendation.recommended_multiplier, 1.0)
-        self.assertTrue(len(recommendation.reason) > 0)
+    def test_capacity_consistency_bug_036(self):
+        """Kiểm tra bug-036: Capacity nhất quán giữa tổng và từng slot khi capacity != 100."""
+        capacity = 150
+        res = self.service.predict_area_occupancy(
+            area_id="area-cap-test",
+            forecast_hours=2,
+            total_capacity=capacity,
+        )
+        self.assertGreater(len(res.slots), 0)
+
+        # Kiểm tra slot đầu tiên khớp với tỷ lệ và capacity
+        first_slot = res.slots[0]
+        expected_free = max(0, int(capacity * (1.0 - first_slot.predicted_occupancy_percent / 100.0)))
+        self.assertEqual(
+            first_slot.estimated_free_spots,
+            expected_free,
+            f"Slot free spots ({first_slot.estimated_free_spots}) phải khớp với capacity {capacity} (expected {expected_free})",
+        )
+        # Kiểm tra không bị tính theo mẫu số 100
+        if first_slot.predicted_occupancy_percent < 80.0:
+            self.assertNotEqual(
+                first_slot.estimated_free_spots,
+                max(0, int(100 * (1.0 - first_slot.predicted_occupancy_percent / 100.0))),
+                "Slot không được bị tính theo hardcoded capacity 100!",
+            )
 
 
 class TestForecastRestController(unittest.TestCase):

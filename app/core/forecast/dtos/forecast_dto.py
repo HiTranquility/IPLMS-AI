@@ -11,6 +11,7 @@ class OccupancyForecastQuery(BaseModel):
     parking_lot_id: str
     target_timestamp: int
     forecast_hours: int = DEFAULT_FORECAST_HOURS
+    total_capacity: Optional[int] = None
 
 
 class TariffRecommendationQuery(BaseModel):
