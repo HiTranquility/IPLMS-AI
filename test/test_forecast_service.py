@@ -36,8 +36,18 @@ class TestForecastOccupancyAndSurgeLogic(unittest.TestCase):
                 ratio, conf = self.service.get_projected_occupancy_ratio("lot-test", dow, hour)
                 self.assertGreaterEqual(ratio, 0.0)
                 self.assertLessEqual(ratio, 100.0)
-                self.assertGreaterEqual(conf, 0.80)
+                self.assertGreaterEqual(conf, 0.50)
                 self.assertLessEqual(conf, 1.0)
+
+    def test_provenance_and_detail_fallback(self):
+        """Kiểm tra provenance data_source và is_fallback khi fallback sang heuristic."""
+        detail = self.service.get_projected_occupancy_ratio_detail("lot-nonexistent-999", 2, 14)
+        self.assertIn("data_source", detail)
+        self.assertIn("is_fallback", detail)
+        self.assertEqual(detail["data_source"], "heuristic_baseline")
+        self.assertTrue(detail["is_fallback"])
+        self.assertEqual(detail["confidence"], 0.55)
+
 
     def test_status_from_ratio(self):
         """Kiểm tra ánh xạ ngưỡng lấp đầy sang OccupancyStatus enum."""
