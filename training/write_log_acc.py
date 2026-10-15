@@ -7,7 +7,7 @@ Created on Tue Oct 25 10:35:11 2022
 import os.path
 from datetime import datetime
 
-def writeLogAcc(filename='LogAcc1.txt', strtext=''):
+def write_log_acc(filename='LogAcc1.txt', strtext=''):
     if not os.path.exists(filename):
         file1 = open(filename,"w")
     else:

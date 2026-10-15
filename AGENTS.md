@@ -51,7 +51,7 @@ Khi User đưa vào **bất kỳ ý tưởng (Idea), vấn đề mới (Problem)
 ## Kiểm chứng
 
 - Test dùng `unittest`: `python -m unittest test.<tên_module>` cho file bị ảnh hưởng.
-- Đổi field gRPC: chạy `proto/check-proto-sync.py` ở repo gốc và kiểm caller NestJS.
+- Đổi field gRPC: chạy `proto/check_proto_sync.py` ở repo gốc và kiểm caller NestJS.
 - Không tải/ghi đè checkpoint hay dữ liệu trong `model/`, `data/` khi chưa được giao.
 - Build pass không thay cho kiểm hành vi. Báo rõ phần đã chạy, bị chặn và chưa chạy.
 
