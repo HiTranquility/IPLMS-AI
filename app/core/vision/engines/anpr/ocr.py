@@ -1,5 +1,4 @@
-"""Đọc chữ bằng EasyOCR kèm điểm tin cậy THẬT."""
-from typing import Tuple
+from typing import Any, Dict, Tuple
 
 from app.core.constants import PLATE_OCR_ALLOWLIST
 from app.core.exceptions import ModelNotLoadedError
@@ -8,6 +7,7 @@ from app.core.vision.engines.anpr.plate_text import (
     correct_plate_confusions,
     sanitize_plate_text,
 )
+from app.core.vision.engines.two_line_plate_parser import parse_two_line_vietnam_plate
 
 
 def _reading_order(results):
@@ -55,3 +55,34 @@ def read_with_confidence(img) -> Tuple[str, float]:
 
     weighted = sum(float(res[2]) * len(res[1]) for res in results)
     return text, weighted / total_chars
+
+
+def read_plate_details(img) -> Tuple[str, float, bool, Dict[str, Any]]:
+    """Đọc chữ kèm phân tích biển số 2 dòng xe máy Việt Nam.
+
+    Returns:
+        Tuple (plate_number, confidence, is_two_line, parsed_details)
+    """
+    reader = models.ocr_reader()
+    if reader is None:
+        raise ModelNotLoadedError("EasyOCR reader chưa được load.")
+
+    raw_results = reader.readtext(img, allowlist=PLATE_OCR_ALLOWLIST)
+    if not raw_results:
+        return "", 0.0, False, {}
+
+    parsed = parse_two_line_vietnam_plate(raw_results)
+    if parsed["is_two_line"]:
+        return parsed["plate_number"], parsed["confidence"], True, parsed
+
+    # Nếu không phải biển 2 dòng, xử lý xếp dòng thông thường
+    results = _reading_order(raw_results)
+    text_raw = "".join(res[1] for res in results)
+
+    total_chars = sum(len(res[1]) for res in results)
+    text = correct_plate_confusions(sanitize_plate_text(text_raw))
+    if total_chars == 0:
+        return text, 0.0, False, parsed
+
+    weighted = sum(float(res[2]) * len(res[1]) for res in results)
+    return text, weighted / total_chars, False, parsed

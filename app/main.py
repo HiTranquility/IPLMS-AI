@@ -40,6 +40,7 @@ register_cors(app)
 app.add_exception_handler(AiServiceError, ai_service_error_handler)
 app.add_exception_handler(Exception, generic_error_handler)
 app.include_router(api_router, prefix="/api")
+app.include_router(api_router)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 @app.get("/health")

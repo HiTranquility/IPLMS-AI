@@ -33,6 +33,11 @@ class VisionConfigTest(unittest.TestCase):
     def test_production_warmup_is_safe_by_default(self):
         self.assertTrue(VisionConfig().vision_warmup_on_start)
 
+    def test_onnx_config_defaults(self):
+        cfg = VisionConfig()
+        self.assertTrue(cfg.onnx_enabled)
+        self.assertEqual(cfg.onnx_model_dir, "data/models")
+
 
 class ArtifactConfigTest(unittest.TestCase):
     def test_gioi_han_dung_luong_doi_sang_bytes(self):

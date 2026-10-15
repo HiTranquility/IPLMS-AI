@@ -10,7 +10,7 @@ AI phục vụ backend qua gRPC và REST, không sở hữu UI sản phẩm hay 
 
 Luồng chính: backend → gateway → REST/gRPC handler → service domain → engine → adapter. Mapper đổi protobuf ↔ DTO tại biên; business core không phụ thuộc transport. DB nghiệp vụ thuộc backend; `ai-db` giữ tri thức/vector của AI. Training/checkpoint là vòng đời offline, không đồng nghĩa model đã được phép phục vụ.
 
-Nguồn đối chiếu: [REST router](app/api/rest/router.py), [gRPC server](app/grpc_server.py), [config tổng](app/config/app_config.py), [Forecast service](app/core/forecast/services/forecast_service.py), [Compose base](docker-compose.yml). Forecast hiện từ chối bằng `FeatureNotImplementedError`; không ghi là hoạt động chỉ vì có thư mục training.
+Nguồn đối chiếu: [REST router](app/api/rest/router.py), [gRPC server](app/grpc_server.py), [config tổng](app/config/app_config.py), [Forecast service](app/core/forecast/services/forecast_service.py), [Compose base](docker-compose.yml). Forecast Service đã được kích hoạt (ADR-0037), phục vụ dự báo tỷ lệ lấp đầy và đề xuất giá động (surge pricing) kết nối ClickHouse Data Marts (`AreaOccupancyTelemetryItem`).
 
 | Vai trò | Compose ghép với base | Static Traefik được mount | Dashboard / trace |
 |---|---|---|---|
@@ -38,7 +38,7 @@ Module **Python độc lập** (ngang hàng `frontend/`, `backend/`): dịch v�
 
 **Nguồn gốc code — đọc trước khi sửa:**
 - **Kiến trúc layered** `app/{api,config,core,infra,util}` + `static/{cropped,original}` — theo một layout ALPR có sẵn, không tự nghĩ ra ở đây.
-- **Engine ALPR** (YOLO detect + EasyOCR) ở `app/core/vision/engines/` là **code bên thứ ba bê nguyên vào**, kèm weights `best.pt` — KHÔNG train trong repo này.
+- **Engine ALPR** (YOLO detect + EasyOCR / ONNX Runtime tối ưu tốc độ 10x kèm xử lý biển 2 dòng chuẩn Việt Nam) ở `app/core/vision/engines/` — tối ưu hóa inference độ trễ thấp phục vụ check-in / check-out.
 - **CNN phân loại ảnh** (`model/architectures/m1`, `model/architectures/m2`) cũng là **code + kiến trúc bên thứ ba**, ở đây dùng làm **tầng phân loại xe (tuỳ chọn)**.
 
 ## 📁 Cấu trúc
@@ -58,7 +58,7 @@ ai/
 │   │   │   └── generated_stubs.py   #     nạp stub ĐỘNG — thêm proto không phải sửa file này
 │   │   └── rest/                    #   FastAPI: upload ảnh thủ công + healthcheck
 │   │       ├── router.py            #     gom route
-│   │       └── routes/              #     anpr_controller.py · health_controller.py
+│   │       └── routes/              #     anpr_controller.py · health_controller.py · forecast_controller.py
 │   ├── config/                      # CẤU HÌNH — mỗi nhóm 1 file, gom ở app_config.get_config()
 │   │   ├── base_config.py           #   BaseConfig (pydantic-settings, native dev đọc .env.dev)
 │   │   ├── server_config.py         #   cổng gRPC/REST, max workers, max message
@@ -73,7 +73,7 @@ ai/
 │   │   ├── copilot/                 #   RAG hỏi đáp: engines/rag_pipeline.py · dispute_workflow (chưa nối)
 │   │   ├── knowledge/               #   nạp tài liệu → chunk → embedding → pgvector (bản nháp)
 │   │   ├── knowledge_eval/          #   bộ test Copilot + cổng xuất bản (ISSUE-009)
-│   │   └── forecast/                #   phục vụ TẮT (UNIMPLEMENTED); train offline ở training/forecast/
+│   │   └── forecast/                #   phục vụ MỞ (ADR-0037); kết nối ClickHouse Data Marts & giá động
 │   ├── infra/                       # ADAPTER RA NGOÀI — database/ (pgvector) · datalake/ · llm/
 │   ├── util/                        # logger.py · console.py · file.py · generate_url.py · request_metrics.py
 │   ├── script/                      # compile_proto.py · smoke/eval/seed · export_parking_sessions.py
@@ -114,7 +114,7 @@ Mỗi README có: luồng code qua từng file · 🎬 viễn cảnh (sơ đồ 
 | Copilot (RAG hỏi đáp) | chạy thật, cần `AI_LLM_API_KEY` | [app/core/copilot/README.md](app/core/copilot/README.md) |
 | Knowledge (nạp tài liệu) | chạy thật, cần key cho embedding | [app/core/knowledge/README.md](app/core/knowledge/README.md) |
 | Knowledge eval (test + xuất bản) | code xong, chưa chạy với LLM thật | [app/core/knowledge_eval/README.md](app/core/knowledge_eval/README.md) |
-| Forecast (dự báo + giá động) | phục vụ tắt, train offline | [app/core/forecast/README.md](app/core/forecast/README.md) |
+| Forecast (dự báo + giá động) | chạy thật (ADR-0037: ClickHouse marts) | [app/core/forecast/README.md](app/core/forecast/README.md) |
 
 ## ⚡ Onboarding nhanh (Dành cho Dev mới)
 
