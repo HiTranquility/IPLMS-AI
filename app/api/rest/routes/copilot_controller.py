@@ -64,8 +64,9 @@ async def ask_copilot(payload: AskPayload) -> BaseResponse[AskResponse]:
     cfg = get_config()
     api_key = payload.api_key_override or cfg.llm.llm_api_key
 
-    # Nếu có API key, thử chạy pipeline RAG chuẩn
-    if api_key:
+    # Nếu có API key hoặc dùng LLM nội bộ (local llama-server), chạy pipeline RAG chuẩn
+    is_local = (cfg.llm.llm_provider == "local")
+    if api_key or is_local:
         try:
             req = AskQuestionRequest(
                 query=payload.query,
@@ -74,11 +75,11 @@ async def ask_copilot(payload: AskPayload) -> BaseResponse[AskResponse]:
             )
             ans: CopilotAnswer = await copilot_service.ask_question(req)
             return BaseResponse.ok(
-                [AskResponse(answer=ans.answer, sources=ans.sources, confidence=ans.confidence, mode="rag_live")],
-                "Answer generated via live RAG"
+                [AskResponse(answer=ans.answer, sources=ans.sources, confidence=ans.confidence, mode="rag_local" if is_local else "rag_live")],
+                "Answer generated via local RAG" if is_local else "Answer generated via live RAG"
             )
         except Exception as exc:
-            pass  # Fallback to local semantic seed lookup if OpenAI quota/key failed
+            pass  # Fallback to local semantic seed lookup if LLM failed
 
     # Offline fallback qua seed documents trong data/knowledge/
     seed_path = get_seed_path()
