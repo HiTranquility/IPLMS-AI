@@ -29,10 +29,10 @@ name = torch.cuda.get_device_name(0) if cuda else 'CPU'
 print(f'  ✓ PyTorch {torch.__version__} | CUDA: {cuda} | Device: {name}')
 "
 
-# 3. Launch FastAPI
 echo -e "\n\033[0;32m[3/3] Đang khởi chạy AI Studio tại http://localhost:8000/ ...\033[0m"
 echo -e "\033[0;36m  - Web Dashboard UI:  http://localhost:8000/\033[0m"
 echo -e "\033[0;36m  - API Swagger Docs:  http://localhost:8000/docs\033[0m"
+echo -e "\033[0;36m  - Local LLM Engine:  llama-server (Qwen3.5-4B CUDA) tại port 8005\033[0m"
 echo -e "  - Nhấn Ctrl+C để dừng server.\n"
 
 uvicorn app.main:app --host 0.0.0.0 --port 8000

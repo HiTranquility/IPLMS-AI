@@ -57,6 +57,60 @@ class RagPipelineEngine:
         self.top_k = config.rag_top_k
         self.min_similarity = config.rag_min_similarity
 
+    def _retrieve_from_seed(self, query: str, parking_lot_id: str | None) -> list[dict[str, Any]]:
+        import json
+        import os
+        import re
+
+        candidates_paths = [
+            os.path.join(os.getcwd(), "data", "knowledge", "regulations_seed.json"),
+            os.path.join("/app", "data", "knowledge", "regulations_seed.json"),
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../data/knowledge/regulations_seed.json")),
+        ]
+        seed_path = next((p for p in candidates_paths if os.path.exists(p)), None)
+        if not seed_path:
+            return []
+
+        try:
+            with open(seed_path, "r", encoding="utf-8") as f:
+                seeds = json.load(f)
+        except Exception:
+            return []
+
+        q_lower = query.lower()
+        keywords = [w for w in re.findall(r'\w+', q_lower) if len(w) >= 2]
+
+        scored = []
+        for item in seeds:
+            lot = item.get("parking_lot_id")
+            if parking_lot_id and lot and lot != parking_lot_id:
+                continue
+            if not parking_lot_id and lot:
+                continue
+
+            content = item.get("content", "")
+            title = item.get("title", "")
+
+            score = 0.0
+            for kw in keywords:
+                if kw in title.lower():
+                    score += 2.0
+                if kw in content.lower():
+                    score += 1.0
+
+            if score > 0 or not keywords:
+                similarity = min(1.0, 0.45 + (score / max(1.0, len(keywords) * 2.5)) * 0.5)
+                scored.append({
+                    "content": content,
+                    "source": item.get("source", "regulations_seed.json"),
+                    "category": item.get("category", "general"),
+                    "similarity": round(similarity, 4),
+                    "_score": score,
+                })
+
+        scored.sort(key=lambda x: x["_score"], reverse=True)
+        return scored[:self.top_k]
+
     async def _retrieve(self, query_text: str, parking_lot_id: str | None) -> list[dict[str, Any]]:
         query = query_text.strip()
         if not query:
@@ -70,12 +124,19 @@ class RagPipelineEngine:
                 top_k=self.top_k,
                 min_similarity=self.min_similarity,
             )
-        except RagPipelineError:
-            raise
+        except RagPipelineError as exc:
+            if not isinstance(self.vector_store, pgvector_client.__class__):
+                raise
+            logger.warning("Không kết nối được pgvector (%s), fallback sang local knowledge seed.", exc)
+            return self._retrieve_from_seed(query, parking_lot_id)
         except EmbeddingError as exc:
-            raise RagPipelineError(str(exc)) from exc
+            logger.warning("Embedding không khả dụng (%s), fallback sang local knowledge seed.", exc)
+            return self._retrieve_from_seed(query, parking_lot_id)
         except Exception as exc:
-            raise RagPipelineError("Không truy xuất được kho tri thức.") from exc
+            if not isinstance(self.vector_store, pgvector_client.__class__):
+                raise RagPipelineError("Không truy xuất được kho tri thức.") from exc
+            logger.warning("Lỗi truy xuất kho tri thức (%s), fallback sang local seed.", exc)
+            return self._retrieve_from_seed(query, parking_lot_id)
 
     async def query(self, query_text: str, parking_lot_id: str | None = None) -> Dict[str, Any]:
         logger.info(

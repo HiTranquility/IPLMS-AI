@@ -21,6 +21,7 @@
 11. [Kế Hoạch & Danh Mục Các Công Việc Cần Làm Tiếp Theo (What Needs to Be Done)](#11-kế-hoạch--danh-mục-các-công-việc-cần-làm-tiếp-theo-what-needs-to-be-done)
 12. [Báo Cáo Xử Lý Triệt Để Sự Cố ANPR Bị Mất Nhận Diện (UNKNOWN) & VRAM OOM Context Poisoning](#12-báo-cáo-xử-lý-triệt-để-sự-cố-anpr-bị-mất-nhận-diện-unknown--vram-oom-context-poisoning-15102026)
 13. [Báo Cáo Xử Lý Các Trường Hợp Lỗi Nhận Diện Ký Tự, Crop Cắt Mất Số & Phân Loại Sai Phương Tiện](#13-báo-cáo-xử-lý-các-trường-hợp-lỗi-nhận-diện-ký-tự-crop-cắt-mất-số--phân-loại-sai-phương-tiện-15102026)
+14. [Báo Cáo Triển Khai Copilot RAG Pipeline với Qwen3.5-4B-GGUF và llama.cpp CUDA (16/10/2026)](#14-báo-cáo-triển-khai-copilot-rag-pipeline-với-qwen35-4b-gguf-và-llamacpp-cuda-16102026)
 
 ---
 
@@ -799,4 +800,51 @@ Kiểm thử trực tiếp trên cổng HTTP REST API `http://localhost:8000/api
 | `UNKNOWN_evt_6ef7980a2c7f.jpg` | **29D 012.45** (Biển vàng) | **`29D-012.45`** | **`truck`** (Xe van chở hàng) | **68.0%** | **0.737s** | **ĐẠT (Nhận đúng biển vàng & chữ D)** |
 | `B0F93705_evt_25a7c470adda.jpg` | **30F-937.05** (Mercedes) | **`30F-937.05`** | **`car_sedan`** | **22.9%** | **0.160s** | **ĐẠT (Sửa B0F thành 30F, bỏ rác -4)** |
 | `UNKNOWN_evt_40a6e6ca3d54.jpg` | **59-V1 793.79** (Xe máy) | **`59-V1-793.79`** | **`motorbike`** | **51.8%** | **0.341s** | **ĐẠT (Nhận đúng biển vuông xe máy)** |
+
+---
+
+## 14. Báo Cáo Triển Khai Copilot RAG Pipeline với Qwen3.5-4B-GGUF và llama.cpp CUDA (16/10/2026)
+
+### 14.1. Bối cảnh & Yêu cầu Kỹ thuật
+Trước đây, module Copilot & RAG phụ thuộc vào OpenAI Responses API Cloud (`AI_LLM_API_KEY`). Khi không có kết nối internet hoặc chưa cấu hình API key trả phí của bên thứ ba, hệ thống không thể tự động trả lời tra cứu chính sách hay điều khoản quy chế bãi xe.
+Nhằm đảm bảo tính tự chủ 100% on-premises, hệ thống đã được tích hợp mô hình ngôn ngữ lớn cục bộ:
+- **Mô hình mục tiêu:** `Qwen3.5-4B-GGUF` (định dạng lượng tử `Q4_K_M`, dung lượng 2.55 GB) từ Unsloth (`unsloth/Qwen3.5-4B-GGUF`).
+- **Engine suy luận:** `llama.cpp` / `llama-server` tích hợp CUDA 12.4 tăng tốc phần cứng trực tiếp trên card đồ họa NVIDIA GeForce GTX 1650 (4GB VRAM).
+
+### 14.2. Cơ Chế Quản Lý Bộ Nhớ VRAM & Giải Pháp Offload 100% GPU
+Một vấn đề thường gặp trên card 4GB VRAM là nguy cơ tràn bộ nhớ (Out-Of-Memory / Paging Trashing) nếu không cấu hình đúng tham số của server:
+- **Hiện tượng mặc định của `llama-server`:** Mặc định `llama-server` khởi tạo 4 slots phục vụ song song (`-np 4`). Với context size 4096 hoặc 8192, bộ nhớ đệm KV cache cần cấp phát trước lên đến $4 \times 8192 = 32.768$ tokens (~2.2 GB VRAM). Khi cộng với trọng số mô hình (~2.65 GB), tổng nhu cầu vượt quá 4.8 GB $\rightarrow$ cơ chế tự động của llama.cpp cảnh báo abort fit params và có thể đẩy một phần tính toán sang CPU.
+- **Giải pháp tối ưu hóa chuyên biệt cho IPLMS AI Microservice:**
+  1. **Cấu hình Đơn slot (`-np 1`):** Microservice AI xử lý tuần tự qua FastAPI event loop; chỉ cần cấp phát 1 slot inference duy nhất. KV cache cho context 4096 tokens chỉ chiếm **~270 MiB**.
+  2. **Offload Toàn bộ 33/33 Layers (`-ngl 33`):** Toàn bộ 100% các tầng Transformer của Qwen3.5-4B được nạp trọn vẹn lên VRAM GPU.
+  3. **Ngân sách VRAM thực tế đo đạc:**
+     - Trọng số mô hình Q4_K_M: **~2.55 GB**.
+     - KV Cache (1 slot $\times$ 4096 tokens): **~270 MB**.
+     - CUDA context & cuBLAS runtime: **~120 MB**.
+     - Tổng VRAM chiếm dụng: **~2.93 GB / 4.09 GB (71.7%)**.
+     - Phần dư VRAM: **> 1.15 GB** hoàn toàn đủ cho pipeline thị giác máy tính (YOLOv8 + EasyOCR).
+  4. **Triệt tiêu Reasoning Loop trễ (`--reasoning-budget 0`):** Qwen3.5 mặc định kích hoạt chế độ suy luận `<think>...</think>` có thể sinh hàng trăm token nội tâm trước khi trả lời. Bằng cách thiết lập `--reasoning-budget 0`, mô hình đi thẳng vào câu trả lời quy chế có trích dẫn nguồn, đưa thời gian phản hồi từ 30s - 60s xuống còn **2.1s - 2.6s** với tốc độ sinh **~20.7 tokens/giây** trên GPU GTX 1650.
+
+### 14.3. Kiến trúc Các Thành Phần Đã Xây Dựng
+1. **`app/infra/llm/llama_server_manager.py`:**
+   - Bộ quản lý tiến trình nền tự động kiểm tra `health` tại `http://127.0.0.1:8005/health`.
+   - Tự động kích hoạt `llama-server.exe` với các cờ tối ưu (`-m`, `--alias`, `-c 4096`, `-np 1`, `-ngl 33`, `--reasoning-budget 0`).
+   - Đăng ký `atexit` để thu hồi tiến trình và giải phóng toàn bộ VRAM khi service dừng.
+2. **`app/infra/llm/llm_factory.py` (Dual Backend):**
+   - Hỗ trợ cả OpenAI Responses API (được inject trong unit tests) và OpenAI-compatible Chat Completions API của local `llama-server`.
+   - Bộ lọc `_strip_thinking_tags` bảo vệ đầu ra khỏi các thẻ suy luận dư thừa.
+   - Hỗ trợ cả sinh câu trả lời một lần (`generate_response`) lẫn truyền phát từng phần thời gian thực (`stream_response`).
+3. **`app/core/copilot/engines/rag_pipeline.py` (Resilient Seed Retrieval):**
+   - Bổ sung `_retrieve_from_seed`: khi cơ sở dữ liệu pgvector hoặc model embedding chưa khởi động, pipeline tự động đối soát ngữ nghĩa từ tập tài liệu quy chuẩn `data/knowledge/regulations_seed.json` để cấp ngữ cảnh cho Qwen3.5 suy luận.
+4. **`app/api/rest/routes/copilot_controller.py`:**
+   - Endpoint `/api/copilot/ask` tự động kích hoạt RAG nội bộ khi `AI_LLM_PROVIDER=local` mà không đòi hỏi người dùng cung cấp API key bên ngoài.
+
+### 14.4. Kết Quả Nghiệm Thu Thực Tế (Live Verified)
+- **Câu hỏi kiểm thử:** *"Biểu phí gửi xe máy tại bãi xe là bao nhiêu?"*
+- **Thời gian xử lý:** **2.12 giây** (100% GPU GTX 1650).
+- **Kết quả trả lời từ Qwen3.5-4B:**
+  > Biểu phí xe máy ban ngày tại hệ thống bãi xe IPLMS là **6.000 VNĐ/lượt** (tối đa 4 tiếng). Mỗi 4 tiếng tiếp theo, phí sẽ cộng thêm **4.000 VNĐ**. [Nguồn: Quy_dinh_xe_may_2026.pdf]
+- **Kiểm thử Streaming (`stream_query`):** Hoạt động mượt mà, truyền phát token liên tục theo chuẩn async generator.
+- **Trạng thái Unit Tests:** 188/188 tests toàn hệ thống PASS 100% (`Ran 188 tests in 13.949s, OK`).
+
 

@@ -44,10 +44,10 @@ name = torch.cuda.get_device_name(0) if cuda else 'CPU'
 print(f'  ✓ PyTorch {torch.__version__} | CUDA: {cuda} | Device: {name}')
 "@
 
-# 3. Khởi chạy AI FastAPI REST Server
 Write-Host "`n[3/3] Đang khởi chạy AI Studio tại http://localhost:8000/ ..." -ForegroundColor Green
 Write-Host "  - Web Dashboard UI:  http://localhost:8000/" -ForegroundColor Cyan
 Write-Host "  - API Swagger Docs:  http://localhost:8000/docs" -ForegroundColor Cyan
+Write-Host "  - Local LLM Engine:  llama-server (Qwen3.5-4B CUDA) tại port 8005" -ForegroundColor Cyan
 Write-Host "  - Nhấn Ctrl+C để dừng server.`n" -ForegroundColor Gray
 
 if (-not $NoBrowser) {

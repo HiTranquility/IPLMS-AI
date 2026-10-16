@@ -31,6 +31,7 @@ The IPLMS AI service provides 3 primary AI capabilities:
 | Service / Transport | Port (Internal) | Port (Host / Public) | Description |
 | :--- | :---: | :---: | :--- |
 | **FastAPI REST API & Web UI** | `:8000` | `http://localhost:8000/` | Web Dashboard SPA, image recognition API, Swagger docs (`/docs`). |
+| **Local LLM llama-server (CUDA)** | `:8005` | `http://localhost:8005/` | Local OpenAI-compatible server running Qwen3.5-4B-GGUF with full CUDA GPU offload. |
 | **gRPC Server** | `:50051` | `localhost:50051` | High-performance RPC transport called by IPLMS NestJS backend. |
 | **PostgreSQL (pgvector)** | `:5432` | `localhost:5435` | Dedicated PostgreSQL 16 + pgvector for Copilot knowledge chunks. |
 | **Traefik L7 Gateway** | `:8000`, `:50051` | `:8000`, `:50051`, `:8080` | Reverse proxy and HTTP/2 cleartext (h2c) gRPC load balancer. |
@@ -41,14 +42,15 @@ The IPLMS AI service provides 3 primary AI capabilities:
 
 The service is fully platform-adaptive. It automatically detects hardware upon running `setup-dev` or starting the service:
 
-| Hardware Profile | Detection | Installed Package | Configuration (`.env.dev`) | Expected ANPR Latency |
+| Hardware Profile | Detection | Installed Package | Configuration (`.env.dev`) | Expected Latency |
 | :--- | :--- | :--- | :--- | :---: |
-| **NVIDIA GPU (Windows/Linux)** | `nvidia-smi` detected | `torch==2.6.0+cu124`<br>`torchvision==0.21.0+cu124` | `AI_DEVICE=cuda` | ⚡ **150ms - 300ms**<br>(Real-time commercial standard) |
-| **CPU Only (Windows/Linux)** | No NVIDIA GPU | Standard CPU PyTorch (via `requirements.txt`) | `AI_DEVICE=cpu` or `auto` | ⏱️ **1.2s - 2.0s**<br>(Full functionality, safe fallback) |
-| **macOS (Apple Silicon M1/M2/M3)** | Darwin / MPS | Standard PyTorch (via `requirements.txt`) | `AI_DEVICE=cpu` | ⏱️ **800ms - 1.5s** |
+| **NVIDIA GPU (Windows/Linux)** | `nvidia-smi` detected | `torch==2.6.0+cu124`<br>`llama-server` CUDA 12.4 | `AI_DEVICE=cuda`<br>`AI_LLM_PROVIDER=local` | ⚡ **ANPR:** 150ms - 300ms<br>⚡ **LLM RAG:** 2s - 3s (100% GPU offload, ~20 t/s) |
+| **CPU Only (Windows/Linux)** | No NVIDIA GPU | Standard CPU PyTorch (via `requirements.txt`) | `AI_DEVICE=cpu` or `auto` | ⏱️ **ANPR:** 1.2s - 2.0s<br>⏱️ **LLM:** 6s - 10s (CPU fallback) |
+| **macOS (Apple Silicon M1/M2/M3)** | Darwin / MPS | Standard PyTorch (via `requirements.txt`) | `AI_DEVICE=cpu` | ⏱️ **ANPR:** 800ms - 1.5s |
 
 > [!NOTE]
 > Developers without NVIDIA GPUs do **not** need to install CUDA. The system gracefully executes on CPU without breaking any features or unit tests.
+> Khi có card NVIDIA (ví dụ GTX 1650 4GB), hệ thống tự động offload **100% toàn bộ 33 layers** của mô hình `Qwen3.5-4B-Q4_K_M` lên VRAM (~2.9GB VRAM với `-np 1 -c 4096`), vẫn chừa lại >1.1GB VRAM cho pipeline Vision (YOLOv8 + EasyOCR).
 
 ---
 
@@ -59,6 +61,7 @@ All required deep learning checkpoints are pre-bundled directly within the repos
 1. **YOLOv8 Plate Detector:** Located at `model/artifacts/bootstrap/anpr/best.pt` (~6MB).
 2. **Vehicle Classifier CNN:** Located at `model/checkpoint/vehicle-classifier.pth` (`NetV2`, ~4.5MB).
 3. **EasyOCR Character Recognition Models:** Automatically downloaded during setup into `var/easyocr-cache/` (~113MB) to prevent pollution of user home directories.
+4. **Local Copilot LLM:** `Qwen3.5-4B-Q4_K_M.gguf` (~2.55GB) in `model/checkpoint/llm/` served via official prebuilt CUDA 12.4 `llama-server` binaries in `var/bin/llama/` (không yêu cầu cài đặt Visual Studio C++ Compiler).
 
 ---
 
