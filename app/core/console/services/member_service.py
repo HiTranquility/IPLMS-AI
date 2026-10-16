@@ -51,6 +51,10 @@ class ConsoleMemberService:
             member_id, access_policy.validate_role(role), actor.member_id, _reason(reason)
         )
 
+    async def list_members(self, actor: ConsoleActor) -> list[dict]:
+        access_policy.require(actor, "ai:member:manage")
+        return await self.store.list_members()
+
     async def list_audit(self, actor: ConsoleActor, limit: int = 100) -> list[dict]:
         access_policy.require(actor, "ai:audit:read")
         if not 1 <= limit <= 500:

@@ -131,6 +131,22 @@ class ConsoleStore:
             "CREATE UNIQUE INDEX IF NOT EXISTS uq_console_member_google_sub "
             "ON console_member (google_sub) WHERE google_sub IS NOT NULL"
         )
+        # ── Chấm lượt trả lời Copilot (P1c) — lượt nằm ở ai-db, chỉ giữ turn_id + thời điểm ──
+        cur.execute(
+            """CREATE TABLE IF NOT EXISTS copilot_turn_review (
+                turn_id UUID PRIMARY KEY,
+                turn_at TIMESTAMPTZ NOT NULL,
+                verdict VARCHAR(16) NOT NULL,
+                note VARCHAR(500) NOT NULL DEFAULT '',
+                reviewer_id UUID NOT NULL REFERENCES console_member(id),
+                reviewed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                CONSTRAINT ck_copilot_turn_review_verdict CHECK
+                    (verdict IN ('CORRECT', 'INCORRECT', 'UNSAFE'))
+            )"""
+        )
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS ix_copilot_turn_review_turn_at ON copilot_turn_review (turn_at)"
+        )
         cur.execute(
             """CREATE TABLE IF NOT EXISTS console_session (
                 id UUID PRIMARY KEY,
@@ -235,6 +251,63 @@ class ConsoleStore:
                 }
                 for r in cur.fetchall()
             ]
+
+        return await self._run(work)
+
+    async def list_members(self) -> list[dict[str, Any]]:
+        def work(cur):
+            cur.execute(_MEMBER_SELECT + " GROUP BY m.id ORDER BY m.created_at, m.id")
+            return [_member(r) for r in cur.fetchall()]
+
+        return await self._run(work)
+
+    # ── Chấm lượt Copilot (P1c) ──────────────────────────────────────────────
+
+    async def review_turn(
+        self, turn_id: str, turn_at, verdict: str, note: str, actor_id: str
+    ) -> None:
+        """Chấm lại thì ghi đè kết quả cũ; mỗi lần chấm đều có một dòng audit."""
+        def work(cur):
+            cur.execute(
+                """INSERT INTO copilot_turn_review (turn_id, turn_at, verdict, note, reviewer_id)
+                   VALUES (%s, %s, %s, %s, %s)
+                   ON CONFLICT (turn_id) DO UPDATE SET verdict = EXCLUDED.verdict,
+                       note = EXCLUDED.note, reviewer_id = EXCLUDED.reviewer_id,
+                       reviewed_at = NOW()""",
+                (turn_id, turn_at, verdict, note, actor_id),
+            )
+            _audit(cur, actor_id, f"copilot.review:{verdict}", "copilot_turn", turn_id,
+                   note or f"chấm {verdict}")
+
+        await self._run(work)
+
+    async def get_reviews(self, turn_ids: list[str]) -> dict[str, dict[str, Any]]:
+        if not turn_ids:
+            return {}
+
+        def work(cur):
+            cur.execute(
+                """SELECT r.turn_id::text, r.verdict, r.note, m.display_name, r.reviewed_at
+                   FROM copilot_turn_review r JOIN console_member m ON m.id = r.reviewer_id
+                   WHERE r.turn_id = ANY(%s::uuid[])""",
+                (turn_ids,),
+            )
+            return {
+                r[0]: {"verdict": r[1], "note": r[2], "reviewer": r[3],
+                       "reviewed_at": r[4].isoformat()}
+                for r in cur.fetchall()
+            }
+
+        return await self._run(work)
+
+    async def review_stats(self, days: int) -> dict[str, int]:
+        def work(cur):
+            cur.execute(
+                """SELECT verdict, COUNT(*) FROM copilot_turn_review
+                   WHERE turn_at >= NOW() - make_interval(days => %s) GROUP BY verdict""",
+                (days,),
+            )
+            return {verdict: int(n) for verdict, n in cur.fetchall()}
 
         return await self._run(work)
 

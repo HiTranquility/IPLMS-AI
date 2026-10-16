@@ -45,6 +45,14 @@ class AuditEntry(BaseModel):
     at: str
 
 
+@router.get("/members", response_model=BaseResponse[Member])
+async def list_members(
+    actor: ConsoleActor = Depends(require_permission("ai:member:manage")),
+) -> BaseResponse[Member]:
+    members = await console_member_service.list_members(actor)
+    return BaseResponse.ok([Member(**m) for m in members], "OK")
+
+
 @router.post("/members", response_model=BaseResponse[Member])
 async def invite(
     payload: Invite, actor: ConsoleActor = Depends(require_permission("ai:member:manage"))

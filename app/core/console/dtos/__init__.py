@@ -23,3 +23,5 @@ class ConsoleSession:
     mfa_done: bool
     totp_enabled: bool
     step_up_at: Optional[datetime]
+    # Có khoá TOTP nhưng chưa xác nhận lần nào (vd. admin khẩn cấp tạo bằng CLI).
+    totp_secret_set: bool = False

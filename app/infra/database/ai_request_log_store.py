@@ -185,5 +185,53 @@ class AiRequestLogStore:
 
         return await self._run(work)
 
+    async def list_recent(
+        self, limit: int, status: str | None = None, feedback: int | None = None,
+        before: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Lượt gần nhất cho Copilot Lab — chỉ cột đã che PII, không trả `user_hash`."""
+        def work(cur):
+            where, params = ["TRUE"], []
+            if status:
+                where.append("status = %s")
+                params.append(status)
+            if feedback is not None:
+                where.append("feedback = %s")
+                params.append(feedback)
+            if before:
+                where.append("at < %s::timestamptz")
+                params.append(before)
+            cur.execute(
+                f"""SELECT turn_id::text, at, task, status, model, prompt_version,
+                           input_tokens, output_tokens, latency_ms, cost_usd, user_role,
+                           parking_lot_id, query_redacted, answer_redacted, error_code, feedback
+                    FROM ai_request_log WHERE {' AND '.join(where)}
+                    ORDER BY at DESC, turn_id LIMIT %s""",
+                (*params, limit),
+            )
+            return [
+                {
+                    "turn_id": r[0], "at": r[1].isoformat(), "task": r[2], "status": r[3],
+                    "model": r[4], "prompt_version": r[5], "input_tokens": r[6],
+                    "output_tokens": r[7], "latency_ms": int(r[8]),
+                    "cost_usd": float(r[9]) if r[9] is not None else None,
+                    "user_role": r[10] or "", "parking_lot_id": r[11] or "",
+                    "query": r[12], "answer": r[13] or "", "error_code": r[14] or "",
+                    "feedback": r[15],
+                }
+                for r in cur.fetchall()
+            ]
+
+        return await self._run(work)
+
+    async def turn_time(self, turn_id: str):
+        """Thời điểm của một lượt còn trong hạn lưu; None nếu không có."""
+        def work(cur):
+            cur.execute("SELECT at FROM ai_request_log WHERE turn_id = %s", (turn_id,))
+            row = cur.fetchone()
+            return row[0] if row else None
+
+        return await self._run(work)
+
 
 ai_request_log_store = AiRequestLogStore()

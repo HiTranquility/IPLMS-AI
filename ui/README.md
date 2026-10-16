@@ -1,0 +1,33 @@
+# AI Console UI (`ai/ui`)
+
+Giao diện nội bộ của bộ phận AI (IPLMS ADR-0048). **Không phải UI sản phẩm**, không đưa ra mạng: chỉ chạy sau process `app.console_main` trên `127.0.0.1:8090`. Thiết kế và luật giao diện: [DESIGN.md](DESIGN.md).
+
+## Chạy
+
+```bash
+# trong ai/
+pnpm --dir ui install
+pnpm --dir ui build                      # ra ui/dist, console_main phục vụ tại /console/
+python -m app.console_main               # hoặc: docker compose --profile console up ai-console
+```
+
+Mở `http://localhost:8090/console/`. Phát triển giao diện có hot reload: chạy `console_main` như trên rồi `pnpm --dir ui dev` (cổng 5190, proxy `/console/api` sang 8090).
+
+## Kiểm chứng
+
+```bash
+pnpm --dir ui typecheck
+pnpm --dir ui test        # vitest + Testing Library, fetch giả theo đường dẫn
+pnpm --dir ui build
+```
+
+Phía API: `python -m unittest test.test_console_copilot_lab test.test_console_ui_serving test.test_console_http` (test có DB cần `AI_TEST_DATABASE_URL`).
+
+## Màn hình
+
+| Đường dẫn | Quyền | Nội dung |
+|---|---|---|
+| `/console/` | `ai:metrics:read` | Tỉ lệ đúng do người chấm, mức dùng, độ trễ, token, chi phí, theo ngày |
+| `/console/copilot` | `ai:chatlog:read` (chấm: `ai:label:approve`) | Lượt chat đã che PII, lọc trạng thái/phản hồi, chấm Đúng/Sai/Không an toàn |
+| `/console/members` | `ai:member:manage` | Mời, cấp/thu hồi vai trò (bắt buộc lý do, không tự cấp) |
+| `/console/audit` | `ai:audit:read` | 200 sự kiện audit gần nhất |
