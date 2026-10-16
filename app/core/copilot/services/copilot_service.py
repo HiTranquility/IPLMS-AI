@@ -1,5 +1,7 @@
 """Nghiệp vụ Trợ lý Hỏi Đáp RAG & Trọng Tài Tranh Chấp."""
+import time
 from typing import AsyncGenerator
+from uuid import uuid4
 
 from app.core.copilot.dtos.copilot_dto import (
     AnswerChunk,
@@ -8,7 +10,8 @@ from app.core.copilot.dtos.copilot_dto import (
     DisputeArbitrationRequest,
     DisputeVerdict,
 )
-from app.core.copilot.engines.rag_pipeline import rag_pipeline
+from app.core.copilot.engines.rag_pipeline import PROMPT_VERSION, rag_pipeline
+from app.core.copilot.services.usage_service import usage_service
 from app.core.exceptions import FeatureNotImplementedError
 from app.util.logger import logger
 
@@ -17,32 +20,63 @@ class CopilotService:
     @staticmethod
     async def ask_question(request: AskQuestionRequest) -> CopilotAnswer:
         """Answer through the real embedding → pgvector → Responses pipeline."""
-        result = await rag_pipeline.query(
-            request.query,
-            parking_lot_id=request.parking_lot_id,
-            preview=request.preview,
-        )
+        turn_id, started = str(uuid4()), time.monotonic()
+        try:
+            result = await rag_pipeline.query(
+                request.query,
+                parking_lot_id=request.parking_lot_id,
+                preview=request.preview,
+            )
+        except Exception as exc:
+            usage_service.record_soon(usage_service.build_entry(
+                turn_id=turn_id, task="copilot_ask", status="ERROR", started=started,
+                request=request, error_code=type(exc).__name__,
+            ))
+            raise
+        usage_service.record_soon(usage_service.build_entry(
+            turn_id=turn_id, task="copilot_ask", status=result["status"], started=started,
+            request=request, result=result, answer=result["answer"],
+        ))
         return CopilotAnswer(
             answer=result["answer"],
             sources=result["sources"],
             confidence=result["confidence"],
             model_revision=result.get("model_revision", ""),
+            turn_id=turn_id,
+            prompt_version=PROMPT_VERSION,
         )
 
     @staticmethod
     async def stream_answer(request: AskQuestionRequest) -> AsyncGenerator[AnswerChunk, None]:
         """Stream the same grounded pipeline without buffering the full answer."""
-        async for chunk in rag_pipeline.stream_query(
-            request.query,
-            parking_lot_id=request.parking_lot_id,
-            preview=request.preview,
-        ):
-            yield AnswerChunk(
-                token=chunk["token"],
-                is_finished=chunk["is_finished"],
-                sources=chunk["sources"],
-                model_revision=chunk.get("model_revision", ""),
-            )
+        turn_id, started = str(uuid4()), time.monotonic()
+        try:
+            async for chunk in rag_pipeline.stream_query(
+                request.query,
+                parking_lot_id=request.parking_lot_id,
+                preview=request.preview,
+            ):
+                finished = chunk["is_finished"]
+                if finished:
+                    usage_service.record_soon(usage_service.build_entry(
+                        turn_id=turn_id, task="copilot_stream", status=chunk.get("status", "SUCCESS"),
+                        started=started, request=request, result=chunk,
+                        answer=chunk.get("answer", ""),
+                    ))
+                yield AnswerChunk(
+                    token=chunk["token"],
+                    is_finished=finished,
+                    sources=chunk["sources"],
+                    model_revision=chunk.get("model_revision", ""),
+                    turn_id=turn_id if finished else "",
+                    prompt_version=PROMPT_VERSION if finished else "",
+                )
+        except Exception as exc:
+            usage_service.record_soon(usage_service.build_entry(
+                turn_id=turn_id, task="copilot_stream", status="ERROR", started=started,
+                request=request, error_code=type(exc).__name__,
+            ))
+            raise
 
     @staticmethod
     async def arbitrate_dispute(request: DisputeArbitrationRequest) -> DisputeVerdict:

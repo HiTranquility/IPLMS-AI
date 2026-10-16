@@ -18,6 +18,16 @@ except ImportError:
         pass
 
 
+def _copy_usage(source: Any, target: dict | None) -> None:
+    """Chép số token nếu provider có báo; không báo thì để trống, không ước lượng."""
+    if target is None or source is None:
+        return
+    for field in ("input_tokens", "output_tokens"):
+        value = getattr(source, field, None)
+        if isinstance(value, int):
+            target[field] = value
+
+
 class LlmFactory:
     """Small adapter around Responses API, injectable in unit tests."""
 
@@ -92,12 +102,19 @@ class LlmFactory:
             request["reasoning"] = {"effort": self.reasoning_effort}
         return request
 
-    async def generate_response(self, system_prompt: str, user_query: str, context: str) -> str:
-        """Generate one grounded answer; never logs prompt or retrieved content."""
+    async def generate_response(
+        self, system_prompt: str, user_query: str, context: str, usage: dict | None = None
+    ) -> str:
+        """Generate one grounded answer; never logs prompt or retrieved content.
+
+        ``usage`` (tuỳ chọn) nhận số token provider báo về — dict riêng cho mỗi
+        request, vì instance này có thể dùng chung giữa các request song song.
+        """
         try:
             response = await self._get_client().responses.create(
                 **self._request(system_prompt, user_query, context)
             )
+            _copy_usage(getattr(response, "usage", None), usage)
             answer = (response.output_text or "").strip()
             if not answer:
                 raise RagPipelineError("Mô hình không trả về nội dung văn bản.")
@@ -215,7 +232,7 @@ class LlmFactory:
         return payload
 
     async def stream_response(
-        self, system_prompt: str, user_query: str, context: str
+        self, system_prompt: str, user_query: str, context: str, usage: dict | None = None
     ) -> AsyncGenerator[str, None]:
         """Yield only semantic text deltas from a Responses API stream."""
         try:
@@ -232,6 +249,7 @@ class LlmFactory:
                         yield delta
                 elif event_type == "response.completed":
                     completed = True
+                    _copy_usage(getattr(getattr(event, "response", None), "usage", None), usage)
                 elif event_type in {"error", "response.failed", "response.incomplete"}:
                     error = getattr(event, "error", None)
                     message = getattr(error, "message", None) or "Responses API stream failed."
