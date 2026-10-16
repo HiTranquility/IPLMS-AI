@@ -49,10 +49,10 @@ flowchart LR
 
 | File/hàm | Vai trò |
 |---|---|
-| [run-seed.ts](../../../backend/src/infrastructures/Database/TypeORM/run-seed.ts), `main()` | Parse `--sync`, `--drop`, `--only`; kết nối DB rồi gọi runner |
-| [seed/index.ts](../../../backend/src/infrastructures/Database/TypeORM/seed/index.ts), `SeedRunner` | Registry và thứ tự 5 seeder; lọc bằng `DB_SEED_INCLUDE`/`--only` |
-| [database.config.ts](../../../backend/src/configs/database.config.ts), `seedConfig()` | Nguồn duy nhất của số lượng seed từ biến `DB_SEED_*` |
-| [05-demo-data.seeder.ts](../../../backend/src/infrastructures/Database/TypeORM/seed/seeders/demo/05-demo-data.seeder.ts) | Tạo user/xe/demo session hiện tại, reservation, subscription, dispute |
+| [run-seed.ts](../../../../backend/src/infrastructures/Database/TypeORM/run-seed.ts), `main()` | Parse `--sync`, `--drop`, `--only`; kết nối DB rồi gọi runner |
+| [seed/index.ts](../../../../backend/src/infrastructures/Database/TypeORM/seed/index.ts), `SeedRunner` | Registry và thứ tự 5 seeder; lọc bằng `DB_SEED_INCLUDE`/`--only` |
+| [database.config.ts](../../../../backend/src/configs/database.config.ts), `seedConfig()` | Nguồn duy nhất của số lượng seed từ biến `DB_SEED_*` |
+| [05-demo-data.seeder.ts](../../../../backend/src/infrastructures/Database/TypeORM/seed/seeders/demo/05-demo-data.seeder.ts) | Tạo user/xe/demo session hiện tại, reservation, subscription, dispute |
 
 Tên seeder dùng với `--only`: `role`, `vehicle-type`, `parking-area`,
 `parking-lot-slot`, `demo-data`.
@@ -71,11 +71,11 @@ khác reader production; chỉ dùng demo, không dùng làm bằng chứng mode
 
 | File/hàm | Vai trò |
 |---|---|
-| [export_parking_sessions.py](../../app/script/export_parking_sessions.py), `main()` | CLI `--status`, `--since`, `--until`, `--output` |
-| [session_exporter.py](../../app/infra/datalake/session_exporter.py), `ParkingSessionExporter.export()` | Query incremental `(after, until]`, stream batch, ghi JSONL/manifest/watermark |
+| [export_parking_sessions.py](../../../app/script/export_parking_sessions.py), `main()` | CLI `--status`, `--since`, `--until`, `--output` |
+| [session_exporter.py](../../../app/infra/datalake/session_exporter.py), `ParkingSessionExporter.export()` | Query incremental `(after, until]`, stream batch, ghi JSONL/manifest/watermark |
 | `ParkingSessionExporter._query()` | Chọn đúng cột session/capacity; loại user, vehicle, plate và media |
-| [datalake_config.py](../../app/config/datalake_config.py), `DatalakeConfig` | Local path, batch size, slot minutes; `s3_bucket` chưa được dùng để upload |
-| [occupancy_reader.py](../../app/infra/datalake/occupancy_reader.py), `OccupancyHistoryReader` | Đọc raw, lấy version session mới nhất, tổng hợp occupancy 30 phút |
+| [datalake_config.py](../../../app/config/datalake_config.py), `DatalakeConfig` | Local path, batch size, slot minutes; `s3_bucket` chưa được dùng để upload |
+| [occupancy_reader.py](../../../app/infra/datalake/occupancy_reader.py), `OccupancyHistoryReader` | Đọc raw, lấy version session mới nhất, tổng hợp occupancy 30 phút |
 
 Layout được code tạo:
 
@@ -95,23 +95,23 @@ Manifest chứa schema version, cửa sổ watermark, row count, SHA-256 và
 
 | File/hàm | Vai trò |
 |---|---|
-| [readiness.py](../../training/readiness.py), `inspect_forecast()` | Gate read-only: raw manifest/hash, capacity và độ phủ lịch sử |
-| [snapshot.py](../../training/forecast/snapshot.py), `main()` | Đóng băng occupancy đều theo một `as_of` xác định |
-| [build_features.py](../../training/forecast/build_features.py), `main()` | Tạo lag/rolling/calendar features và chia train/validation/test theo thời gian |
-| [backtest.py](../../training/forecast/backtest.py), `main()` | Đo persistence và weekly seasonal-naive |
-| [train.py](../../training/forecast/train.py), `main()` | Train ridge offline; artifact luôn là candidate, không tự deploy |
+| [readiness.py](../../../training/readiness.py), `inspect_forecast()` | Gate read-only: raw manifest/hash, capacity và độ phủ lịch sử |
+| [snapshot.py](../../../training/forecast/snapshot.py), `main()` | Đóng băng occupancy đều theo một `as_of` xác định |
+| [build_features.py](../../../training/forecast/build_features.py), `main()` | Tạo lag/rolling/calendar features và chia train/validation/test theo thời gian |
+| [backtest.py](../../../training/forecast/backtest.py), `main()` | Đo persistence và weekly seasonal-naive |
+| [train.py](../../../training/forecast/train.py), `main()` | Train ridge offline; artifact luôn là candidate, không tự deploy |
 
 ### 4. Storage/cloud hiện có
 
 | File/hàm | Có gì và chưa có gì |
 |---|---|
-| [storage.provider.ts](../../../backend/src/infrastructures/Storage/storage.provider.ts), `StorageProvider` | API upload chung, upload raw, key/prefix, presigned PUT |
-| [s3.adapter.ts](../../../backend/src/infrastructures/Storage/adapters/s3.adapter.ts), `S3Adapter` | AWS S3 hoặc endpoint S3-compatible; chưa phải data-lake sync job |
-| [storage.config.ts](../../../backend/src/configs/storage.config.ts) | Map `STORAGE_DRIVER`, bucket, endpoint, credential |
-| [object_store.py](../../app/infra/storage/object_store.py), `SignedUrlObjectStore` | AI tải object qua signed HTTPS URL và kiểm hash; không có PUT/list/delete |
-| [artifact_store.py](../../app/infra/model_registry/artifact_store.py) | Dùng downloader trên để materialize model vào cache |
-| [materialize_dataset.py](../../training/materialize_dataset.py) | Scaffold trạng thái, chưa download snapshot thật |
-| [publish_model.py](../../training/publish_model.py) | Scaffold trạng thái, chưa upload candidate thật |
+| [storage.provider.ts](../../../../backend/src/infrastructures/Storage/storage.provider.ts), `StorageProvider` | API upload chung, upload raw, key/prefix, presigned PUT |
+| [s3.adapter.ts](../../../../backend/src/infrastructures/Storage/adapters/s3.adapter.ts), `S3Adapter` | AWS S3 hoặc endpoint S3-compatible; chưa phải data-lake sync job |
+| [storage.config.ts](../../../../backend/src/configs/storage.config.ts) | Map `STORAGE_DRIVER`, bucket, endpoint, credential |
+| [object_store.py](../../../app/infra/storage/object_store.py), `SignedUrlObjectStore` | AI tải object qua signed HTTPS URL và kiểm hash; không có PUT/list/delete |
+| [artifact_store.py](../../../app/infra/model_registry/artifact_store.py) | Dùng downloader trên để materialize model vào cache |
+| [materialize_dataset.py](../../../training/materialize_dataset.py) | Scaffold trạng thái, chưa download snapshot thật |
+| [publish_model.py](../../../training/publish_model.py) | Scaffold trạng thái, chưa upload candidate thật |
 
 ## 🪜 Runbook local — seed rồi export đúng contract
 
@@ -272,8 +272,8 @@ Thứ tự publish một partition:
 
 ## 🔗 Liên quan
 
-- [Forecast từ PostgreSQL đến model](./04-forecast-training-strategy.md)
-- [Worker, storage và vòng đời dữ liệu](./05-ai-workers-storage-and-training-lifecycle.md)
-- [Google Colab training](./06-google-colab-training-runbook.md)
-- [PROB-039: Forecast từ session đến model thật](../../../docs/problems/09-2026/PROB-039-forecast-tu-session-den-model-that.md)
-- [Dual-track AWS và VPS/K3s](../../../docs/problems/09-2026/PROB-037-dual-track-deployment-aws-vs-vps-k3s.md)
+- [Forecast từ PostgreSQL đến model](04-forecast-training-strategy.md)
+- [Worker, storage và vòng đời dữ liệu](05-ai-workers-storage-and-training-lifecycle.md)
+- [Google Colab training](06-google-colab-training-runbook.md)
+- [PROB-039: Forecast từ session đến model thật](../../../../docs/problems/09-2026/PROB-039-forecast-tu-session-den-model-that.md)
+- [Dual-track AWS và VPS/K3s](../../../../docs/problems/09-2026/PROB-037-dual-track-deployment-aws-vs-vps-k3s.md)
