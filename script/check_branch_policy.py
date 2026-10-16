@@ -39,7 +39,7 @@ def creation_month(path):
     for line in text.splitlines():
         if line.startswith("|"):
             label = line.split("|")[1].replace("*", "").strip().lower()
-            if not re.fullmatch(r"(?:ngày(?: tạo| mở| báo| báo cáo)?(?:\s*/\s*người (?:báo|viết))?|người báo\s*/\s*ngày|created(?: at| date)?|reported(?: at)?|opened(?: at)?)", label):
+            if not re.fullmatch(r"(?:ngày(?: tạo| mở| báo| báo cáo| phát hiện)?(?:\s*/\s*người (?:báo|viết))?|người báo\s*/\s*ngày|created(?: at| date)?|reported(?: at)?|opened(?: at)?)", label):
                 continue
             found = re.search(r"\b([0-9]{4}-[0-9]{2}-[0-9]{2})\b", line)
             if found:

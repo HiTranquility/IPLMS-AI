@@ -1,5 +1,5 @@
 # Offline record validation; no notifications, secrets, installs or deployments.
-name: Branch Policy
+name: AI · Branch policy
 on:
   pull_request:
     types: [opened, edited, synchronize, reopened]
@@ -13,8 +13,8 @@ concurrency:
   group: branch-policy-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  policy_check:
-    name: 'Policy: Branch & PR Record'
+  policy-check:
+    name: Check branch & PR record
     runs-on: ubuntu-latest
     steps:
       - name: Checkout record documents and offline validator
