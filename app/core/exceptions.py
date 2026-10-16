@@ -97,3 +97,13 @@ class EmbeddingError(AiServiceError):
 
 class DataLakeError(AiServiceError):
     """Không thể export hoặc đọc snapshot lịch sử từ data lake."""
+
+
+# ── AI Console (ADR-0048) ─────────────────────────────────────────────────────
+
+class ConsoleAccessDenied(AiServiceError):
+    """Thành viên console không có quyền, hoặc vi phạm luật bốn mắt."""
+
+
+class ConsoleStoreError(AiServiceError):
+    """Thao tác với DB ``ai_console`` bị từ chối hoặc không truy cập được DB."""
