@@ -1,6 +1,6 @@
 # 📘 [Guide] Xử lý ảnh ANPR — từ pixel đến biển số và vòng cải thiện model
 
-> **Đích:** `ai/docs/guides/03-image-processing-pipeline.md` · **Template:** [guide-template](../../../../docs/templates/guide-template.md)
+> **Đích:** `ai/docs/guides/03-image-processing-pipeline.md` · **Template:** [guide-template](../../../../docs/templates/guide/guide-template.md)
 > [GOTCHA] 8 bước ANPR là luồng tổng; 6 phép tiền xử lý chỉ nằm trong nhánh enhanced OCR. Không phải ảnh nào cũng đi qua mọi phép lọc.
 
 ## 📌 Meta
@@ -281,7 +281,7 @@ là PII; manifest/report mới là bằng chứng versioned.
 Unit test toàn AI đã chạy ngày 2026-09-21: `173` pass, `2` skip optional.
 Readiness thực tế đang là `0/200`; `eval_plates.py` vì vậy chưa thể chứng nhận
 accuracy. Sau khi có report, test upload ảnh trực tiếp qua Postman theo
-[guide gRPC/Postman](../../../../docs/guides/backend/test-grpc-ai-with-postman.md),
+[guide gRPC/Postman](../../../../docs/guides/09-2026/test-grpc-ai-with-postman.md),
 nhưng một request Postman chỉ là smoke test, không thay report bộ vàng.
 
 ## 🔥 Troubleshooting

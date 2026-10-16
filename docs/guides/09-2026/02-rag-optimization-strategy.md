@@ -1,6 +1,6 @@
 # 📘 [Guide] RAG — lý thuyết, luồng dữ liệu và chiến lược tối ưu
 
-> **Đích:** `ai/docs/guides/02-rag-optimization-strategy.md` · **Template:** [guide-template](../../../../docs/templates/guide-template.md)
+> **Đích:** `ai/docs/guides/02-rag-optimization-strategy.md` · **Template:** [guide-template](../../../../docs/templates/guide/guide-template.md)
 > [MUST] Phân biệt **hiện trạng** và **đề xuất**. Các luồng hoàn chỉnh dưới đây chưa được triển khai end-to-end.
 
 ## 📌 Meta

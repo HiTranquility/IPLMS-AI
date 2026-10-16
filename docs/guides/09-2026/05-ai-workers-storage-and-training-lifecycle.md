@@ -1,6 +1,6 @@
 # 📘 [Guide] Tách module AI, RabbitMQ worker và vòng đời ảnh tới model
 
-> **Đích:** `ai/docs/guides/05-ai-workers-storage-and-training-lifecycle.md` · **Template:** [guide-template](../../../../docs/templates/guide-template.md)
+> **Đích:** `ai/docs/guides/05-ai-workers-storage-and-training-lifecycle.md` · **Template:** [guide-template](../../../../docs/templates/guide/guide-template.md)
 > **Loại nội dung:** phân tích hiện trạng và thiết kế triển khai từng phần. Đã có stable object reference cho ảnh ANPR và incremental data-lake export local; queue/job catalog end-to-end vẫn là bước sau.
 
 ## 📌 Meta
@@ -85,7 +85,7 @@ phải bằng chứng đã chạy production.
 | `ai/app/core/knowledge/services/ingestion_service.py` | Parse → chunk → embed → transaction đã có | Giữ một đường nghiệp vụ cho REST/gRPC |
 | `ai/training/train_imagefolder.py`, `ai/training/eval_plates.py` | Có code train CNN và đo ANPR | Tái sử dụng có kiểm chứng, không tạo một framework train song song |
 
-Tìm `outbox/Outbox` trong `backend/src` chưa thấy implementation. [PAT-001](../../../../docs/practices/PAT-001-transactional-outbox.md) mô tả MassTransit/.NET, không phải chứng cứ NestJS hiện đã có outbox; cần thiết kế transaction TypeORM thực tế.
+Tìm `outbox/Outbox` trong `backend/src` chưa thấy implementation. [PAT-001](../../../../docs/practices/07-2026/PAT-001-transactional-outbox.md) mô tả MassTransit/.NET, không phải chứng cứ NestJS hiện đã có outbox; cần thiết kế transaction TypeORM thực tế.
 
 ### Bước 2: Tách file theo trách nhiệm, không theo mỗi phép toán
 

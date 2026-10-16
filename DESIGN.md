@@ -189,7 +189,7 @@ Quy trình đầy đủ:
 - Vision: [nạp bộ vàng → kiểm checksum/tag → đo exact/CER/latency](data/golden/plates/README.md).
 - Forecast: [export session thật → readiness → baseline backtest theo lot/horizon](docs/guides/09-2026/04-forecast-training-strategy.md#quy-trình-chạy-thật-từ-postgresql-đến-baseline-report).
 - Notebook Forecast: [`notebook/forecast_experiment.ipynb`](notebook/forecast_experiment.ipynb) chỉ điều phối readiness và runner; không chứa logic train.
-- Upload ảnh và đo request gRPC/REST: [guide Postman](../docs/guides/backend/test-grpc-ai-with-postman.md).
+- Upload ảnh và đo request gRPC/REST: [guide Postman](../docs/guides/09-2026/test-grpc-ai-with-postman.md).
 
 ## 🧠 Copilot RAG & Quản lý tri thức (Knowledge)
 

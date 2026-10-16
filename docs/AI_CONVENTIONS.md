@@ -147,5 +147,5 @@ docker build ai/                     # ❌ không có proto/ → không sinh đ�
 ## 🔗 Liên quan
 
 - [`../../backend/docs/BACKEND_CONVENTIONS.md`](../../backend/docs/BACKEND_CONVENTIONS.md) — phía NestJS gọi sang gRPC
-- [`../../docs/guides/backend/grpc-nest-python-ai-integration.md`](../../docs/guides/backend/grpc-nest-python-ai-integration.md) — nối NestJS ⇄ Python
+- [`../../docs/guides/backend/grpc-nest-python-ai-integration.md`](../../docs/guides/09-2026/grpc-nest-python-ai-integration.md) — nối NestJS ⇄ Python
 - [`../../deployment/README.md`](../../deployment/README.md) — probe, timeout, build context

@@ -18,7 +18,7 @@
 
 ## 🎯 Dành cho ai, đọc xong làm được gì
 
-Dev học hoặc xây AI cho IPLMS. Đọc xong phân biệt ba nghiệp vụ, lần theo dữ liệu qua các tầng và biết phần nào đã có code, phần nào cần triển khai. Giữ đường dẫn hai guide cũ theo yêu cầu; bố cục theo [guide-template](../../../../docs/templates/guide-template.md).
+Dev học hoặc xây AI cho IPLMS. Đọc xong phân biệt ba nghiệp vụ, lần theo dữ liệu qua các tầng và biết phần nào đã có code, phần nào cần triển khai. Giữ đường dẫn hai guide cũ theo yêu cầu; bố cục theo [guide-template](../../../../docs/templates/guide/guide-template.md).
 
 ## ☑️ Điều kiện trước khi bắt đầu (Prerequisites)
 
@@ -500,7 +500,7 @@ Luật hướng phụ thuộc:
 - [`03-image-processing-pipeline.md`](03-image-processing-pipeline.md) — Lý thuyết xử lý ảnh ANPR
 - [`../AI_CONVENTIONS.md`](../../AI_CONVENTIONS.md) — Luật viết code AI
 - [`../../README.md`](../../../README.md) — Hướng dẫn chạy
-- [`../../../docs/guides/backend/grpc-nest-python-ai-integration.md`](../../../../docs/guides/backend/grpc-nest-python-ai-integration.md) — Nối NestJS ⇄ Python
+- [`../../../docs/guides/backend/grpc-nest-python-ai-integration.md`](../../../../docs/guides/09-2026/grpc-nest-python-ai-integration.md) — Nối NestJS ⇄ Python
 
 - [Forecast: dữ liệu, huấn luyện và kiểm chứng](04-forecast-training-strategy.md)
 - [Worker, storage và vòng đời dữ liệu AI](05-ai-workers-storage-and-training-lifecycle.md)
