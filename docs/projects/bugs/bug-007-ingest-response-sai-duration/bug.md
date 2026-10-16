@@ -6,7 +6,7 @@
 
 | | |
 |---|---|
-| **Trạng thái / Mức độ** | 🆕 New — phát hiện trên nhánh chưa merge / P2 |
+| **Trạng thái / Mức độ** | ✅ Fixed trong nhánh tích hợp — chưa merge / P2 |
 | **Người báo / Ngày** | Codex root + review agents / 2026-10-15 |
 | **Revision** | `origin/khoa-develop` tại `9a1aafd`; so base `6dd8547`, đối chiếu develop `c80037d` |
 | **Nguồn** | IPLMS AUDIT-008; nhánh này chưa được nhận vào develop |
@@ -31,3 +31,7 @@ Map process_time*1000 và kiểm cả SUCCESS/FAILED/duplicate retry; dùng idem
 
 - [ ] Đã sửa và chạy kiểm tập trung tương ứng.
 - [ ] Đã kiểm tích hợp tại revision nhận vào develop; không lấy source review thay cho runtime.
+
+## Kết quả tích hợp 2026-10-16
+
+process_time*1000, properstatus, uploadbound và UUIDổnđịnh;9RESTtestsPASS vớiservicegiả. Chưa persist/reload trên DBthật; retry có thể tạo draftversionmới. Nguồn: IPLMS ISSUE-124; reviewer độc lập không còn P1/P2 trong phạmvi đã rà. NhánhKhoa gốc không đổi.

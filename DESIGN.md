@@ -6,7 +6,7 @@ Trong umbrella, xem thêm [naming chung](../docs/standards/NAMING_CONVENTIONS.md
 
 ## Quyết định thiết kế, UI và ngoại lệ
 
-AI phục vụ backend qua gRPC và REST, không sở hữu UI sản phẩm hay bảng màu. Màu/token của màn hình Copilot, ANPR và quản lý model thuộc DESIGN của app frontend tương ứng. Dashboard Traefik là UI vận hành của phần mềm bên thứ ba; không dùng nó làm design system của IPLMS.
+AI phục vụ backend qua gRPC và REST, không sở hữu UI sản phẩm hay bảng màu. Ngoại lệ tích hợp16/10/2026: công cụ developer self-contained ở /dashboard, mặc định tắt; chỉ directloopback/Host/sameorigin, không qua proxy, không CDN; không phải UI sản phẩm. Màu/token của màn hình Copilot, ANPR và quản lý model thuộc DESIGN của app frontend tương ứng. Dashboard Traefik là UI vận hành của phần mềm bên thứ ba; không dùng nó làm design system của IPLMS.
 
 Luồng chính: backend → gateway → REST/gRPC handler → service domain → engine → adapter. Mapper đổi protobuf ↔ DTO tại biên; business core không phụ thuộc transport. DB nghiệp vụ thuộc backend; `ai-db` giữ tri thức/vector của AI. Training/checkpoint là vòng đời offline, không đồng nghĩa model đã được phép phục vụ.
 
@@ -278,3 +278,11 @@ Backend kết nối tới AI service qua 2 kênh:
 - **Copilot RAG:** ✅ Hoạt động đầy đủ (pgvector vector search + chunking + OpenAI embedding & text generation + gRPC ServerStreaming).
 - **Forecast (Dự báo chỗ trống):** 🟡 Export/reader, snapshot, point-in-time feature split, baseline/backtest và offline ridge candidate đã có test; local chưa có raw data/capacity history hay candidate được kiểm chứng, nên endpoint tiếp tục từ chối.
 - **Anti-fraud (Chống gian lận vé):** 🟡 Skeleton cấu hình sẵn, luật đối soát đang hoàn thiện.
+
+## Tích hợp Khoa — cập nhật 2026-10-16
+
+- Docker giữ contextumbrella và COPYai/; Dockerfile.dockerignore đi cùngfile, allowlist chỉ app/proto/corpus/bootstrapcầnthiết, chặn ảnh runtime/data/checkpoint/venv. Không coi benchmarkcũ là số hiện hành; image service đầy đủ chưa build ở đợt này.
+- Native start-dev gọi app.script.run_dev quản lý REST+gRPC cùngvòngđời; bind127.0.0.1, kiểmcổng, không tự stop/start sharedDocker. grpc_bind_host mặcđịnh[::] cho container, native launcher injectloopback. Readinesshiện tại xác nhận listener/healthtransport, DB/model/provider cần gate riêng.
+- developer_dashboard_enabled mặcđịnhfalse; AI_DEVELOPER_DASHBOARD_ENABLED=true chỉ cho tool localopt-in. Dashboard và static/index đều gated, APIdeveloper có20calls/min/query2000char/upload8MB. Không nhậpAPIkey/override, fakefallback/simulator. Nạpdraft dùng UUIDổnđịnh, retryvẫn có thể tạo draftversionmới; publishtheogatehiệnhành.
+- Vision giữ modular/ONNX/two-line/cropmàugốc/strictclassifier và ngưỡng confidence. HSV/deskew chỉ ở enhancement; màuOptionalNone khi chưa có cropquan sát. Thiếuclassifiermodel→None, không suyprior từbiển. Không đổi proto; màu hiện chỉ fieldREST bổsung.
+- Setup không tự càiCUDA; không dùng checkpointngẫu nhiên làm model đãtrain. Realmodelaccuracy/latency/provider/DBE2E chưa kiểm trong chặng, xem IPLMS ISSUE-124.

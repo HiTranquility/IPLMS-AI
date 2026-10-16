@@ -1,0 +1,29 @@
+# Build context is umbrella root; reviewed allowlist shared by all Dockerfile callers.
+**
+!ai/app/**
+!ai/requirements-service.txt
+!ai/docker-entrypoint.sh
+!ai/model/architectures/**
+!ai/model/artifacts/bootstrap/anpr/best.pt
+!ai/static/index.html
+!ai/static/cropped/.gitkeep
+!ai/static/original/.gitkeep
+!ai/data/knowledge/*.json
+!proto/*.proto
+**/__pycache__/**
+**/*.py[cod]
+ai/app/api/grpc/generated/**
+**/.env
+**/.env.*
+**/credentials.json
+**/token.txt
+**/id_rsa*
+**/*.pem
+**/*.key
+**/*.pfx
+**/*.db
+**/*.sqlite
+**/*.sql
+**/SecretKeys/**
+**/Thong tin ca nhan/**
+**/*-backup-*/**

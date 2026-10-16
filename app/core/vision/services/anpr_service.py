@@ -48,10 +48,18 @@ class AnprService:
             original_url = generate_original_image_url(plate_number, event_id)
             save_bytes_image(command.image_data, original_url)
 
-        # KHÔNG có checkpoint phân loại thì trả None — để backend biết là "không
-        # rõ loại xe". Bịa ra một loại mặc định là cách chống-gian-lận lúc
-        # check-out so nhầm một hằng số với dữ liệu thật rồi kết luận bừa.
-        vehicle_type = classify_vehicle(command.image_data) if command.classify_vehicle else None
+        plate_color = result.get("plate_color")
+
+        # Phân loại ảnh bằng CNN; không suy diễn loại xe từ biển số/màu nền.
+        vehicle_type = (
+            classify_vehicle(
+                command.image_data,
+                plate_number=plate_number,
+                plate_color=plate_color,
+            )
+            if command.classify_vehicle
+            else None
+        )
 
         return PlateResult(
             event_id=event_id,
@@ -64,4 +72,5 @@ class AnprService:
             confidence=result["confidence"],
             process_time=result["process_time"],
             crop_bytes=result["crop_bytes"],
+            plate_color=plate_color,
         )
