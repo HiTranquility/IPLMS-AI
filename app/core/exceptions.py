@@ -101,6 +101,14 @@ class DataLakeError(AiServiceError):
 
 # ── AI Console (ADR-0048) ─────────────────────────────────────────────────────
 
+class ConsoleAuthError(AiServiceError):
+    """Chưa đăng nhập console, phiên hết hạn, hoặc cần xác thực lại (step-up)."""
+
+    def __init__(self, message: str, code: str = "UNAUTHENTICATED") -> None:
+        super().__init__(message)
+        self.code = code
+
+
 class ConsoleAccessDenied(AiServiceError):
     """Thành viên console không có quyền, hoặc vi phạm luật bốn mắt."""
 

@@ -11,7 +11,7 @@ from typing import Any, Callable
 from uuid import uuid4
 
 from app.config import get_config
-from app.core.exceptions import ConsoleStoreError
+from app.core.exceptions import ConsoleAuthError, ConsoleStoreError
 
 
 def _member(row) -> dict[str, Any]:
@@ -56,7 +56,7 @@ class ConsoleStore:
                         return work(cursor)
             finally:
                 connection.close()
-        except (ConsoleStoreError, ValueError):
+        except (ConsoleAuthError, ConsoleStoreError, ValueError):
             raise
         except Exception as exc:
             raise ConsoleStoreError("Không truy cập được DB của AI Console.") from exc
@@ -120,6 +120,37 @@ class ConsoleStore:
             "CREATE OR REPLACE TRIGGER trg_audit_event_no_truncate "
             "BEFORE TRUNCATE ON audit_event "
             "FOR EACH STATEMENT EXECUTE FUNCTION console_audit_append_only()"
+        )
+        # ── Đăng nhập (P1b) ──
+        for column in (
+            "google_sub VARCHAR(255)", "password_hash TEXT", "totp_secret_enc TEXT",
+            "totp_enabled_at TIMESTAMPTZ", "totp_last_step BIGINT",
+        ):
+            cur.execute(f"ALTER TABLE console_member ADD COLUMN IF NOT EXISTS {column}")
+        cur.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_console_member_google_sub "
+            "ON console_member (google_sub) WHERE google_sub IS NOT NULL"
+        )
+        cur.execute(
+            """CREATE TABLE IF NOT EXISTS console_session (
+                id UUID PRIMARY KEY,
+                token_hash CHAR(64) NOT NULL UNIQUE,
+                member_id UUID NOT NULL REFERENCES console_member(id),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                mfa_at TIMESTAMPTZ,
+                step_up_at TIMESTAMPTZ,
+                revoked_at TIMESTAMPTZ
+            )"""
+        )
+        cur.execute(
+            """CREATE TABLE IF NOT EXISTS console_auth_flow (
+                state_hash CHAR(64) PRIMARY KEY,
+                browser_hash CHAR(64) NOT NULL,
+                nonce VARCHAR(128) NOT NULL,
+                code_verifier VARCHAR(128) NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )"""
         )
 
     async def ensure_schema(self) -> None:
@@ -204,6 +235,186 @@ class ConsoleStore:
                 }
                 for r in cur.fetchall()
             ]
+
+        return await self._run(work)
+
+    # ── Đăng nhập (P1b) ──────────────────────────────────────────────────────
+
+    async def create_auth_flow(
+        self, state_hash: str, browser_hash: str, nonce: str, code_verifier: str
+    ) -> None:
+        def work(cur):
+            cur.execute(
+                "DELETE FROM console_auth_flow WHERE created_at < NOW() - INTERVAL '10 minutes'"
+            )
+            cur.execute(
+                """INSERT INTO console_auth_flow (state_hash, browser_hash, nonce, code_verifier)
+                   VALUES (%s, %s, %s, %s)""",
+                (state_hash, browser_hash, nonce, code_verifier),
+            )
+
+        await self._run(work)
+
+    async def consume_auth_flow(self, state_hash: str, browser_hash: str) -> dict[str, str] | None:
+        """Dùng một lần: xoá luôn khi đọc; quá 10 phút hoặc khác trình duyệt → None."""
+        def work(cur):
+            cur.execute(
+                """DELETE FROM console_auth_flow
+                   WHERE state_hash = %s AND browser_hash = %s
+                     AND created_at > NOW() - INTERVAL '10 minutes'
+                   RETURNING nonce, code_verifier""",
+                (state_hash, browser_hash),
+            )
+            row = cur.fetchone()
+            return {"nonce": row[0], "code_verifier": row[1]} if row else None
+
+        return await self._run(work)
+
+    async def get_login_member(self, email: str) -> dict[str, Any] | None:
+        def work(cur):
+            cur.execute(
+                """SELECT id::text, status, google_sub, password_hash, totp_secret_enc,
+                          totp_enabled_at IS NOT NULL
+                   FROM console_member WHERE LOWER(email) = LOWER(%s)""",
+                (email,),
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            return {
+                "id": row[0], "status": row[1], "google_sub": row[2],
+                "password_hash": row[3], "totp_secret_enc": row[4], "totp_enabled": row[5],
+            }
+
+        return await self._run(work)
+
+    async def open_session(
+        self, member_id: str, token_hash: str, method: str, google_sub: str | None = None
+    ) -> str:
+        """Gắn google_sub lần đầu (sau đó phải khớp), tạo phiên chưa qua MFA, ghi audit."""
+        def work(cur):
+            if google_sub is not None:
+                cur.execute(
+                    """UPDATE console_member SET google_sub = %s
+                       WHERE id = %s AND (google_sub IS NULL OR google_sub = %s)
+                       RETURNING id""",
+                    (google_sub, member_id, google_sub),
+                )
+                if not cur.fetchone():
+                    raise ConsoleAuthError("Tài khoản Google không khớp thành viên đã đăng ký.")
+            session_id = str(uuid4())
+            cur.execute(
+                "INSERT INTO console_session (id, token_hash, member_id) VALUES (%s, %s, %s)",
+                (session_id, token_hash, member_id),
+            )
+            _audit(cur, member_id, f"auth.login:{method}", "session", session_id, "đăng nhập")
+            return session_id
+
+        return await self._run(work)
+
+    async def get_session(self, token_hash: str) -> dict[str, Any] | None:
+        def work(cur):
+            cur.execute(
+                """SELECT s.id::text, s.created_at, s.last_seen_at, s.mfa_at, s.step_up_at,
+                          s.revoked_at, m.id::text, m.email, m.display_name, m.status,
+                          m.totp_secret_enc, m.totp_enabled_at IS NOT NULL,
+                          ARRAY_REMOVE(ARRAY_AGG(r.role), NULL)
+                   FROM console_session s
+                   JOIN console_member m ON m.id = s.member_id
+                   LEFT JOIN console_member_role r ON r.member_id = m.id
+                   WHERE s.token_hash = %s
+                   GROUP BY s.id, m.id""",
+                (token_hash,),
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            return {
+                "session_id": row[0], "created_at": row[1], "last_seen_at": row[2],
+                "mfa_at": row[3], "step_up_at": row[4], "revoked_at": row[5],
+                "member_id": row[6], "email": row[7], "display_name": row[8],
+                "member_status": row[9], "totp_secret_enc": row[10], "totp_enabled": row[11],
+                "roles": sorted(row[12] or []),
+            }
+
+        return await self._run(work)
+
+    async def touch_session(self, session_id: str) -> None:
+        def work(cur):
+            cur.execute("UPDATE console_session SET last_seen_at = NOW() WHERE id = %s", (session_id,))
+
+        await self._run(work)
+
+    async def set_totp_secret(self, member_id: str, secret_enc: str) -> None:
+        """Chỉ đặt khi TOTP chưa bật — bật rồi thì không cho đăng ký lại qua đường này."""
+        def work(cur):
+            cur.execute(
+                """UPDATE console_member SET totp_secret_enc = %s
+                   WHERE id = %s AND totp_enabled_at IS NULL RETURNING id""",
+                (secret_enc, member_id),
+            )
+            if not cur.fetchone():
+                raise ConsoleAuthError("TOTP đã được bật cho tài khoản này.", "TOTP_ALREADY_ENROLLED")
+
+        await self._run(work)
+
+    async def accept_totp(
+        self, member_id: str, session_id: str, step: int, step_up_reason: str | None = None
+    ) -> None:
+        """Tiêu một time-step TOTP (chống dùng lại mã), rồi đánh dấu MFA hoặc step-up."""
+        def work(cur):
+            cur.execute(
+                """UPDATE console_member
+                   SET totp_last_step = %s,
+                       totp_enabled_at = COALESCE(totp_enabled_at, NOW()),
+                       status = CASE WHEN status = 'INVITED' THEN 'ACTIVE' ELSE status END
+                   WHERE id = %s AND status <> 'DISABLED'
+                     AND COALESCE(totp_last_step, -1) < %s
+                   RETURNING id""",
+                (step, member_id, step),
+            )
+            if not cur.fetchone():
+                raise ConsoleAuthError("Mã xác thực đã được dùng hoặc tài khoản bị khoá.", "TOTP_INVALID")
+            if step_up_reason is None:
+                cur.execute("UPDATE console_session SET mfa_at = NOW() WHERE id = %s", (session_id,))
+                _audit(cur, member_id, "auth.mfa", "session", session_id, "xác thực TOTP")
+            else:
+                cur.execute("UPDATE console_session SET step_up_at = NOW() WHERE id = %s", (session_id,))
+                _audit(cur, member_id, "auth.step_up", "session", session_id, step_up_reason)
+
+        await self._run(work)
+
+    async def revoke_session(self, session_id: str, member_id: str) -> None:
+        def work(cur):
+            cur.execute(
+                "UPDATE console_session SET revoked_at = NOW() WHERE id = %s AND revoked_at IS NULL",
+                (session_id,),
+            )
+            if cur.rowcount:
+                _audit(cur, member_id, "auth.logout", "session", session_id, "đăng xuất")
+
+        await self._run(work)
+
+    async def create_emergency_admin(
+        self, email: str, display_name: str, password_hash: str, totp_secret_enc: str, role: str
+    ) -> str:
+        """Tài khoản admin khẩn cấp tạo bằng CLI trên AI host (ADR-0048 §4)."""
+        def work(cur):
+            cur.execute("SELECT 1 FROM console_member WHERE LOWER(email) = LOWER(%s)", (email,))
+            if cur.fetchone():
+                raise ConsoleStoreError("Email này đã có trong console.")
+            member_id = str(uuid4())
+            cur.execute(
+                """INSERT INTO console_member (id, email, display_name, password_hash, totp_secret_enc)
+                   VALUES (%s, %s, %s, %s, %s)""",
+                (member_id, email, display_name, password_hash, totp_secret_enc),
+            )
+            cur.execute(
+                "INSERT INTO console_member_role (member_id, role) VALUES (%s, %s)",
+                (member_id, role),
+            )
+            _audit(cur, None, "system.bootstrap_admin", "member", member_id, "tạo bằng CLI trên AI host")
+            return member_id
 
         return await self._run(work)
 

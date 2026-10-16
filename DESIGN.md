@@ -8,6 +8,11 @@ Trong umbrella, xem thêm [naming chung](../docs/standards/NAMING_CONVENTIONS.md
 
 AI phục vụ backend qua gRPC và REST, không sở hữu UI sản phẩm hay bảng màu. Ngoại lệ tích hợp16/10/2026: công cụ developer self-contained ở /dashboard, mặc định tắt; chỉ directloopback/Host/sameorigin, không qua proxy, không CDN; không phải UI sản phẩm. Màu/token của màn hình Copilot, ANPR và quản lý model thuộc DESIGN của app frontend tương ứng. Dashboard Traefik là UI vận hành của phần mềm bên thứ ba; không dùng nó làm design system của IPLMS.
 
+**Ngoại lệ có phạm vi — AI Console nội bộ (IPLMS ADR-0048, ADR-0049):** công cụ chuyên sâu cho bộ phận AI, **không phải UI sản phẩm**. Chạy process riêng `app/console_main.py` (service compose `ai-console`, bật bằng `--profile console`), chỉ publish `127.0.0.1:8090`, không label Traefik, không CDN, tắt `/docs`. DB riêng `ai_console` (user riêng, tạo bởi `docker/ai-db/init/10-ai-console.sh` khi volume `ai-db` mới). Quyền nằm ở DB console (`app/core/console/engines/access_policy.py`), không lấy từ Admin/Moderator. Đăng nhập Google + TOTP bắt buộc; admin khẩn cấp tạo bằng `python -m app.script.console_admin`. Telemetry request AI **không** ở DB console mà ở `ai-db` (ADR-0049). Giao diện `ai/ui` (P1c) theo 8 luật Hallmark của `frontend/DESIGN.md` §4.
+
+Volume `ai-db` đã có dữ liệu thì tạo DB console bằng tay (thay mật khẩu, không dán vào log):
+`printf '%s\n' "CREATE ROLE ai_console LOGIN PASSWORD :'pw';" "CREATE DATABASE ai_console OWNER ai_console;" | docker compose exec -T ai-db psql -U postgres -v ON_ERROR_STOP=1 -v pw='<mật khẩu>'` — phải qua stdin: `psql -c` không thay biến `:'pw'`.
+
 Luồng chính: backend → gateway → REST/gRPC handler → service domain → engine → adapter. Mapper đổi protobuf ↔ DTO tại biên; business core không phụ thuộc transport. DB nghiệp vụ thuộc backend; `ai-db` giữ tri thức/vector của AI. Training/checkpoint là vòng đời offline, không đồng nghĩa model đã được phép phục vụ.
 
 Nguồn đối chiếu: [REST router](app/api/rest/router.py), [gRPC server](app/grpc_server.py), [config tổng](app/config/app_config.py), [Forecast service](app/core/forecast/services/forecast_service.py), [Compose base](docker-compose.yml). Forecast Service đã được kích hoạt (ADR-0037), phục vụ dự báo tỷ lệ lấp đầy và đề xuất giá động (surge pricing) kết nối ClickHouse Data Marts (`AreaOccupancyTelemetryItem`).
