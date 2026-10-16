@@ -10,6 +10,7 @@ from app.config.logging_config import LoggingConfig
 from app.config.model_registry_config import ModelRegistryConfig
 from app.config.object_storage_config import ObjectStorageConfig
 from app.config.server_config import ServerConfig
+from app.config.telemetry_config import TelemetryConfig
 from app.config.vision_config import VisionConfig
 from app.config.workflow_config import WorkflowConfig
 
@@ -27,6 +28,7 @@ class AppConfig:
         self.workflow = WorkflowConfig()
         self.eval = EvalConfig()
         self.console = ConsoleConfig()
+        self.telemetry = TelemetryConfig()
 
 
 @lru_cache
