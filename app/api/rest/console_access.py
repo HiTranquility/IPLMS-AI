@@ -37,6 +37,17 @@ def require_permission(permission: str):
     return dependency
 
 
+def require_any_permission(*permissions: str):
+    for permission in permissions:
+        if permission not in access_policy.PERMISSIONS:
+            raise ValueError(f"Quyền console không tồn tại: {permission}")
+
+    async def dependency(request: Request) -> ConsoleActor:
+        return await console_auth_service.authorize_any(session_token(request), permissions)
+
+    return dependency
+
+
 def set_session_cookie(response: Response, raw: str) -> None:
     cfg = get_config().console
     response.set_cookie(

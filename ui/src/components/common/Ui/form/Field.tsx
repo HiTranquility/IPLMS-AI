@@ -1,4 +1,4 @@
-import { useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { useId, type ComponentProps, type ReactNode } from 'react';
 import styles from './Field.module.css';
 
 interface FieldShellProps {
@@ -21,7 +21,7 @@ function FieldShell({ label, hint, children }: FieldShellProps) {
 
 type Labeled = { label: string; hint?: string };
 
-export function TextField({ label, hint, ...rest }: Labeled & InputHTMLAttributes<HTMLInputElement>) {
+export function TextField({ label, hint, ...rest }: Labeled & ComponentProps<'input'>) {
   return (
     <FieldShell label={label} hint={hint}>
       {(id, hintId) => <input id={id} aria-describedby={hintId} className={styles.control} {...rest} />}
@@ -29,7 +29,7 @@ export function TextField({ label, hint, ...rest }: Labeled & InputHTMLAttribute
   );
 }
 
-export function TextArea({ label, hint, ...rest }: Labeled & TextareaHTMLAttributes<HTMLTextAreaElement>) {
+export function TextArea({ label, hint, ...rest }: Labeled & ComponentProps<'textarea'>) {
   return (
     <FieldShell label={label} hint={hint}>
       {(id, hintId) => <textarea id={id} aria-describedby={hintId} className={`${styles.control} ${styles.area}`} {...rest} />}
@@ -37,7 +37,7 @@ export function TextArea({ label, hint, ...rest }: Labeled & TextareaHTMLAttribu
   );
 }
 
-export function SelectField({ label, hint, children, ...rest }: Labeled & SelectHTMLAttributes<HTMLSelectElement>) {
+export function SelectField({ label, hint, children, ...rest }: Labeled & ComponentProps<'select'>) {
   return (
     <FieldShell label={label} hint={hint}>
       {(id, hintId) => (

@@ -13,7 +13,7 @@ from datetime import datetime, timedelta, timezone
 from app.config import get_config
 from app.core.console.dtos import ConsoleActor, ConsoleSession
 from app.core.console.engines import access_policy, session_policy
-from app.core.exceptions import ConsoleAuthError
+from app.core.exceptions import ConsoleAccessDenied, ConsoleAuthError
 from app.infra.database.console_store import console_store
 from app.infra.identity.google_oidc import GoogleOidcClient, new_pkce_pair
 from app.infra.identity.password import verify_password
@@ -161,6 +161,15 @@ class ConsoleAuthService:
             session.step_up_at, self._clock(), timedelta(minutes=self._config.step_up_minutes)
         ):
             raise ConsoleAuthError("Thao tác này cần nhập lại mã TOTP kèm lý do.", "STEP_UP_REQUIRED")
+        return session.actor
+
+    async def authorize_any(self, raw: str, permissions: tuple[str, ...]) -> ConsoleActor:
+        """Đọc dữ liệu dùng chung cho nhiều vai trò (vd. ảnh cắt cho cả người gán lẫn người duyệt)."""
+        if any(p in access_policy.STEP_UP_PERMISSIONS for p in permissions):
+            raise ValueError("authorize_any không dùng cho quyền cần step-up")
+        session = await self.resolve(raw)
+        if not any(access_policy.can(session.actor, p) for p in permissions):
+            raise ConsoleAccessDenied("Bạn không có quyền thực hiện thao tác này.")
         return session.actor
 
     async def logout(self, raw: str) -> None:

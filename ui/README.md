@@ -31,3 +31,8 @@ Phía API: `python -m unittest test.test_console_copilot_lab test.test_console_u
 | `/console/copilot` | `ai:chatlog:read` (chấm: `ai:label:approve`) | Lượt chat đã che PII, lọc trạng thái/phản hồi, chấm Đúng/Sai/Không an toàn |
 | `/console/members` | `ai:member:manage` | Mời, cấp/thu hồi vai trò (bắt buộc lý do, không tự cấp) |
 | `/console/audit` | `ai:audit:read` | 200 sự kiện audit gần nhất |
+| `/console/vision` | `ai:metrics:read` | Máy đọc đúng bao nhiêu % trên tập bốc ngẫu nhiên (khoảng tin cậy 95%), đường cong ngưỡng, đề xuất/duyệt accept policy, trạng thái nhận A2 |
+| `/console/vision/label` | `ai:task:label` | Gán nhãn từng ảnh cắt, phím 1/2/3 như trang moderator |
+| `/console/vision/review` | `ai:label:approve` | Duyệt/trả lại nhãn của người khác (bốn mắt) |
+| `/console/vision/datasets` | `ai:dataset:snapshot` hoặc `ai:model:evaluate` | Snapshot train/golden, khoá golden (AI Lead, step-up) |
+| `/console/vision/models` | `ai:metrics:read` | Lượt đo trên golden đã khoá, đăng ký/đề xuất/promote model |
