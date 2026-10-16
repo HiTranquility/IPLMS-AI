@@ -25,6 +25,10 @@ class CopilotService:
             answer=result["answer"],
             sources=result["sources"],
             confidence=result["confidence"],
+            refused=result.get("refused", False),
+            guardrail_triggered=result.get("guardrail_triggered"),
+            prompt_version=result.get("prompt_version", "v2"),
+            latency_ms=result.get("latency_ms"),
         )
 
     @staticmethod

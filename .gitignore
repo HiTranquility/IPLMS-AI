@@ -79,6 +79,11 @@ var/easyocr-cache/
 var/bin/
 *.gguf
 
+# Runtime logs
+var/log/
+*.log
+*.jsonl
+
 # Saved crops/originals produced at runtime
 static/cropped/*
 static/original/*

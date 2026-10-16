@@ -9,7 +9,7 @@
   {
     "category": "regulation",
     "title": "Quy Chế Xử Lý Tranh Chấp & Hoàn Tiền Khiếu Nại (Dispute Policy)",
-    "content": "Điều 5 - Quy trình xử lý khiếu nại và hoàn phí:\n1. Trường hợp cảm biến barie hoặc hệ thống quét biển số (ANPR) gặp sự cố kỹ thuật dẫn đến chậm trễ lúc ra cổng > 10 phút, hệ thống tự động trừ thời gian trễ này khỏi tổng thời gian tính phí.\n2. Khách hàng có quyền tạo yêu cầu Khiếu nại (Dispute Ticket) trên ứng dụng trong vòng 48 giờ kể từ khi kết thúc phiên gửi.\n3. Trợ lý AI Copilot sẽ đối chiếu video log và thời gian thực để đề xuất hoàn tiền 100% phần phí chênh lệch do lỗi hệ thống vào ví IPLMS Wallet trong vòng 15 phút.",
+    "content": "Điều 5 - Quy trình xử lý khiếu nại và hoàn phí:\n1. Trường hợp cảm biến barie hoặc hệ thống quét biển số (ANPR) gặp sự cố kỹ thuật dẫn đến chậm trễ lúc ra cổng > 10 phút, hệ thống tự động trừ thời gian trễ này khỏi tổng thời gian tính phí.\n2. Khách hàng có quyền tạo yêu cầu Khiếu nại (Dispute Ticket) trên ứng dụng trong vòng 48 giờ kể từ khi kết thúc phiên gửi.\n3. Trợ lý AI Copilot sẽ đối chiếu video log và thời gian thực để đề xuất hoàn tiền 100% phần phí chênh lệch do lỗi hệ thống vào ví IPLMS Wallet trong vòng 15 phút.\n4. Quy trình xử lý khiếu nại trầy xước, va quẹt, vết móp xe: Đối chiếu snapshot camera check-in và check-out. Nếu phát sinh trong bãi do lỗi vận hành, bồi thường theo quy chế. Nếu camera bị che khuất hoặc thiếu chứng cứ, chuyển Quản lý xác minh thủ công trong 24 giờ.",
     "source": "Quy_che_xu_ly_khieu_nai_dieu_5.pdf",
     "parking_lot_id": null
   },

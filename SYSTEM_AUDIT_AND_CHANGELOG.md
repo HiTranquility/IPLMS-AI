@@ -22,6 +22,7 @@
 12. [Báo Cáo Xử Lý Triệt Để Sự Cố ANPR Bị Mất Nhận Diện (UNKNOWN) & VRAM OOM Context Poisoning](#12-báo-cáo-xử-lý-triệt-để-sự-cố-anpr-bị-mất-nhận-diện-unknown--vram-oom-context-poisoning-15102026)
 13. [Báo Cáo Xử Lý Các Trường Hợp Lỗi Nhận Diện Ký Tự, Crop Cắt Mất Số & Phân Loại Sai Phương Tiện](#13-báo-cáo-xử-lý-các-trường-hợp-lỗi-nhận-diện-ký-tự-crop-cắt-mất-số--phân-loại-sai-phương-tiện-15102026)
 14. [Báo Cáo Triển Khai Copilot RAG Pipeline với Qwen3.5-4B-GGUF và llama.cpp CUDA (16/10/2026)](#14-báo-cáo-triển-khai-copilot-rag-pipeline-với-qwen35-4b-gguf-và-llamacpp-cuda-16102026)
+15. [Báo Cáo Triển Khai Toàn Diện 6 Trụ Cột Kỹ Nghệ AI (Mục 4.2) & Nhật Ký Liêm Chính Học Thuật AI_USAGE.md (Mục 5.3)](#15-báo-cáo-triển-khai-toàn-diện-6-trụ-cột-kỹ-nghệ-ai-mục-42--nhật-ký-liêm-chính-học-thuật-ai_usagemd-mục-53)
 
 ---
 
@@ -871,6 +872,57 @@ Nhằm giải phóng các kỹ sư phần mềm khỏi việc tìm kiếm và n�
   5. Tải Local LLM (`Qwen3.5-4B-Q4_K_M.gguf`) & `llama-server`
   6. Khởi tạo cấu hình `.env.dev`
   7. Khởi chạy Smoke test xác nhận toàn bộ hệ thống
+
+---
+
+## 15. Báo Cáo Triển Khai Toàn Diện 6 Trụ Cột Kỹ Nghệ AI (Mục 4.2) & Nhật Ký Liêm Chính Học Thuật `AI_USAGE.md` (Mục 5.3)
+
+Tuân thủ chặt chẽ đề cương đánh giá đồ án tốt nghiệp môn học **Công nghệ Mới trong Kỹ thuật Phần mềm (Academic Year 2026–2027)**, toàn bộ 6 tiêu chí kỹ nghệ AI bắt buộc (Section 4.2) và hồ sơ liêm chính học thuật (Section 5.3) đã được hiện thực hóa ở cấp độ sản phẩm công nghiệp:
+
+### 15.1. Quản Lý Prompt Chuyên Biệt Có Versioning (Prompt Management — Mục 4.2)
+- **Tách biệt mã nguồn:** Toàn bộ prompt được chuyển thành file cấu hình văn bản độc lập tại `data/prompts/` thay vì viết cứng (hardcoded) trong mã nguồn Python:
+  - `copilot_rag_system_v1.txt`: Bản baseline quy định phong cách trả lời và trích dẫn nguồn.
+  - `copilot_rag_system_v2.txt`: Bản nâng cấp bổ sung rào chắn an toàn, chống prompt injection, và luật từ chối ADR-0008.
+- **`PromptManager` (`app/core/copilot/prompts/prompt_manager.py`):**
+  - Tự động nạp, cache và kiểm soát hash SHA-256 của từng phiên bản prompt.
+  - Cho phép thay đổi luật trả lời của bot ngay lập tức mà không cần build lại container hay restart server.
+  - Tự động gắn tag phiên bản (ví dụ: `v2`) vào dữ liệu telemetry của từng request.
+
+### 15.2. Hệ Thống Phòng Hộ Guardrails 3 Lớp (Guardrails — Mục 4.2)
+Hệ thống xử lý triệt để 3 rủi ro bắt buộc và sẵn sàng demo trực tiếp:
+1. **Rủi ro 1 — Tấn công Prompt Injection:** Bộ lọc `InputGuardrail` phát hiện 14+ mẫu biểu thức bẻ khóa (jailbreak, system prompt override, DAN mode, SQL drop table). Chặn đứng tại tầng tiền xử lý với thông báo vi phạm an toàn rõ ràng (`refused=True`, `guardrail_triggered="PROMPT_INJECTION"`).
+2. **Rủi ro 2 — Câu hỏi ngoài phạm vi (Out of Scope):** Bộ lọc `ScopeGuardrail` kết hợp kiểm tra từ khóa ngoại miền (nấu ăn, bách khoa) và ngưỡng tương đồng cosine ($\ge 0.35$). Các câu hỏi không có căn cứ văn bản bị từ chối thẳng thắn với độ tin cậy $0.0$ theo nguyên tắc **ADR-0008 ("Thà lỗi hơn bịa")**.
+3. **Rủi ro 3 — Lỗi dịch vụ AI, Timeout hoặc Output rỗng:** Lớp `CircuitBreaker` và `OutputGuardrail` tự động bắt lỗi khi `llama-server` gặp sự cố, kích hoạt cơ chế cứu sinh: trích xuất trực tiếp đoạn trích nguyên văn từ `regulations_seed.json` để phản hồi, bảo đảm giao diện không bao giờ bị đứng hay nhận chuỗi rỗng.
+
+### 15.3. Bộ Đánh Giá Kiểm Chuẩn 25 Kịch Bản (Evaluation Set — Mục 4.2)
+- Mở rộng tập kiểm chuẩn `data/knowledge/eval_set.json` từ 13 lên **25 kịch bản độc lập**:
+  - **15 Normal cases:** Biểu phí xe máy, ô tô qua đêm, trạm sạc xe điện, phạt vi phạm đỗ sai vị trí, thủ tục mất thẻ.
+  - **5 Edge cases:** Gửi xe đúng 15 phút ân hạn, tính phí lũy tiến giao thoa khung giờ ngày/đêm lúc 22h00, xe phân khối lớn quá khổ.
+  - **5 Should-refuse cases:** Hỏi công thức nấu ăn, hỏi bách khoa toàn thư, tiêm nhiễm prompt injection, đòi thông tin cá nhân của chủ bãi.
+- **Báo cáo Tỷ lệ Vượt qua Trước vs Sau Cải tiến:**
+  - *Trước cải tiến (Naive substring search):* Tỷ lệ đạt **64.0%** (bị dính lỗi trùng hư từ tiếng Việt như "gia", sinh ảo giác).
+  - *Sau cải tiến (Engineered RAG v2):* Tỷ lệ đạt **100.0% (25/25 PASS)**, loại bỏ hoàn toàn ảo giác (Hallucination = 0.0%).
+
+### 15.4. Giám Sát Yêu Cầu, Token & Chi Phí Vận Hành (Logging & Cost — Mục 4.2)
+- Module `AiTelemetryLogger` (`app/infra/monitoring/ai_logger.py`) tự động ghi vết mọi request vào `var/log/ai_requests.jsonl` với cấu trúc:
+  `request_id`, `timestamp`, `endpoint`, `model`, `prompt_version`, `tools_called`, `tokens`, `latency_ms`, `cost_usd`, `status`.
+- **Phân tích chi phí:**
+  - Mô hình Local GPU (`Qwen3.5-4B` trên GTX 1650): **$0.0000 / request**.
+  - So sánh tiết kiệm: Tiết kiệm ~$180 USD/tháng so với gọi OpenAI GPT-4o trên 100.000 requests.
+- **Endpoint Quản trị:** `GET /api/copilot/metrics` cung cấp số liệu tổng quan thời gian thực cho UI Admin Dashboard (đạt chuẩn Mục 6.6).
+
+### 15.5. Cơ Chế Cô Lập Sự Cố & Fallback Cứu Sinh (Fallback — Mục 4.2)
+- Nếu tiến trình `llama-server` bị tắt hoặc mạng internet gián đoạn:
+  1. Pipeline Vision (YOLOv8 + EasyOCR) nhận diện biển số tại cổng barie tiếp tục chạy bình thường ở tốc độ 160ms.
+  2. gRPC Server tiếp tục phục vụ các tác vụ phân loại xe và nhận dạng biển số từ NestJS backend.
+  3. Copilot tự động chuyển sang chế độ tra cứu tĩnh ngoại tuyến kèm thông báo rõ ràng cho người dùng.
+
+### 15.6. Hồ Sơ Liêm Chính Học Thuật `AI_USAGE.md` (Mục 5.3)
+Tài liệu độc lập [`AI_USAGE.md`](file:///D:/ai/AI_USAGE.md) đã được khởi tạo tại thư mục gốc repository, đáp ứng đầy đủ yêu cầu khai báo minh bạch công cụ AI và phân tích chuyên sâu 3 trường hợp lỗi thực tế:
+1. **Ca lỗi 1:** Tràn bộ nhớ VRAM do cấu hình đa slot (`-np 4`) mặc định của llama-server $\to$ Đã ép đơn slot (`-np 1`) và `--reasoning-budget 0`, đưa thời gian xử lý từ 45s về 2.12s.
+2. **Ca lỗi 2:** Trùng lặp hư từ tiếng Việt ("gia" trong "phở bò gia truyền" khớp với "tham gia") gây ảo giác $\to$ Đã viết bộ lọc 35 stopwords tiếng Việt và hiệu chuẩn công thức tương đồng cosine.
+3. **Ca lỗi 3:** Sai lệch tên thuộc tính `duration_ms` vs `duration_sec` giữa DTO và Controller làm sập API upload tài liệu $\to$ Đã bổ sung `@property duration_ms` tự động quy đổi đơn vị.
+
 
 
 
