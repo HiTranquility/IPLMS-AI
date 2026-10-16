@@ -16,6 +16,9 @@ service DatasetService {
   // ISSUE-013: đo ANPR trên split test-golden của một snapshot. Stream vì một lượt
   // có thể vài phút (vượt deadline unary): mỗi ảnh một `progress`, cuối cùng `result`.
   rpc EvaluateSnapshot (EvaluateSnapshotRequest) returns (stream EvaluateSnapshotEvent);
+  // IPLMS ADR-0048 §5 (A2): backend đẩy MỘT CHIỀU ảnh cắt + nhãn đã chốt sang DB
+  // AI Console. Gửi `samples` rỗng để hỏi watermark — backend không giữ trạng thái.
+  rpc ExportForConsole (ExportForConsoleRequest) returns (ExportForConsoleResponse);
 }
 
 message EvaluateCaptureRequest {
@@ -105,4 +108,46 @@ message EvaluateSnapshotEvent {
     EvaluationProgress progress = 1;
     EvaluationResult result = 2;
   }
+}
+
+// ── Xuất sang AI Console (A2) ─────────────────────────────────────────────────
+// Chỉ ảnh cắt + nhãn. KHÔNG có session_id, user, labeler hay area_id dạng rõ:
+// group/area đi qua HMAC ở backend để console gom theo nhóm mà không biết là ai.
+message ConsoleExportSample {
+  // Khoá idempotent (UUID ngẫu nhiên của anpr_captures).
+  string capture_id = 1;
+  // AI tải ảnh về DB console rồi so sha256 bên dưới — lệch thì loại cả mẫu.
+  string image_url = 2;
+  string image_sha256 = 3;
+  string machine_plate = 4;
+  double machine_confidence = 5;
+  bool has_machine_confidence = 6;
+  string confirmed_plate = 7;
+  bool human_corrected = 8;
+  repeated string selection_reasons = 9;
+  // PENDING | LABELED | CONFIRMED | DISPUTED | DISCARDED
+  string status = 10;
+  // train | golden
+  string purpose = 11;
+  // Nhãn người đã chốt ở backend; rỗng khi chưa có.
+  string final_plate = 12;
+  string group_ref = 13;
+  string area_ref = 14;
+  // ISO-8601. Cặp (updated_at, capture_id) là watermark tăng dần.
+  string updated_at = 15;
+  string captured_at = 16;
+}
+
+message ExportForConsoleRequest {
+  // Sắp theo (updated_at, capture_id) tăng dần; tối đa 200 mẫu một lượt.
+  repeated ConsoleExportSample samples = 1;
+}
+
+message ExportForConsoleResponse {
+  int32 accepted = 1;
+  int32 rejected = 2;
+  // Watermark sau lượt này; rỗng khi console chưa nhận gì.
+  string watermark_at = 3;
+  string watermark_id = 4;
+  repeated string rejected_ids = 5;
 }

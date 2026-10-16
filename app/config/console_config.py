@@ -31,3 +31,6 @@ class ConsoleConfig(BaseConfig):
     step_up_minutes: int = 5
     # Localhost chạy http nên mặc định tắt; bật khi đặt sau TLS nội bộ.
     cookie_secure: bool = False
+
+    # Ảnh cắt nhận qua A2 mà chưa ai gán nhãn ở console sẽ bị xoá sau N ngày (PII).
+    vision_retention_days: int = 90
