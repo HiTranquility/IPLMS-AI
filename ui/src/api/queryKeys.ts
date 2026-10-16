@@ -10,4 +10,13 @@ export const QUERY_KEYS = {
   REVIEW_STATS_ALL: ['copilot', 'review-stats'] as const,
   MEMBERS: ['members'] as const,
   AUDIT: ['audit'] as const,
+  VISION: ['vision'] as const,
+  VISION_STATUS: ['vision', 'status'] as const,
+  LABEL_QUEUE: ['vision', 'queue'] as const,
+  REVIEW_QUEUE: ['vision', 'reviews'] as const,
+  SNAPSHOTS: ['vision', 'snapshots'] as const,
+  MODELS: ['vision', 'models'] as const,
+  EVALS: ['vision', 'evals'] as const,
+  ACCURACY: ['vision', 'accuracy'] as const,
+  POLICIES: ['vision', 'policies'] as const,
 };

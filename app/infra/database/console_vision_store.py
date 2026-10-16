@@ -724,7 +724,7 @@ class ConsoleVisionStore(ConsoleStore):
             cur.execute(
                 """SELECT a.id::text, a.model_name, a.version, a.auto_accept_threshold, a.audit_rate,
                           a.status, a.evidence, a.reason, p.display_name, a.proposed_at,
-                          d.display_name, a.decided_at
+                          d.display_name, a.decided_at, a.proposed_by::text
                    FROM accept_policy a JOIN console_member p ON p.id = a.proposed_by
                    LEFT JOIN console_member d ON d.id = a.decided_by
                    ORDER BY a.model_name, a.version DESC"""
@@ -733,7 +733,7 @@ class ConsoleVisionStore(ConsoleStore):
                 {"id": r[0], "model_name": r[1], "version": r[2], "auto_accept_threshold": r[3],
                  "audit_rate": r[4], "status": r[5], "evidence": r[6], "reason": r[7],
                  "proposed_by": r[8], "proposed_at": r[9].isoformat(), "decided_by": r[10] or "",
-                 "decided_at": _iso(r[11])}
+                 "decided_at": _iso(r[11]), "proposed_by_id": r[12]}
                 for r in cur.fetchall()
             ]
 

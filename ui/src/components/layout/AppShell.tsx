@@ -5,13 +5,15 @@ import type { Me } from '@/api/types';
 import { Button } from '@/components/common/Ui/button/Button';
 import { useLogout } from '@/hooks/useConsole';
 import { applyTheme, initialTheme, type Theme } from '@/utils/theme';
-import { NAV_ITEMS } from './navigation';
+import { allowed, NAV_GROUPS } from './navigation';
 import styles from './AppShell.module.css';
 
 export function AppShell({ me, children }: { me: Me; children: ReactNode }) {
   const logout = useLogout();
   const [theme, setTheme] = useState<Theme>(() => initialTheme());
-  const items = NAV_ITEMS.filter((item) => me.permissions.includes(item.permission));
+  const groups = NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => allowed(item, me.permissions)) })).filter(
+    (group) => group.items.length > 0,
+  );
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -26,19 +28,24 @@ export function AppShell({ me, children }: { me: Me; children: ReactNode }) {
           <span className={styles.brandName}>AI Console</span>
           <span className={styles.brandScope}>Nội bộ · IPLMS</span>
         </div>
-        <nav aria-label="Mục chính">
-          <ul className={styles.nav}>
-            {items.map(({ to, label, icon: Icon }) => (
-              <li key={to}>
-                <NavLink to={to} end={to === '/'} className={({ isActive }) => (isActive ? `${styles.link} ${styles.active}` : styles.link)}>
-                  <Icon size={16} aria-hidden />
-                  {label}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
+        <nav aria-label="Mục chính" className={styles.navWrap}>
+          {groups.map((group) => (
+            <div key={group.label} className={styles.group}>
+              <p className={styles.groupLabel}>{group.label}</p>
+              <ul className={styles.nav}>
+                {group.items.map(({ to, label, icon: Icon }) => (
+                  <li key={to}>
+                    <NavLink to={to} end={to === '/' || to === '/vision'} className={({ isActive }) => (isActive ? `${styles.link} ${styles.active}` : styles.link)}>
+                      <Icon size={16} aria-hidden />
+                      {label}
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </nav>
-        {items.length === 0 && <p className={styles.noRole}>Chưa có vai trò nào. Nhờ quản trị console cấp vai trò.</p>}
+        {groups.length === 0 && <p className={styles.noRole}>Chưa có vai trò nào. Nhờ quản trị console cấp vai trò.</p>}
         <div className={styles.account}>
           <p className={styles.name}>{me.display_name}</p>
           <p className={styles.email}>{me.email}</p>
