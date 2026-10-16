@@ -18,7 +18,9 @@ from app.core.vision.engines.anpr import models
 from app.core.vision.engines.anpr.detector import detect_plate
 from app.core.vision.engines.anpr.ocr import read_plate_details, read_with_confidence
 from app.core.vision.engines.anpr.plate_text import is_valid_plate, plate_key
-from app.core.vision.engines.anpr.preprocess import enhance_for_ocr, is_valid_crop
+from app.core.vision.engines.anpr.preprocess import (
+    enhance_for_ocr, is_valid_crop, detect_plate_color, enhance_yellow_plate, deskew_plate,
+)
 from app.core.vision.engines.anpr.scoring import PlateCandidate, select_plate_candidate
 from app.core.vision.engines.anpr_onnx_engine import AnprOnnxEngine
 from app.core.vision.engines.two_line_plate_parser import parse_two_line_vietnam_plate
@@ -114,7 +116,10 @@ def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
                 )
             )
             if should_enhance:
-                enhanced_img = enhance_for_ocr(plate_crop)
+                ocr_crop = deskew_plate(plate_crop)
+                if detect_plate_color(plate_crop) == "yellow":
+                    ocr_crop = enhance_yellow_plate(ocr_crop)
+                enhanced_img = enhance_for_ocr(ocr_crop)
                 enhanced_text, enhanced_conf, enh_is_2line, _ = read_plate_details(enhanced_img)
                 if is_valid_plate(enhanced_text):
                     candidates.append(
@@ -152,4 +157,6 @@ def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
         "confidence": round(plate_confidence, 4),
         "process_time": round(time.perf_counter() - start_time, 3),
         "is_two_line": is_two_line,
+        # No detector crop means no observed plate background. Never infer from vehicle paint.
+        "plate_color": detect_plate_color(plate_crop) if plate_crop is not None else None,
     }

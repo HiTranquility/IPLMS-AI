@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IPLMS AI · Công cụ phát triển local</title>
+<style>
+:root{color-scheme:light dark;font-family:system-ui,sans-serif}body{max-width:850px;margin:32px auto;padding:0 20px;line-height:1.5}h1{font-size:1.65rem}section{border:1px solid #8886;border-radius:10px;padding:20px;margin:20px 0}label{display:block;margin:12px 0 4px}input,textarea,button{font:inherit;max-width:100%;box-sizing:border-box}input,textarea{width:100%;padding:8px}button{padding:8px 16px;cursor:pointer;margin-top:12px}pre{white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid #8886;padding:12px;min-height:24px}small{display:block}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #2784df;outline-offset:3px}
+</style>
+<h1>IPLMS AI · Công cụ phát triển local</h1>
+<p>Chỉ dành cho developer trên máy local. Dữ liệu thử nghiệm không phải bằng chứng nghiệm thu; công cụ này không thay thế giao diện sản phẩm.</p>
+<section aria-labelledby="system-heading"><h2 id="system-heading">Kết nối dịch vụ</h2><button id="inspect" type="button">Kiểm tra cấu hình an toàn</button><pre id="system-result" role="status" aria-live="polite"></pre></section>
+<section aria-labelledby="copilot-heading"><h2 id="copilot-heading">Copilot · RAG thật</h2><p>Truy vấn dùng pipeline và guard hiện hành. Thiếu cấu hình hoặc lỗi dịch vụ sẽ báo lỗi; không dùng tài liệu mẫu thay thế.</p>
+<form id="ask-form"><label for="query">Câu hỏi</label><textarea id="query" required maxlength="2000" rows="3"></textarea><label for="lot">Mã bãi (để trống cho phạm vi chung)</label><input id="lot" maxlength="128"><button type="submit">Gửi câu hỏi</button></form><pre id="answer" role="status" aria-live="polite"></pre><div id="sources"></div></section>
+<section aria-labelledby="ingest-heading"><h2 id="ingest-heading">Nạp bản nháp tri thức</h2><p>Chỉ tạo bản nháp; cần đánh giá và xuất bản qua quy trình hiện hành. Khi thử lại, giữ nguyên mã tài liệu để không tạo tài liệu trùng (mỗi lần nạp có thể tạo phiên bản nháp mới).</p>
+<form id="ingest-form"><label for="document-id">UUID tài liệu (giữ nguyên khi thử lại)</label><input id="document-id" required pattern="[0-9a-fA-F-]{36}"><label for="document-file">Tài liệu PDF, DOCX, TXT hoặc MD (tối đa 8 MB)</label><input id="document-file" type="file" required accept=".pdf,.docx,.txt,.md,.markdown"><label for="ingest-lot">Mã bãi (để trống cho phạm vi chung)</label><input id="ingest-lot" maxlength="128"><button type="submit">Nạp bản nháp</button></form><pre id="ingest-result" role="status" aria-live="polite"></pre></section>
+<script>
+'use strict';
+const element = id => document.getElementById(id);
+function display(id, value) { element(id).textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2); }
+async function callApi(path, options = {}) {
+  const response = await fetch('/api' + path, {credentials: 'same-origin', ...options});
+  let body;
+  try { body = await response.json(); } catch (_) { throw new Error('Dịch vụ trả phản hồi không hợp lệ (' + response.status + ').'); }
+  if (!response.ok || body.success === false) throw new Error(body.message || body.detail || 'Yêu cầu thất bại (' + response.status + ').');
+  return body;
+}
+function renderAnswer(query, result) {
+  const item = result.data && result.data[0];
+  if (!item) throw new Error('Không có kết quả từ pipeline.');
+  display('answer', 'Câu hỏi: ' + query + '\n\n' + String(item.answer || ''));
+  element('sources').replaceChildren();
+  const title = document.createElement('p'); title.textContent = 'Nguồn từ pipeline:'; element('sources').append(title);
+  for (const source of item.sources || []) {
+    const row = document.createElement('p'); row.textContent = String(source); element('sources').append(row);
+  }
+}
+async function busy(button, task, target) {
+  button.disabled = true; display(target, 'Đang xử lý…');
+  try { await task(); } catch (error) { display(target, 'Lỗi: ' + error.message); }
+  finally { button.disabled = false; }
+}
+element('inspect').addEventListener('click', event => busy(event.currentTarget, async () => display('system-result', await callApi('/system/info')), 'system-result'));
+element('ask-form').addEventListener('submit', event => {
+  event.preventDefault(); element('sources').replaceChildren();
+  const query = element('query').value;
+  busy(event.target.querySelector('button'), async () => renderAnswer(query, await callApi('/copilot/ask', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({query, parking_lot_id:element('lot').value || null})
+  })), 'answer');
+});
+element('ingest-form').addEventListener('submit', event => {
+  event.preventDefault(); const file = element('document-file').files[0];
+  if (!file || file.size > 8 * 1024 * 1024) { display('ingest-result', 'Chọn tài liệu không quá 8 MB.'); return; }
+  const body = new FormData(); body.append('file', file); body.append('document_id', element('document-id').value); body.append('parking_lot_id', element('ingest-lot').value);
+  busy(event.target.querySelector('button'), async () => display('ingest-result', await callApi('/knowledge/ingest', {method:'POST', body})), 'ingest-result');
+});
+if (globalThis.crypto && crypto.randomUUID) element('document-id').value = crypto.randomUUID();
+</script>
+</html>

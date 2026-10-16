@@ -8,7 +8,7 @@
 | | |
 |---|---|
 | **Người giữ bảng** | Chủ đồ án |
-| **Cập nhật lần cuối** | 2026-10-13 |
+| **Cập nhật lần cuối** | 2026-10-15 |
 
 ## 📏 Luật dùng bảng
 
@@ -23,6 +23,12 @@
 
 | Việc | Hồ sơ | Ưu tiên | Ghi chú |
 |---|---|---|---|
+| Review trước tích hợp: Docker context và lọc dữ liệu build | [bug-003](bugs/bug-003-docker-context-khong-dong-bo/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
+| Review trước tích hợp: Launcher REST/gRPC và báo lỗi dependency | [bug-004](bugs/bug-004-launcher-dev-dung-grpc/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
+| Review trước tích hợp: Hiệu chỉnh biển số mất ký tự | [bug-005](bugs/bug-005-plate-correction-mat-ky-tu/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
+| Review trước tích hợp: Prior loại xe không phải observation | [bug-006](bugs/bug-006-vehicle-prior-gia-lam-observation/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
+| Review trước tích hợp: Ingest mapping thời gian sai DTO | [bug-007](bugs/bug-007-ingest-response-sai-duration/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
+| Review trước tích hợp: Dashboard render dữ liệu bằng HTML | [bug-008](bugs/bug-008-dashboard-render-html-khong-escape/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
 | Đánh giá & calibration phân bố confidence ANPR theo camera | IPLMS PROB-045 | 🟢 | Chuẩn bị dữ liệu sau khi materialize xong |
 
 ## 🚧 Đang làm

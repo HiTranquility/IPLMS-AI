@@ -3,6 +3,8 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
+from types import SimpleNamespace
 
 try:
     import cv2
@@ -132,15 +134,26 @@ class AnprBenchmarkUnitTest(unittest.TestCase):
         self.assertGreaterEqual(res["mean_ms"], 0.0)
         self.assertGreater(res["fps"], 0.0)
 
+    def test_submillisecond_mean_retains_precision_for_ratios(self):
+        image = np.zeros((4, 4, 3), dtype=np.uint8)
+        with patch("benchmark.benchmark_anpr_latency.time.perf_counter", side_effect=[0.0, 0.001, 0.0010001, 0.002]):
+            result = benchmark_single_engine("synthetic", lambda value: (value, None), image, warmup=0, iterations=1)
+        self.assertGreater(result["mean_ms"], 0.0)
+        self.assertLess(result["mean_ms"], 0.005)
+
     def test_run_full_benchmark_quick_and_report_generation(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_report = Path(tmp_dir) / "test_report.md"
-            results = run_full_benchmark(
-                iterations=2,
-                warmup=1,
-                output_path=tmp_report,
-                sim_latency_ms=1.0,
-            )
+            # This is a report/unit fixture: never inspect local photos or load model weights.
+            synthetic = generate_synthetic_motorbike_2line_plate()
+            batch = {key: {"name": key, "format": "synthetic", "source": "unit fixture", "image": synthetic, "shape": synthetic.shape} for key in ("car_1line", "motorbike_2line")}
+            with patch("benchmark.benchmark_anpr_latency.load_or_generate_test_images", return_value=batch), patch("benchmark.benchmark_anpr_latency.init_pytorch_engine", return_value=(lambda image: (image, 0.9), "PyTorch YOLOv8n (CPU) synthetic fixture")), patch("benchmark.benchmark_anpr_latency.init_onnx_engine", return_value=(SimpleNamespace(detect_plate=lambda image: (image, 0.9)), "ONNX Runtime synthetic fixture")):
+                results = run_full_benchmark(
+                    iterations=2,
+                    warmup=1,
+                    output_path=tmp_report,
+                    sim_latency_ms=1.0,
+                )
 
             self.assertIn("timestamp", results)
             self.assertIn("benchmarks", results)

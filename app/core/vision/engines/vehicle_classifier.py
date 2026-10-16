@@ -76,7 +76,16 @@ def _ensure_loaded() -> bool:
         )
         return True
 
-def classify_vehicle(image_bytes: bytes) -> Optional[str]:
+def classify_vehicle(
+    image_bytes: bytes,
+    plate_number: Optional[str] = None,
+    plate_color: Optional[str] = None,
+) -> Optional[str]:
+    """Return a measured CNN label; plate metadata must never override visual evidence.
+
+    Optional metadata arguments are accepted for compatibility with callers from
+    the integration branch. A missing model or weak prediction remains unknown.
+    """
     if not _ensure_loaded():
         return None
     import torch
