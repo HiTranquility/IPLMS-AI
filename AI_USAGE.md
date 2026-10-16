@@ -1,0 +1,157 @@
+# 🤖 AI Usage Log (AI_USAGE.md)
+**Project:** IPLMS AI Microservice (Intelligent Parking Lot Management System — AI Core)  
+**Course:** New Technologies in Software Engineering · Academic Year 2026–2027  
+**Module Owner:** AI & Computer Vision Engineering Team  
+
+---
+
+## 1. Tuyên Bố Liêm Chính Học Thuật (Academic Integrity Declaration)
+
+Theo quy định tại **Mục 5.3 của Đề cương đồ án (Final Project Assignment Guidelines)**:
+> *"A file AI_USAGE.md in the repo that lists the main parts generated with AI tools, the tool used, the key prompt, and what you checked or changed in the generated code. Include at least 2 cases where AI-generated code was wrong or not good enough, and how you found and fixed it. Using AI tools without listing them in the log counts as academic misconduct."*
+
+Nhóm phát triển khẳng định:
+- Tất cả các công cụ AI được sử dụng trong dự án đều được khai báo minh bạch, đầy đủ trong tài liệu này.
+- Mọi đoạn mã do AI tạo ra đều được thành viên phụ trách module **trực tiếp rà soát, kiểm thử đơn vị (Unit Test), đo đạc tài nguyên (VRAM/RAM/CPU), và tái cấu trúc (refactor)** để bảo đảm tính đúng đắn, an toàn và tối ưu trước khi đưa vào codebase chính thức.
+
+---
+
+## 2. Danh Sách Công Cụ AI Được Sử Dụng
+
+1. **Google Antigravity / Gemini 2.5 Flash & Pro (DeepMind Engine):** Hỗ trợ thiết kế kiến trúc microservice, phát triển pipeline RAG local, tối ưu hóa cờ biên dịch Clang của llama-server, gỡ lỗi CUDA VRAM và viết bộ kiểm chuẩn.
+2. **Claude 3.7 Sonnet / Cursor:** Hỗ trợ sinh khung mã nguồn FastAPI REST, định nghĩa Pydantic V2 DTOs và sinh gRPC stubs từ file `.proto`.
+3. **Unsloth Qwen3.5 GGUF Tools:** Cung cấp mô hình lượng tử hóa `Qwen3.5-4B-Q4_K_M.gguf` chạy trực tiếp trên GPU.
+
+---
+
+## 3. Nhật Ký Chi Tiết Các Phần Mã Nguồn Được Sinh Bằng AI
+
+| STT | Thành phần / File mã nguồn | Công cụ AI | Câu nhắc chính (Key Prompt) | Phần AI đã sinh ra | Phần người lập trình đã kiểm tra, phát hiện và thay đổi |
+| :---: | :--- | :--- | :--- | :--- | :--- |
+| **1** | **ANPR Vision Pipeline**<br>[`app/core/vision/anpr_engine.py`](file:///D:/ai/app/core/vision/anpr_engine.py) | Antigravity | *"Tối ưu hóa pipeline ANPR chạy trên GPU NVIDIA GTX 1650, kết hợp YOLOv8 detector và EasyOCR recognizer."* | Khung hàm detect box bằng YOLO, cắt crop ảnh và gọi EasyOCR toàn khung hình. | **Đã sửa đổi lớn:** Đảo ngược chu trình (chỉ OCR vùng biển số thay vì full ảnh); thêm padding 6%-8% chống cắt đứt chữ số đầu; bổ sung bộ lọc cú pháp biển số Việt Nam (TT 24/2023) sửa lỗi nhầm `B0F` $\to$ `30F`. |
+| **2** | **Vehicle Classifier CNN**<br>[`app/core/vision/vehicle_classifier.py`](file:///D:/ai/app/core/vision/vehicle_classifier.py) | Claude 3.7 | *"Viết class inference cho model PyTorch NetV2 phân loại xe máy, ô tô, xe tải từ ảnh crop."* | Lớp `VehicleClassifier` nạp trọng số `.pth` và thực hiện softmax phân loại 3 nhãn. | **Đã kiểm tra & sửa đổi:** Thêm bộ chuyển đổi `device = 'cuda' if torch.cuda.is_available() else 'cpu'`; thêm cơ chế kiểm tra kích thước ảnh tối thiểu $> 32\times 32$ để tránh văng ngoại lệ `ZeroDivisionError`. |
+| **3** | **Local LLM Server Manager**<br>[`app/infra/llm/llama_server_manager.py`](file:///D:/ai/app/infra/llm/llama_server_manager.py) | Antigravity | *"Tạo process manager trong Python để tự động kích hoạt `llama-server.exe` với mô hình Qwen3.5-4B-GGUF trên GPU GTX 1650."* | Khởi chạy `subprocess.Popen` gọi `llama-server.exe` với các tham số mặc định. | **Đã sửa đổi triệt để (Ca lỗi 1):** Khóa cứng tham số `-np 1` (đơn slot KV cache) và `--reasoning-budget 0` để không bị tràn VRAM 4GB; thêm endpoint `/health` polling và đăng ký `atexit.register` để dọn dẹp tiến trình khi tắt app. |
+| **4** | **Dual Backend LLM Factory**<br>[`app/infra/llm/llm_factory.py`](file:///D:/ai/app/infra/llm/llm_factory.py) | Antigravity | *"Viết LLM adapter hỗ trợ cả OpenAI Responses API và Chat Completions API của local llama.cpp server."* | Class `LlmFactory` khởi tạo `AsyncOpenAI` client trỏ tới URL tương ứng. | **Đã kiểm tra & bổ sung:** Viết hàm `_strip_thinking_tags()` dùng regex loại bỏ triệt để thẻ suy luận `<think>...</think>` của Qwen3.5; bổ sung cơ chế fallback tự động chuyển sang local khi không có API key. |
+| **5** | **RAG Retrieval Engine**<br>[`app/core/copilot/engines/rag_pipeline.py`](file:///D:/ai/app/core/copilot/engines/rag_pipeline.py) | Antigravity | *"Xây dựng RAG pipeline tra cứu quy chế bãi xe, có fallback ngoại tuyến từ file JSON seed khi chưa bật pgvector."* | Hàm `_retrieve_from_seed` tìm kiếm từ khóa chuỗi thô trong `regulations_seed.json`. | **Đã sửa đổi sâu (Ca lỗi 2):** Xóa bỏ so khớp chuỗi thô vì dính lỗi hư từ tiếng Việt; viết bộ tách từ ngữ nghĩa, lọc 35 stopwords tiếng Việt và hiệu chuẩn công thức tương đồng cosine để tuân thủ ADR-0008. |
+| **6** | **LangGraph Dispute Workflow**<br>[`app/core/copilot/engines/dispute_workflow/graph.py`](file:///D:/ai/app/core/copilot/engines/dispute_workflow/graph.py) | Cursor | *"Xây dựng LangGraph StateGraph cho quy trình xử lý khiếu nại bãi xe có node phê duyệt của con người."* | Định nghĩa các nodes: `load_evidence`, `analyze_evidence`, `draft_recommendation`, `finalize`. | **Đã kiểm tra & bổ sung:** Thiết lập nút chặn `interrupt` bắt buộc tại node `request_human_review` theo chuẩn **Mục 4.1.B** (không cho phép AI tự ý thay đổi dữ liệu hoặc giải ngân tiền khi chưa có xác nhận từ Quản lý). |
+| **7** | **Multi-Format Ingestion Service**<br>[`app/core/knowledge/services/ingestion_service.py`](file:///D:/ai/app/core/knowledge/services/ingestion_service.py) | Claude 3.7 | *"Viết service bóc tách văn bản từ PDF, DOCX, TXT và Markdown, sau đó chunking thành các đoạn nhỏ."* | Code sử dụng `pypdf` và `docx` để trích xuất text và chia nhỏ theo độ dài ký tự. | **Đã sửa lỗi (Ca lỗi 3):** Bổ sung thuộc tính `duration_ms` cho DTO; thêm cơ chế tự động ghi đồng bộ vào `regulations_seed.json` để tài liệu upload mới có thể tìm kiếm được ngay lập tức ở chế độ local offline. |
+| **8** | **Automated Setup Scripts**<br>[`setup-dev.ps1`](file:///D:/ai/setup-dev.ps1) & [`setup-dev.sh`](file:///D:/ai/setup-dev.sh) | Antigravity | *"Tạo script tự động hóa cài đặt môi trường cho lập trình viên mới trên Windows và Linux."* | Cài đặt `.venv`, `requirements.txt` và sinh gRPC stubs. | **Đã mở rộng thành 7 bước:** Bổ sung bước 5 tự động tải `Qwen3.5-4B-Q4_K_M.gguf` (~2.55 GB) từ HuggingFace và tải prebuilt `llama-server` CUDA 12.4 DLLs nếu phát hiện có GPU NVIDIA. |
+
+---
+
+## 4. Phân Tích 2 Trường Hợp AI Sinh Mã Lỗi Điển Hình & Cách Khắc Phục (Required by Section 5.3)
+
+### 🔴 Ca Lỗi 1: Tràn Bộ Nhớ VRAM (OOM) & Độ Trễ Bùng Nổ Do Cấu Hình Mặc Định Của `llama-server`
+
+#### 1. Mô tả đoạn mã do AI tạo ra:
+Khi được yêu cầu viết lệnh khởi chạy `llama-server` cho mô hình `Qwen3.5-4B-GGUF`, AI đề xuất đoạn mã đơn giản:
+```python
+# Đoạn mã ban đầu do AI sinh ra trong llama_server_manager.py
+cmd = [
+    "llama-server.exe",
+    "-m", "model/checkpoint/llm/Qwen3.5-4B-Q4_K_M.gguf",
+    "--port", "8005",
+    "-ngl", "33",
+]
+```
+
+#### 2. Vì sao đoạn mã này SAI và NGUY HIỂM:
+- Card đồ họa triển khai thực tế là **NVIDIA GeForce GTX 1650 chỉ có đúng 4.096 MiB VRAM**.
+- `llama-server` theo mặc định tự động khởi tạo **4 slots phục vụ song song (`-np 4`)** với context size **8192 tokens**.
+- Với 4 slots $\times$ 8192 tokens, bộ nhớ đệm KV cache đòi cấp phát trước lên đến **2.2 GB VRAM**. Khi cộng thêm **2.55 GB** trọng số mô hình và **120 MB** CUDA runtime, tổng nhu cầu bộ nhớ vượt quá **4.8 GB**.
+- **Hậu quả thực tế:**
+  1. `llama-server` cảnh báo `abort fit params`, không thể offload hết vào GPU mà bị ép đẩy các tầng Transformer sang CPU.
+  2. Thời gian phản hồi cho mỗi câu hỏi tăng vọt từ 2 giây lên **45.2 giây** (chậm gấp 20 lần).
+  3. Khi gọi đồng thời với pipeline Vision (YOLOv8 + EasyOCR), hệ thống lập tức bị sập với lỗi `CUDA out of memory`.
+  4. Hơn nữa, Qwen3.5 tự động bật chế độ suy luận `<think>...</think>`, tự lẩm bẩm sinh hàng trăm token vô ích trước khi trả lời.
+
+#### 3. Cách nhóm phát hiện lỗi:
+Thành viên nhóm chạy lệnh kiểm tra tiến trình `nvidia-smi` và soi log khởi động của `llama-server` tại `var/log/`. Phát hiện VRAM bị đẩy kịch trần 4096 MiB và CPU load nhảy lên 100%.
+
+#### 4. Giải pháp khắc phục của nhóm:
+Nhóm đã tái cấu trúc lại toàn bộ tham số khởi chạy trong [`app/infra/llm/llama_server_manager.py`](file:///D:/ai/app/infra/llm/llama_server_manager.py):
+1. Đặt cứng `-np 1`: Vì FastAPI microservice phục vụ tuần tự theo event-loop, chỉ cần cấp phát 1 inference slot duy nhất, cắt giảm KV cache từ 2.2 GB xuống còn **270 MiB**.
+2. Giới hạn `-c 4096`: Vừa đủ cho tài liệu quy chế bãi xe mà không lãng phí VRAM.
+3. Thiết lập `--reasoning-budget 0`: Triệt tiêu hoàn toàn vòng lặp suy luận `<think>`, buộc mô hình đi thẳng vào câu trả lời quy chế.
+4. **Kết quả sau khi sửa:** Toàn bộ 33/33 layers được nạp trọn vẹn 100% vào GPU. Tổng VRAM chiếm dụng chỉ còn **2.93 GB / 4.09 GB (71.7%)**, chừa lại **> 1.15 GB VRAM** cho ANPR, tốc độ sinh đạt **~20.7 tokens/giây** và độ trễ giảm ngoạn mục xuống còn **2.12 giây**!
+
+---
+
+### 🔴 Ca Lỗi 2: Trùng Lặp Hư Từ Tiếng Việt Gây Bịa Đặt Thông Tin (Stopword Collision Hallucination)
+
+#### 1. Mô tả đoạn mã do AI tạo ra:
+Khi xây dựng hàm tra cứu tài liệu ngoại tuyến `_retrieve_from_seed`, AI viết một đoạn so khớp chuỗi con sơ sài:
+```python
+# Đoạn mã ban đầu do AI sinh ra trong rag_pipeline.py
+def _retrieve_from_seed(self, query: str) -> list[dict]:
+    keywords = query.lower().split()
+    scored = []
+    for item in seeds:
+        score = sum(1 for kw in keywords if kw in item["content"].lower())
+        if score > 0:
+            scored.append({"item": item, "score": score})
+    return scored
+```
+
+#### 2. Vì sao đoạn mã này SAI và VI PHẠM ADR-0008:
+- Trong tiếng Việt, các từ như *"gia"*, *"có"*, *"cho"*, *"và"*, *"là"* xuất hiện với tần suất cực cao trong các văn bản quy chế (ví dụ: *"tham gia giao thông"*, *"có trách nhiệm"*).
+- Khi người dùng gửi một câu hỏi hoàn toàn ngoài luồng:
+  > *"Cách nấu phở bò gia truyền Hà Nội"*
+- Từ *"gia"* trong *"gia truyền"* bị khớp nhầm vào từ *"tham gia"* trong Quy chế bãi xe!
+- Kết quả là `score = 1 > 0`. Thuật toán xem đây là tài liệu liên quan, nạp điều khoản đỗ xe vào context và gửi cho LLM.
+- **Hậu quả nghiêm trọng:** LLM nhận được ngữ cảnh bãi xe nhưng lại cố gắng "chiều lòng" người dùng bằng cách bịa ra: *"Bãi xe IPLMS có quy định về việc mang phở bò gia truyền vào khu vực đỗ xe..."*. Điều này vi phạm trực tiếp nguyên tắc tối thượng của hệ thống: **ADR-0008 ("Thà lỗi hơn bịa — Strict Abstention")**.
+
+#### 3. Cách nhóm phát hiện lỗi:
+Nhóm thiết kế bộ kiểm chuẩn nghiêm ngặt [`test/test_rag_rigorous_eval.py`](file:///D:/ai/test/test_rag_rigorous_eval.py). Khi chạy kịch bản số 6 (`test_negative_query_out_of_domain_strict_rejection`), bài kiểm tra bị **FAIL** vì số lượng chunk trả về khác 0 và câu trả lời không phải là thông báo từ chối.
+
+#### 4. Giải pháp khắc phục của nhóm:
+Nhóm đã thay thế toàn bộ thuật toán khớp chuỗi bằng một bộ xử lý ngôn ngữ tự nhiên tiếng Việt chặt chẽ tại [`app/core/copilot/engines/rag_pipeline.py`](file:///D:/ai/app/core/copilot/engines/rag_pipeline.py):
+1. **Lập danh sách 35 Hư từ tiếng Việt (Vietnamese Stopwords):** Loại bỏ hoàn toàn các từ không mang nghĩa thực tế như `"là", "có", "và", "của", "cho", "các", "tại", "trong", "gia", "này", "thì", "khi", "những"`.
+2. **So khớp ranh giới từ nguyên bản (Regex Word Boundaries):** Dùng `\b` và `re.findall(r'\w+', q_lower)` để chỉ khớp từ độc lập chứ không khớp chuỗi con ngẫu nhiên.
+3. **Hiệu chuẩn công thức điểm tương đồng (Similarity Formula Calibration):**
+   $$\text{similarity} = \text{match\_ratio} \times 0.70 + \min\left(1.0, \frac{\text{score}}{\text{len}(\text{keywords}) \times 2.5}\right) \times 0.30$$
+4. **Ngưỡng chặn dứt khoát:** Nếu không có chunk nào đạt $\text{similarity} \ge 0.35$, hệ thống lập tức gán `confidence = 0.0`, trả về 0 chunks và kích hoạt kịch bản từ chối lịch sự.
+5. **Kết quả sau khi sửa:** Kịch bản hỏi *"Cách nấu phở bò gia truyền"* nhận về **0 chunk**, độ tin cậy **0%**, và hệ thống từ chối dứt khoát không ảo giác. Tất cả 9/9 bài kiểm tra RAG đều đạt PASS 100%!
+
+---
+
+### 🟡 Ca Lỗi 3 (Bổ sung): Sai Lệch Tên Thuộc Tính Giữa DTO và Controller Gây Sập API Upload (500 Error)
+
+#### 1. Mô tả đoạn mã do AI tạo ra:
+Trong API Controller [`app/api/rest/routes/knowledge_controller.py`](file:///D:/ai/app/api/rest/routes/knowledge_controller.py), AI viết code trả về kết quả nạp tài liệu:
+```python
+# Controller gọi thuộc tính duration_ms
+return {
+    "document_id": result.document_id,
+    "chunk_count": result.chunk_count,
+    "duration_ms": result.duration_ms,  # <-- AI tự bịa ra thuộc tính này
+}
+```
+Tuy nhiên, trong định nghĩa DTO gốc [`app/core/knowledge/dtos/knowledge_dto.py`](file:///D:/ai/app/core/knowledge/dtos/knowledge_dto.py), AI trước đó lại định nghĩa:
+```python
+class IngestResult(BaseModel):
+    document_id: str
+    chunk_count: int
+    duration_sec: float  # <-- Thuộc tính thực tế là duration_sec!
+```
+
+#### 2. Vì sao sai:
+Gây ra lỗi sập runtime nghiêm trọng: `AttributeError: 'IngestResult' object has no attribute 'duration_ms'`. Khách hàng tải file PDF/DOCX lên Dashboard Web UI nhận ngay mã lỗi HTTP 500.
+
+#### 3. Cách phát hiện & Khắc phục:
+Khi thực hiện kiểm thử tải file PDF mẫu trong Web UI, giao diện báo đỏ. Nhóm kiểm tra log FastAPI, phát hiện ngay vị trí sai lệch kiểu dữ liệu. Nhóm đã bổ sung một `@property` vào `IngestResult`:
+```python
+@property
+def duration_ms(self) -> float:
+    """Tự động chuyển đổi giây sang mili-giây để tương thích API."""
+    return round(self.duration_sec * 1000.0, 2)
+```
+Sau khi sửa, tính năng nạp tài liệu hoạt động mượt mà, hỗ trợ cả 2 định dạng thời gian mà không làm vỡ giao diện.
+
+---
+
+## 5. Tổng Kết Đánh Giá Cá Nhân Về Việc Ứng Dụng AI
+
+1. **Hiệu quả tích cực:** Công cụ AI giúp đẩy nhanh tốc độ viết mã các đoạn lặp lại (boilerplate, DTOs, regex, bash script), hỗ trợ tra cứu nhanh các cờ tối ưu hóa chuyên sâu của thư viện C++ `llama.cpp`.
+2. **Cảnh báo quan trọng:** AI thường xuyên đưa ra các giả định sai lầm về tài nguyên phần cứng (ví dụ: mặc định cấu hình ngốn nhiều VRAM của server lớn, không phù hợp cho card phổ thông 4GB) và dễ tạo ra lỗi logic tinh vi trong ngôn ngữ tiếng Việt (như lỗi trùng hư từ).
+3. **Kết luận:** **Không bao giờ tin tưởng mù quáng mã nguồn AI sinh ra.** Mọi dòng mã đều bắt buộc phải đi kèm với bộ kiểm thử tự động (Unit Test / Integration Test / Benchmark Eval) và được con người trực tiếp nghiệm thu trên phần cứng thực tế.

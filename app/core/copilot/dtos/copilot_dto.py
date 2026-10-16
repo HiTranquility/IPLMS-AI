@@ -18,6 +18,10 @@ class CopilotAnswer(BaseModel):
     answer: str
     sources: List[str]
     confidence: float
+    refused: bool = False
+    guardrail_triggered: Optional[str] = None
+    prompt_version: str = "v2"
+    latency_ms: Optional[float] = None
 
 
 class AnswerChunk(BaseModel):

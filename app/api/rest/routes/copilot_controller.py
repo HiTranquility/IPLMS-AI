@@ -41,6 +41,10 @@ class AskResponse(BaseModel):
     sources: List[str]
     confidence: float
     mode: str = "rag_pgvector"
+    refused: bool = False
+    guardrail_triggered: Optional[str] = None
+    prompt_version: str = "v2"
+    latency_ms: Optional[float] = None
 
 
 class DisputePayload(BaseModel):
@@ -56,6 +60,13 @@ class WorkflowSimulationPayload(BaseModel):
     claimed_amount: float = 35000.0
     has_checkin_snapshot: bool = True
     has_checkout_snapshot: bool = True
+
+
+@router.get("/metrics")
+async def get_ai_metrics():
+    """Lấy số liệu thống kê AI requests, tokens, latency và chi phí (Mục 4.2)."""
+    from app.infra.monitoring.ai_logger import ai_telemetry_logger
+    return BaseResponse.ok([ai_telemetry_logger.get_metrics_summary()], "AI Telemetry & Cost Summary")
 
 
 @router.post("/ask", response_model=BaseResponse[AskResponse])
@@ -75,7 +86,16 @@ async def ask_copilot(payload: AskPayload) -> BaseResponse[AskResponse]:
             )
             ans: CopilotAnswer = await copilot_service.ask_question(req)
             return BaseResponse.ok(
-                [AskResponse(answer=ans.answer, sources=ans.sources, confidence=ans.confidence, mode="rag_local" if is_local else "rag_live")],
+                [AskResponse(
+                    answer=ans.answer,
+                    sources=ans.sources,
+                    confidence=ans.confidence,
+                    mode="rag_local" if is_local else "rag_live",
+                    refused=ans.refused,
+                    guardrail_triggered=ans.guardrail_triggered,
+                    prompt_version=ans.prompt_version,
+                    latency_ms=ans.latency_ms,
+                )],
                 "Answer generated via local RAG" if is_local else "Answer generated via live RAG"
             )
         except Exception as exc:
