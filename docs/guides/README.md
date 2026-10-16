@@ -1,6 +1,6 @@
 # Guides AI — lộ trình đọc
 
-Tài liệu lý thuyết và chiến lược xây dựng cho ba pipeline IPLMS. Hai guide đầu được chỉnh từ bản đã có; các guide dùng khung [guide-template](../../../docs/templates/guide-template.md), giữ trong `ai/docs/guides/` theo yêu cầu.
+Tài liệu lý thuyết và chiến lược xây dựng cho ba pipeline IPLMS. Hai guide đầu được chỉnh từ bản đã có; các guide dùng khung [guide-template](../../../docs/templates/guide/guide-template.md), giữ trong `ai/docs/guides/` theo yêu cầu.
 
 | Thứ tự | Guide | Đọc để hiểu |
 |---|---|---|

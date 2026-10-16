@@ -1,6 +1,6 @@
 # 📘 [Guide] Google Colab — train, resume và đưa model candidate về IPLMS
 
-> **Đích:** `ai/docs/guides/06-google-colab-training-runbook.md` · **Template:** [guide-template](../../../../docs/templates/guide-template.md)
+> **Đích:** `ai/docs/guides/06-google-colab-training-runbook.md` · **Template:** [guide-template](../../../../docs/templates/guide/guide-template.md)
 > **Loại nội dung:** runbook mục tiêu. Model artifact resolver đã triển khai; các script publish/materialize vẫn chưa có.
 
 ## 📌 Meta

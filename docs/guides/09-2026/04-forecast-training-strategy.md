@@ -1,6 +1,6 @@
 # 📘 [Guide] Forecast — dữ liệu thời gian, huấn luyện và chiến lược xây dựng
 
-> **Đích:** `ai/docs/guides/04-forecast-training-strategy.md` · **Template:** [guide-template](../../../../docs/templates/guide-template.md)
+> **Đích:** `ai/docs/guides/04-forecast-training-strategy.md` · **Template:** [guide-template](../../../../docs/templates/guide/guide-template.md)
 > [MUST] Toàn bộ luồng học máy dưới đây là thiết kế đề xuất; service hiện chặn bằng `FeatureNotImplementedError`.
 
 ## 📌 Meta
