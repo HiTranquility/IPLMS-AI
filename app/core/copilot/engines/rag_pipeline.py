@@ -77,8 +77,20 @@ class RagPipelineEngine:
         except Exception:
             return []
 
+        STOPWORDS = {
+            "là", "có", "và", "của", "cho", "các", "tại", "trong", "được", "những",
+            "một", "này", "thì", "khi", "sau", "theo", "gì", "bao", "nhiêu", "thế",
+            "nào", "ở", "ra", "sao", "với", "đến", "từ", "hãy", "tôi", "mình",
+            "bạn", "biết", "về", "cách", "làm", "như", "hay"
+        }
         q_lower = query.lower()
-        keywords = [w for w in re.findall(r'\w+', q_lower) if len(w) >= 2]
+        all_words = re.findall(r'\w+', q_lower)
+        keywords = [w for w in all_words if len(w) >= 2 and w not in STOPWORDS]
+        if not keywords:
+            keywords = [w for w in all_words if len(w) >= 2]
+
+        if not keywords:
+            return []
 
         scored = []
         for item in seeds:
@@ -91,20 +103,30 @@ class RagPipelineEngine:
             content = item.get("content", "")
             title = item.get("title", "")
 
+            matched_kw_count = 0
             score = 0.0
             for kw in keywords:
+                hit = False
                 if kw in title.lower():
                     score += 2.0
+                    hit = True
                 if kw in content.lower():
                     score += 1.0
+                    hit = True
+                if hit:
+                    matched_kw_count += 1
 
-            if score > 0 or not keywords:
-                similarity = min(1.0, 0.45 + (score / max(1.0, len(keywords) * 2.5)) * 0.5)
+            if matched_kw_count == 0:
+                continue
+
+            match_ratio = matched_kw_count / len(keywords)
+            similarity = round(match_ratio * 0.70 + min(1.0, score / (len(keywords) * 2.5)) * 0.30, 4)
+            if similarity >= self.min_similarity:
                 scored.append({
                     "content": content,
                     "source": item.get("source", "regulations_seed.json"),
                     "category": item.get("category", "general"),
-                    "similarity": round(similarity, 4),
+                    "similarity": similarity,
                     "_score": score,
                 })
 

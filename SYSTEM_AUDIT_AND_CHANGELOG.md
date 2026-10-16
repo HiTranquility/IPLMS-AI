@@ -847,4 +847,30 @@ Một vấn đề thường gặp trên card 4GB VRAM là nguy cơ tràn bộ nh
 - **Kiểm thử Streaming (`stream_query`):** Hoạt động mượt mà, truyền phát token liên tục theo chuẩn async generator.
 - **Trạng thái Unit Tests:** 188/188 tests toàn hệ thống PASS 100% (`Ran 188 tests in 13.949s, OK`).
 
+### 14.5. Bộ Kiểm Thử RAG Nghiêm Ngặt (`test/test_rag_rigorous_eval.py` - 9/9 PASS)
+Để đảm bảo chất lượng suy luận và tuyệt đối không ảo giác (Hallucination) theo tôn chỉ **ADR-0008 ("Thà lỗi hơn bịa")**, toàn bộ pipeline Copilot RAG được thẩm định qua bộ test độc lập `test/test_rag_rigorous_eval.py` với 9 kịch bản kiểm thử:
+1. `test_fee_query_motorcycle_with_citations`: Truy vấn biểu phí gửi xe máy ban ngày/ban đêm. Kết quả: trích xuất đúng 6.000đ/lượt, trích dẫn chính xác `[Nguồn: Quy_dinh_xe_may_2026.pdf]`.
+2. `test_fee_query_car_overnight`: Truy vấn biểu phí gửi ô tô qua đêm và phụ thu giờ cao điểm, trích dẫn `[Nguồn: Quy_dinh_oto_2026.pdf]`.
+3. `test_fire_safety_regulations`: Truy vấn quy chế PCCC và quy định an toàn khi sạc xe điện tại tầng hầm, trích dẫn `[Nguồn: Quy_che_PCCC_bai_xe_2026.pdf]`.
+4. `test_lost_ticket_penalty_and_procedure`: Truy vấn quy trình xử lý mất vé thẻ từ, phí phạt 100.000đ và đối chiếu giấy tờ xe, trích dẫn `[Nguồn: Xu_ly_su_co_va_khieu_nai.pdf]`.
+5. `test_dispute_arbitration_scratch_claim`: Truy vấn khiếu nại bồi thường trầy xước xe khi camera đối soát không ghi nhận tổn hại trước đó, trích dẫn `[Nguồn: Xu_ly_su_co_va_khieu_nai.pdf]`.
+6. `test_negative_query_out_of_domain_strict_rejection`: Truy vấn câu hỏi ngoại miền ("Cách nấu phở bò gia truyền Hà Nội"). Đạt chuẩn ADR-0008: 0 chunk được trả về, độ tin cậy 0.0, pipeline trả lời từ chối theo kịch bản chuẩn, không bịa đặt thông tin.
+7. `test_negative_query_general_knowledge_rejection`: Truy vấn kiến thức bách khoa ngoài quy chế ("Thủ đô của nước Pháp là gì"). Hệ thống từ chối trả lời dứt khoát.
+8. `test_rag_streaming_integrity`: Kiểm thử toàn vẹn luồng dữ liệu streaming (`stream_query`), đảm bảo các token trả về liên tục không bị gián đoạn hay mất gói.
+9. `test_confidence_score_calibration`: Kiểm chuẩn công thức tính độ tin cậy; các câu hỏi đúng miền có confidence $\ge 0.50$, câu hỏi ngoại miền có confidence $< 0.35$.
+
+### 14.6. Tự Động Hóa Tải Mô Hình & Binary Cho Developer Mới (`setup-dev.ps1` & `setup-dev.sh`)
+Nhằm giải phóng các kỹ sư phần mềm khỏi việc tìm kiếm và nạp thủ công các file nhị phân và trọng số lớn:
+- **Tự động kiểm tra và tải trọng số GGUF:** Script tự động kiểm tra `model/checkpoint/llm/Qwen3.5-4B-Q4_K_M.gguf` (>2GB). Nếu thiếu, script tự động tải trực tiếp từ Unsloth HuggingFace repository thông qua `curl.exe` có thanh tiến trình.
+- **Tự động tải & giải nén `llama-server` CUDA 12.4:** Script tự động phát hiện GPU NVIDIA để tải bản build Clang CUDA 12.4 (`llama-b11681-bin-win-cuda-12.4-x64.zip` và `cudart-llama-bin-win-cuda-12.4-x64.zip`) hoặc bản CPU fallback, tự động giải nén vào `var/bin/llama/`.
+- **Cập nhật quy trình chuẩn 7 bước:** Cả PowerShell và Bash script đồng bộ 7 bước:
+  1. Virtualenv Python & Dependencies (PyTorch CUDA 12.4 / CPU)
+  2. Sinh gRPC stubs từ `proto/`
+  3. Kiểm tra YOLO weights (`best.pt`)
+  4. Tải trước EasyOCR models (`var/easyocr-cache/`)
+  5. Tải Local LLM (`Qwen3.5-4B-Q4_K_M.gguf`) & `llama-server`
+  6. Khởi tạo cấu hình `.env.dev`
+  7. Khởi chạy Smoke test xác nhận toàn bộ hệ thống
+
+
 

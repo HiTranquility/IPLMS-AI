@@ -88,8 +88,10 @@ All required deep learning checkpoints are pre-bundled directly within the repos
    * Checks for an NVIDIA GPU and installs PyTorch CUDA 12.4 if present, or CPU PyTorch if not.
    * Compiles gRPC stubs from `proto/`.
    * Verifies YOLO and CNN weights.
-   * Caches EasyOCR models into `var/easyocr-cache/`.
+   * Caches EasyOCR models into `var/easyocr-cache/` (~113MB).
+   * **Downloads Local Copilot LLM & llama-server:** Checks and downloads `Qwen3.5-4B-Q4_K_M.gguf` (~2.55 GB) from Hugging Face into `model/checkpoint/llm/`, plus prebuilt CUDA 12.4 / CPU `llama-server` binaries into `var/bin/llama/`.
    * Generates `.env.dev` from `.env.example`.
+   * Executes smoke tests verifying vision, gRPC, and LLM configuration.
 
 3. **Launch All Services (One-Click Launcher)**:
    ```powershell
@@ -129,6 +131,7 @@ All required deep learning checkpoints are pre-bundled directly within the repos
    chmod +x setup-dev.sh start-dev.sh
    bash setup-dev.sh
    ```
+   *This script automatically performs all 7 steps: `.venv` setup, CUDA detection, gRPC stub generation, weights verification, EasyOCR caching, automated download of `Qwen3.5-4B-Q4_K_M.gguf` & prebuilt `llama-server`, `.env.dev` generation, and smoke tests.*
 
 3. **Start the service**:
    ```bash
