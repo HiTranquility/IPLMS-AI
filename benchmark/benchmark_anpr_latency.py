@@ -255,7 +255,7 @@ def benchmark_single_engine(
         "engine_name": engine_name,
         "iterations": iterations,
         "warmup": warmup,
-        "mean_ms": round(mean_ms, 2),
+        "mean_ms": mean_ms,  # Keep measurement precision for ratio calculations.
         "p50_ms": round(p50_ms, 2),
         "p95_ms": round(p95_ms, 2),
         "p99_ms": round(p99_ms, 2),
@@ -324,7 +324,7 @@ def run_full_benchmark(
             "shape": f"{spec['shape'][1]}x{spec['shape'][0]}",
             "pytorch": pt_res,
             "onnx": onnx_res,
-            "speedup_factor": round(speedup, 2),
+            "speedup_factor": speedup,  # Preserve a positive ratio; round only when formatting a report.
         }
 
     if output_path is None:

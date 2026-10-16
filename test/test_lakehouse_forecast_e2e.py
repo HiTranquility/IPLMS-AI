@@ -32,6 +32,8 @@ from app.core.forecast.readers.parquet_lake_reader import (
 from app.core.forecast.services.forecast_service import ForecastService
 
 
+@unittest.skipUnless(os.environ.get("AI_RUN_REAL_LAKEHOUSE_TESTS") == "1",
+                         "Requires explicitly authorized real lakehouse data; not an offline unit fixture")
 class LakehouseForecastE2ETest(unittest.TestCase):
     """Kiểm thử tích hợp End-to-End từ Parquet Lake đến ForecastService."""
 
@@ -218,6 +220,9 @@ class LakehouseForecastE2ETest(unittest.TestCase):
         self.assertIn(forecast.status_level, [OccupancyStatus.HIGH, OccupancyStatus.CRITICAL])
         self.assertEqual(len(forecast.slots), 4)  # 2 hours * 2 slots
 
+
+
+class IsolatedLakehousePipelineTest(unittest.TestCase):
     def test_08_isolated_temporary_lakehouse_pipeline(self):
         """Kiểm tra trọn vẹn luồng Lakehouse trong môi trường cô lập hoàn toàn (Temporary Directory)."""
         with tempfile.TemporaryDirectory() as tmp_dir:

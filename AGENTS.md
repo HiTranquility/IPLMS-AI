@@ -61,6 +61,7 @@ Hồ sơ riêng của repo ở `docs/`: mọi hồ sơ nằm dưới `projects/`
 
 ## Git và an toàn
 
+- Nhánh mới theo [Git workflow local](docs/GIT_WORKFLOW.md): mã hồ sơ + tháng/năm tạo gốc, giữ nguyên nhánh cũ.
 - Chỉ stage đúng file mình sửa; [NEVER] `git add .` / `git add -A`. Message mô tả thay đổi thật và ghi phần chưa làm/chưa test.
 - Commit trong repo này trước; cập nhật gitlink ở repo gốc là bước riêng khi thuộc phạm vi.
 - Hỏi người dùng trước khi cài package mới, chạy lệnh ghi dữ liệu dùng chung hoặc deploy.

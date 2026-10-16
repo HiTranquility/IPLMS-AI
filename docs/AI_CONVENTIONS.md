@@ -7,6 +7,8 @@ verified-against-code: 2026-09-11 — mọi đường dẫn, tên file, hướng
 
 # 🧠 AI Conventions — IPLMS
 
+Nhánh và PR theo [Git workflow local](GIT_WORKFLOW.md), hiệu lực 2026-10-15; không đổi tên nhánh cũ.
+
 **[MUST]** Đọc [DESIGN](../DESIGN.md) cho kiến trúc cụ thể, ma trận base/develop/production và ngoại lệ; [README](../README.md) chỉ là điểm vào nhanh. Naming chung khi mở từ umbrella: [NAMING_CONVENTIONS](../../docs/standards/NAMING_CONVENTIONS.md).
 
 Python dùng `snake_case` cho file/hàm, `PascalCase` cho class, `UPPER_SNAKE_CASE` cho hằng và env key. File REST dùng `<domain>_controller.py`; config dùng `<concern>_config.py`. Thêm project độc lập phải có README + DESIGN + conventions liên kết nhau.
