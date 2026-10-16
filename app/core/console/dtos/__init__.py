@@ -25,3 +25,24 @@ class ConsoleSession:
     step_up_at: Optional[datetime]
     # Có khoá TOTP nhưng chưa xác nhận lần nào (vd. admin khẩn cấp tạo bằng CLI).
     totp_secret_set: bool = False
+
+
+@dataclass(frozen=True)
+class ExportedCapture:
+    """Một mẫu backend đẩy sang qua A2 (IPLMS ADR-0048 §5) — không có session/user/area rõ."""
+
+    capture_id: str
+    image_url: str
+    image_sha256: str
+    machine_plate: str
+    machine_confidence: Optional[float]
+    confirmed_plate: str
+    human_corrected: bool
+    selection_reasons: tuple[str, ...]
+    status: str
+    purpose: str
+    final_plate: str
+    group_ref: str
+    area_ref: str
+    updated_at: str
+    captured_at: str
