@@ -1,6 +1,7 @@
 """Config tổng — gom mọi nhóm config nhỏ, cache lại 1 instance cho cả tiến trình."""
 from functools import lru_cache
 
+from app.config.console_config import ConsoleConfig
 from app.config.datalake_config import DatalakeConfig
 from app.config.embedding_config import EmbeddingConfig
 from app.config.eval_config import EvalConfig
@@ -25,6 +26,7 @@ class AppConfig:
         self.object_storage = ObjectStorageConfig()
         self.workflow = WorkflowConfig()
         self.eval = EvalConfig()
+        self.console = ConsoleConfig()
 
 
 @lru_cache
