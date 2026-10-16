@@ -71,6 +71,10 @@ class IngestResult:
     message: str = ""
     process_time: float = 0.0
 
+    @property
+    def duration_ms(self) -> float:
+        return round(self.process_time * 1000.0, 2)
+
 
 class KnowledgeDocumentItem(BaseModel):
     """1 phần tử trong payload REST `/api/knowledge/*` — hợp đồng với công cụ vận hành."""

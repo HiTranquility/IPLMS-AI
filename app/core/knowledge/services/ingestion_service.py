@@ -62,6 +62,18 @@ class IngestionService:
             vectors = await self.embedder.embed_texts([chunk.content for chunk in text_chunks])
         except EmbeddingError as exc:
             logger.warning("Knowledge embedding failed document=%s: %s", document_id, exc)
+            try:
+                self._save_to_local_seed(command, text_chunks)
+                return IngestResult(
+                    document_id=document_id,
+                    status=IngestStatus.SUCCESS,
+                    chunk_count=len(text_chunks),
+                    message="Đã nạp vào kho tri thức cục bộ (Local Knowledge Seed).",
+                    process_time=time.perf_counter() - started,
+                )
+            except Exception as seed_exc:
+                logger.warning("Failed to save to local seed: %s", seed_exc)
+
             return self._result(
                 document_id,
                 IngestStatus.EMBEDDING_FAILED,
@@ -116,6 +128,39 @@ class IngestionService:
             message=message,
             process_time=time.perf_counter() - started,
         )
+
+    @staticmethod
+    def _save_to_local_seed(command: IngestDocumentCommand, text_chunks: list[TextChunk]) -> None:
+        import json
+        import os
+        candidates = [
+            os.path.join(os.getcwd(), "data", "knowledge", "regulations_seed.json"),
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../data/knowledge/regulations_seed.json")),
+        ]
+        seed_path = next((c for c in candidates if os.path.exists(c)), candidates[0])
+        existing = []
+        if os.path.exists(seed_path):
+            try:
+                with open(seed_path, "r", encoding="utf-8") as f:
+                    existing = json.load(f)
+            except Exception:
+                existing = []
+
+        existing = [item for item in existing if item.get("source") != command.file_name]
+
+        for idx, chunk in enumerate(text_chunks, 1):
+            title = chunk.section_title or f"{command.file_name} (Đoạn {idx})"
+            existing.append({
+                "category": command.category or "regulation",
+                "title": title,
+                "content": chunk.content,
+                "source": command.file_name,
+                "parking_lot_id": command.parking_lot_id,
+            })
+
+        os.makedirs(os.path.dirname(seed_path), exist_ok=True)
+        with open(seed_path, "w", encoding="utf-8") as f:
+            json.dump(existing, f, ensure_ascii=False, indent=2)
 
 
 ingestion_service = IngestionService()
