@@ -39,7 +39,7 @@
 | Làm nốt 1.3 `materialize_dataset` (tải theo manifest + sha256) | IPLMS ISSUE-013 | Khoa | 2026-10-16 | Đang viết CLI & loader từ private storage |
 | Restart container `ai` để đường gRPC nạp code mới, rồi verify ANPR | IPLMS bug-006 | Khoa | 2026-10-14 | REST đã verify; chuẩn bị đo gRPC & warmup |
 | Đo ANPR trên test-golden snapshot & đối chiếu xe chống tráo | IPLMS ISSUE-010 | Khoa | 2026-10-17 | Chuẩn bị test suite & dữ liệu snapshot |
-| AI Console nội bộ: DB riêng, 7 vai trò, đăng nhập Google + TOTP, `ai/ui` | IPLMS ISSUE-126 | Claude Code | — | P1a xong (`2b0292d`); tiếp P1b đăng nhập |
+| AI Console nội bộ: DB riêng, 7 vai trò, đăng nhập Google + TOTP, `ai/ui` | IPLMS ISSUE-126 | Claude Code | — | P1a (`2b0292d`) + P1b đăng nhập (`e48221d`) xong; tiếp P1c `ai/ui` hoặc P2 Copilot/telemetry |
 | Chạy bộ test Knowledge Base với LLM thật (cần `AI_LLM_API_KEY`) | IPLMS ISSUE-009 | Dương | 2026-10-15 | 299 test unit/mock đã pass; chờ key/ollama chạy live |
 | LangGraph workflow cho Copilot tranh chấp (Phase 3) | IPLMS ISSUE-005 | Dương | 2026-10-18 | Xong phase 2; đang làm tiếp state interrupt/resume |
 | Nạp liệu tri thức RAG — phần AI & hoàn tất E2E | IPLMS ISSUE-004 | Dương | 2026-10-16 | Nhóm 5 code xong; chờ E2E container & nối FE |
