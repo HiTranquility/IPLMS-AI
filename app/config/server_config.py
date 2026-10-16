@@ -9,8 +9,12 @@ _10_MB = 10 * 1024 * 1024
 class ServerConfig(BaseConfig):
     model_config = SettingsConfigDict(env_prefix="AI_")
 
+    grpc_bind_host: str = "[::]"
     grpc_port: int = 50051
     grpc_max_workers: int = 10
     # Ảnh cổng đi thẳng trong message → phải khớp AI_GRPC_MAX_MESSAGE_MB bên NestJS.
     grpc_max_message_length: int = _10_MB
     fastapi_port: int = 8000
+
+    # Local diagnostic UI only; never enable on a shared/production service.
+    developer_dashboard_enabled: bool = False

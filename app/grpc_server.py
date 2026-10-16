@@ -68,7 +68,9 @@ async def serve() -> None:
                 "Chưa nạp được OCR reader — RecognizePlate sẽ trả FAILED_PRECONDITION."
             )
 
-    server.add_insecure_port(f"[::]:{config.grpc_port}")
+    bound_port = server.add_insecure_port(f"{config.grpc_bind_host}:{config.grpc_port}")
+    if not bound_port:
+        raise RuntimeError("Cannot bind the configured gRPC address")
     await server.start()
 
     logger.info(f"🚀 IPLMS AI gRPC Server started on port {config.grpc_port}")

@@ -6,7 +6,7 @@
 
 | | |
 |---|---|
-| **Trạng thái / Mức độ** | 🆕 New — phát hiện trên nhánh chưa merge / P1 |
+| **Trạng thái / Mức độ** | ✅ Fixed trong nhánh tích hợp — chưa merge / P1 |
 | **Người báo / Ngày** | Codex root + review agents / 2026-10-15 |
 | **Revision** | `origin/khoa-develop` tại `9a1aafd`; so base `6dd8547`, đối chiếu develop `c80037d` |
 | **Nguồn** | IPLMS AUDIT-008; nhánh này chưa được nhận vào develop |
@@ -31,3 +31,7 @@ Giữ context gốc và COPY ai/ hiện hành. Nếu hỗ trợ clone độc l�
 
 - [ ] Đã sửa và chạy kiểm tập trung tương ứng.
 - [ ] Đã kiểm tích hợp tại revision nhận vào develop; không lấy source review thay cho runtime.
+
+## Kết quả tích hợp 2026-10-16
+
+Giữ rootcontext/COPYai; thêm Dockerfile.dockerignore độc lập caller. Actual scratchfixturebuild/export loại sentinelruntime đãPASS; test lặp hiệnSKIP vì daemonstopped. Chưa build image service đầy đủ. Nguồn: IPLMS ISSUE-124; reviewer độc lập không còn P1/P2 trong phạmvi đã rà. NhánhKhoa gốc không đổi.
