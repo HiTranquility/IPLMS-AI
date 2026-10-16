@@ -6,7 +6,7 @@ Model: `NetV1` (M1) ở [`../model/architectures/m1`](../model/architectures/m1)
 > **Chạy từ đâu?** Luôn `cd ai` rồi gọi `python training/<script>.py`. Mỗi script tự thêm `ai/` vào `sys.path` nên `from model...` chạy được. Dataset/checkpoint mặc định nằm ở `ai/model/dataset/` và `ai/model/checkpoint/` (đều gitignored).
 >
 > Bản đồ dữ liệu/artifact: [`model/README.md`](../model/README.md) · Runbook GPU:
-> [Google Colab](../docs/guides/06-google-colab-training-runbook.md).
+> [Google Colab](../docs/guides/09-2026/06-google-colab-training-runbook.md).
 
 ## 0. Cài đặt (1 lần)
 

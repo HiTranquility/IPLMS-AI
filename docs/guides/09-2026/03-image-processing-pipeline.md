@@ -1,6 +1,6 @@
 # 📘 [Guide] Xử lý ảnh ANPR — từ pixel đến biển số và vòng cải thiện model
 
-> **Đích:** `ai/docs/guides/03-image-processing-pipeline.md` · **Template:** [guide-template](../../../docs/templates/guide-template.md)
+> **Đích:** `ai/docs/guides/03-image-processing-pipeline.md` · **Template:** [guide-template](../../../../docs/templates/guide-template.md)
 > [GOTCHA] 8 bước ANPR là luồng tổng; 6 phép tiền xử lý chỉ nằm trong nhánh enhanced OCR. Không phải ảnh nào cũng đi qua mọi phép lọc.
 
 ## 📌 Meta
@@ -20,7 +20,7 @@ Có thể hình dung: detector tìm đúng tờ giấy trong bức ảnh; tiền
 
 ## ☑️ Điều kiện trước khi bắt đầu (Prerequisites)
 
-- [ ] Đọc [tổng quan ba pipeline](./01-three-ai-pipelines-architecture.md) và [AI README](../../README.md).
+- [ ] Đọc [tổng quan ba pipeline](01-three-ai-pipelines-architecture.md) và [AI README](../../../README.md).
 - [ ] Biết ảnh số là ma trận pixel; BGR có ba kênh, grayscale một kênh.
 - [ ] Khi thử nghiệm: có ảnh gốc, nhãn biển số đúng và quyền sử dụng dữ liệu.
 - [ ] Kiểm weights/thiết bị và môi trường theo README; ghi phiên bản model, thư viện và cấu hình trong báo cáo.
@@ -49,7 +49,7 @@ flowchart TD
     M --> N[Backend áp dụng nghiệp vụ cổng]
 ```
 
-Nguồn chính: [anpr_engine.py](../../app/core/vision/engines/anpr_engine.py), hàm `run_anpr`; [anpr_service.py](../../app/core/vision/services/anpr_service.py), hàm `recognize_bytes`. Mô tả **hiện tại** bên dưới dựa trên các hàm này; chiến lược sửa được ghi **đề xuất**.
+Nguồn chính: [anpr_engine.py](../../../app/core/vision/engines/anpr_engine.py), hàm `run_anpr`; [anpr_service.py](../../../app/core/vision/services/anpr_service.py), hàm `recognize_bytes`. Mô tả **hiện tại** bên dưới dựa trên các hàm này; chiến lược sửa được ghi **đề xuất**.
 
 ### Snapshot runtime 2026-09-21
 
@@ -169,7 +169,7 @@ Engine encode ảnh được chọn thành JPEG; lỗi encode → `PlateRecognit
 
 `process_time` trong engine bắt đầu sau nạp model và kết thúc sau encode. Nó không bao gồm toàn bộ thời gian service, classifier, storage hay network; cần đo thêm latency end-to-end và cold start.
 
-Anti-fraud hiện so chuỗi `vehicle_type`; chưa có ReID so ảnh. Khi thiếu loại xe, service có thể trả `is_matched=True`; điều này không chứng minh cùng xe. `similarity_score=0` là sentinel chưa đo. Nguồn: [anti_fraud_service.py](../../app/core/vision/services/anti_fraud_service.py), `verify_vehicle_match`.
+Anti-fraud hiện so chuỗi `vehicle_type`; chưa có ReID so ảnh. Khi thiếu loại xe, service có thể trả `is_matched=True`; điều này không chứng minh cùng xe. `similarity_score=0` là sentinel chưa đo. Nguồn: [anti_fraud_service.py](../../../app/core/vision/services/anti_fraud_service.py), `verify_vehicle_match`.
 
 [MUST] Backend đối chiếu phiên/booking/lane và policy trước hành động cổng. Điểm OCR cao chưa đủ làm điều kiện duy nhất.
 
@@ -187,7 +187,7 @@ flowchart TD
     H --> I[Version model và cấu hình; rollout có rollback]
 ```
 
-**Không trộn các bài toán train:** detector học bounding box biển số; OCR học đọc ký tự; classifier học loại xe; ReID học độ tương đồng xe. Script CNN hiện có không tự trở thành pipeline train YOLO/EasyOCR. Đọc [training README](../../training/README.md) trước khi chọn tác vụ.
+**Không trộn các bài toán train:** detector học bounding box biển số; OCR học đọc ký tự; classifier học loại xe; ReID học độ tương đồng xe. Script CNN hiện có không tự trở thành pipeline train YOLO/EasyOCR. Đọc [training README](../../../training/README.md) trước khi chọn tác vụ.
 
 | Chặng | Việc làm | Bằng chứng trước khi đi tiếp |
 |---|---|---|
@@ -281,7 +281,7 @@ là PII; manifest/report mới là bằng chứng versioned.
 Unit test toàn AI đã chạy ngày 2026-09-21: `173` pass, `2` skip optional.
 Readiness thực tế đang là `0/200`; `eval_plates.py` vì vậy chưa thể chứng nhận
 accuracy. Sau khi có report, test upload ảnh trực tiếp qua Postman theo
-[guide gRPC/Postman](../../../docs/guides/backend/test-grpc-ai-with-postman.md),
+[guide gRPC/Postman](../../../../docs/guides/backend/test-grpc-ai-with-postman.md),
 nhưng một request Postman chỉ là smoke test, không thay report bộ vàng.
 
 ## 🔥 Troubleshooting
@@ -298,9 +298,9 @@ nhưng một request Postman chỉ là smoke test, không thay report bộ vàng
 
 ## 🔗 Liên quan
 
-- [PROB-038: ANPR chạy được nhưng chưa đo được chất lượng](../../../docs/problems/09-2026/PROB-038-anpr-tu-chay-duoc-den-do-duoc.md)
-- [Ba pipeline](./01-three-ai-pipelines-architecture.md) · [RAG](./02-rag-optimization-strategy.md)
-- [Worker, storage và vòng đời dữ liệu AI](./05-ai-workers-storage-and-training-lifecycle.md)
-- [IDEA-007: Vision roadmap](../../../docs/ideas/09-2026/IDEA-007-vision-deep-dive-roadmap.md)
-- [Bộ vàng biển số](../../data/golden/plates/README.md) · [Training CNN](../../training/README.md)
+- [PROB-038: ANPR chạy được nhưng chưa đo được chất lượng](../../../../docs/problems/09-2026/PROB-038-anpr-tu-chay-duoc-den-do-duoc.md)
+- [Ba pipeline](01-three-ai-pipelines-architecture.md) · [RAG](02-rag-optimization-strategy.md)
+- [Worker, storage và vòng đời dữ liệu AI](05-ai-workers-storage-and-training-lifecycle.md)
+- [IDEA-007: Vision roadmap](../../../../docs/ideas/09-2026/IDEA-007-vision-deep-dive-roadmap.md)
+- [Bộ vàng biển số](../../../data/golden/plates/README.md) · [Training CNN](../../../training/README.md)
 - [OpenCV filtering](https://docs.opencv.org/4.x/d4/d13/tutorial_py_filtering.html) · [OpenCV CLAHE](https://docs.opencv.org/4.x/d5/daf/tutorial_py_histogram_equalization.html)

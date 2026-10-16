@@ -2,7 +2,7 @@
 
 > **Đích:** `ai/docs/guides/01-three-ai-pipelines-architecture.md`
 > **Áp dụng cho:** `ai/app/core/{vision, copilot, forecast}` — 3 domain AI engine
-> **Đọc trước khi sửa:** [`AI_CONVENTIONS.md`](../AI_CONVENTIONS.md) · [`README.md`](../../README.md)
+> **Đọc trước khi sửa:** [`AI_CONVENTIONS.md`](../../AI_CONVENTIONS.md) · [`README.md`](../../../README.md)
 > **Đối chiếu source:** 2026-09-19; chưa kiểm chứng runtime/benchmark.
 
 ---
@@ -18,13 +18,13 @@
 
 ## 🎯 Dành cho ai, đọc xong làm được gì
 
-Dev học hoặc xây AI cho IPLMS. Đọc xong phân biệt ba nghiệp vụ, lần theo dữ liệu qua các tầng và biết phần nào đã có code, phần nào cần triển khai. Giữ đường dẫn hai guide cũ theo yêu cầu; bố cục theo [guide-template](../../../docs/templates/guide-template.md).
+Dev học hoặc xây AI cho IPLMS. Đọc xong phân biệt ba nghiệp vụ, lần theo dữ liệu qua các tầng và biết phần nào đã có code, phần nào cần triển khai. Giữ đường dẫn hai guide cũ theo yêu cầu; bố cục theo [guide-template](../../../../docs/templates/guide-template.md).
 
 ## ☑️ Điều kiện trước khi bắt đầu (Prerequisites)
 
 - [ ] Hiểu request/response và phân biệt huấn luyện với suy luận.
-- [ ] Đọc [AI conventions](../AI_CONVENTIONS.md); chưa cần GPU để học luồng.
-- [ ] Khi chạy thật: chuẩn bị môi trường theo [AI README](../../README.md), weights và dữ liệu kiểm chứng.
+- [ ] Đọc [AI conventions](../../AI_CONVENTIONS.md); chưa cần GPU để học luồng.
+- [ ] Khi chạy thật: chuẩn bị môi trường theo [AI README](../../../README.md), weights và dữ liệu kiểm chứng.
 
 ## 🗺️ Bức tranh tổng quan
 
@@ -130,7 +130,7 @@ flowchart TD
 
 Nguồn: `ai/app/core/vision/engines/anpr_engine.py` (`run_anpr`). Đây là tám nhóm để học; kiểm tra hợp lệ thực tế diễn ra ngay sau mỗi lượt OCR. Điểm nhánh ảnh đầy đủ chỉ là OCR; chỉ nhánh crop/enhanced được chọn mới kết hợp detector × OCR.
 
-[GOTCHA] Selection không còn dùng độ dài. Dấu phân cách OCR quan sát được là bằng chứng, không phải ký tự engine tự chèn; đồng thuận giữa các nhánh cũng chưa phải xác suất đã calibration. `crop_bytes` vẫn có thể chứa ảnh đầy đủ khi nhánh full thắng. Xem [guide ảnh](./03-image-processing-pipeline.md) để hiểu giới hạn và phép đo before/after.
+[GOTCHA] Selection không còn dùng độ dài. Dấu phân cách OCR quan sát được là bằng chứng, không phải ký tự engine tự chèn; đồng thuận giữa các nhánh cũng chưa phải xác suất đã calibration. `crop_bytes` vẫn có thể chứa ảnh đầy đủ khi nhánh full thắng. Xem [guide ảnh](03-image-processing-pipeline.md) để hiểu giới hạn và phép đo before/after.
 
 ### 2.4. Bảng tham số kỹ thuật
 
@@ -275,7 +275,7 @@ flowchart LR
 Bản hiện tại đã có timeout/retry, transaction và kiểm tra source; còn nợ quản lý
 phiên bản tài liệu, idempotency theo nội dung và eval retrieval. Số chiều 1536
 được khóa với `text-embedding-3-small`; đổi model/số chiều phải migration và
-re-index toàn bộ. [Guide RAG](./02-rag-optimization-strategy.md) chia chi tiết
+re-index toàn bộ. [Guide RAG](02-rag-optimization-strategy.md) chia chi tiết
 **8 bước ingest và 9 bước query**, kèm chiến lược tối ưu và nghiệm thu.
 
 ### 3.4. Chi tiết Chunker — Thuật Toán Cắt Đoạn Thông Minh
@@ -496,11 +496,11 @@ Luật hướng phụ thuộc:
 
 ## 🔗 Tài Liệu Liên Quan
 
-- [`02-rag-optimization-strategy.md`](./02-rag-optimization-strategy.md) — Chiến lược tối ưu RAG chi tiết
-- [`03-image-processing-pipeline.md`](./03-image-processing-pipeline.md) — Lý thuyết xử lý ảnh ANPR
-- [`../AI_CONVENTIONS.md`](../AI_CONVENTIONS.md) — Luật viết code AI
-- [`../../README.md`](../../README.md) — Hướng dẫn chạy
-- [`../../../docs/guides/backend/grpc-nest-python-ai-integration.md`](../../../docs/guides/backend/grpc-nest-python-ai-integration.md) — Nối NestJS ⇄ Python
+- [`02-rag-optimization-strategy.md`](02-rag-optimization-strategy.md) — Chiến lược tối ưu RAG chi tiết
+- [`03-image-processing-pipeline.md`](03-image-processing-pipeline.md) — Lý thuyết xử lý ảnh ANPR
+- [`../AI_CONVENTIONS.md`](../../AI_CONVENTIONS.md) — Luật viết code AI
+- [`../../README.md`](../../../README.md) — Hướng dẫn chạy
+- [`../../../docs/guides/backend/grpc-nest-python-ai-integration.md`](../../../../docs/guides/backend/grpc-nest-python-ai-integration.md) — Nối NestJS ⇄ Python
 
-- [Forecast: dữ liệu, huấn luyện và kiểm chứng](./04-forecast-training-strategy.md)
-- [Worker, storage và vòng đời dữ liệu AI](./05-ai-workers-storage-and-training-lifecycle.md)
+- [Forecast: dữ liệu, huấn luyện và kiểm chứng](04-forecast-training-strategy.md)
+- [Worker, storage và vòng đời dữ liệu AI](05-ai-workers-storage-and-training-lifecycle.md)

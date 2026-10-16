@@ -1,6 +1,6 @@
 # 📘 [Guide] Tách module AI, RabbitMQ worker và vòng đời ảnh tới model
 
-> **Đích:** `ai/docs/guides/05-ai-workers-storage-and-training-lifecycle.md` · **Template:** [guide-template](../../../docs/templates/guide-template.md)
+> **Đích:** `ai/docs/guides/05-ai-workers-storage-and-training-lifecycle.md` · **Template:** [guide-template](../../../../docs/templates/guide-template.md)
 > **Loại nội dung:** phân tích hiện trạng và thiết kế triển khai từng phần. Đã có stable object reference cho ảnh ANPR và incremental data-lake export local; queue/job catalog end-to-end vẫn là bước sau.
 
 ## 📌 Meta
@@ -22,9 +22,9 @@ Dev cần biến các pipeline lý thuyết thành cấu trúc file và luồng 
 
 ## ☑️ Điều kiện trước khi bắt đầu (Prerequisites)
 
-- [ ] Đọc [Vision](./03-image-processing-pipeline.md), [RAG](./02-rag-optimization-strategy.md), [Forecast](./04-forecast-training-strategy.md).
-- [ ] Giữ quy tắc tầng trong [AI conventions](../AI_CONVENTIONS.md).
-- [ ] Dùng [ADR-0003](../../../docs/projects/adrs/09-2026/0003-duong-du-lieu-vision-tu-phien-do-toi-checkpoint.md) làm nền cho nhãn phân loại xe, test-golden và checkpoint có version.
+- [ ] Đọc [Vision](03-image-processing-pipeline.md), [RAG](02-rag-optimization-strategy.md), [Forecast](04-forecast-training-strategy.md).
+- [ ] Giữ quy tắc tầng trong [AI conventions](../../AI_CONVENTIONS.md).
+- [ ] Dùng [ADR-0003](../../../../docs/projects/adrs/09-2026/0003-duong-du-lieu-vision-tu-phien-do-toi-checkpoint.md) làm nền cho nhãn phân loại xe, test-golden và checkpoint có version.
 - [ ] Trước triển khai, chốt lưu lượng ảnh, dung lượng trung bình, thời hạn giữ, hạ tầng production và tài nguyên train. Chưa có số này thì chưa chốt dung lượng/chi phí.
 
 ## 🗺️ Bức tranh tổng quan
@@ -85,7 +85,7 @@ phải bằng chứng đã chạy production.
 | `ai/app/core/knowledge/services/ingestion_service.py` | Parse → chunk → embed → transaction đã có | Giữ một đường nghiệp vụ cho REST/gRPC |
 | `ai/training/train_imagefolder.py`, `ai/training/eval_plates.py` | Có code train CNN và đo ANPR | Tái sử dụng có kiểm chứng, không tạo một framework train song song |
 
-Tìm `outbox/Outbox` trong `backend/src` chưa thấy implementation. [PAT-001](../../../docs/practices/PAT-001-transactional-outbox.md) mô tả MassTransit/.NET, không phải chứng cứ NestJS hiện đã có outbox; cần thiết kế transaction TypeORM thực tế.
+Tìm `outbox/Outbox` trong `backend/src` chưa thấy implementation. [PAT-001](../../../../docs/practices/PAT-001-transactional-outbox.md) mô tả MassTransit/.NET, không phải chứng cứ NestJS hiện đã có outbox; cần thiết kế transaction TypeORM thực tế.
 
 ### Bước 2: Tách file theo trách nhiệm, không theo mỗi phép toán
 
@@ -419,12 +419,12 @@ Xoá ảnh nguồn không tự xoá ảnh hưởng đã học trong checkpoint. 
 
 ## 🔗 Liên quan
 
-- [Mục lục AI](./README.md) · [Ba pipeline](./01-three-ai-pipelines-architecture.md)
-- [RAG](./02-rag-optimization-strategy.md) · [Vision](./03-image-processing-pipeline.md) · [Forecast](./04-forecast-training-strategy.md)
-- [ADR-0003: từ phiên đỗ tới checkpoint](../../../docs/projects/adrs/09-2026/0003-duong-du-lieu-vision-tu-phien-do-toi-checkpoint.md)
-- [IDEA-007: active learning và Vision roadmap](../../../docs/ideas/09-2026/IDEA-007-vision-deep-dive-roadmap.md)
+- [Mục lục AI](../README.md) · [Ba pipeline](01-three-ai-pipelines-architecture.md)
+- [RAG](02-rag-optimization-strategy.md) · [Vision](03-image-processing-pipeline.md) · [Forecast](04-forecast-training-strategy.md)
+- [ADR-0003: từ phiên đỗ tới checkpoint](../../../../docs/projects/adrs/09-2026/0003-duong-du-lieu-vision-tu-phien-do-toi-checkpoint.md)
+- [IDEA-007: active learning và Vision roadmap](../../../../docs/ideas/09-2026/IDEA-007-vision-deep-dive-roadmap.md)
 - [RabbitMQ confirms/ACK](https://www.rabbitmq.com/docs/confirms) · [MinIO repository](https://github.com/minio/minio)
 - [Cloudinary access control](https://cloudinary.com/documentation/control_access_to_media) · [S3 lifecycle](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html)
-- [Bản đồ vòng đời `model/`](../../model/README.md) · [Quy ước dataset local](../../model/dataset/README.md)
-- [Google Colab training](./06-google-colab-training-runbook.md)
-- [Source map seed → data lake → cloud](./07-seed-datalake-cloud-source-map.md)
+- [Bản đồ vòng đời `model/`](../../../model/README.md) · [Quy ước dataset local](../../../model/dataset/README.md)
+- [Google Colab training](06-google-colab-training-runbook.md)
+- [Source map seed → data lake → cloud](07-seed-datalake-cloud-source-map.md)
