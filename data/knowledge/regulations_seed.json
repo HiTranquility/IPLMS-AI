@@ -7,13 +7,6 @@
     "parking_lot_id": "lot_landmark_81"
   },
   {
-    "category": "tariff",
-    "title": "Biểu Phí Gửi Xe Máy & Xe Đạp Điện",
-    "content": "Biểu phí gửi xe máy tại toàn bộ hệ thống bãi xe IPLMS:\n- Khung giờ ban ngày (06:00 - 22:00): 6.000 VNĐ / lượt (tối đa 4 tiếng), mỗi 4 tiếng tiếp theo cộng 4.000 VNĐ.\n- Khung giờ ban đêm (22:00 - 06:00): 15.000 VNĐ / lượt qua đêm.\n- Gói gửi xe tháng (Member VIP): 180.000 VNĐ / tháng (được cố định ô đỗ và tự động mở barrier bằng ANPR).",
-    "source": "Quy_dinh_xe_may_2026.pdf",
-    "parking_lot_id": null
-  },
-  {
     "category": "regulation",
     "title": "Quy Chế Xử Lý Tranh Chấp & Hoàn Tiền Khiếu Nại (Dispute Policy)",
     "content": "Điều 5 - Quy trình xử lý khiếu nại và hoàn phí:\n1. Trường hợp cảm biến barie hoặc hệ thống quét biển số (ANPR) gặp sự cố kỹ thuật dẫn đến chậm trễ lúc ra cổng > 10 phút, hệ thống tự động trừ thời gian trễ này khỏi tổng thời gian tính phí.\n2. Khách hàng có quyền tạo yêu cầu Khiếu nại (Dispute Ticket) trên ứng dụng trong vòng 48 giờ kể từ khi kết thúc phiên gửi.\n3. Trợ lý AI Copilot sẽ đối chiếu video log và thời gian thực để đề xuất hoàn tiền 100% phần phí chênh lệch do lỗi hệ thống vào ví IPLMS Wallet trong vòng 15 phút.",
@@ -46,6 +39,20 @@
     "title": "Khung Quy Định Vận Hành Mỗi Bãi Được Tự Đặt",
     "content": "Điều 10 - Phạm vi chủ bãi được tự quyết:\n- Chủ bãi đặt riêng cho bãi mình: thời gian ân hạn quá giờ, phụ phí quá giờ mỗi giờ, trần phụ phí mỗi lượt, ân hạn và mức phạt nhân viên vào ca trễ.\n- Mọi tham số đều bị kẹp trong khung cứng của nền tảng. Đặt vượt khung thì hệ thống tự kéo về giá trị hợp lệ gần nhất chứ không áp con số vượt trần.\n- Bãi không đặt gì riêng thì chạy theo mặc định nền tảng: ân hạn 15 phút, phụ phí 5.000 VNĐ/giờ, trần 50.000 VNĐ/lượt.\n- Thay đổi quy định chỉ áp dụng cho lượt đặt MỚI. Lượt đã đặt trước đó giữ nguyên điều kiện tại thời điểm đặt.\n- Khách có quyền yêu cầu đối chiếu mức phí đã công bố lúc đặt với mức bị thu lúc ra cổng; lệch nhau thì xử theo Điều 5 (khiếu nại & hoàn tiền).",
     "source": "Quy_dinh_van_hanh_bai_xe_dieu_10.pdf",
+    "parking_lot_id": null
+  },
+  {
+    "category": "regulation",
+    "title": "Quy_dinh_xe_may_2026.docx (Đoạn 1)",
+    "content": "Biểu Phí Gửi Xe Máy & Xe Đạp Điện\n\nBiểu phí gửi xe máy tại toàn bộ hệ thống bãi xe IPLMS:\n\n- Khung giờ ban ngày (06:00 - 22:00): 6.000 VNĐ / lượt (tối đa 4 tiếng), mỗi 4 tiếng tiếp theo cộng 4.000 VNĐ.\n\n- Khung giờ ban đêm (22:00 - 06:00): 15.000 VNĐ / lượt qua đêm.\n\n- Gói gửi xe tháng (Member VIP): 180.000 VNĐ / tháng (được cố định ô đỗ và tự động mở barrier bằng ANPR).",
+    "source": "Quy_dinh_xe_may_2026.docx",
+    "parking_lot_id": null
+  },
+  {
+    "category": "regulation",
+    "title": "Quy_dinh_xe_may_2026.pdf (Đoạn 1)",
+    "content": "BIỂỂU PHÍ GỬỬI XE MÁY & XE ĐẠP ĐIỆN\n==================================================\nBiểểu phí gửửi xe máy tại toàn bộ hệ thốống bãi xe IPLMS:\n- Khung giờ ban ngày (06:00 - 22:00): 6.000 VNĐ / lượt (tốối đa 4 tiếếng), mỗỗi 4 tiếếng\ntiếếp theo cộng 4.000 VNĐ.\n- Khung giờ ban đêm (22:00 - 06:00): 15.000 VNĐ / lượt qua đêm.\n- Gói gửửi xe tháng (Member VIP): 180.000 VNĐ / tháng (được cốố định ô đỗỗ và tự động mở ở\nbarrier bằng ANPR).",
+    "source": "Quy_dinh_xe_may_2026.pdf",
     "parking_lot_id": null
   }
 ]

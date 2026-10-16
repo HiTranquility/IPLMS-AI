@@ -94,7 +94,7 @@ async def ingest_document(
             document_id=str(res.document_id),
             status=res.status.value if hasattr(res.status, "value") else str(res.status),
             chunk_count=res.chunk_count,
-            duration_ms=res.duration_ms,
+            duration_ms=round(getattr(res, "process_time", 0.0) * 1000.0, 2),
             message=res.message,
         )
         msg = "Ingestion completed" if item.status == "SUCCESS" else f"Ingestion warning: {item.message}"
