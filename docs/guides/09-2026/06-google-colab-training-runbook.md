@@ -1,6 +1,6 @@
 # 📘 [Guide] Google Colab — train, resume và đưa model candidate về IPLMS
 
-> **Đích:** `ai/docs/guides/06-google-colab-training-runbook.md` · **Template:** [guide-template](../../../docs/templates/guide-template.md)
+> **Đích:** `ai/docs/guides/06-google-colab-training-runbook.md` · **Template:** [guide-template](../../../../docs/templates/guide-template.md)
 > **Loại nội dung:** runbook mục tiêu. Model artifact resolver đã triển khai; các script publish/materialize vẫn chưa có.
 
 ## 📌 Meta
@@ -25,7 +25,7 @@ code và cấu hình không nhạy cảm; backend/AI runtime chỉ dùng model v
 
 ## ☑️ Điều kiện trước khi bắt đầu (Prerequisites)
 
-- [ ] Đọc [bản đồ `model/`](../../model/README.md) và [vòng đời dữ liệu AI](./05-ai-workers-storage-and-training-lifecycle.md).
+- [ ] Đọc [bản đồ `model/`](../../../model/README.md) và [vòng đời dữ liệu AI](05-ai-workers-storage-and-training-lifecycle.md).
 - [ ] Có dataset snapshot đã duyệt, lock hash và private manifest; chưa dùng raw bucket đang thay đổi.
 - [ ] Sửa `train_imagefolder.py` để model lấy đúng 4 lớp/class mapping trước khi train `vehicle-cls`.
 - [ ] Có bucket/prefix riêng cho input snapshot, resumable checkpoint và model candidate.
@@ -251,7 +251,7 @@ trước khi tốn GPU cho run dài.
 
 ## 🔗 Liên quan
 
-- [Bản đồ `model/`](../../model/README.md) · [Dataset local](../../model/dataset/README.md)
-- [Worker, storage và lifecycle](./05-ai-workers-storage-and-training-lifecycle.md)
-- [Vision](./03-image-processing-pipeline.md) · [Forecast](./04-forecast-training-strategy.md)
+- [Bản đồ `model/`](../../../model/README.md) · [Dataset local](../../../model/dataset/README.md)
+- [Worker, storage và lifecycle](05-ai-workers-storage-and-training-lifecycle.md)
+- [Vision](03-image-processing-pipeline.md) · [Forecast](04-forecast-training-strategy.md)
 - [Google Colab FAQ](https://research.google.com/colaboratory/faq.html) · [Runtime versions](https://research.google.com/colaboratory/runtime-version-faq.html)

@@ -1,6 +1,6 @@
 # 📘 [Guide] RAG — lý thuyết, luồng dữ liệu và chiến lược tối ưu
 
-> **Đích:** `ai/docs/guides/02-rag-optimization-strategy.md` · **Template:** [guide-template](../../../docs/templates/guide-template.md)
+> **Đích:** `ai/docs/guides/02-rag-optimization-strategy.md` · **Template:** [guide-template](../../../../docs/templates/guide-template.md)
 > [MUST] Phân biệt **hiện trạng** và **đề xuất**. Các luồng hoàn chỉnh dưới đây chưa được triển khai end-to-end.
 
 ## 📌 Meta
@@ -20,7 +20,7 @@ RAG giống người tra sổ tay: **tìm đúng trang → đọc đúng điều
 
 ## ☑️ Điều kiện trước khi bắt đầu (Prerequisites)
 
-- [ ] Đọc [ba pipeline](./01-three-ai-pipelines-architecture.md).
+- [ ] Đọc [ba pipeline](01-three-ai-pipelines-architecture.md).
 - [ ] Có quy chế được phép sử dụng, biết bãi áp dụng và thời gian hiệu lực.
 - [ ] Chuẩn bị câu hỏi có đáp án và đoạn nguồn đúng, cả câu không có đáp án.
 - [ ] Khi triển khai: có embedding provider, DB thật, LLM thật; hiện các phần này còn thiếu.
@@ -46,13 +46,13 @@ flowchart TD
 
 | Thành phần | Hiện trạng | Điểm đọc source |
 |---|---|---|
-| Parser | Có validate, PDF/DOCX/TXT/MD; PDF scan không có text bị từ chối | [document_parser.py](../../app/core/knowledge/engines/document_parser.py), `parse_document` |
-| Chunker | Có chia heading/đoạn, overlap theo ký tự | [chunker.py](../../app/core/knowledge/engines/chunker.py), `chunk_text` |
-| Knowledge service | Có điều phối parse → chunk → embed → transaction | [ingestion_service.py](../../app/core/knowledge/services/ingestion_service.py), `ingest` |
-| Embedding | OpenAI client thật, batch/retry/timeout | [embedding_client.py](../../app/infra/embedding/embedding_client.py), `embed_texts` |
-| Vector store | psycopg2 thật, HNSW + full-text + RRF, scope theo bãi | [pgvector_client.py](../../app/infra/database/pgvector_client.py), `search_similar_chunks` |
-| RAG engine | Query embedding thật, abstain khi thiếu nguồn, stream Responses API | [rag_pipeline.py](../../app/core/copilot/engines/rag_pipeline.py), `query`, `stream_query` |
-| Public service | Q&A unary + stream thật; chỉ arbitration còn bị chặn | [copilot_service.py](../../app/core/copilot/services/copilot_service.py), `ask_question`, `stream_answer` |
+| Parser | Có validate, PDF/DOCX/TXT/MD; PDF scan không có text bị từ chối | [document_parser.py](../../../app/core/knowledge/engines/document_parser.py), `parse_document` |
+| Chunker | Có chia heading/đoạn, overlap theo ký tự | [chunker.py](../../../app/core/knowledge/engines/chunker.py), `chunk_text` |
+| Knowledge service | Có điều phối parse → chunk → embed → transaction | [ingestion_service.py](../../../app/core/knowledge/services/ingestion_service.py), `ingest` |
+| Embedding | OpenAI client thật, batch/retry/timeout | [embedding_client.py](../../../app/infra/embedding/embedding_client.py), `embed_texts` |
+| Vector store | psycopg2 thật, HNSW + full-text + RRF, scope theo bãi | [pgvector_client.py](../../../app/infra/database/pgvector_client.py), `search_similar_chunks` |
+| RAG engine | Query embedding thật, abstain khi thiếu nguồn, stream Responses API | [rag_pipeline.py](../../../app/core/copilot/engines/rag_pipeline.py), `query`, `stream_query` |
+| Public service | Q&A unary + stream thật; chỉ arbitration còn bị chặn | [copilot_service.py](../../../app/core/copilot/services/copilot_service.py), `ask_question`, `stream_answer` |
 
 Phần quản trị tài liệu từ NestJS và bộ eval vẫn là thiết kế cần hoàn thiện; đường
 ingest core và query đã có implementation. Xem PROB-035 ở repo gốc để biết rollout.
@@ -219,8 +219,8 @@ Lần chỉnh guide này chỉ đối chiếu source và cấu trúc tài liệu
 
 ## 🔗 Liên quan
 
-- [Ba pipeline](./01-three-ai-pipelines-architecture.md) · [Xử lý ảnh](./03-image-processing-pipeline.md) · [Forecast](./04-forecast-training-strategy.md)
-- [Worker, storage và vòng đời dữ liệu AI](./05-ai-workers-storage-and-training-lifecycle.md)
-- [IDEA-008: nạp tri thức](../../../docs/ideas/09-2026/IDEA-008-knowledge-ingestion-pipeline.md)
-- [ISSUE-004](../../../docs/projects/issues/09-2026/ISSUE-004-nap-lieu-tri-thuc-rag/issue.md)
+- [Ba pipeline](01-three-ai-pipelines-architecture.md) · [Xử lý ảnh](03-image-processing-pipeline.md) · [Forecast](04-forecast-training-strategy.md)
+- [Worker, storage và vòng đời dữ liệu AI](05-ai-workers-storage-and-training-lifecycle.md)
+- [IDEA-008: nạp tri thức](../../../../docs/ideas/09-2026/IDEA-008-knowledge-ingestion-pipeline.md)
+- [ISSUE-004](../../../../docs/projects/issues/09-2026/ISSUE-004-nap-lieu-tri-thuc-rag/issue.md)
 - [pgvector: index và filtering](https://github.com/pgvector/pgvector) — tài liệu tham chiếu; cần kiểm phiên bản thực tế trước áp dụng.

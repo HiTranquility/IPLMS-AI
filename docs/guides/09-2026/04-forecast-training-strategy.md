@@ -1,6 +1,6 @@
 # 📘 [Guide] Forecast — dữ liệu thời gian, huấn luyện và chiến lược xây dựng
 
-> **Đích:** `ai/docs/guides/04-forecast-training-strategy.md` · **Template:** [guide-template](../../../docs/templates/guide-template.md)
+> **Đích:** `ai/docs/guides/04-forecast-training-strategy.md` · **Template:** [guide-template](../../../../docs/templates/guide-template.md)
 > [MUST] Toàn bộ luồng học máy dưới đây là thiết kế đề xuất; service hiện chặn bằng `FeatureNotImplementedError`.
 
 ## 📌 Meta
@@ -23,7 +23,7 @@ Forecast học quan hệ giữa lịch sử và giá trị tương lai. RAG tìm
 - [ ] Có dữ liệu phiên vào/ra và sức chứa có hiệu lực theo thời gian.
 - [ ] Chốt timezone, khoảng thời gian dự báo, và occupancy tại một thời điểm hay trung bình một khoảng.
 - [ ] Có tập lịch sử đủ để đánh giá các khung giờ phục vụ; không mặc định vài ngày đủ cho mùa vụ tuần.
-- [ ] Đọc [ba pipeline](./01-three-ai-pipelines-architecture.md).
+- [ ] Đọc [ba pipeline](01-three-ai-pipelines-architecture.md).
 
 ## 🗺️ Bức tranh tổng quan
 
@@ -40,7 +40,7 @@ flowchart TD
     I --> J[Policy riêng xem xét giá đề xuất]
 ```
 
-Hiện trạng: [forecast_service.py](../../app/core/forecast/services/forecast_service.py):35 vẫn chặn dự báo; `occupancy_model.py` (đã xoá 2026-09-25) vẫn là công thức mô phỏng và không được phục vụ ra ngoài. Đường dữ liệu thật đã có bước đầu: `session_exporter.py` xuất incremental JSONL + manifest/checksum từ PostgreSQL, còn `occupancy_reader.py` dedup session và tính nhãn slot 30 phút theo khoảng nửa mở. Chưa có model/backtest nên không dùng dãy placeholder làm baseline chất lượng.
+Hiện trạng: [forecast_service.py](../../../app/core/forecast/services/forecast_service.py):35 vẫn chặn dự báo; `occupancy_model.py` (đã xoá 2026-09-25) vẫn là công thức mô phỏng và không được phục vụ ra ngoài. Đường dữ liệu thật đã có bước đầu: `session_exporter.py` xuất incremental JSONL + manifest/checksum từ PostgreSQL, còn `occupancy_reader.py` dedup session và tính nhãn slot 30 phút theo khoảng nửa mở. Chưa có model/backtest nên không dùng dãy placeholder làm baseline chất lượng.
 
 ### Hiện trạng runtime và dữ liệu 2026-09-20
 
@@ -311,7 +311,7 @@ cáo baseline production và service vẫn phải trả `UNIMPLEMENTED`.
 
 ## 🔗 Liên quan
 
-- [PROB-039: Forecast từ session đến model thật](../../../docs/problems/09-2026/PROB-039-forecast-tu-session-den-model-that.md)
-- [Ba pipeline](./01-three-ai-pipelines-architecture.md) · [RAG](./02-rag-optimization-strategy.md) · [Vision](./03-image-processing-pipeline.md)
-- [Worker, storage và vòng đời dữ liệu AI](./05-ai-workers-storage-and-training-lifecycle.md)
+- [PROB-039: Forecast từ session đến model thật](../../../../docs/problems/09-2026/PROB-039-forecast-tu-session-den-model-that.md)
+- [Ba pipeline](01-three-ai-pipelines-architecture.md) · [RAG](02-rag-optimization-strategy.md) · [Vision](03-image-processing-pipeline.md)
+- [Worker, storage và vòng đời dữ liệu AI](05-ai-workers-storage-and-training-lifecycle.md)
 - [scikit-learn: đánh giá chuỗi thời gian](https://scikit-learn.org/stable/modules/cross_validation.html#time-series-split)
