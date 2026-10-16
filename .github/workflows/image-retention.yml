@@ -1,0 +1,55 @@
+# ============================================================================
+# AI · Image retention — dọn version GHCR cũ (umbrella IPLMS ADR-0027 §Retention)
+#
+#   Giữ mãi : mọi version có tag khác sha-* (X.Y.Z, X.Y, main, develop, bí danh cũ)
+#   Xoá     : version chỉ có tag sha-*, cũ hơn 30 ngày VÀ ngoài 10 bản mới nhất,
+#             kèm manifest con (per-platform, SBOM, provenance) không còn ai tham chiếu
+#
+# Mặc định DRY RUN: chỉ ghi báo cáo vào job summary. Xoá thật khi chạy tay với
+# apply=true hoặc đặt repo variable GHCR_RETENTION_APPLY=true.
+# [GOTCHA] Repo cần quyền Admin trên package (Package settings → Manage Actions
+# access); Write chỉ đủ để push, không đủ để xoá.
+# ============================================================================
+name: AI · Image retention
+
+on:
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Delete for real (otherwise dry run)
+        type: boolean
+        default: false
+
+concurrency:
+  group: image-retention
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  retention:
+    name: Prune old sha-* images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout retention script
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          submodules: false
+
+      - name: Test retention planner
+        run: python3 -B -m unittest discover -s script -p test_ghcr_retention.py
+
+      - name: Prune GHCR versions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          PACKAGES: iplms-ai
+          APPLY: ${{ inputs.apply == true || vars.GHCR_RETENTION_APPLY == 'true' }}
+        run: python3 -B script/ghcr_retention.py
