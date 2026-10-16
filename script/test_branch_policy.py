@@ -103,6 +103,16 @@ class BranchPolicyTests(unittest.TestCase):
         path.write_text("| **Người báo / Ngày** | Codex / 2026-10-15 |", encoding="utf-8")
         self.assertTrue(validate(self.repo, self.config, self.branch, self.pr(created="2026-10-15")).startswith("VERIFIED_LOCAL"))
 
+    def test_bug_template_discovery_date(self):
+        # docs/templates/bug-template.md ghi ngày tạo dưới nhãn "Ngày phát hiện".
+        for label in ("Ngày phát hiện", "Ngày phát hiện / Người báo"):
+            path = self.repo / "docs/projects/bugs/bug-013-example/bug.md"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(f"| **{label}** | 2026-10-16 |", encoding="utf-8")
+            with self.subTest(label=label):
+                self.assertEqual(creation_month(path), "2026-10")
+                self.assertTrue(validate(self.repo, self.config, "bugfix/bug-013-2026-10-example").startswith("VERIFIED_LOCAL"))
+
     def test_traversal_wrong_folder_secret_path(self):
         for path in ("../.env", "docs/projects/bugs/ISSUE-013.md", "/docs/projects/issues/ISSUE-013.md",
                      "docs/projects/issues/SecretKeys/ISSUE-013.md", "docs/projects/issues/x-backup-y/ISSUE-013.md"):
