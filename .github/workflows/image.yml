@@ -9,7 +9,7 @@
 # "đang chạy mã nào" và rollback = đổi tag.
 # Action ghim theo commit SHA (tag có thể bị dời — supply-chain); Trivy ghim digest.
 # ============================================================================
-name: Image
+name: AI · Image
 
 on:
   pull_request:
@@ -32,7 +32,7 @@ env:
 
 jobs:
   image:
-    name: Build, scan, push
+    name: Build, scan and push image
     runs-on: ubuntu-latest
     permissions:
       contents: read
