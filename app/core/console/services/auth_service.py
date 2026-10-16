@@ -151,6 +151,7 @@ class ConsoleAuthService:
             mfa_done=session["mfa_at"] is not None,
             totp_enabled=session["totp_enabled"],
             step_up_at=session["step_up_at"],
+            totp_secret_set=session.get("totp_secret_enc") is not None,
         )
 
     async def authorize(self, raw: str, permission: str) -> ConsoleActor:

@@ -83,6 +83,7 @@ class ConsoleHttpFlowTest(unittest.TestCase):
 
         me = self.body(c.get("/console/api/me"))["data"][0]
         self.assertEqual((False, []), (me["mfa_done"], me["permissions"]))
+        self.assertEqual((False, True), (me["totp_enabled"], me["totp_pending"]))  # khoá từ CLI, chưa xác nhận
         invite = {"email": "lab@x.vn", "display_name": "Lab", "reason": "onboard lab"}
         r = c.post("/console/api/members", json=invite, headers=H)
         self.assertEqual((401, "MFA_REQUIRED"), (r.status_code, self.body(r)["code"]))
@@ -94,6 +95,7 @@ class ConsoleHttpFlowTest(unittest.TestCase):
 
         me = self.body(c.get("/console/api/me"))["data"][0]
         self.assertEqual(["ai:member:manage", "ai:audit:read"], me["permissions"])
+        self.assertEqual((True, False), (me["totp_enabled"], me["totp_pending"]))
 
         r = c.post("/console/api/members", json=invite, headers=H)
         self.assertEqual(200, r.status_code)
@@ -103,6 +105,10 @@ class ConsoleHttpFlowTest(unittest.TestCase):
         self.assertEqual(403, r.status_code)  # không tự cấp quyền cho mình
         r = c.post(f"/console/api/members/{new_id}/roles/ai_lead", json=reason, headers=H)
         self.assertEqual(True, self.body(r)["data"][0]["changed"])
+        members = {m["email"]: m["roles"] for m in self.body(c.get("/console/api/members"))["data"]}
+        self.assertEqual({"admin@x.vn": ["ai_console_admin"], "lab@x.vn": ["ai_lead"]}, members)
+        # Admin quản người, không đọc chat log (PROB-049 §3).
+        self.assertEqual(403, c.get("/console/api/copilot/turns").status_code)
 
         actions = {e["action"] for e in self.body(c.get("/console/api/audit"))["data"]}
         self.assertTrue({

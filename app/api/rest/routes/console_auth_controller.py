@@ -48,6 +48,8 @@ class Me(BaseModel):
     permissions: List[str]
     mfa_done: bool
     totp_enabled: bool
+    # Đã có khoá (từ CLI) nhưng chưa xác nhận: nhập mã luôn, không tạo khoá mới.
+    totp_pending: bool
 
 
 @router.get("/auth/google/start")
@@ -123,4 +125,5 @@ async def me(request: Request) -> BaseResponse[Me]:
         member_id=session.actor.member_id, email=session.email,
         display_name=session.display_name, roles=sorted(session.actor.roles),
         permissions=permissions, mfa_done=session.mfa_done, totp_enabled=session.totp_enabled,
+        totp_pending=session.totp_secret_set and not session.totp_enabled,
     )], "OK")
