@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🆕 New |
+| **Trạng thái** | ✅ Fixed 2026-10-17 — `/api/copilot/ask` đã bỏ ở IPLMS ADR-0050 (`ai@747ed19`); khi gộp `khoa-develop` (`ai@ff479f9`) giữ bản develop của `copilot_controller.py` (xoá) và `rag_pipeline.py`, không còn đường nhận API key từ client hay trả lời giả |
 | **Người báo** | Claude Code (khi rà nhánh `khoa-develop` cho [ISSUE-126](../../../../../docs/projects/issues/10-2026/ISSUE-126-ai-console-noi-bo/issue.md) ở repo gốc) |
 | **Môi trường** | Nhánh `origin/khoa-develop` @ `5f24a1f` (có từ `9a1aafd`, còn nguyên qua 4 commit mới ngày 2026-10-16). **`develop` đã sạch** (đã loại khi tích hợp IPLMS ISSUE-124 / PR AI#17) |
 | **Liên quan** | Phần fallback seed 0.88 đã ghi ở IPLMS AUDIT-008 (mục *Copilot fallback*); phần **mới** của bug này là `api_key_override` và rủi ro tái nhập khi gộp lại |
