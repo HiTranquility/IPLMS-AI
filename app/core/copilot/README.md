@@ -14,7 +14,8 @@ backend AiCopilotController (/v1/ai/copilot/stream — SSE; preview chỉ cho ng
                  │     Hybrid: cosine (≥0.35) + full-text 'simple' bỏ dấu, từ khoá OR → RRF k=60 → top 5
                  │     phạm vi: bãi + tài liệu chung; không có bãi → chỉ chung
                  │     góc nhìn: khách = bản PUBLISHED; preview = bản mới nhất của scope
-                 ├─ không có đoạn nào → trả câu "chưa tìm thấy…", KHÔNG gọi LLM
+                 ├─ không có đoạn nào, hoặc đoạn vector tốt nhất < AI_RAG_MIN_SIMILARITY
+                 │     (đoạn chỉ khớp keyword có similarity 0) → NO_CONTEXT "chưa tìm thấy…", KHÔNG gọi LLM
                  └─ infra/llm/llm_factory.stream_response / generate_response
                        Responses API, SYSTEM_PROMPT: chỉ trả lời từ ngữ cảnh, trích [Nguồn], store=False
             └─ engines/output_guard.py   chặn câu trả lời có "miễn phí/0đ", link, SĐT/STK không có trong
@@ -32,7 +33,7 @@ backend AiCopilotController (/v1/ai/copilot/stream — SSE; preview chỉ cho ng
 | File | Việc |
 |---|---|
 | `services/copilot_service.py` | Điểm vào nghiệp vụ; chặn arbitrate |
-| `engines/rag_pipeline.py` | Truy xuất → (không có ngữ cảnh thì dừng) → sinh câu trả lời; prompt + confidence |
+| `engines/rag_pipeline.py` | Truy xuất → (không có đoạn khớp nghĩa đạt ngưỡng thì dừng, dùng `guardrails.check_scope_and_chunks`) → sinh câu trả lời; prompt + confidence |
 | `engines/output_guard.py` | Kiểm đầu ra tất định chống prompt injection (PROB-046) |
 | `engines/dispute_workflow/{graph,nodes,state,dependencies}.py` | Khung LangGraph phân xử (chưa nối) |
 | `dtos/copilot_dto.py` | `AskQuestionRequest` (có `preview`), `CopilotAnswer`, `AnswerChunk` |
@@ -44,6 +45,14 @@ Tài liệu Copilot đọc được quản lý ở [core/knowledge](../knowledge
 **Chạy bằng Ollama trên máy dev (ISSUE-011):** cài Ollama, `ollama pull <model>`, rồi trong `ai/.env.dev`:
 `AI_LLM_BASE_URL=http://host.docker.internal:11434/v1` (ai chạy trong Docker; chạy thẳng trên máy thì `http://localhost:11434/v1`), `AI_LLM_MODEL=<model>`, `AI_LLM_API_KEY` để trống (tự dùng key giả). Hỏi đáp đi Responses API như OpenAI (Ollama ≥ v0.13.3); **JSON có cấu trúc** (AI đề xuất câu hỏi, giám khảo AI) tự chuyển sang Chat Completions + `response_format` vì Ollama không tài liệu hoá `text.format` ở `/v1/responses`. Embedding vẫn đi OpenAI trừ khi đặt `AI_EMBEDDING_BASE_URL` — đổi model embedding = nạp lại toàn bộ tài liệu (ISSUE-011 phase 2).
 
+
+**`AI_RAG_MIN_SIMILARITY` theo model embedding.** Một núm cho cả hai việc: lọc nhánh vector của tìm kiếm lai *và* cổng từ chối (đoạn vector tốt nhất dưới ngưỡng → NO_CONTEXT, không gọi LLM). Thang similarity khác nhau giữa các model, nên đổi model embedding là phải hiệu chỉnh lại: hiệu chỉnh trên `data/knowledge/eval_set.json`, kiểm trên `data/knowledge/eval_set_heldout.json` bằng `python -m app.script.eval_copilot_e2e --dataset … --out report.json` (cột `best_vector_similarity`). Số đo: IPLMS ISSUE-126 review-7.
+
+| Model embedding | Ngưỡng | Căn cứ |
+|---|---|---|
+| `bge-m3` (Ollama, 1024 chiều) | **0.55** | Chọn trên `eval_set` trước khi có held-out. Held-out 16 câu: giữ 9/9 câu có tài liệu, chặn 6/7 câu phải từ chối (câu lọt có similarity 0.555, sát câu có tài liệu thấp nhất 0.553) |
+| `text-embedding-3-small` (OpenAI, 1536 chiều — mặc định) | 0.35 *(chưa hiệu chỉnh)* | Chưa đo được (không gọi OpenAI trong lượt đo). Giữ mặc định cũ; chạy script trên trước khi nâng |
+| Model khác | — | Phải đo trước khi dùng |
 
 `AI_LLM_API_KEY`, `AI_LLM_MODEL` (mặc định `gpt-5.6-luna`), `AI_RAG_TOP_K=5`, `AI_RAG_MIN_SIMILARITY=0.35`, `AI_EMBEDDING_*`, `AI_DATABASE_URL` (ai-db pgvector). Test: `test_rag_pipeline.py`, `test_llm_factory.py`, `test_arbitrate_dispute.py`, `test_dispute_workflow.py`. Smoke: `python app/script/smoke_copilot_stream.py`. Bộ tấn công hồi quy (ADR-0029: đổi prompt/guard/model thì chạy lại): `python -m app.script.redteam_copilot -n 10` — gọi LLM thật `n × 8` lần.
 

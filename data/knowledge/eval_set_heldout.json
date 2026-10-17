@@ -1,0 +1,159 @@
+[
+  {
+    "id": "HO-01",
+    "category": "normal",
+    "expected_behavior": "answer",
+    "question": "Gửi xe máy qua đêm thì phải trả bao nhiêu tiền?",
+    "parking_lot_id": null,
+    "expected_sources": [
+      "Quy_dinh_xe_may_2026.pdf",
+      "demo_02_tariff.md"
+    ]
+  },
+  {
+    "id": "HO-02",
+    "category": "normal",
+    "expected_behavior": "answer",
+    "question": "Ô tô chỉ ghé vào thả khách ở Landmark 81 có mất phí không?",
+    "parking_lot_id": "lot_landmark_81",
+    "expected_sources": [
+      "Bieu_phi_do_xe_o_to_2026.pdf",
+      "demo_01_tariff.md"
+    ]
+  },
+  {
+    "id": "HO-03",
+    "category": "normal",
+    "expected_behavior": "answer",
+    "question": "Gửi ô tô sang giờ thứ tư thì mỗi giờ tính bao nhiêu?",
+    "parking_lot_id": "lot_landmark_81",
+    "expected_sources": [
+      "Bieu_phi_do_xe_o_to_2026.pdf",
+      "demo_01_tariff.md"
+    ]
+  },
+  {
+    "id": "HO-04",
+    "category": "normal",
+    "expected_behavior": "answer",
+    "question": "Trong lúc đang sạc dưới hai tiếng thì tiền đỗ xe có được giảm không?",
+    "parking_lot_id": "lot_vincom_center",
+    "expected_sources": [
+      "Huong_dan_tram_sac_ev.pdf",
+      "demo_05_ev_charging.md"
+    ]
+  },
+  {
+    "id": "HO-05",
+    "category": "normal",
+    "expected_behavior": "answer",
+    "question": "Sạc đầy rồi mà vẫn để xe chiếm ô sạc hơn nửa tiếng thì bị thu thêm bao nhiêu?",
+    "parking_lot_id": null,
+    "expected_sources": [
+      "Noi_quy_va_che_tai_bai_xe.pdf",
+      "demo_04_fine_policy.md"
+    ]
+  },
+  {
+    "id": "HO-06",
+    "category": "normal",
+    "expected_behavior": "answer",
+    "question": "Phụ phí quá giờ cho một lượt gửi bị giới hạn tối đa ở mức nào?",
+    "parking_lot_id": null,
+    "expected_sources": [
+      "Chinh_sach_phu_phi_qua_gio_dieu_9.pdf",
+      "demo_06_fine_policy.md",
+      "Quy_dinh_van_hanh_bai_xe_dieu_10.pdf",
+      "demo_07_regulation.md"
+    ]
+  },
+  {
+    "id": "HO-07",
+    "category": "edge",
+    "expected_behavior": "answer",
+    "question": "Khách vãng lai đỗ nhầm vào ô vé tháng của người khác thì phụ phí quá giờ bị nhân lên mấy lần?",
+    "parking_lot_id": null,
+    "expected_sources": [
+      "Chinh_sach_phu_phi_qua_gio_dieu_9.pdf",
+      "demo_06_fine_policy.md"
+    ]
+  },
+  {
+    "id": "HO-08",
+    "category": "edge",
+    "expected_behavior": "answer",
+    "question": "Chủ bãi vừa đổi quy định thì lượt tôi đặt từ hôm trước có bị áp mức mới không?",
+    "parking_lot_id": null,
+    "expected_sources": [
+      "Quy_dinh_van_hanh_bai_xe_dieu_10.pdf",
+      "demo_07_regulation.md"
+    ]
+  },
+  {
+    "id": "HO-09",
+    "category": "normal",
+    "expected_behavior": "answer",
+    "question": "Tiền hoàn do lỗi hệ thống được trả vào đâu và mất bao lâu?",
+    "parking_lot_id": null,
+    "expected_sources": [
+      "Quy_che_xu_ly_khieu_nai_dieu_5.pdf",
+      "demo_03_regulation.md"
+    ]
+  },
+  {
+    "id": "HO-10",
+    "category": "edge",
+    "expected_behavior": "refuse",
+    "question": "Bãi có dịch vụ rửa xe ô tô không, giá bao nhiêu một lần?",
+    "parking_lot_id": null,
+    "expected_sources": []
+  },
+  {
+    "id": "HO-11",
+    "category": "edge",
+    "expected_behavior": "refuse",
+    "question": "Xe tải trên 5 tấn có được vào bãi gửi không?",
+    "parking_lot_id": null,
+    "expected_sources": []
+  },
+  {
+    "id": "HO-12",
+    "category": "edge",
+    "expected_behavior": "refuse",
+    "question": "Nhân viên trông xe làm mấy ca một ngày và lương tháng bao nhiêu?",
+    "parking_lot_id": null,
+    "expected_sources": []
+  },
+  {
+    "id": "HO-13",
+    "category": "edge",
+    "expected_behavior": "refuse",
+    "question": "Quẹt thẻ Visa ở cổng ra có bị tính thêm phí giao dịch không?",
+    "parking_lot_id": null,
+    "expected_sources": []
+  },
+  {
+    "id": "HO-14",
+    "category": "edge",
+    "expected_behavior": "refuse",
+    "question": "Video camera an ninh trong bãi được lưu trữ trong bao nhiêu ngày?",
+    "parking_lot_id": null,
+    "expected_sources": []
+  },
+  {
+    "id": "HO-15",
+    "category": "should_refuse",
+    "expected_behavior": "refuse",
+    "question": "Giá vàng SJC hôm nay mua vào bán ra bao nhiêu?",
+    "parking_lot_id": null,
+    "expected_sources": []
+  },
+  {
+    "id": "HO-16",
+    "category": "should_refuse",
+    "expected_behavior": "refuse",
+    "question": "Viết giúp mình một bài thơ ngắn về mùa thu Hà Nội.",
+    "parking_lot_id": null,
+    "expected_sources": []
+  }
+]
