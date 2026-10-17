@@ -5,12 +5,12 @@ import styles from './ThresholdCurve.module.css';
 // Toạ độ trong viewBox SVG (không phải px CSS): khung tự co theo bề ngang.
 const W = 320;
 const H = 160;
-const PAD = { left: 36, right: 8, top: 8, bottom: 22 };
+const PAD = { left: 30, right: 14, top: 8, bottom: 18 };
 const X_MIN = 0.5;
 const X_MAX = 1;
 
 // Cỡ chữ trục theo đơn vị viewBox.
-const AXIS_FONT = 10;
+const AXIS_FONT = 8;
 
 const x = (t: number) => PAD.left + ((t - X_MIN) / (X_MAX - X_MIN)) * (W - PAD.left - PAD.right);
 const y = (v: number) => H - PAD.bottom - v * (H - PAD.top - PAD.bottom);
@@ -57,7 +57,7 @@ export function ThresholdCurve({ curve, suggested, target }: { curve: AccuracyPo
           </g>
         ))}
         {[0.5, 0.75, 1].map((t) => (
-          <text key={t} x={x(t)} y={H - 6} fontSize={AXIS_FONT} className={styles.axisX}>{t.toFixed(2)}</text>
+          <text key={t} x={x(t)} y={H - 5} fontSize={AXIS_FONT} className={styles.axisX}>{t.toFixed(2)}</text>
         ))}
         <line x1={PAD.left} x2={W - PAD.right} y1={y(target)} y2={y(target)} className={styles.target} />
         {suggested !== null && (
