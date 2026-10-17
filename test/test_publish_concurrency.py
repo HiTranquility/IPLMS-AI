@@ -68,7 +68,7 @@ class PublishConcurrencyTest(unittest.TestCase):
                 (run_id, case_id),
             )
 
-        def validate(latest, ids, cases, review, unpublished, active_profile_id):
+        def validate(latest, ids, cases, review, unpublished, active_profile_id, flagged):
             reasons = []
             if latest["docs_fingerprint"] != fingerprint(ids):
                 reasons.append("document changed")
