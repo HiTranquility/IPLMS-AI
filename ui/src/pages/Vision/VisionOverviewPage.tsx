@@ -4,6 +4,7 @@ import { Button } from '@/components/common/Ui/button/Button';
 import { Badge } from '@/components/common/Ui/data-display/Badge';
 import { Stat } from '@/components/common/Ui/data-display/Stat';
 import table from '@/components/common/Ui/data-display/table.module.css';
+import { ThresholdCurve } from '@/components/common/Ui/data-display/ThresholdCurve';
 import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
 import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
 import { TextField } from '@/components/common/Ui/form/Field';
@@ -30,6 +31,7 @@ function AccuracySection({ report }: { report: AccuracyReport }) {
         <Stat label="Mẫu audit có nhãn người" value={fmtInt(report.total)} hint={`${fmtInt(report.truth_sources.console)} console · ${fmtInt(report.truth_sources.moderator)} moderator`} />
         <Stat label="Ngưỡng đề xuất" value={report.suggested_threshold?.toFixed(2) ?? DASH} hint={report.suggestion_reason} />
       </dl>
+      {report.total > 0 && <ThresholdCurve curve={report.curve} suggested={report.suggested_threshold} target={report.target} />}
       {report.total > 0 && (
         <div className={table.wrap}>
           <table className={table.table}>
