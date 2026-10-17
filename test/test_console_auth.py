@@ -154,7 +154,7 @@ class FakeStore:
         self.members[member_id] = {
             "id": member_id, "email": email, "status": status, "google_sub": None,
             "password_hash": password_hash, "totp_secret_enc": None, "totp_enabled": False,
-            "last_step": -1, "roles": list(roles),
+            "last_step": -1, "roles": list(roles), "password_failures": 0, "password_locked": False,
         }
         return member_id
 
@@ -171,7 +171,8 @@ class FakeStore:
         for m in self.members.values():
             if m["email"].lower() == email.lower():
                 return {k: m[k] for k in (
-                    "id", "status", "google_sub", "password_hash", "totp_secret_enc", "totp_enabled")}
+                    "id", "status", "google_sub", "password_hash", "totp_secret_enc", "totp_enabled",
+                    "password_locked")}
         return None
 
     async def open_session(self, member_id, token_hash, method, google_sub=None):
@@ -184,7 +185,10 @@ class FakeStore:
         self.sessions[token_hash] = {
             "session_id": f"s{len(self.sessions) + 1}", "member_id": member_id, "created_at": now,
             "last_seen_at": now, "mfa_at": None, "step_up_at": None, "revoked_at": None,
+            "totp_failures": 0,
         }
+        if method == "password":
+            member["password_failures"] = 0
         self.audit.append(f"auth.login:{method}")
 
     def _by_id(self, session_id):
@@ -217,6 +221,22 @@ class FakeStore:
 
     async def revoke_session(self, session_id, member_id):
         self._by_id(session_id)["revoked_at"] = self.clock()
+
+    async def fail_totp(self, session_id, member_id, max_failures):
+        s = self._by_id(session_id)
+        s["totp_failures"] += 1
+        if s["totp_failures"] >= max_failures:
+            s["revoked_at"] = s["revoked_at"] or self.clock()
+            self.audit.append("auth.totp_locked")
+            return True
+        return False
+
+    async def fail_password(self, member_id, max_failures, lock_minutes):
+        member = self.members[member_id]
+        member["password_failures"] += 1
+        if member["password_failures"] >= max_failures:
+            member.update(password_failures=0, password_locked=True)
+            self.audit.append("auth.password_locked")
 
 
 class FakeGoogle:
@@ -362,6 +382,33 @@ class ConsoleAuthServiceTest(unittest.TestCase):
         with self.assertRaises(ConsoleAuthError) as err:
             run(self.service.resolve(raw))
         self.assertEqual("MFA_REQUIRED", self.code(err))
+
+    def test_wrong_totp_five_times_revokes_session(self):
+        self.store.add_member("lead@x.vn")
+        raw = self.login_google()
+        run(self.service.totp_enrollment_uri(raw))
+        for _ in range(4):
+            with self.assertRaises(ConsoleAuthError) as err:
+                run(self.service.verify_totp(raw, "000000"))
+            self.assertEqual("TOTP_INVALID", self.code(err))
+        with self.assertRaises(ConsoleAuthError) as err:
+            run(self.service.verify_totp(raw, "000000"))
+        self.assertEqual("TOO_MANY_ATTEMPTS", self.code(err))
+        with self.assertRaises(ConsoleAuthError) as err:
+            run(self.service.resolve(raw, require_mfa=False))
+        self.assertEqual("SESSION_REVOKED", self.code(err))
+        self.assertIn("auth.totp_locked", self.store.audit)
+
+    def test_wrong_password_five_times_locks_even_correct_password(self):
+        self.store.add_member("admin@x.vn", roles=["ai_console_admin"],
+                              password_hash=hash_password("mật-khẩu-đủ-dài"))
+        for _ in range(5):
+            with self.assertRaises(ConsoleAuthError):
+                run(self.service.password_login("admin@x.vn", "sai"))
+        self.assertIn("auth.password_locked", self.store.audit)
+        with self.assertRaises(ConsoleAuthError) as err:
+            run(self.service.password_login("admin@x.vn", "mật-khẩu-đủ-dài"))
+        self.assertEqual(str(err.exception), "Email hoặc mật khẩu không đúng.")
 
     def test_logout_revokes(self):
         self.store.add_member("lead@x.vn")

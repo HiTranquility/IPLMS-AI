@@ -125,6 +125,7 @@ class ConsoleStore:
         for column in (
             "google_sub VARCHAR(255)", "password_hash TEXT", "totp_secret_enc TEXT",
             "totp_enabled_at TIMESTAMPTZ", "totp_last_step BIGINT",
+            "password_failures INT NOT NULL DEFAULT 0", "password_locked_until TIMESTAMPTZ",
         ):
             cur.execute(f"ALTER TABLE console_member ADD COLUMN IF NOT EXISTS {column}")
         cur.execute(
@@ -158,6 +159,9 @@ class ConsoleStore:
                 step_up_at TIMESTAMPTZ,
                 revoked_at TIMESTAMPTZ
             )"""
+        )
+        cur.execute(
+            "ALTER TABLE console_session ADD COLUMN IF NOT EXISTS totp_failures INT NOT NULL DEFAULT 0"
         )
         cur.execute(
             """CREATE TABLE IF NOT EXISTS console_auth_flow (
@@ -351,7 +355,8 @@ class ConsoleStore:
         def work(cur):
             cur.execute(
                 """SELECT id::text, status, google_sub, password_hash, totp_secret_enc,
-                          totp_enabled_at IS NOT NULL
+                          totp_enabled_at IS NOT NULL,
+                          COALESCE(password_locked_until > NOW(), FALSE)
                    FROM console_member WHERE LOWER(email) = LOWER(%s)""",
                 (email,),
             )
@@ -361,6 +366,7 @@ class ConsoleStore:
             return {
                 "id": row[0], "status": row[1], "google_sub": row[2],
                 "password_hash": row[3], "totp_secret_enc": row[4], "totp_enabled": row[5],
+                "password_locked": row[6],
             }
 
         return await self._run(work)
@@ -379,6 +385,12 @@ class ConsoleStore:
                 )
                 if not cur.fetchone():
                     raise ConsoleAuthError("Tài khoản Google không khớp thành viên đã đăng ký.")
+            if method == "password":
+                cur.execute(
+                    "UPDATE console_member SET password_failures = 0, password_locked_until = NULL "
+                    "WHERE id = %s",
+                    (member_id,),
+                )
             session_id = str(uuid4())
             cur.execute(
                 "INSERT INTO console_session (id, token_hash, member_id) VALUES (%s, %s, %s)",
@@ -460,6 +472,45 @@ class ConsoleStore:
                 _audit(cur, member_id, "auth.step_up", "session", session_id, step_up_reason)
 
         await self._run(work)
+
+    async def fail_password(self, member_id: str, max_failures: int, lock_minutes: int) -> None:
+        """Đếm lần sai mật khẩu; tới ngưỡng thì khoá đăng nhập mật khẩu một lúc và ghi audit."""
+        def work(cur):
+            cur.execute(
+                """UPDATE console_member
+                   SET password_failures = password_failures + 1,
+                       password_locked_until = CASE WHEN password_failures + 1 >= %s
+                           THEN NOW() + make_interval(mins => %s) ELSE password_locked_until END
+                   WHERE id = %s RETURNING password_failures""",
+                (max_failures, lock_minutes, member_id),
+            )
+            row = cur.fetchone()
+            if row and row[0] >= max_failures:
+                cur.execute("UPDATE console_member SET password_failures = 0 WHERE id = %s", (member_id,))
+                _audit(cur, member_id, "auth.password_locked", "member", member_id,
+                       f"sai mật khẩu {max_failures} lần")
+
+        await self._run(work)
+
+    async def fail_totp(self, session_id: str, member_id: str, max_failures: int) -> bool:
+        """Đếm lần sai TOTP trong phiên; tới ngưỡng thì thu hồi phiên. Trả True nếu đã thu hồi."""
+        def work(cur):
+            cur.execute(
+                """UPDATE console_session
+                   SET totp_failures = totp_failures + 1,
+                       revoked_at = CASE WHEN totp_failures + 1 >= %s
+                           THEN COALESCE(revoked_at, NOW()) ELSE revoked_at END
+                   WHERE id = %s RETURNING totp_failures""",
+                (max_failures, session_id),
+            )
+            row = cur.fetchone()
+            revoked = bool(row and row[0] >= max_failures)
+            if revoked:
+                _audit(cur, member_id, "auth.totp_locked", "session", session_id,
+                       f"sai TOTP {max_failures} lần")
+            return revoked
+
+        return await self._run(work)
 
     async def revoke_session(self, session_id: str, member_id: str) -> None:
         def work(cur):
