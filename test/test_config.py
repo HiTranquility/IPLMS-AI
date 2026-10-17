@@ -52,8 +52,12 @@ class DatalakeConfigTest(unittest.TestCase):
         self.assertGreater(config.occupancy_slot_minutes, 0)
 
     def test_operational_database_is_not_implicitly_the_copilot_database(self):
-        config = DatalakeConfig()
-        self.assertEqual(config.source_database_url, "")
+        import os
+        from unittest.mock import patch
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("AI_DATALAKE_SOURCE_DATABASE_URL", None)
+            config = DatalakeConfig(_env_file=None)
+            self.assertEqual(config.source_database_url, "")
 
 
 class WorkflowConfigTest(unittest.TestCase):
