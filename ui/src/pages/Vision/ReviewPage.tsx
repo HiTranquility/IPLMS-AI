@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { useDecideLabel, useReviewQueue } from '@/hooks/useVision';
 import { DASH, fmtDateTime, fmtPercent } from '@/utils/format';
 import { VERDICT_LABEL } from './labels';
-import styles from './Vision.module.css';
+import styles from './vision.module.css';
 
 function proposed(item: ReviewItem): string {
   if (item.label.verdict === 'CORRECTED') return item.label.plate_text;

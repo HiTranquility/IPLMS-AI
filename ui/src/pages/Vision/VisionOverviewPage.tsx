@@ -3,7 +3,7 @@ import type { AccuracyReport } from '@/api/types';
 import { Button } from '@/components/common/Ui/button/Button';
 import { Badge } from '@/components/common/Ui/data-display/Badge';
 import { Stat } from '@/components/common/Ui/data-display/Stat';
-import table from '@/components/common/Ui/data-display/Table.module.css';
+import table from '@/components/common/Ui/data-display/table.module.css';
 import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
 import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
 import { TextField } from '@/components/common/Ui/form/Field';
@@ -13,7 +13,7 @@ import { useCan, useMe } from '@/hooks/useConsole';
 import { useAccuracy, useDecidePolicy, usePolicies, useProposePolicy, useVisionStatus } from '@/hooks/useVision';
 import { DASH, fmtDateTime, fmtInt, fmtPercent } from '@/utils/format';
 import { POLICY_LABEL, POLICY_TONE } from './labels';
-import styles from './Vision.module.css';
+import styles from './vision.module.css';
 
 const SHOWN_THRESHOLDS = new Set([0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.99]);
 

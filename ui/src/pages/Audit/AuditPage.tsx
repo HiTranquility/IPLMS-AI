@@ -1,5 +1,5 @@
 import { ScrollText } from 'lucide-react';
-import table from '@/components/common/Ui/data-display/Table.module.css';
+import table from '@/components/common/Ui/data-display/table.module.css';
 import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
 import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
 import { PageHeader } from '@/components/layout/PageHeader';

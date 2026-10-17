@@ -14,13 +14,16 @@ Trạng thái: thiết kế hiện hành của P1c (IPLMS ISSUE-126), 2026-10-16
 ```text
 src/
   api/          client.ts (fetch + envelope + ApiError), console.ts (endpoint), types.ts, queryKeys.ts
-  hooks/        useConsole.ts — mọi useQuery/useMutation, queryKey lấy từ QUERY_KEYS
+  hooks/        useConsole.ts, useVision.ts — mọi useQuery/useMutation, queryKey lấy từ QUERY_KEYS
   components/
-    common/Ui/{button,data-display,feedback,form}/   component có props
-    common/Shared/                                   màn hình tĩnh (Forbidden, NotFound)
-    layout/                                          AppShell (rail trái), PageHeader, navigation
-  pages/{auth,overview,copilot,members,audit}/
+    common/Ui/{button,data-display,feedback,form,media}/   component có props
+    common/Shared/                                         màn hình tĩnh (Forbidden, NotFound)
+    layout/                                                AppShell (rail trái), PageHeader, navigation
+  pages/{Auth,Overview,Copilot,Members,Audit,Vision}/
+  test/         setup + helper giả fetch
 ```
+
+Đặt tên khớp `frontend` (`packages/platform/src/pages/Common/Auth`): thư mục page `PascalCase`; component/page `PascalCase.tsx` + `PascalCase.module.css` đặt cạnh; CSS dùng chung cả thư mục viết thường (`auth.module.css`, `vision.module.css`, `Ui/data-display/table.module.css`); helper `camelCase.ts`.
 
 Theo cùng luật `Shared/` vs `Ui/<nhóm>/` của `frontend/` (IPLMS PAT-006). Primitive chép từ `@iplms/shared` ghi nguồn ở đầu file (`frontend@b4eaa5c`); `Button` bỏ bóng màu và hiệu ứng nhấc nút cho đúng luật "không glow".
 

@@ -5,7 +5,7 @@ import { Button } from '@/components/common/Ui/button/Button';
 import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
 import { TextField } from '@/components/common/Ui/form/Field';
 import { useEnrollTotp, useLogout, useVerifyTotp } from '@/hooks/useConsole';
-import styles from './Auth.module.css';
+import styles from './auth.module.css';
 
 /** Lấy secret từ otpauth URI để nhập tay (console không thêm lib QR — ít phụ thuộc, 0 CDN). */
 export function secretFromUri(uri: string): string {

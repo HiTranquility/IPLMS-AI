@@ -5,7 +5,7 @@ import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
 import { TextArea } from '@/components/common/Ui/form/Field';
 import { useReviewTurn } from '@/hooks/useConsole';
 import { VERDICT_LABEL } from './labels';
-import styles from './CopilotLabPage.module.css';
+import styles from './ReviewForm.module.css';
 
 const VERDICTS: Verdict[] = ['CORRECT', 'INCORRECT', 'UNSAFE'];
 

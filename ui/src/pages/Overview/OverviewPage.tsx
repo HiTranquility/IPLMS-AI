@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { ReviewStats, UsageSummary } from '@/api/types';
 import { Segmented } from '@/components/common/Ui/button/Segmented';
 import { Stat } from '@/components/common/Ui/data-display/Stat';
-import table from '@/components/common/Ui/data-display/Table.module.css';
+import table from '@/components/common/Ui/data-display/table.module.css';
 import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
 import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
 import { PageHeader } from '@/components/layout/PageHeader';

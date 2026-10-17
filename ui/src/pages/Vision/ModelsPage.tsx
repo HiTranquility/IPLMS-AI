@@ -3,7 +3,7 @@ import { useState, type FormEvent } from 'react';
 import type { EvalRun } from '@/api/types';
 import { Button } from '@/components/common/Ui/button/Button';
 import { Badge } from '@/components/common/Ui/data-display/Badge';
-import table from '@/components/common/Ui/data-display/Table.module.css';
+import table from '@/components/common/Ui/data-display/table.module.css';
 import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
 import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
 import { SelectField, TextField } from '@/components/common/Ui/form/Field';
@@ -13,7 +13,7 @@ import { useCan, useMe } from '@/hooks/useConsole';
 import { useEvals, useModels, usePromoteModel, useProposeModel, useRegisterModel, useSnapshots, useStartEval } from '@/hooks/useVision';
 import { DASH, fmtDateTime, fmtInt, fmtPercent } from '@/utils/format';
 import { STAGE_LABEL, STAGE_TONE } from './labels';
-import styles from './Vision.module.css';
+import styles from './vision.module.css';
 
 const EVAL_TONE = { RUNNING: 'warning', DONE: 'success', FAILED: 'danger' } as const;
 

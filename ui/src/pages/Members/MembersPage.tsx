@@ -3,7 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { ROLES, type Member } from '@/api/types';
 import { Button } from '@/components/common/Ui/button/Button';
 import { Badge } from '@/components/common/Ui/data-display/Badge';
-import table from '@/components/common/Ui/data-display/Table.module.css';
+import table from '@/components/common/Ui/data-display/table.module.css';
 import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
 import { SelectField, TextField } from '@/components/common/Ui/form/Field';
 import { PageHeader } from '@/components/layout/PageHeader';

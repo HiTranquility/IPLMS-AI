@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { useAddLabel, useLabelQueue } from '@/hooks/useVision';
 import { DASH, fmtPercent } from '@/utils/format';
 import { REASON_LABEL } from './labels';
-import styles from './Vision.module.css';
+import styles from './vision.module.css';
 
 function LabelForm({ sample, remaining }: { sample: VisionSample; remaining: number }) {
   const add = useAddLabel();

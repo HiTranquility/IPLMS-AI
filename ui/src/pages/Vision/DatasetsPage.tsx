@@ -2,7 +2,7 @@ import { Database, Lock } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Button } from '@/components/common/Ui/button/Button';
 import { Badge } from '@/components/common/Ui/data-display/Badge';
-import table from '@/components/common/Ui/data-display/Table.module.css';
+import table from '@/components/common/Ui/data-display/table.module.css';
 import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
 import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
 import { SelectField, TextField } from '@/components/common/Ui/form/Field';
@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { useCan } from '@/hooks/useConsole';
 import { useCreateSnapshot, useFreezeSnapshot, useSnapshots } from '@/hooks/useVision';
 import { fmtDateTime, fmtInt } from '@/utils/format';
-import styles from './Vision.module.css';
+import styles from './vision.module.css';
 
 function CreateSnapshot() {
   const create = useCreateSnapshot();

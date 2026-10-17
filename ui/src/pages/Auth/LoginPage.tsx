@@ -6,7 +6,7 @@ import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
 import { TextField } from '@/components/common/Ui/form/Field';
 import { usePasswordLogin } from '@/hooks/useConsole';
 import { loginErrorMessage } from './loginErrors';
-import styles from './Auth.module.css';
+import styles from './auth.module.css';
 
 export function LoginPage() {
   const login = usePasswordLogin();
