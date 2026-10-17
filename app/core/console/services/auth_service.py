@@ -20,6 +20,9 @@ from app.infra.identity.password import verify_password
 from app.infra.identity.totp import TotpVault
 
 _LOGIN_FAILED = "Email hoặc mật khẩu không đúng."
+# Chặn dò mã: TOTP 6 số, mật khẩu khẩn cấp — console chỉ nội bộ nhưng vẫn không cho thử vô hạn.
+MAX_AUTH_FAILURES = 5
+PASSWORD_LOCK_MINUTES = 15
 
 
 def token_hash(raw: str) -> str:
@@ -88,8 +91,11 @@ class ConsoleAuthService:
         member = await self.store.get_login_member((email or "").strip())
         if (
             member is None or member["status"] == "DISABLED" or not member["password_hash"]
-            or not verify_password(member["password_hash"], password or "")
+            or member.get("password_locked")
         ):
+            raise ConsoleAuthError(_LOGIN_FAILED)
+        if not verify_password(member["password_hash"], password or ""):
+            await self.store.fail_password(member["id"], MAX_AUTH_FAILURES, PASSWORD_LOCK_MINUTES)
             raise ConsoleAuthError(_LOGIN_FAILED)
         return await self._open(member["id"], "password")
 
@@ -128,6 +134,10 @@ class ConsoleAuthService:
         vault = self._totp()
         step = vault.match_step(vault.decrypt(session["totp_secret_enc"]), code)
         if step is None:
+            if await self.store.fail_totp(session["session_id"], session["member_id"], MAX_AUTH_FAILURES):
+                raise ConsoleAuthError(
+                    "Sai mã quá nhiều lần — phiên đã bị huỷ, hãy đăng nhập lại.", "TOO_MANY_ATTEMPTS"
+                )
             raise ConsoleAuthError("Mã xác thực không đúng.", "TOTP_INVALID")
         await self.store.accept_totp(session["member_id"], session["session_id"], step, reason)
 
