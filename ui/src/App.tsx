@@ -9,6 +9,7 @@ import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
 import { AppShell } from '@/components/layout/AppShell';
 import { allowed, NAV_ITEMS } from '@/components/layout/navigation';
 import { useMe } from '@/hooks/useConsole';
+import { useI18n } from '@/i18n/I18nProvider';
 import { AuditPage } from '@/pages/Audit/AuditPage';
 import { LoginPage } from '@/pages/Auth/LoginPage';
 import { MfaPage } from '@/pages/Auth/MfaPage';
@@ -29,16 +30,18 @@ function Guard({ me, permission, children }: { me: Me; permission: Permission | 
 
 /** Trang chủ = mục đầu tiên vai trò được xem (admin console không có số liệu Copilot). */
 function Home({ me }: { me: Me }) {
+  const { t } = useI18n();
   if (me.permissions.includes('ai:metrics:read')) return <OverviewPage />;
   const first = NAV_ITEMS.find((item) => allowed(item, me.permissions));
   if (first) return <Navigate to={first.to} replace />;
-  return <EmptyState title="Tài khoản chưa có vai trò" description="Nhờ quản trị console cấp vai trò phù hợp với việc bạn làm." />;
+  return <EmptyState title={t.app.noRoleTitle} description={t.app.noRoleDesc} />;
 }
 
 export function App() {
+  const { t } = useI18n();
   const me = useMe();
 
-  if (me.isPending) return <Loading label="Đang kiểm tra phiên…" />;
+  if (me.isPending) return <Loading label={t.app.checkingSession} />;
   if (me.error) {
     if (me.error instanceof ApiError && me.error.status === 401) return <LoginPage />;
     return <ErrorBlock error={me.error} onRetry={() => void me.refetch()} />;

@@ -8,3 +8,4 @@
 .error > svg { color: var(--color-danger); flex: none; margin-top: 2px; }
 .body { flex: 1; }
 .code { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-muted); }
+.detail { font-size: var(--text-xs); color: var(--color-muted); }
