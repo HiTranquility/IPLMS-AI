@@ -92,6 +92,10 @@ class KnowledgeDocumentSummary:
     # Phiên bản khách đang thấy; 0 = khách chưa thấy tài liệu này.
     published_version_no: int = 0
 
+    @property
+    def duration_ms(self) -> float:
+        return round(self.process_time * 1000.0, 2)
+
 
 class KnowledgeDocumentItem(BaseModel):
     """1 phần tử trong payload REST `/api/knowledge/*` — hợp đồng với công cụ vận hành."""
