@@ -9,17 +9,17 @@ import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
 import { AppShell } from '@/components/layout/AppShell';
 import { allowed, NAV_ITEMS } from '@/components/layout/navigation';
 import { useMe } from '@/hooks/useConsole';
-import { AuditPage } from '@/pages/audit/AuditPage';
-import { LoginPage } from '@/pages/auth/LoginPage';
-import { MfaPage } from '@/pages/auth/MfaPage';
-import { CopilotLabPage } from '@/pages/copilot/CopilotLabPage';
-import { MembersPage } from '@/pages/members/MembersPage';
-import { OverviewPage } from '@/pages/overview/OverviewPage';
-import { DatasetsPage } from '@/pages/vision/DatasetsPage';
-import { LabelPage } from '@/pages/vision/LabelPage';
-import { ModelsPage } from '@/pages/vision/ModelsPage';
-import { ReviewPage } from '@/pages/vision/ReviewPage';
-import { VisionOverviewPage } from '@/pages/vision/VisionOverviewPage';
+import { AuditPage } from '@/pages/Audit/AuditPage';
+import { LoginPage } from '@/pages/Auth/LoginPage';
+import { MfaPage } from '@/pages/Auth/MfaPage';
+import { CopilotLabPage } from '@/pages/Copilot/CopilotLabPage';
+import { MembersPage } from '@/pages/Members/MembersPage';
+import { OverviewPage } from '@/pages/Overview/OverviewPage';
+import { DatasetsPage } from '@/pages/Vision/DatasetsPage';
+import { LabelPage } from '@/pages/Vision/LabelPage';
+import { ModelsPage } from '@/pages/Vision/ModelsPage';
+import { ReviewPage } from '@/pages/Vision/ReviewPage';
+import { VisionOverviewPage } from '@/pages/Vision/VisionOverviewPage';
 
 function Guard({ me, permission, children }: { me: Me; permission: Permission | Permission[]; children: ReactNode }) {
   const permissions = Array.isArray(permission) ? permission : [permission];
