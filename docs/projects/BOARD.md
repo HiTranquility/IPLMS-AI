@@ -48,7 +48,7 @@
 
 | Việc | Hồ sơ | Người làm | Người duyệt |
 |---|---|---|---|
-| *(trống)* | | | |
+| Cổng từ chối RAG (chunk vector tốt nhất < `AI_RAG_MIN_SIMILARITY` → không gọi LLM) + eval Copilot end-to-end + bộ held-out — đổi hành vi M2, nhánh `feature/ISSUE-126-2026-10-copilot-abstention-gate` | IPLMS ISSUE-126 review-7 | Claude Code | Khoa / Dương (M2) |
 
 ## ⛔ Bị chặn
 

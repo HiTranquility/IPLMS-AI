@@ -10,6 +10,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = json.loads((ROOT / "data/knowledge/eval_set.json").read_text(encoding="utf-8"))
+# Bộ giữ riêng để kiểm ngưỡng AI_RAG_MIN_SIMILARITY sau khi hiệu chỉnh trên CASES.
+HELDOUT = json.loads((ROOT / "data/knowledge/eval_set_heldout.json").read_text(encoding="utf-8"))
 SEED_SOURCES = {
     c["source"] for c in json.loads((ROOT / "data/knowledge/regulations_seed.json").read_text(encoding="utf-8"))
 }
@@ -37,6 +39,18 @@ class EvalSetTest(unittest.TestCase):
                 self.assertEqual([], case["expected_sources"], case["id"])
             else:
                 self.assertTrue(set(case["expected_sources"]) & SEED_SOURCES, case["id"])
+
+    def test_heldout_shares_schema_and_never_overlaps_scored_set(self):
+        keys = {"id", "category", "expected_behavior", "question", "parking_lot_id", "expected_sources"}
+        normalize = lambda case: " ".join(case["question"].casefold().split())
+        for case in HELDOUT:
+            self.assertEqual(keys, set(case), case.get("id"))
+            if case["expected_behavior"] == "refuse":
+                self.assertEqual([], case["expected_sources"], case["id"])
+            else:
+                self.assertTrue(set(case["expected_sources"]) & SEED_SOURCES, case["id"])
+        self.assertFalse({c["id"] for c in HELDOUT} & {c["id"] for c in CASES})
+        self.assertFalse(set(map(normalize, HELDOUT)) & set(map(normalize, CASES)))
 
 
 if __name__ == "__main__":

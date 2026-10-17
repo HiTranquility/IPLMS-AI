@@ -7,6 +7,7 @@ from typing import Any, AsyncGenerator, Dict, Iterable
 
 from app.config import get_config
 from app.core.copilot.engines import output_guard
+from app.core.copilot.guardrails import guardrail_manager
 from app.core.exceptions import EmbeddingError, ModelNotLoadedError, RagPipelineError
 from app.infra.database.pgvector_client import pgvector_client
 from app.infra.embedding import embedding_client
@@ -134,6 +135,20 @@ class RagPipelineEngine:
         except Exception as exc:
             raise RagPipelineError("Không truy xuất được kho tri thức.") from exc
 
+    async def _grounded_chunks(
+        self, query_text: str, parking_lot_id: str | None, preview: bool
+    ) -> list[dict[str, Any]]:
+        """Rỗng khi không có đoạn nào khớp NGHĨA → NO_CONTEXT, không gọi LLM.
+
+        Nhánh keyword của tìm kiếm lai không qua `min_similarity` (similarity 0),
+        nên kho nhỏ gần như luôn trả về đoạn chỉ vì trùng chữ "xe"/"bãi". Không
+        có đoạn vector nào đạt ngưỡng thì từ chối thay vì để LLM tự đoán
+        (IPLMS ISSUE-126 review-6 S1).
+        """
+        chunks = await self._retrieve(query_text, parking_lot_id, preview)
+        gate = guardrail_manager.check_scope_and_chunks(query_text, chunks, self.min_similarity)
+        return chunks if gate.is_safe else []
+
     async def query(
         self, query_text: str, parking_lot_id: str | None = None, preview: bool = False,
         llm_override=None,
@@ -143,7 +158,7 @@ class RagPipelineEngine:
             len(query_text),
             bool(parking_lot_id),
         )
-        chunks = await self._retrieve(query_text, parking_lot_id, preview)
+        chunks = await self._grounded_chunks(query_text, parking_lot_id, preview)
         if not chunks:
             return {"answer": NO_CONTEXT_ANSWER, "sources": [], "confidence": 0.0,
                     "status": "NO_CONTEXT", "usage": {}, "model": ""}
@@ -177,7 +192,7 @@ class RagPipelineEngine:
             len(query_text),
             bool(parking_lot_id),
         )
-        chunks = await self._retrieve(query_text, parking_lot_id, preview)
+        chunks = await self._grounded_chunks(query_text, parking_lot_id, preview)
         if not chunks:
             yield {"token": NO_CONTEXT_ANSWER, "is_finished": False, "sources": []}
             yield {"token": "", "is_finished": True, "sources": [],
