@@ -1,6 +1,6 @@
 import { request, requestOne } from './client';
 import type {
-  AcceptPolicy, AccuracyReport, AuditEntry, Decision, EvalRun, LabelVerdict, Me, Member, ModelVersion,
+  AcceptPolicy, AccuracyReport, AuditEntry, CopilotAnswer, Decision, IngestResult, SystemCheck, EvalRun, LabelVerdict, Me, Member, ModelVersion,
   ReviewItem, ReviewStats, Turn, TurnFilter, UsageSummary, Verdict, VisionSample, VisionSnapshot, VisionStatus,
 } from './types';
 
@@ -43,6 +43,13 @@ export const consoleApi = {
   revokeRole: (memberId: string, role: string, reason: string) =>
     requestOne<{ changed: boolean }>(`/members/${memberId}/roles/${role}/revoke`, { method: 'POST', body: { reason } }),
   audit: (limit = 200) => request<AuditEntry>(`/audit?limit=${limit}`),
+  systemCheck: () => requestOne<SystemCheck>('/tools/system'),
+  tryCopilot: (query: string, parkingLotId: string) =>
+    requestOne<CopilotAnswer>('/tools/copilot', {
+      method: 'POST',
+      body: { query, parking_lot_id: parkingLotId || null },
+    }),
+  ingestDraft: (form: FormData) => requestOne<IngestResult>('/tools/knowledge', { method: 'POST', body: form }),
   stepUp: (code: string, reason: string) =>
     requestOne<{ mfa_required: boolean }>('/auth/step-up', { method: 'POST', body: { code, reason } }),
 

@@ -5,7 +5,6 @@
 !ai/docker-entrypoint.sh
 !ai/model/architectures/**
 !ai/model/artifacts/bootstrap/anpr/best.pt
-!ai/static/index.html
 !ai/static/cropped/.gitkeep
 !ai/static/original/.gitkeep
 !ai/data/knowledge/*.json

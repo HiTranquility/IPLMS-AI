@@ -18,8 +18,12 @@ from app.util.logger import logger
 
 class CopilotService:
     @staticmethod
-    async def ask_question(request: AskQuestionRequest) -> CopilotAnswer:
-        """Answer through the real embedding → pgvector → Responses pipeline."""
+    async def ask_question(request: AskQuestionRequest, task: str = "copilot_ask") -> CopilotAnswer:
+        """Answer through the real embedding → pgvector → Responses pipeline.
+
+        `task` khác `copilot_ask` (vd. `console_try`) để lượt thử nội bộ không vào số
+        mức dùng sản phẩm (IPLMS ADR-0050 §3).
+        """
         turn_id, started = str(uuid4()), time.monotonic()
         try:
             result = await rag_pipeline.query(
@@ -29,12 +33,12 @@ class CopilotService:
             )
         except Exception as exc:
             usage_service.record_soon(usage_service.build_entry(
-                turn_id=turn_id, task="copilot_ask", status="ERROR", started=started,
+                turn_id=turn_id, task=task, status="ERROR", started=started,
                 request=request, error_code=type(exc).__name__,
             ))
             raise
         usage_service.record_soon(usage_service.build_entry(
-            turn_id=turn_id, task="copilot_ask", status=result["status"], started=started,
+            turn_id=turn_id, task=task, status=result["status"], started=started,
             request=request, result=result, answer=result["answer"],
         ))
         return CopilotAnswer(

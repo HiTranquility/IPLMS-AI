@@ -15,6 +15,7 @@ import { MfaPage } from '@/pages/Auth/MfaPage';
 import { CopilotLabPage } from '@/pages/Copilot/CopilotLabPage';
 import { MembersPage } from '@/pages/Members/MembersPage';
 import { OverviewPage } from '@/pages/Overview/OverviewPage';
+import { ToolsPage } from '@/pages/Tools/ToolsPage';
 import { DatasetsPage } from '@/pages/Vision/DatasetsPage';
 import { LabelPage } from '@/pages/Vision/LabelPage';
 import { ModelsPage } from '@/pages/Vision/ModelsPage';
@@ -50,6 +51,7 @@ export function App() {
       <Routes>
         <Route index element={<Home me={user} />} />
         <Route path="copilot" element={<Guard me={user} permission="ai:chatlog:read"><CopilotLabPage /></Guard>} />
+        <Route path="tools" element={<Guard me={user} permission={['ai:metrics:read', 'ai:prompt:edit']}><ToolsPage /></Guard>} />
         <Route path="vision" element={<Guard me={user} permission="ai:metrics:read"><VisionOverviewPage /></Guard>} />
         <Route path="vision/label" element={<Guard me={user} permission="ai:task:label"><LabelPage /></Guard>} />
         <Route path="vision/review" element={<Guard me={user} permission="ai:label:approve"><ReviewPage /></Guard>} />

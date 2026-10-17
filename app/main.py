@@ -2,10 +2,8 @@
 import os
 import asyncio
 from contextlib import asynccontextmanager
-from fastapi import Depends, FastAPI, Request
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-from app.api.rest.developer_access import require_developer_access
 from app.api.rest.router import api_router
 from app.api.rest.middlewares.cors import register_cors
 from app.api.rest.middlewares.error_handler import ai_service_error_handler, generic_error_handler
@@ -45,22 +43,6 @@ app.include_router(api_router, prefix="/api")
 app.include_router(api_router)
 
 
-class DiagnosticStaticFiles(StaticFiles):
-    async def get_response(self, path: str, scope):
-        if path.replace("\\", "/").split("/")[-1].lower() == "index.html":
-            require_developer_access(Request(scope))
-        return await super().get_response(path, scope)
-
-
-app.mount("/static", DiagnosticStaticFiles(directory=STATIC_DIR), name="static")
-
-@app.get("/", include_in_schema=False)
-@app.get("/dashboard", include_in_schema=False)
-@app.get("/ui", include_in_schema=False)
-def dashboard(_: None = Depends(require_developer_access)) -> FileResponse:
-    index_file = os.path.join(STATIC_DIR, "index.html")
-    return FileResponse(index_file, headers={
-        "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
-        "X-Content-Type-Options": "nosniff",
-        "Cache-Control": "no-store",
-    })
+# Ảnh cắt/gốc của ANPR. Trang dev `/dashboard` cũ đã bỏ — công cụ thử nằm trong AI
+# Console (IPLMS ADR-0050), không chạy trong process inference.
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
