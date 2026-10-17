@@ -141,6 +141,15 @@ class VisionExportMapperTest(unittest.TestCase):
                                        "watermark_at": "t", "watermark_id": "i"})
         self.assertEqual(("t", "i"), (response.watermark_at, response.watermark_id))
 
+    def test_nguong_da_duyet_sang_proto(self):
+        from app.api.grpc.mappers.dataset_mapper import to_accept_policy_response
+
+        self.assertFalse(to_accept_policy_response(None).found)
+        reply = to_accept_policy_response({"id": "p1", "version": 3, "auto_accept_threshold": 0.88,
+                                           "audit_rate": 0.05, "decided_at": "2026-10-17T01:00:00+00:00"})
+        self.assertEqual((True, "p1", 3, 0.88, 0.05),
+                         (reply.found, reply.policy_id, reply.version, reply.auto_accept_threshold, reply.audit_rate))
+
 
 @unittest.skipUnless(os.getenv("AI_TEST_DATABASE_URL"), "requires AI_TEST_DATABASE_URL")
 class VisionImportStoreTest(unittest.TestCase):

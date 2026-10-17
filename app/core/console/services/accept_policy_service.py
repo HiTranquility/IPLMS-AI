@@ -1,7 +1,8 @@
 """Ngưỡng tự nhận (accept_policy): đề xuất từ số đo thật, AI Lead duyệt bốn mắt (ISSUE-126 P5).
 
-Console chỉ giữ phiên bản đã duyệt; áp ngưỡng vào backend (`vision_data_policies`)
-là P6 — trong lúc chuyển, ngưỡng đang chạy vẫn do platform sửa (PROB-049 Risks).
+Console chỉ giữ phiên bản đã duyệt; backend kéo bản APPROVED gần nhất qua
+`DatasetService.GetAcceptPolicy` mỗi chu kỳ worker A2 rồi áp vào `vision_data_policies`
+(ADR-0051).
 """
 from __future__ import annotations
 
@@ -59,6 +60,10 @@ class ConsoleAcceptPolicyService:
         return await self.store.propose_policy(
             MODEL_NAME, round(threshold, 2), round(audit_rate, 4), evidence, _reason(reason), actor.member_id
         )
+
+    async def approved(self, model_name: str = MODEL_NAME) -> dict | None:
+        """Cho RPC backend (không có actor console): chỉ đọc bản đã duyệt bốn mắt."""
+        return await self.store.latest_approved_policy(model_name or MODEL_NAME)
 
     async def decide(self, actor: ConsoleActor, policy_id: str, decision: str, reason: str) -> None:
         # Step-up kiểm ở cổng REST (`ai:policy:threshold`); bốn mắt kiểm trong store.

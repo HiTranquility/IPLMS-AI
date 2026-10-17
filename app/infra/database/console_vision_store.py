@@ -739,5 +739,22 @@ class ConsoleVisionStore(ConsoleStore):
 
         return await self._run(work)
 
+    async def latest_approved_policy(self, model_name: str) -> dict[str, Any] | None:
+        """Bản APPROVED được duyệt gần nhất — backend kéo về áp (ADR-0051)."""
+        def work(cur):
+            cur.execute(
+                """SELECT id::text, version, auto_accept_threshold, audit_rate, decided_at
+                   FROM accept_policy WHERE model_name = %s AND status = 'APPROVED'
+                   ORDER BY decided_at DESC, version DESC LIMIT 1""",
+                (model_name,),
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            return {"id": row[0], "version": row[1], "auto_accept_threshold": row[2],
+                    "audit_rate": row[3], "decided_at": _iso(row[4]) or ""}
+
+        return await self._run(work)
+
 
 console_vision_store = ConsoleVisionStore()
