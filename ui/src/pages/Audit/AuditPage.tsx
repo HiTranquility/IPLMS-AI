@@ -4,30 +4,32 @@ import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
 import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useAudit } from '@/hooks/useConsole';
+import { useI18n } from '@/i18n/I18nProvider';
 import { fmtDateTime } from '@/utils/format';
 
 export function AuditPage() {
+  const { t } = useI18n();
   const audit = useAudit();
 
   return (
     <>
       <PageHeader
-        title="Nhật ký console"
-        description="200 sự kiện gần nhất. Bảng chỉ cho thêm mới — trigger trong DB chặn sửa/xoá, nên đây là dấu vết đầy đủ của mọi thay đổi quyền và lần chấm."
+        title={t.audit.title}
+        description={t.audit.desc}
       />
       {audit.isPending && <Loading />}
       {audit.error && <ErrorBlock error={audit.error} onRetry={() => void audit.refetch()} />}
-      {audit.data?.length === 0 && <EmptyState icon={<ScrollText size={28} />} title="Chưa có sự kiện nào" />}
+      {audit.data?.length === 0 && <EmptyState icon={<ScrollText size={28} />} title={t.audit.empty} />}
       {audit.data && audit.data.length > 0 && (
         <div className={table.wrap}>
           <table className={table.table}>
             <thead>
               <tr>
-                <th scope="col">Lúc</th>
-                <th scope="col">Hành động</th>
-                <th scope="col">Đối tượng</th>
-                <th scope="col">Người làm</th>
-                <th scope="col">Lý do</th>
+                <th scope="col">{t.common.at}</th>
+                <th scope="col">{t.audit.action}</th>
+                <th scope="col">{t.audit.target}</th>
+                <th scope="col">{t.audit.actor}</th>
+                <th scope="col">{t.common.reason}</th>
               </tr>
             </thead>
             <tbody>
@@ -36,7 +38,7 @@ export function AuditPage() {
                   <td className={table.num}>{fmtDateTime(e.at)}</td>
                   <td className={table.mono}>{e.action}</td>
                   <td className={table.mono}>{e.target_type}:{e.target_id || '—'}</td>
-                  <td className={table.mono}>{e.actor_id || 'hệ thống'}</td>
+                  <td className={table.mono}>{e.actor_id || t.audit.system}</td>
                   <td>{e.reason}</td>
                 </tr>
               ))}

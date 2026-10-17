@@ -6,6 +6,7 @@
   background: var(--color-surface); border: var(--hairline); border-top: 3px solid var(--color-accent);
   border-radius: var(--radius-lg);
 }
+.top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
 .scope { font-size: var(--text-xs); font-weight: 600; color: var(--color-accent-dark); }
 .title { font-size: var(--text-xl); font-weight: 700; }
 .lead { color: var(--color-muted); }
