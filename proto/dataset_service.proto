@@ -19,6 +19,9 @@ service DatasetService {
   // IPLMS ADR-0048 §5 (A2): backend đẩy MỘT CHIỀU ảnh cắt + nhãn đã chốt sang DB
   // AI Console. Gửi `samples` rỗng để hỏi watermark — backend không giữ trạng thái.
   rpc ExportForConsole (ExportForConsoleRequest) returns (ExportForConsoleResponse);
+  // IPLMS ADR-0051: backend KÉO ngưỡng tự nhận đã duyệt bốn mắt trong console, mỗi
+  // chu kỳ worker A2. Chỉ đọc — console không có đường nào tới backend.
+  rpc GetAcceptPolicy (GetAcceptPolicyRequest) returns (GetAcceptPolicyResponse);
 }
 
 message EvaluateCaptureRequest {
@@ -150,4 +153,23 @@ message ExportForConsoleResponse {
   string watermark_at = 3;
   string watermark_id = 4;
   repeated string rejected_ids = 5;
+}
+
+// ── Ngưỡng tự nhận đã duyệt (ADR-0051) ────────────────────────────────────────
+message GetAcceptPolicyRequest {
+  // Hiện chỉ có "anpr".
+  string model_name = 1;
+}
+
+message GetAcceptPolicyResponse {
+  // false khi chưa có bản APPROVED nào — backend giữ ngưỡng đang chạy.
+  bool found = 1;
+  string policy_id = 2;
+  int32 version = 3;
+  // Dưới ngưỡng thì vào hàng review (backend: low_confidence_threshold).
+  double auto_accept_threshold = 4;
+  // Tỉ lệ bốc kiểm ngẫu nhiên (backend: random_audit_rate).
+  double audit_rate = 5;
+  // ISO-8601.
+  string decided_at = 6;
 }

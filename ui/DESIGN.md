@@ -57,7 +57,6 @@ Font hệ thống (`system-ui`, `ui-monospace`) — không tải font. Theme sá
 |---|---|---|
 | Ngôn ngữ | Chỉ tiếng Việt; chưa có EN (cổng L5 VI/EN) | Khi có thành viên console không đọc tiếng Việt |
 | Mã QR TOTP | Hiện khoá để nhập tay, không thêm lib QR | Nếu cần, chọn lib tự chứa không CDN và hỏi trước khi cài |
-| Áp ngưỡng vào backend | Ngưỡng đã duyệt chỉ lưu phiên bản trong console; ngưỡng đang chạy vẫn sửa ở platform | P6 ISSUE-126 |
 | Biểu đồ | Đường cong ngưỡng hiện bằng bảng, chưa có biểu đồ | Khi bảng không còn đủ đọc |
 
 **Step-up tại chỗ:** `Ui/form/ReasonAction` bắt mọi thao tác nhạy cảm ghi lý do; server trả `STEP_UP_REQUIRED` thì hiện ô mã TOTP ngay trong form rồi làm tiếp (khoá golden, promote model, duyệt ngưỡng). Nút bị khoá kèm lý do khi người xem chính là người đề xuất (bốn mắt) — backend vẫn chặn lại.

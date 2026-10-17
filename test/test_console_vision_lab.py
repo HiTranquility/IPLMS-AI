@@ -221,6 +221,15 @@ class VisionLabFlowTest(unittest.TestCase):
         with self.assertRaisesRegex(ConsoleStoreError, "tự duyệt"):
             asyncio.run(self.policies.decide(self.lead, own["id"], "APPROVED", "tự duyệt"))
 
+        # ADR-0051: backend chỉ kéo bản đã duyệt; đề xuất chưa duyệt không lọt ra.
+        pulled = asyncio.run(self.policies.approved())
+        self.assertEqual((created["id"], 1, 0.9, 0.03),
+                         (pulled["id"], pulled["version"], pulled["auto_accept_threshold"], pulled["audit_rate"]))
+        self.assertTrue(pulled["decided_at"])
+        asyncio.run(self.policies.decide(self.lead2, own["id"], "APPROVED", "đồng ý nâng"))
+        self.assertEqual(2, asyncio.run(self.policies.approved())["version"])
+        self.assertIsNone(asyncio.run(self.policies.approved("vehicle_cls")))
+
     def test_khoa_golden_qua_http_can_step_up(self):
         import pyotp
         from cryptography.fernet import Fernet
