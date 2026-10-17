@@ -1,5 +1,5 @@
 import {
-  Boxes, ClipboardCheck, Database, Gauge, MessagesSquare, ScanEye, ScrollText, Tags, Users,
+  Boxes, ClipboardCheck, Database, FlaskConical, Gauge, MessagesSquare, ScanEye, ScrollText, Tags, Users,
   type LucideIcon,
 } from 'lucide-react';
 import type { Permission } from '@/api/types';
@@ -23,6 +23,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: '/', label: 'Tổng quan', icon: Gauge, permissions: ['ai:metrics:read'] },
       { to: '/copilot', label: 'Copilot Lab', icon: MessagesSquare, permissions: ['ai:chatlog:read'] },
+      { to: '/tools', label: 'Công cụ thử', icon: FlaskConical, permissions: ['ai:metrics:read', 'ai:prompt:edit'] },
     ],
   },
   {

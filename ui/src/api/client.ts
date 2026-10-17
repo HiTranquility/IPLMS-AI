@@ -34,7 +34,8 @@ export async function request<T>(path: string, init: { method?: 'GET' | 'POST'; 
   if (method !== 'GET') {
     // Chống CSRF: backend từ chối request ghi thiếu header này (console_access.py).
     headers['X-Console-Request'] = '1';
-    if (init.body !== undefined) headers['Content-Type'] = 'application/json';
+    // FormData (tải tệp): để trình duyệt tự đặt multipart boundary.
+    if (init.body !== undefined && !(init.body instanceof FormData)) headers['Content-Type'] = 'application/json';
   }
   let response: Response;
   try {
@@ -42,7 +43,7 @@ export async function request<T>(path: string, init: { method?: 'GET' | 'POST'; 
       method,
       headers,
       credentials: 'same-origin',
-      body: init.body === undefined ? undefined : JSON.stringify(init.body),
+      body: init.body === undefined ? undefined : init.body instanceof FormData ? init.body : JSON.stringify(init.body),
     });
   } catch {
     throw new ApiError(0, 'NETWORK', 'Không kết nối được tới AI Console. Process console có đang chạy không?');

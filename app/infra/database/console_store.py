@@ -254,6 +254,10 @@ class ConsoleStore:
 
         return await self._run(work)
 
+    async def add_audit(self, actor_id: str, action: str, target_type: str, target_id: str, reason: str) -> None:
+        """Thao tác ghi ra ngoài DB console (vd. nạp tri thức vào ai-db) vẫn để dấu vết ở đây."""
+        await self._run(lambda cur: _audit(cur, actor_id, action, target_type, target_id, reason))
+
     async def list_members(self) -> list[dict[str, Any]]:
         def work(cur):
             cur.execute(_MEMBER_SELECT + " GROUP BY m.id ORDER BY m.created_at, m.id")

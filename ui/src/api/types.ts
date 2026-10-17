@@ -242,3 +242,34 @@ export interface AcceptPolicy {
   decided_by: string;
   decided_at: string | null;
 }
+
+// ── Công cụ thử (IPLMS ADR-0050) ─────────────────────────────────────────────
+
+export interface SystemCheck {
+  checks: { key: string; label: string; ok: boolean }[];
+  llm_model: string;
+  telemetry_enabled: boolean;
+  vision_device: string;
+  telemetry_retention_days: number;
+  vision_retention_days: number;
+}
+
+export interface CopilotAnswer {
+  answer: string;
+  sources: string[];
+  confidence: number;
+  model_revision: string;
+  turn_id: string;
+  prompt_version: string;
+}
+
+export interface IngestResult {
+  document_id: string;
+  status: string;
+  ok: boolean;
+  chunk_count: number;
+  duration_ms: number;
+  message: string;
+  version_id: string;
+  version_no: number;
+}

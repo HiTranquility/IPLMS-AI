@@ -29,6 +29,7 @@ Phía API: `python -m unittest test.test_console_copilot_lab test.test_console_u
 |---|---|---|
 | `/console/` | `ai:metrics:read` | Tỉ lệ đúng do người chấm, mức dùng, độ trễ, token, chi phí, theo ngày |
 | `/console/copilot` | `ai:chatlog:read` (chấm: `ai:label:approve`) | Lượt chat đã che PII, lọc trạng thái/phản hồi, chấm Đúng/Sai/Không an toàn |
+| `/console/tools` | `ai:metrics:read` (hỏi thử, nạp: `ai:prompt:edit`) | Kiểm cấu hình (chỉ đã/chưa), hỏi thử Copilot (task `console_try`, không vào số sản phẩm), nạp bản nháp tri thức — thay `/dashboard` cũ (IPLMS ADR-0050) |
 | `/console/members` | `ai:member:manage` | Mời, cấp/thu hồi vai trò (bắt buộc lý do, không tự cấp) |
 | `/console/audit` | `ai:audit:read` | 200 sự kiện audit gần nhất |
 | `/console/vision` | `ai:metrics:read` | Máy đọc đúng bao nhiêu % trên tập bốc ngẫu nhiên (khoảng tin cậy 95%), đường cong ngưỡng, đề xuất/duyệt accept policy, trạng thái nhận A2 |

@@ -128,7 +128,9 @@ class AiRequestLogStore:
 
     async def summary(self, days: int) -> dict[str, Any]:
         def work(cur):
-            window = "at >= NOW() - make_interval(days => %s)"
+            # Chỉ lượt của người dùng sản phẩm; lượt thử trong console (`console_try`) không tính
+            # vào dashboard mức dùng (IPLMS ADR-0050 §3).
+            window = "at >= NOW() - make_interval(days => %s) AND task IN ('copilot_ask', 'copilot_stream')"
             cur.execute(
                 f"""SELECT COUNT(*),
                        COUNT(*) FILTER (WHERE status = 'SUCCESS'),

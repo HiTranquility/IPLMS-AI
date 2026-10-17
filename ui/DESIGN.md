@@ -19,7 +19,7 @@ src/
     common/Ui/{button,data-display,feedback,form,media}/   component có props
     common/Shared/                                         màn hình tĩnh (Forbidden, NotFound)
     layout/                                                AppShell (rail trái), PageHeader, navigation
-  pages/{Auth,Overview,Copilot,Members,Audit,Vision}/
+  pages/{Auth,Overview,Copilot,Tools,Members,Audit,Vision}/
   test/         setup + helper giả fetch
 ```
 
