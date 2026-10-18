@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 import type { Me } from '@/api/types';
+import { I18nProvider } from '@/i18n/I18nProvider';
 
 type Route = (url: string, init?: RequestInit) => { status?: number; body: unknown } | undefined;
 
@@ -41,7 +42,9 @@ export function renderWithProviders(ui: ReactNode, path = '/') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>
+      <I18nProvider>
+        <MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>
+      </I18nProvider>
     </QueryClientProvider>,
   );
 }
