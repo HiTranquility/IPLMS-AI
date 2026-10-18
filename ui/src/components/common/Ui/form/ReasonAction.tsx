@@ -2,6 +2,7 @@ import { ShieldCheck } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { ApiError } from '@/api/client';
 import { consoleApi } from '@/api/console';
+import { useI18n } from '@/i18n/I18nProvider';
 import { Button, type ButtonProps } from '../button/Button';
 import { ErrorBlock } from '../feedback/LoadState';
 import { TextField } from './Field';
@@ -21,7 +22,8 @@ interface ReasonActionProps {
  * ADR-0048 §4), hiện ô mã TOTP ngay tại chỗ rồi làm tiếp — không bắt người dùng
  * rời màn hình đi xác thực lại.
  */
-export function ReasonAction({ label, reasonLabel = 'Lý do', variant = 'secondary', disabled, disabledHint, onSubmit }: ReasonActionProps) {
+export function ReasonAction({ label, reasonLabel, variant = 'secondary', disabled, disabledHint, onSubmit }: ReasonActionProps) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [code, setCode] = useState('');
@@ -61,15 +63,15 @@ export function ReasonAction({ label, reasonLabel = 'Lý do', variant = 'seconda
 
   return (
     <form className={styles.form} onSubmit={submit}>
-      <TextField label={reasonLabel} required minLength={3} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
+      <TextField label={reasonLabel ?? t.reasonAction.reason} required minLength={3} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
       {needStepUp && (
         <div className={styles.stepUp}>
           <p className={styles.stepUpText}>
             <ShieldCheck size={14} aria-hidden />
-            Thao tác nhạy cảm: nhập mã TOTP mới để xác nhận (hiệu lực 5 phút).
+            {t.reasonAction.stepUp}
           </p>
           <TextField
-            label="Mã 6 số"
+            label={t.reasonAction.otp}
             inputMode="numeric"
             autoComplete="one-time-code"
             pattern="[0-9]{6}"
@@ -83,9 +85,9 @@ export function ReasonAction({ label, reasonLabel = 'Lý do', variant = 'seconda
       {error !== null && <ErrorBlock error={error} />}
       <div className={styles.actions}>
         <Button type="submit" size="sm" variant={variant === 'secondary' ? 'primary' : variant} loading={pending} disabled={reason.trim().length < 3 || (needStepUp && code.length !== 6)}>
-          {needStepUp ? 'Xác thực và làm tiếp' : label}
+          {needStepUp ? t.reasonAction.confirm : label}
         </Button>
-        <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Huỷ</Button>
+        <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>{t.reasonAction.cancel}</Button>
       </div>
     </form>
   );

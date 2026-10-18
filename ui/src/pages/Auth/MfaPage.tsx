@@ -4,7 +4,9 @@ import type { Me } from '@/api/types';
 import { Button } from '@/components/common/Ui/button/Button';
 import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
 import { TextField } from '@/components/common/Ui/form/Field';
+import { LanguageSwitch } from '@/components/layout/LanguageSwitch';
 import { useEnrollTotp, useLogout, useVerifyTotp } from '@/hooks/useConsole';
+import { useI18n } from '@/i18n/I18nProvider';
 import styles from './auth.module.css';
 
 /** Lấy secret từ otpauth URI để nhập tay (console không thêm lib QR — ít phụ thuộc, 0 CDN). */
@@ -19,6 +21,7 @@ export function secretFromUri(uri: string): string {
 const groupSecret = (secret: string) => secret.replace(/(.{4})/g, '$1 ').trim();
 
 export function MfaPage({ me }: { me: Me }) {
+  const { t } = useI18n();
   const enroll = useEnrollTotp();
   const verify = useVerifyTotp();
   const logout = useLogout();
@@ -45,38 +48,41 @@ export function MfaPage({ me }: { me: Me }) {
   return (
     <div className={styles.page}>
       <section className={styles.panel} aria-labelledby="mfa-title">
-        <p className={styles.scope}>Bước 2/2 · {me.email}</p>
-        <h1 id="mfa-title" className={styles.title}>{needsEnroll ? 'Bật xác thực hai lớp' : 'Nhập mã xác thực'}</h1>
+        <div className={styles.top}>
+          <p className={styles.scope}>{t.mfa.step(me.email)}</p>
+          <LanguageSwitch />
+        </div>
+        <h1 id="mfa-title" className={styles.title}>{needsEnroll ? t.mfa.enrollTitle : t.mfa.verifyTitle}</h1>
 
         {needsEnroll && !enroll.data && (
           <>
-            <p className={styles.lead}>Console bắt buộc TOTP. Tạo khoá rồi nhập vào ứng dụng xác thực (Google Authenticator, 1Password, Aegis…).</p>
+            <p className={styles.lead}>{t.mfa.enrollLead}</p>
             {enroll.error && <ErrorBlock error={enroll.error} />}
             <Button onClick={() => enroll.mutate()} loading={enroll.isPending}>
               <ShieldCheck size={16} aria-hidden />
-              Tạo khoá TOTP
+              {t.mfa.createKey}
             </Button>
           </>
         )}
 
         {needsEnroll && enroll.data && (
           <div className={styles.secretBox}>
-            <p className={styles.lead}>Trong ứng dụng xác thực chọn “Nhập khoá thủ công”, loại theo thời gian, rồi dán khoá:</p>
-            <code className={styles.secret} aria-label="Khoá TOTP">{groupSecret(secret)}</code>
+            <p className={styles.lead}>{t.mfa.manualLead}</p>
+            <code className={styles.secret} aria-label={t.mfa.keyLabel}>{groupSecret(secret)}</code>
             <Button variant="secondary" size="sm" onClick={copy}>
               <Copy size={14} aria-hidden />
-              {copied ? 'Đã chép' : 'Chép khoá'}
+              {copied ? t.mfa.copied : t.mfa.copy}
             </Button>
-            <p className={styles.note}>Khoá chỉ hiện lần này. Rời trang trước khi nhập mã thì phải nhờ quản trị console đặt lại.</p>
+            <p className={styles.note}>{t.mfa.keyOnce}</p>
           </div>
         )}
 
-        {me.totp_pending && <p className={styles.lead}>Nhập mã từ khoá đã thêm vào ứng dụng xác thực khi tài khoản được tạo.</p>}
+        {me.totp_pending && <p className={styles.lead}>{t.mfa.pendingLead}</p>}
 
         {(!needsEnroll || enroll.data) && (
           <form className={styles.form} onSubmit={submit}>
             <TextField
-              label="Mã 6 số"
+              label={t.mfa.otp}
               inputMode="numeric"
               autoComplete="one-time-code"
               pattern="[0-9]{6}"
@@ -86,11 +92,11 @@ export function MfaPage({ me }: { me: Me }) {
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
             />
             {verify.error && <ErrorBlock error={verify.error} />}
-            <Button type="submit" loading={verify.isPending} disabled={code.length !== 6}>Xác nhận</Button>
+            <Button type="submit" loading={verify.isPending} disabled={code.length !== 6}>{t.mfa.confirm}</Button>
           </form>
         )}
 
-        <Button variant="ghost" size="sm" onClick={() => logout.mutate()}>Dùng tài khoản khác</Button>
+        <Button variant="ghost" size="sm" onClick={() => logout.mutate()}>{t.mfa.otherAccount}</Button>
       </section>
     </div>
   );

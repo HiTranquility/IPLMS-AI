@@ -7,21 +7,19 @@ import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
 import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useReviewStats, useUsage } from '@/hooks/useConsole';
+import { useI18n } from '@/i18n/I18nProvider';
 import { DASH, fmtDay, fmtInt, fmtMs, fmtPercent, fmtUsd, ratio } from '@/utils/format';
 import styles from './OverviewPage.module.css';
 
-const WINDOWS = [
-  { value: 7, label: '7 ngày' },
-  { value: 30, label: '30 ngày' },
-  { value: 90, label: '90 ngày' },
-];
+const WINDOWS = [7, 30, 90];
 
 function UsageSection({ usage }: { usage: UsageSummary }) {
+  const { t } = useI18n();
   if (usage.total_requests === 0) {
     return (
       <EmptyState
-        title="Chưa có lượt Copilot nào trong cửa sổ này"
-        description="Số liệu ghi khi người dùng hỏi Copilot qua backend. Kiểm AI_TELEMETRY_ENABLED và AI_TELEMETRY_HMAC_KEY nếu đã có người hỏi mà vẫn trống."
+        title={t.overview.emptyTitle}
+        description={t.overview.emptyDesc}
       />
     );
   }
@@ -29,37 +27,37 @@ function UsageSection({ usage }: { usage: UsageSummary }) {
   return (
     <>
       <dl className={styles.stats}>
-        <Stat label="Lượt hỏi" value={fmtInt(usage.total_requests)} />
-        <Stat label="Trả lời được" value={fmtPercent(ratio(usage.success_requests, usage.total_requests))} hint={`${fmtInt(usage.success_requests)} lượt`} />
-        <Stat label="Chặn bởi guard" value={fmtInt(usage.refused_requests)} />
-        <Stat label="Không có ngữ cảnh" value={fmtInt(usage.no_context_requests)} />
-        <Stat label="Lỗi" value={fmtInt(usage.error_requests)} />
+        <Stat label={t.overview.requests} value={fmtInt(usage.total_requests)} />
+        <Stat label={t.overview.answered} value={fmtPercent(ratio(usage.success_requests, usage.total_requests))} hint={t.overview.turnCount(fmtInt(usage.success_requests))} />
+        <Stat label={t.overview.refused} value={fmtInt(usage.refused_requests)} />
+        <Stat label={t.overview.noContext} value={fmtInt(usage.no_context_requests)} />
+        <Stat label={t.overview.errors} value={fmtInt(usage.error_requests)} />
       </dl>
       <dl className={styles.stats}>
-        <Stat label="Độ trễ TB" value={fmtMs(usage.avg_latency_ms)} />
-        <Stat label="Độ trễ p95" value={fmtMs(usage.p95_latency_ms)} />
-        <Stat label="Token vào / ra" value={`${fmtInt(usage.input_tokens)} / ${fmtInt(usage.output_tokens)}`} />
+        <Stat label={t.overview.avgLatency} value={fmtMs(usage.avg_latency_ms)} />
+        <Stat label={t.overview.p95Latency} value={fmtMs(usage.p95_latency_ms)} />
+        <Stat label={t.overview.tokens} value={`${fmtInt(usage.input_tokens)} / ${fmtInt(usage.output_tokens)}`} />
         <Stat
-          label="Chi phí"
+          label={t.overview.cost}
           value={usage.cost_known ? fmtUsd(usage.total_cost_usd) : DASH}
-          hint={usage.cost_known ? `${fmtUsd(usage.avg_cost_usd)} / lượt` : 'Chưa cấu hình giá hoặc có lượt thiếu token'}
+          hint={usage.cost_known ? t.overview.perTurn(fmtUsd(usage.avg_cost_usd)) : t.overview.costUnknown}
         />
         <Stat
-          label="Người dùng chấm hữu ích"
+          label={t.overview.helpful}
           value={fmtPercent(ratio(usage.thumbs_up, rated))}
-          hint={rated ? `${fmtInt(usage.thumbs_up)} hữu ích · ${fmtInt(usage.thumbs_down)} chưa đúng` : 'Chưa ai chấm'}
+          hint={rated ? t.overview.helpfulHint(fmtInt(usage.thumbs_up), fmtInt(usage.thumbs_down)) : t.overview.noRatings}
         />
       </dl>
-      <h2 className={styles.sectionTitle}>Theo ngày (giờ Việt Nam)</h2>
+      <h2 className={styles.sectionTitle}>{t.overview.byDay}</h2>
       <div className={table.wrap}>
         <table className={table.table}>
           <thead>
             <tr>
-              <th scope="col">Ngày</th>
-              <th scope="col" className={table.num}>Lượt</th>
-              <th scope="col" className={table.num}>Chặn</th>
-              <th scope="col" className={table.num}>Lỗi</th>
-              <th scope="col" className={table.num}>Độ trễ TB</th>
+              <th scope="col">{t.overview.day}</th>
+              <th scope="col" className={table.num}>{t.overview.turns}</th>
+              <th scope="col" className={table.num}>{t.overview.refusedShort}</th>
+              <th scope="col" className={table.num}>{t.overview.errors}</th>
+              <th scope="col" className={table.num}>{t.overview.avgLatency}</th>
             </tr>
           </thead>
           <tbody>
@@ -80,21 +78,23 @@ function UsageSection({ usage }: { usage: UsageSummary }) {
 }
 
 function AccuracySection({ stats }: { stats: ReviewStats }) {
+  const { t } = useI18n();
   return (
     <dl className={styles.stats}>
       <Stat
-        label="Tỉ lệ đúng (người chấm)"
+        label={t.overview.accuracy}
         value={fmtPercent(stats.accuracy)}
-        hint={stats.reviewed ? `trên ${fmtInt(stats.reviewed)} lượt đã chấm` : 'Chưa chấm lượt nào trong Copilot Lab'}
+        hint={stats.reviewed ? t.overview.reviewedHint(fmtInt(stats.reviewed)) : t.overview.noReviews}
       />
-      <Stat label="Đúng" value={fmtInt(stats.correct)} />
-      <Stat label="Sai" value={fmtInt(stats.incorrect)} />
-      <Stat label="Không an toàn" value={fmtInt(stats.unsafe)} />
+      <Stat label={t.overview.correct} value={fmtInt(stats.correct)} />
+      <Stat label={t.overview.incorrect} value={fmtInt(stats.incorrect)} />
+      <Stat label={t.overview.unsafe} value={fmtInt(stats.unsafe)} />
     </dl>
   );
 }
 
 export function OverviewPage() {
+  const { t } = useI18n();
   const [days, setDays] = useState(7);
   const usage = useUsage(days);
   const review = useReviewStats(days);
@@ -102,18 +102,20 @@ export function OverviewPage() {
   return (
     <>
       <PageHeader
-        title="Tổng quan Copilot"
-        description="Số liệu từ telemetry ai_request_log (câu chữ đã che PII). Tỉ lệ đúng chỉ tính trên lượt đã được người chấm, không suy từ nút hữu ích."
-        actions={<Segmented label="Cửa sổ thống kê" value={days} options={WINDOWS} onChange={setDays} />}
+        title={t.overview.title}
+        description={t.overview.desc}
+        actions={
+          <Segmented label={t.overview.windowLabel} value={days} options={WINDOWS.map((value) => ({ value, label: t.overview.window(value) }))} onChange={setDays} />
+        }
       />
       <section aria-labelledby="accuracy-title" className={styles.section}>
-        <h2 id="accuracy-title" className={styles.sectionTitle}>Chất lượng trả lời</h2>
+        <h2 id="accuracy-title" className={styles.sectionTitle}>{t.overview.quality}</h2>
         {review.isPending && <Loading />}
         {review.error && <ErrorBlock error={review.error} onRetry={() => void review.refetch()} />}
         {review.data && <AccuracySection stats={review.data} />}
       </section>
       <section aria-labelledby="usage-title" className={styles.section}>
-        <h2 id="usage-title" className={styles.sectionTitle}>Mức dùng</h2>
+        <h2 id="usage-title" className={styles.sectionTitle}>{t.overview.usage}</h2>
         {usage.isPending && <Loading />}
         {usage.error && <ErrorBlock error={usage.error} onRetry={() => void usage.refetch()} />}
         {usage.data && <UsageSection usage={usage.data} />}

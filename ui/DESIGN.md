@@ -18,9 +18,11 @@ src/
   components/
     common/Ui/{button,data-display,feedback,form,media}/   component có props
     common/Shared/                                         màn hình tĩnh (Forbidden, NotFound)
-    layout/                                                AppShell (rail trái), PageHeader, navigation
+    layout/                                                AppShell (rail trái), PageHeader, navigation, LanguageSwitch
+  i18n/         vi.ts (từ điển gốc, kiểu `Messages`), en.ts, I18nProvider (useI18n)
   pages/{Auth,Overview,Copilot,Tools,Members,Audit,Vision}/
   test/         setup + helper giả fetch
+  utils/        format.ts (số/ngày theo ngôn ngữ), lang.ts, theme.ts
 ```
 
 Đặt tên khớp `frontend` (`packages/platform/src/pages/Common/Auth`): thư mục page `PascalCase`; component/page `PascalCase.tsx` + `PascalCase.module.css` đặt cạnh; CSS dùng chung cả thư mục viết thường (`auth.module.css`, `vision.module.css`, `Ui/data-display/table.module.css`); helper `camelCase.ts`.
@@ -40,6 +42,14 @@ Cùng **tên** token với 3 app frontend (`--color-bg`, `--color-surface*`, `--
 
 Font hệ thống (`system-ui`, `ui-monospace`) — không tải font. Theme sáng/tối theo hệ điều hành, đổi tay ở rail và nhớ trong `localStorage`.
 
+## Ngôn ngữ — VI/EN
+
+- Từ điển tự viết, **không** dùng `i18next` như `frontend/` (IPLMS ISSUE-126 6.13, người dùng chọn 2026-10-17): 0 package mới, đúng ranh giới "không import `@iplms/shared`". `src/i18n/vi.ts` là khuôn `Messages`; `en.ts` khai `en: Messages` nên thiếu/thừa khoá là `tsc` báo lỗi — cổng L5 kiểm bằng typecheck. Câu có số/tên là hàm nhận chuỗi đã định dạng.
+- Component đọc `const { t } = useI18n()`; code ngoài React (`api/client.ts`) dùng `messages()`. Nhãn enum (trạng thái, kết luận, giai đoạn model) nằm trong từ điển; `labels.ts` chỉ còn tông Badge.
+- Mặc định tiếng Việt; đổi ở rail và ở trang đăng nhập/TOTP (`LanguageSwitch`, nhãn nhóm hai thứ tiếng), nhớ ở `localStorage` `ai-console-lang`, đặt `<html lang>`. Số/ngày theo `vi-VN`/`en-US`, múi giờ vẫn `Asia/Ho_Chi_Minh`; tiền luôn USD.
+- Server viết thông điệp lỗi bằng tiếng Việt. `ErrorBlock` ở EN hiện câu dịch theo `code` (`errors.serverCodes`), giữ nguyên văn server (`lang="vi"`) và mã bên dưới; mã không có trong bảng thì hiện nguyên văn. `ApiError.fromServer` phân biệt câu của server với câu client tự đặt theo ngôn ngữ đang dùng.
+- Chữ server gửi kèm dữ liệu: nhãn mục kiểm ở Công cụ thử dịch theo `key` (`tools.checks`); lý do ngưỡng đề xuất dựng lại ở client từ `total/min_samples/target/suggested_threshold` theo đúng luật `audit_accuracy.py` (bỏ `suggestion_reason`). Dữ liệu (câu hỏi, câu trả lời, lý do người nhập, lỗi nhận A2) giữ nguyên văn.
+
 ## Luật Hallmark áp dụng (frontend/DESIGN.md §4)
 
 1. Icon chỉ `lucide-react`, không emoji.
@@ -55,7 +65,6 @@ Font hệ thống (`system-ui`, `ui-monospace`) — không tải font. Theme sá
 
 | Mục | Hiện trạng | Khi nào xử lý |
 |---|---|---|
-| Ngôn ngữ | Chỉ tiếng Việt; chưa có EN (cổng L5 VI/EN) | Khi có thành viên console không đọc tiếng Việt |
 | Mã QR TOTP | Hiện khoá để nhập tay, không thêm lib QR | Nếu cần, chọn lib tự chứa không CDN và hỏi trước khi cài |
 
 **Step-up tại chỗ:** `Ui/form/ReasonAction` bắt mọi thao tác nhạy cảm ghi lý do; server trả `STEP_UP_REQUIRED` thì hiện ô mã TOTP ngay trong form rồi làm tiếp (khoá golden, promote model, duyệt ngưỡng). Nút bị khoá kèm lý do khi người xem chính là người đề xuất (bốn mắt) — backend vẫn chặn lại.

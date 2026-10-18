@@ -9,8 +9,8 @@ import { TextField } from '@/components/common/Ui/form/Field';
 import { CropImage } from '@/components/common/Ui/media/CropImage';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useDecideLabel, useReviewQueue } from '@/hooks/useVision';
+import { useI18n } from '@/i18n/I18nProvider';
 import { DASH, fmtDateTime, fmtPercent } from '@/utils/format';
-import { VERDICT_LABEL } from './labels';
 import styles from './vision.module.css';
 
 function proposed(item: ReviewItem): string {
@@ -20,6 +20,7 @@ function proposed(item: ReviewItem): string {
 }
 
 function ReviewRow({ item }: { item: ReviewItem }) {
+  const { t } = useI18n();
   const decide = useDecideLabel();
   const [rejecting, setRejecting] = useState(false);
   const [note, setNote] = useState('');
@@ -29,14 +30,14 @@ function ReviewRow({ item }: { item: ReviewItem }) {
       <CropImage captureId={item.capture_id} size="md" />
       <div className={styles.reviewBody}>
         <p>
-          <Badge tone={item.label.verdict === 'UNUSABLE' ? 'danger' : 'accent'}>{VERDICT_LABEL[item.label.verdict]}</Badge>{' '}
+          <Badge tone={item.label.verdict === 'UNUSABLE' ? 'danger' : 'accent'}>{t.vision.verdict[item.label.verdict]}</Badge>{' '}
           <span className={styles.plate}>{proposed(item)}</span>
         </p>
         <p className={styles.note}>
-          Máy đọc <span className={styles.mono}>{item.machine_plate || DASH}</span> ({fmtPercent(item.machine_confidence)}) · cổng xác nhận{' '}
+          {t.review.machine} <span className={styles.mono}>{item.machine_plate || DASH}</span> ({fmtPercent(item.machine_confidence)}) · {t.review.gateConfirmed}{' '}
           <span className={styles.mono}>{item.confirmed_plate || DASH}</span>
         </p>
-        <p className={styles.note}>Gán bởi {item.label.labeler} · {fmtDateTime(item.label.created_at)}</p>
+        <p className={styles.note}>{t.review.labeledBy(item.label.labeler, fmtDateTime(item.label.created_at))}</p>
         {decide.error && <ErrorBlock error={decide.error} />}
         {rejecting ? (
           <form
@@ -46,16 +47,16 @@ function ReviewRow({ item }: { item: ReviewItem }) {
               decide.mutate({ labelId: item.label.id, decision: 'REJECTED', note: note.trim() });
             }}
           >
-            <TextField label="Vì sao trả lại" required minLength={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} />
-            <Button type="submit" variant="danger" size="sm" loading={decide.isPending} disabled={note.trim().length < 3}>Trả lại</Button>
-            <Button size="sm" variant="ghost" onClick={() => setRejecting(false)}>Huỷ</Button>
+            <TextField label={t.review.whyReject} required minLength={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} />
+            <Button type="submit" variant="danger" size="sm" loading={decide.isPending} disabled={note.trim().length < 3}>{t.review.reject}</Button>
+            <Button size="sm" variant="ghost" onClick={() => setRejecting(false)}>{t.review.cancel}</Button>
           </form>
         ) : (
           <div className={styles.actions}>
             <Button size="sm" loading={decide.isPending} onClick={() => decide.mutate({ labelId: item.label.id, decision: 'APPROVED', note: '' })}>
-              Duyệt
+              {t.common.approve}
             </Button>
-            <Button size="sm" variant="secondary" onClick={() => setRejecting(true)}>Trả lại…</Button>
+            <Button size="sm" variant="secondary" onClick={() => setRejecting(true)}>{t.review.rejectOpen}</Button>
           </div>
         )}
       </div>
@@ -64,19 +65,20 @@ function ReviewRow({ item }: { item: ReviewItem }) {
 }
 
 export function ReviewPage() {
+  const { t } = useI18n();
   const queue = useReviewQueue();
 
   return (
     <>
       <PageHeader
-        title="Duyệt nhãn"
-        description="Bốn mắt: nhãn của bạn không hiện ở đây và hệ thống chặn tự duyệt. Chỉ nhãn đã duyệt mới vào snapshot."
+        title={t.review.title}
+        description={t.review.desc}
       />
       {queue.isPending && <Loading />}
       {queue.error && <ErrorBlock error={queue.error} onRetry={() => void queue.refetch()} />}
-      {queue.data?.length === 0 && <EmptyState icon={<ClipboardCheck size={28} />} title="Không có nhãn nào chờ duyệt" />}
+      {queue.data?.length === 0 && <EmptyState icon={<ClipboardCheck size={28} />} title={t.review.empty} />}
       {queue.data && queue.data.length > 0 && (
-        <ul className={styles.reviewList} aria-label="Nhãn chờ duyệt">
+        <ul className={styles.reviewList} aria-label={t.review.listLabel}>
           {queue.data.map((item) => <ReviewRow key={item.label.id} item={item} />)}
         </ul>
       )}

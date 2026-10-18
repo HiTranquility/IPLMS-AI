@@ -3,44 +3,48 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { Permission } from '@/api/types';
+import type { Messages } from '@/i18n/vi';
+
+/** Nhãn lấy từ từ điển `nav` theo ngôn ngữ đang dùng. */
+type NavLabel = keyof Messages['nav'];
 
 export interface NavItem {
   to: string;
-  label: string;
+  label: NavLabel;
   icon: LucideIcon;
   /** Hiện khi vai trò có MỘT trong các quyền này; backend vẫn kiểm lại mọi request. */
   permissions: Permission[];
 }
 
 export interface NavGroup {
-  label: string;
+  label: NavLabel;
   items: NavItem[];
 }
 
 export const NAV_GROUPS: NavGroup[] = [
   {
-    label: 'Copilot',
+    label: 'copilot',
     items: [
-      { to: '/', label: 'Tổng quan', icon: Gauge, permissions: ['ai:metrics:read'] },
-      { to: '/copilot', label: 'Copilot Lab', icon: MessagesSquare, permissions: ['ai:chatlog:read'] },
-      { to: '/tools', label: 'Công cụ thử', icon: FlaskConical, permissions: ['ai:metrics:read', 'ai:prompt:edit'] },
+      { to: '/', label: 'overview', icon: Gauge, permissions: ['ai:metrics:read'] },
+      { to: '/copilot', label: 'copilotLab', icon: MessagesSquare, permissions: ['ai:chatlog:read'] },
+      { to: '/tools', label: 'tools', icon: FlaskConical, permissions: ['ai:metrics:read', 'ai:prompt:edit'] },
     ],
   },
   {
-    label: 'Vision',
+    label: 'vision',
     items: [
-      { to: '/vision', label: 'Tổng quan Vision', icon: ScanEye, permissions: ['ai:metrics:read'] },
-      { to: '/vision/label', label: 'Gán nhãn', icon: Tags, permissions: ['ai:task:label'] },
-      { to: '/vision/review', label: 'Duyệt nhãn', icon: ClipboardCheck, permissions: ['ai:label:approve'] },
-      { to: '/vision/datasets', label: 'Dataset & golden', icon: Database, permissions: ['ai:dataset:snapshot', 'ai:model:evaluate'] },
-      { to: '/vision/models', label: 'Model & lượt đo', icon: Boxes, permissions: ['ai:metrics:read'] },
+      { to: '/vision', label: 'visionOverview', icon: ScanEye, permissions: ['ai:metrics:read'] },
+      { to: '/vision/label', label: 'label', icon: Tags, permissions: ['ai:task:label'] },
+      { to: '/vision/review', label: 'review', icon: ClipboardCheck, permissions: ['ai:label:approve'] },
+      { to: '/vision/datasets', label: 'datasets', icon: Database, permissions: ['ai:dataset:snapshot', 'ai:model:evaluate'] },
+      { to: '/vision/models', label: 'models', icon: Boxes, permissions: ['ai:metrics:read'] },
     ],
   },
   {
-    label: 'Quản trị',
+    label: 'admin',
     items: [
-      { to: '/members', label: 'Thành viên', icon: Users, permissions: ['ai:member:manage'] },
-      { to: '/audit', label: 'Nhật ký', icon: ScrollText, permissions: ['ai:audit:read'] },
+      { to: '/members', label: 'members', icon: Users, permissions: ['ai:member:manage'] },
+      { to: '/audit', label: 'audit', icon: ScrollText, permissions: ['ai:audit:read'] },
     ],
   },
 ];
