@@ -29,3 +29,17 @@ class LlmConfig(BaseConfig):
     # Retrieval là cấu hình của Copilot, không phải của model embedding.
     rag_top_k: int = 5
     rag_min_similarity: float = 0.35
+
+    # ── Local LLM (llama.cpp CUDA server: Qwen3.5-4B-Q4_K_M) ───────────────────
+    # Provider: "local" (mặc định dùng llama-server CUDA), hoặc "openai"
+    llm_provider: str = "local"
+    local_llm_url: str = "http://127.0.0.1:8005/v1"
+    local_llm_binary_path: str = "var/bin/llama/llama-server.exe"
+    local_llm_model_path: str = "model/checkpoint/llm/Qwen3.5-4B-Q4_K_M.gguf"
+    local_llm_port: int = 8005
+    local_llm_host: str = "127.0.0.1"
+    local_llm_gpu_layers: int = 33  # 100% full offload toàn bộ 33 layers lên GPU NVIDIA GTX 1650
+    local_llm_ctx_size: int = 4096
+    local_llm_parallel_slots: int = 1  # -np 1: Single slot KV cache (~270MB), dành toàn bộ VRAM cho weights & ANPR
+    local_llm_threads: int = 4
+

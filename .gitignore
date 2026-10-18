@@ -77,6 +77,15 @@ var/model-cache/*
 # EasyOCR models (~113MB) do setup-dev tải sẵn — runtime cache, không commit.
 var/easyocr-cache/
 
+# Local llama binaries & GGUF model weights
+var/bin/
+*.gguf
+
+# Runtime logs
+var/log/
+*.log
+*.jsonl
+
 # Saved crops/originals produced at runtime
 static/cropped/*
 static/original/*
