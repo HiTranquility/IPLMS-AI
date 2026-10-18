@@ -20,7 +20,8 @@ Nhóm phát triển khẳng định:
 
 1. **Google Antigravity / Gemini 2.5 Flash & Pro (DeepMind Engine):** Hỗ trợ thiết kế kiến trúc microservice, phát triển pipeline RAG local, tối ưu hóa cờ biên dịch Clang của llama-server, gỡ lỗi CUDA VRAM và viết bộ kiểm chuẩn.
 2. **Claude 3.7 Sonnet / Cursor:** Hỗ trợ sinh khung mã nguồn FastAPI REST, định nghĩa Pydantic V2 DTOs và sinh gRPC stubs từ file `.proto`.
-3. **Unsloth Qwen3.5 GGUF Tools:** Cung cấp mô hình lượng tử hóa `Qwen3.5-4B-Q4_K_M.gguf` chạy trực tiếp trên GPU.
+3. **Claude Code (Claude Opus 5.5, Anthropic):** Viết AI Console nội bộ (IPLMS ISSUE-126: `ai/ui`, `app/console_main.py`, `app/core/console/**`, kênh A2, P6) và tích hợp nhánh — chi tiết ở mục 3b.
+4. **Unsloth Qwen3.5 GGUF Tools:** Cung cấp mô hình lượng tử hóa `Qwen3.5-4B-Q4_K_M.gguf` chạy trực tiếp trên GPU.
 
 ---
 
@@ -36,6 +37,32 @@ Nhóm phát triển khẳng định:
 | **6** | **LangGraph Dispute Workflow**<br>[`app/core/copilot/engines/dispute_workflow/graph.py`](file:///D:/ai/app/core/copilot/engines/dispute_workflow/graph.py) | Cursor | *"Xây dựng LangGraph StateGraph cho quy trình xử lý khiếu nại bãi xe có node phê duyệt của con người."* | Định nghĩa các nodes: `load_evidence`, `analyze_evidence`, `draft_recommendation`, `finalize`. | **Đã kiểm tra & bổ sung:** Thiết lập nút chặn `interrupt` bắt buộc tại node `request_human_review` theo chuẩn **Mục 4.1.B** (không cho phép AI tự ý thay đổi dữ liệu hoặc giải ngân tiền khi chưa có xác nhận từ Quản lý). |
 | **7** | **Multi-Format Ingestion Service**<br>[`app/core/knowledge/services/ingestion_service.py`](file:///D:/ai/app/core/knowledge/services/ingestion_service.py) | Claude 3.7 | *"Viết service bóc tách văn bản từ PDF, DOCX, TXT và Markdown, sau đó chunking thành các đoạn nhỏ."* | Code sử dụng `pypdf` và `docx` để trích xuất text và chia nhỏ theo độ dài ký tự. | **Đã sửa lỗi (Ca lỗi 3):** Bổ sung thuộc tính `duration_ms` cho DTO; thêm cơ chế tự động ghi đồng bộ vào `regulations_seed.json` để tài liệu upload mới có thể tìm kiếm được ngay lập tức ở chế độ local offline. |
 | **8** | **Automated Setup Scripts**<br>[`setup-dev.ps1`](file:///D:/ai/setup-dev.ps1) & [`setup-dev.sh`](file:///D:/ai/setup-dev.sh) | Antigravity | *"Tạo script tự động hóa cài đặt môi trường cho lập trình viên mới trên Windows và Linux."* | Cài đặt `.venv`, `requirements.txt` và sinh gRPC stubs. | **Đã mở rộng thành 7 bước:** Bổ sung bước 5 tự động tải `Qwen3.5-4B-Q4_K_M.gguf` (~2.55 GB) từ HuggingFace và tải prebuilt `llama-server` CUDA 12.4 DLLs nếu phát hiện có GPU NVIDIA. |
+
+> **Ghi chú tích hợp (2026-10-17, IPLMS ISSUE-126 phase-6 mục 6.4):** khi gộp `khoa-develop` vào nhánh chung, các mục **4, 5, 7** ở trên mô tả code **không** được đưa vào `develop`: `llm_factory.py` và `rag_pipeline.py` giữ bản `develop` (profile model + telemetry ADR-0049, chặn tái nhập bug-011); fallback ghi tài liệu vào `regulations_seed.json` của `ingestion_service.py` bị bỏ vì trả `SUCCESS` khi embedding lỗi và đi vòng cổng xuất bản. Các file đó còn nguyên trên nhánh `khoa-develop`. Mục 3 (`llama_server_manager.py`) có trong `develop` nhưng chưa được pipeline gọi.
+
+### 3b. Claude Code — AI Console nội bộ (IPLMS ISSUE-126)
+
+Toàn bộ code dưới đây do Claude Code viết theo yêu cầu của chủ đồ án; **chủ module (M1–M4 theo §Chia việc của ISSUE-126) cần đọc lại và ghi xác nhận vào cột cuối** trước khi nộp (đề Final §5.3).
+
+| STT | Thành phần / File | Công cụ AI | Yêu cầu chính | Phần AI đã sinh | Đã kiểm / sửa gì (chủ module bổ sung) |
+| :---: | :--- | :--- | :--- | :--- | :--- |
+| **9** | **Quyền + audit** — `app/core/console/engines/access_policy.py`, `app/infra/database/console_store.py` | Claude Code | *"AI console nội bộ, 7 vai trò, audit chỉ-thêm"* (IPLMS ADR-0048) | 7 vai trò × 15 quyền một nguồn; trigger chặn UPDATE/DELETE/TRUNCATE trên `audit_event` | Test ma trận quyền + test DB thật trên Postgres 16 tạm. *Chủ M1: …* |
+| **10** | **Đăng nhập** — `app/infra/identity/*`, `app/core/console/services/auth_service.py` | Claude Code | *"Google OIDC + TOTP bắt buộc, admin khẩn cấp"* | OIDC Authorization Code + PKCE + nonce, TOTP chống dùng lại mã, phiên cookie httpOnly, step-up | Rà lại 2026-10-17: thiếu giới hạn thử sai → sửa (Ca lỗi 4). *Chủ M1: …* |
+| **11** | **Telemetry Copilot** — `app/infra/database/ai_request_log_store.py`, `usage_service.py` | Claude Code | *"Ghi mỗi request AI vào DB, che PII, dashboard mức dùng"* (ADR-0049) | Bảng `ai_request_log`, HMAC user, tóm tắt mức dùng, 👍/👎 | Test unit + DB. *Chủ M2: …* |
+| **12** | **Giao diện** — `ai/ui/**` | Claude Code | *"React + Vite, Hallmark, 0 CDN"* | Trang đăng nhập/TOTP, Copilot Lab, Vision (gán nhãn, duyệt bốn mắt, golden, model, ngưỡng), Công cụ thử, biểu đồ đường cong ngưỡng | `tsc` + `vite build`; vitest chưa chạy được trên máy Node 22.14 (CI mới thêm job). *Chủ M3: …* |
+| **13** | **Kênh A2 + P6** — `backend/src/modules/Vision/workers/console-export.worker.ts`, `DatasetService.ExportForConsole` / `GetAcceptPolicy` | Claude Code | *"Backend xuất một chiều ảnh cắt + nhãn; kéo ngưỡng đã duyệt"* (ADR-0048 §5, ADR-0051) | Worker theo watermark, HMAC group/area; RPC đọc `accept_policy` APPROVED; platform khoá ô ngưỡng khi console quản lý | jest Vision 55/55, test DB AI 19 OK. Chưa E2E trên stack dev. *Chủ M4: …* |
+
+### Ca lỗi 4 (AI Console): đăng nhập không giới hạn số lần thử sai
+
+- **AI đã sinh:** `ConsoleAuthService._accept_code` trả `TOTP_INVALID` mỗi lần sai, không đếm; `password_login` cũng vậy. Mã TOTP 6 số → có thể dò hết 10⁶ mã từ máy nội bộ.
+- **Phát hiện:** rà phần đăng nhập trước khi mở PR tích hợp (đọc code, tìm `attempt/lock/rate` không thấy).
+- **Sửa (`ai@3de90e4`):** 5 lần sai TOTP trong một phiên → huỷ phiên (`TOO_MANY_ATTEMPTS`), ghi `audit_event`; 5 lần sai mật khẩu khẩn cấp → khoá 15 phút, thông báo vẫn chung chung. Thêm 2 test service + kiểm SQL trên Postgres thật.
+
+### Ca lỗi 5 (AI Console): CI không chạy giao diện
+
+- **AI đã sinh:** `ai/ui` có `typecheck`/`test`/`build` nhưng workflow `ci.yml` chỉ chạy Python → acceptance "tsc + vite build xanh" không được kiểm tự động.
+- **Phát hiện:** chạy lại baseline 2026-10-17, vitest không khởi động được trên Node 22.14 (undici 8 cần zlib zstd) và CI cũng không có job nào bắt được.
+- **Sửa (`ai@3de90e4`):** thêm job "Build AI Console UI" (Node 22, `pnpm install --frozen-lockfile`, typecheck, vitest, build).
 
 ---
 
