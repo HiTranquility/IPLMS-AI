@@ -18,7 +18,7 @@ Ví dụ **giả định**, không cấp mã hồ sơ thật: hồ sơ `ISSUE-01
 
 ## Hồ sơ, owner và PR
 
-Namespace local có ISSUE và bug theo [bộ mẫu](templates/README.md); PROB xuyên hệ thống thuộc umbrella, không tạo PROB local. Nếu hồ sơ chính thuộc umbrella, ghi rõ owner là IPLMS trong PR.
+Namespace local có ISSUE và bug theo [bộ mẫu](../templates/README.md); PROB xuyên hệ thống thuộc umbrella, không tạo PROB local. Nếu hồ sơ chính thuộc umbrella, ghi rõ owner là IPLMS trong PR.
 
 Mã số độc lập giữa các repo. PR phải ghi **repo sở hữu + mã + đường dẫn hồ sơ**, assignee, phạm vi, bằng chứng kiểm chứng và phần chưa chạy. Việc xuyên repo tham chiếu root issue và local issue nếu đã có; không phát minh local ID hay tháng/năm để đủ khuôn. Chỉ dùng đường dẫn/ID thật; khi clone riêng có thể ghi đường dẫn umbrella dưới dạng văn bản kèm tên repo.
 
@@ -29,7 +29,7 @@ Mã số độc lập giữa các repo. PR phải ghi **repo sở hữu + mã + 
 - Giữ nguyên nhánh cũ, gồm `khoa-develop` nếu có; không tự rename, xóa, force-push hay tái cấu trúc lịch sử. Áp dụng dần từ nhánh mới; validator đã có trên nhánh chuẩn hóa, requiredchecks GitHub là bước cấu hình/review riêng.
 - Commit đúng file trong repo này; cập nhật gitlink umbrella là bước riêng.
 
-Tham chiếu local: [AGENTS](../AGENTS.md), [conventions](AI_CONVENTIONS.md).
+Tham chiếu local: [AGENTS](../../AGENTS.md), [conventions](AI_CONVENTIONS.md).
 
 ## Kiểm tên nhánh và metadata PR — cập nhật 2026-10-16
 

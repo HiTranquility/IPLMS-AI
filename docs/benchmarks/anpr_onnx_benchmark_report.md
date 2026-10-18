@@ -1,6 +1,6 @@
 # Báo Cáo Đo Lường & Benchmark Độ Trễ ANPR: PyTorch vs ONNX Runtime
 
-> Căn cứ kiến trúc: [ADR-0037](../../../docs/projects/adrs/10-2026/0037-hardened-security-onnx-vision-forecast-service.md) & [AI_CONVENTIONS](../AI_CONVENTIONS.md).
+> Căn cứ kiến trúc: [ADR-0037](../../../docs/projects/adrs/10-2026/0037-hardened-security-onnx-vision-forecast-service.md) & [AI_CONVENTIONS](../standards/AI_CONVENTIONS.md).
 
 ## 1. Thông Tin Môi Trường & Cấu Hình Benchmark
 

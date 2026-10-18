@@ -10,9 +10,13 @@ Bộ mẫu tối thiểu cho người làm trực tiếp trong repo này. Repo g
 | Việc triển khai | [issue](issue-template.md) | `docs/projects/issues/MM-YYYY/ISSUE-NNN-slug/issue.md` |
 | Lỗi | [bug](bug-template.md) | `docs/projects/bugs/bug-NNN-slug/bug.md` |
 | Câu hỏi kỹ thuật | [qa](qa-template.md) | `docs/projects/qas/MM-YYYY/QA-NNN-slug.md` |
+| Việc không ra tính năng (hạ tầng, CI, script, dọn code) | [issue](issue-template.md) | `docs/projects/chores/MM-YYYY/CHORE-NNN-slug/issue.md` |
+| Quét cả repo đo độ lệch so với một quy ước, ra danh sách vi phạm | [audit](audit-template.md) | `docs/projects/audits/MM-YYYY/AUDIT-NNN-slug.md` |
 | Giao việc, xem ai đang nhận gì (bug/tính năng chưa làm) — một dòng mỗi việc, trỏ tới hồ sơ | [board](board-template.md) | `docs/projects/BOARD.md` *(một file, không mã, không theo tháng)* |
 
-- Mọi hồ sơ nằm dưới `docs/projects/`; thư mục con chỉ tạo khi có hồ sơ đầu tiên.
+- Mọi hồ sơ nằm dưới `docs/projects/`, đủ 8 thư mục `suggestions/ usecases/ adrs/ issues/ bugs/ qas/ chores/ audits/` (mỗi thư mục một `README.md`) + `BOARD.md` — IPLMS ADR-0054.
+- ISSUE/CHORE/bug là **thư mục**: ngoài cùng chỉ `issue.md`/`bug.md`; `phase/phase-N.md`, `review/review-N.md` và `review/audit-N.md` (convention audit), `handoff/handoff-N.md`, `evidence/` (ảnh, log, trace). Thư mục con tạo khi có file đầu.
+- Quy ước của repo nằm chung ở `docs/standards/` (`<AREA>_CONVENTIONS.md`, `GIT_WORKFLOW.md`); tài liệu tham khảo (hợp đồng, blueprint) ở `docs/references/`.
 - Mã số chạy riêng trong repo này. Trích sang repo khác thì ghi kèm tên repo, ví dụ `backend UC-003`.
 - `usecase-template.md` giống hệt bản ở repo gốc: sửa ở repo gốc rồi chép lại.
 

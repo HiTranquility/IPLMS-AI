@@ -9,7 +9,7 @@ Dịch vụ AI, hành vi model/runtime, dependency Python và vận hành riêng
 ## Nguồn chuẩn hiện có
 
 - README của repo: [../README.md](../README.md)
-- Quy ước: [AI_CONVENTIONS.md](AI_CONVENTIONS.md)
+- Quy ước: [AI_CONVENTIONS.md](standards/AI_CONVENTIONS.md)
 - Hồ sơ (suggestions, usecases, adrs, issues, bugs, qas): [projects/README.md](projects/README.md)
 - Đề xuất: [projects/suggestions/README.md](projects/suggestions/README.md)
 - Bộ mẫu: [templates/README.md](templates/README.md)
