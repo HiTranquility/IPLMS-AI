@@ -27,6 +27,16 @@ class AiTelemetryLogger:
         self._lock = threading.Lock()
         self._memory_buffer: deque[dict] = deque(maxlen=max_memory_entries)
 
+        if self.log_file.exists():
+            try:
+                with open(self.log_file, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            self._memory_buffer.append(json.loads(line))
+            except Exception as exc:
+                logger.warning("Không thể đọc lịch sử telemetry cũ: %s", exc)
+
     def record(
         self,
         endpoint: str,
@@ -101,6 +111,8 @@ class AiTelemetryLogger:
                 "avg_cost_usd_per_request": 0.0,
                 "estimated_cloud_cost_saved_usd": 0.0,
                 "active_model": "Qwen3.5-4B-Q4_K_M (Local CUDA)",
+                "latest_prompt_version": "v2",
+                "recent_requests": [],
             }
 
         successes = sum(1 for e in entries if e["status"] == "SUCCESS")
@@ -134,6 +146,7 @@ class AiTelemetryLogger:
             "estimated_cloud_cost_saved_usd": round(saved_usd, 4),
             "active_model": entries[-1].get("model", "Qwen3.5-4B-Q4_K_M"),
             "latest_prompt_version": entries[-1].get("prompt_version", "v2"),
+            "recent_requests": list(entries)[-20:][::-1],
         }
 
 

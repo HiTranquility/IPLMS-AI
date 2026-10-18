@@ -268,39 +268,134 @@ class RagPipelineEngine:
     async def stream_query(
         self, query_text: str, parking_lot_id: str | None = None
     ) -> AsyncGenerator[Dict[str, Any], None]:
+        start_time = time.perf_counter()
         logger.info(
             "Executing RAG stream query_chars=%d lot_scoped=%s",
             len(query_text),
             bool(parking_lot_id),
         )
 
-        # 1. Rào chắn đầu vào
+        # 1. Rào chắn đầu vào (Mục 4.2: Prompt Injection)
         guard_in = guardrail_manager.check_input(query_text)
         if not guard_in.is_safe:
-            yield {"token": guard_in.refusal_message or NO_CONTEXT_ANSWER, "is_finished": False, "sources": []}
-            yield {"token": "", "is_finished": True, "sources": []}
+            refusal = guard_in.refusal_message or NO_CONTEXT_ANSWER
+            lat = round((time.perf_counter() - start_time) * 1000.0, 2)
+            ai_telemetry_logger.record(
+                endpoint="/api/copilot/stream",
+                model=getattr(self.llm, "model", "local"),
+                prompt_version=prompt_manager.default_version,
+                tools_called=[],
+                input_tokens=len(query_text.split()),
+                output_tokens=len(refusal.split()),
+                latency_ms=lat,
+                status="REFUSED",
+            )
+            yield {
+                "token": refusal,
+                "is_finished": False,
+                "sources": [],
+                "confidence": 0.0,
+                "refused": True,
+                "guardrail_triggered": guard_in.risk_type,
+            }
+            yield {
+                "token": "",
+                "is_finished": True,
+                "sources": [],
+                "confidence": 0.0,
+                "refused": True,
+                "guardrail_triggered": guard_in.risk_type,
+                "prompt_version": prompt_manager.default_version,
+                "latency_ms": lat,
+            }
             return
 
         chunks = await self._retrieve(query_text, parking_lot_id)
         sources = _sources(chunks)
 
-        # 2. Rào chắn phạm vi & độ tương đồng
+        # 2. Rào chắn phạm vi & độ tương đồng (Mục 4.2: Scope Filter & ADR-0008)
         guard_scope = guardrail_manager.check_scope_and_chunks(query_text, chunks, self.min_similarity)
         if not guard_scope.is_safe or not chunks:
-            yield {"token": guard_scope.refusal_message or NO_CONTEXT_ANSWER, "is_finished": False, "sources": []}
-            yield {"token": "", "is_finished": True, "sources": []}
+            refusal = guard_scope.refusal_message or NO_CONTEXT_ANSWER
+            lat = round((time.perf_counter() - start_time) * 1000.0, 2)
+            ai_telemetry_logger.record(
+                endpoint="/api/copilot/stream",
+                model=getattr(self.llm, "model", "local"),
+                prompt_version=prompt_manager.default_version,
+                tools_called=[],
+                input_tokens=len(query_text.split()),
+                output_tokens=len(refusal.split()),
+                latency_ms=lat,
+                status="REFUSED",
+            )
+            yield {
+                "token": refusal,
+                "is_finished": False,
+                "sources": [],
+                "confidence": 0.0,
+                "refused": True,
+                "guardrail_triggered": guard_scope.risk_type,
+            }
+            yield {
+                "token": "",
+                "is_finished": True,
+                "sources": [],
+                "confidence": 0.0,
+                "refused": True,
+                "guardrail_triggered": guard_scope.risk_type,
+                "prompt_version": prompt_manager.default_version,
+                "latency_ms": lat,
+            }
             return
 
         # 3. Nạp Prompt & Stream
         system_prompt = prompt_manager.get_prompt("copilot_rag_system")
-        async for token in self.llm.stream_response(
-            system_prompt,
-            query_text.strip(),
-            _context(chunks),
-        ):
-            yield {"token": token, "is_finished": False, "sources": []}
+        prompt_meta = prompt_manager.get_metadata("copilot_rag_system")
+        prompt_ver = prompt_meta.get("version", "v2")
 
-        yield {"token": "", "is_finished": True, "sources": sources}
+        collected_tokens: List[str] = []
+        status = "SUCCESS"
+        try:
+            async for token in self.llm.stream_response(
+                system_prompt,
+                query_text.strip(),
+                _context(chunks),
+            ):
+                collected_tokens.append(token)
+                yield {"token": token, "is_finished": False, "sources": []}
+        except Exception as exc:
+            logger.warning("Lỗi LLM stream (%s), kích hoạt fallback tài liệu cứu sinh.", exc)
+            fallback_answer, _ = guardrail_manager.validate_or_fallback_output("", chunks)
+            status = "FALLBACK"
+            collected_tokens.append(fallback_answer)
+            yield {"token": fallback_answer, "is_finished": False, "sources": []}
+
+        # 4. Ghi vết Telemetry & Chi phí
+        lat = round((time.perf_counter() - start_time) * 1000.0, 2)
+        full_text = "".join(collected_tokens)
+        in_toks = len((system_prompt + " " + query_text + " " + _context(chunks)).split())
+        out_toks = len(full_text.split())
+        ai_telemetry_logger.record(
+            endpoint="/api/copilot/stream",
+            model=getattr(self.llm, "model", "local"),
+            prompt_version=prompt_ver,
+            tools_called=[],
+            input_tokens=in_toks,
+            output_tokens=out_toks,
+            latency_ms=lat,
+            status=status,
+        )
+
+        yield {
+            "token": "",
+            "is_finished": True,
+            "sources": sources,
+            "confidence": _confidence(chunks),
+            "refused": False,
+            "guardrail_triggered": "FAILED_RESPONSE" if status == "FALLBACK" else None,
+            "prompt_version": prompt_ver,
+            "latency_ms": lat,
+        }
 
 
 rag_pipeline = RagPipelineEngine()

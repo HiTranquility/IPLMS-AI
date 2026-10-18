@@ -28,6 +28,11 @@ class AnswerChunk(BaseModel):
     token: str
     is_finished: bool
     sources: List[str] = Field(default_factory=list)
+    confidence: Optional[float] = None
+    refused: bool = False
+    guardrail_triggered: Optional[str] = None
+    prompt_version: str = "v2"
+    latency_ms: Optional[float] = None
 
 
 class DisputeArbitrationRequest(BaseModel):

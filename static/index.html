@@ -130,6 +130,10 @@
         <i data-lucide="cpu" class="w-4 h-4"></i>
         <span>System & Engines</span>
       </button>
+      <button onclick="switchTab('analytics')" id="tabBtn-analytics" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 text-gray-400 hover:text-gray-200 hover:bg-gray-800/50">
+        <i data-lucide="bar-chart-3" class="w-4 h-4 text-cyan-400"></i>
+        <span>AI Analytics & Telemetry</span>
+      </button>
     </div>
   </nav>
 
@@ -329,6 +333,10 @@
             <div class="flex items-center space-x-2">
               <i data-lucide="bot" class="w-5 h-5 text-cyan-400"></i>
               <span class="font-semibold text-white text-sm">Hỏi đáp quy chế bãi xe</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono flex items-center space-x-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                <span>SSE Stream</span>
+              </span>
             </div>
             <select id="ragLotFilter" class="bg-gray-900 border border-gray-700 text-xs rounded-lg px-2.5 py-1 text-gray-300">
               <option value="">Tất cả các bãi (Toàn hệ thống)</option>
@@ -826,6 +834,170 @@
         </div>
       </div>
     </div>
+
+    <!-- ============================================================== -->
+    <!-- TAB 6: AI ANALYTICS & TELEMETRY (Section 6.6 & 4.2)            -->
+    <!-- ============================================================== -->
+    <div id="tab-analytics" class="tab-content hidden space-y-6">
+      <!-- Introduction Banner -->
+      <div class="bg-gradient-to-r from-blue-950/40 via-dark-card to-dark-card border border-blue-500/20 rounded-2xl p-5">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <span class="text-xs uppercase tracking-wider text-cyan-400 font-semibold">Admin Dashboard • Telemetry & Cost Control</span>
+            <h2 class="text-xl font-bold text-white mt-1">Giám Sát Yêu Cầu AI, Chi Phí & Độ Tin Cậy (Mục 6.6 & 4.2)</h2>
+            <p class="text-sm text-gray-400 mt-1 max-w-3xl">
+              Bảng điều khiển quản trị AI theo dõi trực tiếp số lượng requests, chi phí vận hành (<strong>$0.00 On-Premise GPU</strong>), độ trễ phản hồi, lượng token tiêu thụ và tỷ lệ từ chối theo nguyên tắc <strong>ADR-0008 ("Thà lỗi hơn bịa")</strong>.
+            </p>
+          </div>
+          <button onclick="fetchAiAnalytics()" class="px-3.5 py-2 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition shrink-0">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>Làm Mới Số Liệu</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Summary Cards (5 columns) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <!-- Card 1: Total Requests -->
+        <div class="bg-dark-card border border-dark-border rounded-2xl p-4 shadow space-y-2">
+          <div class="flex items-center justify-between text-gray-400 text-xs font-medium">
+            <span>Tổng Yêu Cầu AI</span>
+            <i data-lucide="send" class="w-4 h-4 text-cyan-400"></i>
+          </div>
+          <div class="flex items-baseline space-x-2">
+            <span id="kpiTotalReqs" class="text-2xl font-bold font-mono text-white">0</span>
+            <span class="text-xs text-gray-500">requests</span>
+          </div>
+          <div class="text-[11px] text-gray-400 flex items-center space-x-2">
+            <span class="text-emerald-400 font-semibold" id="kpiSuccessReqs">0 OK</span>
+            <span>•</span>
+            <span class="text-amber-400 font-semibold" id="kpiRefusedReqs">0 Từ chối</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Avg Latency -->
+        <div class="bg-dark-card border border-dark-border rounded-2xl p-4 shadow space-y-2">
+          <div class="flex items-center justify-between text-gray-400 text-xs font-medium">
+            <span>Độ Trễ Trung Bình</span>
+            <i data-lucide="clock" class="w-4 h-4 text-emerald-400"></i>
+          </div>
+          <div class="flex items-baseline space-x-2">
+            <span id="kpiAvgLatency" class="text-2xl font-bold font-mono text-emerald-400">0</span>
+            <span class="text-xs text-gray-500">ms</span>
+          </div>
+          <div class="text-[11px] text-gray-400 truncate" id="kpiActiveModel">
+            Model: Qwen3.5-4B (CUDA)
+          </div>
+        </div>
+
+        <!-- Card 3: Total Tokens -->
+        <div class="bg-dark-card border border-dark-border rounded-2xl p-4 shadow space-y-2">
+          <div class="flex items-center justify-between text-gray-400 text-xs font-medium">
+            <span>Tổng Tokens Đã Dùng</span>
+            <i data-lucide="cpu" class="w-4 h-4 text-purple-400"></i>
+          </div>
+          <div class="flex items-baseline space-x-2">
+            <span id="kpiTotalTokens" class="text-2xl font-bold font-mono text-purple-400">0</span>
+            <span class="text-xs text-gray-500">tokens</span>
+          </div>
+          <div class="text-[11px] text-gray-400" id="kpiAvgTokens">
+            TB: 0 tokens / req
+          </div>
+        </div>
+
+        <!-- Card 4: Cost & Savings -->
+        <div class="bg-dark-card border border-dark-border rounded-2xl p-4 shadow space-y-2">
+          <div class="flex items-center justify-between text-gray-400 text-xs font-medium">
+            <span>Chi Phí Vận Hành</span>
+            <i data-lucide="dollar-sign" class="w-4 h-4 text-teal-400"></i>
+          </div>
+          <div class="flex items-baseline space-x-1.5">
+            <span id="kpiCostUsd" class="text-2xl font-bold font-mono text-teal-400">$0.00</span>
+            <span class="text-xs text-gray-500">USD</span>
+          </div>
+          <div class="text-[11px] text-emerald-400 font-semibold truncate" id="kpiSavedUsd">
+            Tiết kiệm: +$0.00 vs GPT-4o
+          </div>
+        </div>
+
+        <!-- Card 5: Refusal / Safety Rate -->
+        <div class="bg-dark-card border border-dark-border rounded-2xl p-4 shadow space-y-2">
+          <div class="flex items-center justify-between text-gray-400 text-xs font-medium">
+            <span>Tỷ Lệ Từ Chối An Toàn</span>
+            <i data-lucide="shield-alert" class="w-4 h-4 text-amber-400"></i>
+          </div>
+          <div class="flex items-baseline space-x-1.5">
+            <span id="kpiRefusalRate" class="text-2xl font-bold font-mono text-amber-400">0.0%</span>
+          </div>
+          <div class="text-[11px] text-gray-400">
+            ADR-0008 (Zero Hallucination)
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row (2 columns) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left Chart: Status Distribution (5 cols) -->
+        <div class="lg:col-span-5 bg-dark-card border border-dark-border rounded-2xl p-5 shadow-xl space-y-3">
+          <h3 class="font-semibold text-white text-sm flex items-center space-x-2">
+            <i data-lucide="pie-chart" class="w-4 h-4 text-cyan-400"></i>
+            <span>Phân Bố Kết Quả Xử Lý Yêu Cầu</span>
+          </h3>
+          <div class="h-64 w-full flex items-center justify-center">
+            <canvas id="aiStatusChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Right Chart: Latency Trend (7 cols) -->
+        <div class="lg:col-span-7 bg-dark-card border border-dark-border rounded-2xl p-5 shadow-xl space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-white text-sm flex items-center space-x-2">
+              <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>
+              <span>Độ Trễ Các Yêu Cầu Gần Nhất (ms)</span>
+            </h3>
+            <span class="text-xs text-gray-400 font-mono" id="aiLatestPromptVer">Prompt: v2</span>
+          </div>
+          <div class="h-64 w-full">
+            <canvas id="aiLatencyChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Audit Log Table -->
+      <div class="bg-dark-card border border-dark-border rounded-2xl p-5 shadow-xl space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-dark-border">
+          <h3 class="font-semibold text-white text-sm flex items-center space-x-2">
+            <i data-lucide="list-ordered" class="w-4 h-4 text-cyan-400"></i>
+            <span>Nhật Ký Kiểm Toán Yêu Cầu AI (Live Request Audit Log)</span>
+          </h3>
+          <span class="text-xs px-2.5 py-0.5 rounded bg-gray-800 text-gray-400 font-mono">var/log/ai_requests.jsonl</span>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left text-xs font-mono text-gray-300">
+            <thead class="bg-gray-900/80 text-gray-400 uppercase text-[10px] tracking-wider border-b border-dark-border">
+              <tr>
+                <th class="py-2.5 px-3">Mã Request</th>
+                <th class="py-2.5 px-3">Thời Gian</th>
+                <th class="py-2.5 px-3">Endpoint</th>
+                <th class="py-2.5 px-3">Mô Hình</th>
+                <th class="py-2.5 px-3">Prompt</th>
+                <th class="py-2.5 px-3">Tokens (In / Out)</th>
+                <th class="py-2.5 px-3">Độ Trễ</th>
+                <th class="py-2.5 px-3">Trạng Thái</th>
+                <th class="py-2.5 px-3">Chi Phí</th>
+              </tr>
+            </thead>
+            <tbody id="aiAuditLogTableBody" class="divide-y divide-dark-border">
+              <!-- Rendered via JS -->
+              <tr>
+                <td colspan="9" class="py-8 text-center text-gray-500 font-sans">Đang tải nhật ký kiểm toán...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </main>
 
   <!-- JAVASCRIPT APP LOGIC -->
@@ -855,6 +1027,9 @@
       }
       if (tabId === 'system') {
         fetchSystemDiagnostics();
+      }
+      if (tabId === 'analytics') {
+        fetchAiAnalytics();
       }
     }
 
@@ -1048,6 +1223,16 @@
       document.getElementById('chatInput').focus();
     }
 
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
     async function handleChatSubmit(e) {
       e.preventDefault();
       const input = document.getElementById('chatInput');
@@ -1058,10 +1243,11 @@
       input.value = '';
 
       const lotId = document.getElementById('ragLotFilter').value;
-      const loadingId = appendChatMessage('bot', 'Đang tra cứu kho tri thức pgvector...');
+      const loadingId = appendChatMessage('bot', '<span class="inline-flex items-center space-x-1.5 text-cyan-400 font-mono"><span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping mr-1"></span><span>Đang khởi tạo luồng suy luận SSE...</span></span>');
+      const el = document.getElementById(loadingId);
 
       try {
-        const res = await fetch('/api/copilot/ask', {
+        const response = await fetch('/api/copilot/stream', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1071,29 +1257,109 @@
           })
         });
 
-        const data = await res.json();
-        const el = document.getElementById(loadingId);
-        
-        if (data.success && data.data && data.data.length > 0) {
-          const ans = data.data[0];
-          let formattedHtml = `<p class="whitespace-pre-line">${ans.answer}</p>`;
-          
-          if (ans.sources && ans.sources.length > 0) {
-            formattedHtml += `<div class="mt-2.5 pt-2 border-t border-gray-800 text-[11px] text-cyan-400 flex flex-wrap items-center gap-1.5 font-mono">
+        if (!response.ok || !response.body) {
+          throw new Error(`HTTP Error ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let accumulatedText = '';
+        let terminalData = null;
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('data: ')) {
+              try {
+                const chunk = JSON.parse(trimmed.slice(6));
+                if (chunk.token) {
+                  accumulatedText += chunk.token;
+                  el.innerHTML = `<div class="whitespace-pre-line text-gray-200">${escapeHtml(accumulatedText)}<span class="inline-block w-1.5 h-3.5 bg-cyan-400 animate-pulse ml-0.5 align-middle"></span></div>`;
+                  const container = document.getElementById('chatMessages');
+                  container.scrollTop = container.scrollHeight;
+                }
+                if (chunk.is_finished) {
+                  terminalData = chunk;
+                }
+              } catch (parseErr) {}
+            }
+          }
+        }
+
+        // Hoàn tất Stream: Format hiển thị câu trả lời cuối cùng
+        let finalHtml = `<div class="whitespace-pre-line text-gray-200">${escapeHtml(accumulatedText || 'Chưa nhận được phản hồi.')}</div>`;
+
+        if (terminalData) {
+          if (terminalData.sources && terminalData.sources.length > 0) {
+            finalHtml += `<div class="mt-2.5 pt-2 border-t border-gray-800 text-[11px] text-cyan-400 flex flex-wrap items-center gap-1.5 font-mono">
               <span class="text-gray-500 font-sans">Nguồn trích dẫn:</span>`;
-            ans.sources.forEach(src => {
-              formattedHtml += `<span class="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800/40">${src}</span>`;
+            terminalData.sources.forEach(src => {
+              finalHtml += `<span class="px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-800/40 text-cyan-300">${escapeHtml(src)}</span>`;
             });
-            formattedHtml += `</div>`;
+            finalHtml += `</div>`;
           }
 
-          formattedHtml += `<div class="mt-1 text-[10px] text-gray-500 font-mono">Độ tin cậy: ${Math.round(ans.confidence * 100)}% • Mode: ${ans.mode}</div>`;
-          el.innerHTML = formattedHtml;
-        } else {
-          el.innerText = 'Không tìm thấy câu trả lời phù hợp trong kho tri thức.';
+          const conf = terminalData.confidence != null ? Math.round(terminalData.confidence * 100) : 0;
+          const lat = terminalData.latency_ms ? `${terminalData.latency_ms}ms` : 'fast';
+          const pVer = terminalData.prompt_version || 'v2';
+
+          if (terminalData.refused) {
+            finalHtml += `<div class="mt-2 text-[10px] text-amber-400 font-mono flex items-center space-x-1.5 bg-amber-950/40 border border-amber-800/40 px-2.5 py-1 rounded">
+              <span>🛡️ Guardrail: ${terminalData.guardrail_triggered || 'OUT_OF_SCOPE'}</span>
+              <span>•</span>
+              <span>ADR-0008 ("Thà lỗi hơn bịa")</span>
+            </div>`;
+          } else {
+            finalHtml += `<div class="mt-2 text-[10px] text-gray-500 font-mono flex items-center space-x-2">
+              <span class="text-cyan-400 font-semibold">⚡ SSE Streamed</span>
+              <span>•</span>
+              <span>Độ tin cậy: ${conf}%</span>
+              <span>•</span>
+              <span>Độ trễ: ${lat}</span>
+              <span>•</span>
+              <span>Prompt: ${pVer}</span>
+            </div>`;
+          }
         }
+
+        el.innerHTML = finalHtml;
+        lucide.createIcons();
       } catch (err) {
-        document.getElementById(loadingId).innerText = 'Lỗi gọi Copilot RAG: ' + err.message;
+        console.warn('SSE stream failed, falling back to /api/copilot/ask:', err);
+        try {
+          const res = await fetch('/api/copilot/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: query, parking_lot_id: lotId || null, user_id: 'ui-tester' })
+          });
+          const data = await res.json();
+          if (data.success && data.data && data.data.length > 0) {
+            const ans = data.data[0];
+            let fbHtml = `<div class="whitespace-pre-line text-gray-200">${escapeHtml(ans.answer)}</div>`;
+            if (ans.sources && ans.sources.length > 0) {
+              fbHtml += `<div class="mt-2.5 pt-2 border-t border-gray-800 text-[11px] text-cyan-400 flex flex-wrap items-center gap-1.5 font-mono">
+                <span class="text-gray-500 font-sans">Nguồn trích dẫn:</span>`;
+              ans.sources.forEach(src => {
+                fbHtml += `<span class="px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-800/40 text-cyan-300">${escapeHtml(src)}</span>`;
+              });
+              fbHtml += `</div>`;
+            }
+            fbHtml += `<div class="mt-2 text-[10px] text-gray-500 font-mono">Độ tin cậy: ${Math.round(ans.confidence * 100)}% • Mode: Unary Fallback</div>`;
+            el.innerHTML = fbHtml;
+          } else {
+            el.innerText = 'Không tìm thấy câu trả lời phù hợp trong kho tri thức.';
+          }
+        } catch (unaryErr) {
+          el.innerText = 'Lỗi gọi Copilot RAG: ' + err.message;
+        }
       }
     }
 
@@ -1436,9 +1702,151 @@
       }
     }
 
+    // ==========================================
+    // AI ANALYTICS & TELEMETRY LOGIC (Mục 6.6 & 4.2)
+    // ==========================================
+    let aiStatusChart = null;
+    let aiLatencyChart = null;
+
+    async function fetchAiAnalytics() {
+      try {
+        const res = await fetch('/api/copilot/metrics');
+        const json = await res.json();
+        if (!json.success || !json.data || json.data.length === 0) return;
+
+        const m = json.data[0];
+
+        // Cập nhật các thẻ KPI
+        document.getElementById('kpiTotalReqs').innerText = m.total_requests;
+        document.getElementById('kpiSuccessReqs').innerText = `${m.successful_requests} Thành công`;
+        document.getElementById('kpiRefusedReqs').innerText = `${m.refused_requests} Từ chối`;
+        document.getElementById('kpiAvgLatency').innerText = Math.round(m.avg_latency_ms);
+        document.getElementById('kpiActiveModel').innerText = `Model: ${m.active_model || 'Qwen3.5-4B (CUDA)'}`;
+        document.getElementById('kpiTotalTokens').innerText = m.total_tokens.toLocaleString();
+        document.getElementById('kpiAvgTokens').innerText = `TB: ${Math.round(m.avg_tokens_per_request)} tokens / req`;
+        document.getElementById('kpiCostUsd').innerText = `$${m.total_cost_usd.toFixed(4)}`;
+        document.getElementById('kpiSavedUsd').innerText = `Tiết kiệm: +$${m.estimated_cloud_cost_saved_usd.toFixed(4)} vs GPT-4o`;
+
+        const refusalPct = m.total_requests > 0 ? ((m.refused_requests / m.total_requests) * 100).toFixed(1) : '0.0';
+        document.getElementById('kpiRefusalRate').innerText = `${refusalPct}%`;
+        document.getElementById('aiLatestPromptVer').innerText = `Prompt: ${m.latest_prompt_version || 'v2'}`;
+
+        // Biểu đồ hình bánh (Doughnut) phân bố trạng thái
+        const statusCtx = document.getElementById('aiStatusChart').getContext('2d');
+        const statusData = [m.successful_requests, m.refused_requests, m.fallback_requests, m.error_requests];
+        
+        if (aiStatusChart) {
+          aiStatusChart.data.datasets[0].data = statusData;
+          aiStatusChart.update();
+        } else {
+          aiStatusChart = new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+              labels: ['Thành công (SUCCESS)', 'Từ chối Guardrail (REFUSED)', 'Fallback cứu sinh', 'Lỗi (ERROR)'],
+              datasets: [{
+                data: statusData,
+                backgroundColor: ['#10b981', '#f59e0b', '#6366f1', '#ef4444'],
+                borderWidth: 0,
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'bottom',
+                  labels: { color: '#9ca3af', font: { size: 10 } }
+                }
+              },
+              cutout: '68%'
+            }
+          });
+        }
+
+        // Bảng Nhật Ký Kiểm Toán (Audit Log) & Biểu Đồ Độ Trễ (Latency Trend)
+        const recent = m.recent_requests || [];
+        const tableBody = document.getElementById('aiAuditLogTableBody');
+
+        if (recent.length === 0) {
+          tableBody.innerHTML = '<tr><td colspan="9" class="py-8 text-center text-gray-500 font-sans">Chưa có bản ghi telemetry nào.</td></tr>';
+        } else {
+          tableBody.innerHTML = recent.map(req => {
+            const badgeClass = req.status === 'SUCCESS' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
+                               req.status === 'REFUSED' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
+                               req.status === 'FALLBACK' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' :
+                               'bg-red-500/10 text-red-400 border-red-500/30';
+            const timeStr = req.timestamp ? req.timestamp.replace('T', ' ').substring(11, 19) : '--';
+            const inTok = req.tokens ? req.tokens.prompt_tokens : 0;
+            const outTok = req.tokens ? req.tokens.completion_tokens : 0;
+
+            return `
+              <tr class="hover:bg-gray-800/40 transition">
+                <td class="py-2.5 px-3 font-semibold text-gray-300">${req.request_id || '--'}</td>
+                <td class="py-2.5 px-3 text-gray-400">${timeStr}</td>
+                <td class="py-2.5 px-3 text-cyan-400">${req.endpoint || '/api/copilot/ask'}</td>
+                <td class="py-2.5 px-3 text-gray-300 truncate max-w-[120px]">${req.model || 'local'}</td>
+                <td class="py-2.5 px-3 text-gray-400">${req.prompt_version || 'v2'}</td>
+                <td class="py-2.5 px-3 text-gray-300">${inTok} / ${outTok}</td>
+                <td class="py-2.5 px-3 font-bold ${req.latency_ms > 5000 ? 'text-amber-400' : 'text-emerald-400'}">${Math.round(req.latency_ms || 0)}ms</td>
+                <td class="py-2.5 px-3">
+                  <span class="px-2 py-0.5 rounded text-[10px] border ${badgeClass}">${req.status}</span>
+                </td>
+                <td class="py-2.5 px-3 text-teal-400 font-semibold">$${(req.cost_usd || 0).toFixed(6)}</td>
+              </tr>
+            `;
+          }).join('');
+
+          // Vẽ biểu đồ độ trễ 15 request gần nhất
+          const latencyLabels = recent.slice(0, 15).reverse().map(r => r.request_id ? r.request_id.replace('req-', '') : '');
+          const latencyValues = recent.slice(0, 15).reverse().map(r => Math.round(r.latency_ms || 0));
+
+          const latCtx = document.getElementById('aiLatencyChart').getContext('2d');
+          if (aiLatencyChart) {
+            aiLatencyChart.data.labels = latencyLabels;
+            aiLatencyChart.data.datasets[0].data = latencyValues;
+            aiLatencyChart.update();
+          } else {
+            aiLatencyChart = new Chart(latCtx, {
+              type: 'bar',
+              data: {
+                labels: latencyLabels,
+                datasets: [{
+                  label: 'Độ trễ (ms)',
+                  data: latencyValues,
+                  backgroundColor: '#06b6d4',
+                  borderRadius: 6,
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    grid: { color: '#1f2937' },
+                    ticks: { color: '#9ca3af', font: { size: 10 } }
+                  },
+                  x: {
+                    grid: { display: false },
+                    ticks: { color: '#9ca3af', font: { size: 10 } }
+                  }
+                },
+                plugins: {
+                  legend: { display: false }
+                }
+              }
+            });
+          }
+        }
+        lucide.createIcons();
+      } catch (err) {
+        console.error('Error fetching AI analytics:', err);
+      }
+    }
+
     // Initial icon render
     lucide.createIcons();
     fetchSystemDiagnostics();
+    fetchAiAnalytics();
   </script>
 </body>
 </html>
