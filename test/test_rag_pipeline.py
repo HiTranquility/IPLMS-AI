@@ -51,6 +51,44 @@ class RagPipelineTest(unittest.TestCase):
         self.assertEqual([], result["sources"])
         self.assertEqual(0.0, result["confidence"])
 
+    def test_keyword_only_hits_abstain_without_calling_llm(self):
+        # Nhánh keyword của tìm kiếm lai trả similarity 0: trùng chữ, không trùng nghĩa.
+        chunks = [{"content": "Bãi xe mở cửa 6h", "source": "gio.md", "similarity": 0.0}]
+        llm = FakeLlm()
+        engine = RagPipelineEngine(FakeEmbedder(), FakeStore(chunks), llm)
+        result = asyncio.run(engine.query("xe có được rửa không?"))
+        self.assertEqual("NO_CONTEXT", result["status"])
+        self.assertEqual(NO_CONTEXT_ANSWER, result["answer"])
+        self.assertIsNone(llm.context)
+
+    def test_stream_abstains_when_best_vector_hit_is_below_threshold(self):
+        chunks = [
+            {"content": "Phí 20.000đ", "source": "quy-che.md", "similarity": 0.49},
+            {"content": "Nội quy", "source": "khac.md", "similarity": 0.0},
+        ]
+        llm = FakeLlm()
+        engine = RagPipelineEngine(FakeEmbedder(), FakeStore(chunks), llm)
+        engine.min_similarity = 0.5
+
+        async def collect():
+            return [item async for item in engine.stream_query("phí?")]
+
+        events = asyncio.run(collect())
+        self.assertEqual(NO_CONTEXT_ANSWER, events[0]["token"])
+        self.assertEqual("NO_CONTEXT", events[-1]["status"])
+        self.assertIsNone(llm.context)
+
+    def test_one_vector_hit_at_threshold_is_enough_to_answer(self):
+        chunks = [
+            {"content": "Nội quy", "source": "khac.md", "similarity": 0.0},
+            {"content": "Phí 20.000đ", "source": "quy-che.md", "similarity": 0.5},
+        ]
+        engine = RagPipelineEngine(FakeEmbedder(), FakeStore(chunks), FakeLlm())
+        engine.min_similarity = 0.5
+        result = asyncio.run(engine.query("phí?"))
+        self.assertEqual("SUCCESS", result["status"])
+        self.assertEqual(["quy-che.md"], result["sources"])
+
     def test_real_retrieval_is_scoped_and_only_cited_sources_are_returned(self):
         chunks = [
             {"content": "Phí 20.000đ", "source": "quy-che.md", "similarity": 0.9},

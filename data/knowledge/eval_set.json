@@ -157,7 +157,8 @@
     "question": "Quy định vận hành bãi xe theo điều 10 gồm những nội dung gì?",
     "parking_lot_id": null,
     "expected_sources": [
-      "Quy_dinh_van_hanh_bai_xe_dieu_10.pdf"
+      "Quy_dinh_van_hanh_bai_xe_dieu_10.pdf",
+      "demo_07_regulation.md"
     ]
   },
   {
@@ -167,7 +168,8 @@
     "question": "Xe ra muộn đúng 15 phút thời gian ân hạn có bị tính phụ phí không?",
     "parking_lot_id": null,
     "expected_sources": [
-      "Chinh_sach_phu_phi_qua_gio_dieu_9.pdf"
+      "Chinh_sach_phu_phi_qua_gio_dieu_9.pdf",
+      "demo_06_fine_policy.md"
     ]
   },
   {
@@ -197,7 +199,8 @@
     "question": "Gửi xe liên tục quá 72 giờ không thông báo có bị coi là phương tiện vô chủ?",
     "parking_lot_id": null,
     "expected_sources": [
-      "Noi_quy_va_che_tai_bai_xe.pdf"
+      "Noi_quy_va_che_tai_bai_xe.pdf",
+      "demo_04_fine_policy.md"
     ]
   },
   {
