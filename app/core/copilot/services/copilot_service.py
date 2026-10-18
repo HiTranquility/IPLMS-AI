@@ -41,7 +41,12 @@ class CopilotService:
             yield AnswerChunk(
                 token=chunk["token"],
                 is_finished=chunk["is_finished"],
-                sources=chunk["sources"],
+                sources=chunk.get("sources", []),
+                confidence=chunk.get("confidence"),
+                refused=chunk.get("refused", False),
+                guardrail_triggered=chunk.get("guardrail_triggered"),
+                prompt_version=chunk.get("prompt_version", "v2"),
+                latency_ms=chunk.get("latency_ms"),
             )
 
     @staticmethod

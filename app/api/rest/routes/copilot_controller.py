@@ -3,6 +3,7 @@ import json
 import os
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.core.copilot.dtos.copilot_dto import (
@@ -67,6 +68,79 @@ async def get_ai_metrics():
     """Lấy số liệu thống kê AI requests, tokens, latency và chi phí (Mục 4.2)."""
     from app.infra.monitoring.ai_logger import ai_telemetry_logger
     return BaseResponse.ok([ai_telemetry_logger.get_metrics_summary()], "AI Telemetry & Cost Summary")
+
+
+def _stream_sse_response(
+    query: str,
+    parking_lot_id: Optional[str] = None,
+    user_id: str = "test-user",
+) -> StreamingResponse:
+    req = AskQuestionRequest(
+        query=query,
+        parking_lot_id=parking_lot_id or None,
+        user_id=user_id,
+    )
+
+    async def event_generator():
+        try:
+            async for chunk in copilot_service.stream_answer(req):
+                payload = {
+                    "token": chunk.token,
+                    "is_finished": chunk.is_finished,
+                    "sources": chunk.sources,
+                    "confidence": chunk.confidence,
+                    "refused": chunk.refused,
+                    "guardrail_triggered": chunk.guardrail_triggered,
+                    "prompt_version": chunk.prompt_version,
+                    "latency_ms": chunk.latency_ms,
+                }
+                yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+        except Exception as exc:
+            err_payload = {
+                "token": f"\n\n[Lỗi streaming: {str(exc)}]",
+                "is_finished": True,
+                "sources": [],
+                "confidence": 0.0,
+                "refused": False,
+                "guardrail_triggered": "STREAM_EXCEPTION",
+                "prompt_version": "v2",
+                "latency_ms": 0.0,
+            }
+            yield f"data: {json.dumps(err_payload, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@router.post("/stream")
+def stream_copilot_post(payload: AskPayload):
+    """Stream câu trả lời AI theo từng token thời gian thực bằng Server-Sent Events (SSE)."""
+    return _stream_sse_response(
+        query=payload.query,
+        parking_lot_id=payload.parking_lot_id,
+        user_id=payload.user_id or "test-user",
+    )
+
+
+@router.get("/stream")
+def stream_copilot_get(
+    query: str,
+    parking_lot_id: Optional[str] = None,
+    user_id: Optional[str] = "test-user",
+):
+    """Stream SSE qua GET request (tương thích EventSource trình duyệt chuẩn)."""
+    return _stream_sse_response(
+        query=query,
+        parking_lot_id=parking_lot_id,
+        user_id=user_id or "test-user",
+    )
 
 
 @router.post("/ask", response_model=BaseResponse[AskResponse])
