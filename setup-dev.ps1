@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Dựng môi trường AI dev sau khi clone repo (Windows PowerShell).
 
@@ -26,7 +26,7 @@ function Write-Sep   { Write-Host "───────────────
 
 # ── 1. Python venv ───────────────────────────────────────────────────────────
 Write-Sep
-Write-Info "Bước 1/6: Tạo .venv & cài dependencies"
+Write-Info "Bước 1/7: Tạo .venv & cài dependencies"
 
 $VenvPython = Join-Path $ScriptDir ".venv\Scripts\python.exe"
 $VenvPip    = Join-Path $ScriptDir ".venv\Scripts\pip.exe"
@@ -63,7 +63,7 @@ Write-Ok "Đã cài đặt dependencies (requirements.txt)"
 
 # ── 2. gRPC stubs ────────────────────────────────────────────────────────────
 Write-Sep
-Write-Info "Bước 2/6: Sinh gRPC stubs từ proto/"
+Write-Info "Bước 2/7: Sinh gRPC stubs từ proto/"
 
 $StubDir = "app\api\grpc\generated"
 if ((Test-Path $StubDir) -and (Get-ChildItem $StubDir -ErrorAction SilentlyContinue | Measure-Object).Count -gt 0) {
@@ -76,7 +76,7 @@ if ((Test-Path $StubDir) -and (Get-ChildItem $StubDir -ErrorAction SilentlyConti
 
 # ── 3. YOLO weights ──────────────────────────────────────────────────────────
 Write-Sep
-Write-Info "Bước 3/6: Kiểm tra YOLO weights (best.pt)"
+Write-Info "Bước 3/7: Kiểm tra YOLO weights (best.pt)"
 
 $YoloPath = "model\artifacts\bootstrap\anpr\best.pt"
 if (Test-Path $YoloPath) {
@@ -90,7 +90,7 @@ if (Test-Path $YoloPath) {
 
 # ── 4. EasyOCR models ────────────────────────────────────────────────────────
 Write-Sep
-Write-Info "Bước 4/6: Tải trước EasyOCR models (~113MB)"
+Write-Info "Bước 4/7: Tải trước EasyOCR models (~113MB)"
 
 # Gom model EasyOCR vào project thay vì rải ở ~/.EasyOCR/
 $EasyOcrDir = if ($env:EASYOCR_MODULE_PATH) { $env:EASYOCR_MODULE_PATH } else { "$ScriptDir\var\easyocr-cache" }
@@ -115,9 +115,88 @@ print('EasyOCR models đã tải xong.')
     }
 }
 
-# ── 5. .env.dev ──────────────────────────────────────────────────────────────
+# ── 5. Local LLM & llama-server ──────────────────────────────────────────────
 Write-Sep
-Write-Info "Bước 5/6: Kiểm tra .env.dev"
+Write-Info "Bước 5/7: Tải Local LLM (Qwen3.5-4B-GGUF ~2.55 GB) & llama-server"
+
+# 5.1. Mô hình GGUF
+$ModelDir = Join-Path $ScriptDir "model\checkpoint\llm"
+$ModelPath = Join-Path $ModelDir "Qwen3.5-4B-Q4_K_M.gguf"
+if (-not (Test-Path $ModelDir)) {
+    New-Item -ItemType Directory -Path $ModelDir -Force | Out-Null
+}
+
+if ((Test-Path $ModelPath) -and ((Get-Item $ModelPath).Length -gt 2000000000)) {
+    $ModelSize = [math]::Round((Get-Item $ModelPath).Length / 1GB, 2)
+    Write-Ok "Qwen3.5-4B-Q4_K_M.gguf đã tồn tại ($ModelSize GB)"
+} else {
+    Write-Info "Đang tải mô hình Qwen3.5-4B-Q4_K_M.gguf (~2.55 GB) từ HuggingFace..."
+    Write-Info "URL: https://huggingface.co/unsloth/Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-Q4_K_M.gguf"
+    $modelUrl = "https://huggingface.co/unsloth/Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-Q4_K_M.gguf"
+    try {
+        if (Get-Command "curl.exe" -ErrorAction SilentlyContinue) {
+            & curl.exe -L -C - --progress-bar -o $ModelPath $modelUrl
+        } else {
+            Invoke-WebRequest -Uri $modelUrl -OutFile $ModelPath
+        }
+        Write-Ok "Tải xong Qwen3.5-4B-Q4_K_M.gguf"
+    } catch {
+        Write-Warn "Không thể tự động tải Qwen3.5-4B-Q4_K_M.gguf: $_"
+        Write-Warn "Vui lòng tải thủ công và lưu vào: $ModelPath"
+    }
+}
+
+# 5.2. Binary llama-server
+$LlamaDir = Join-Path $ScriptDir "var\bin\llama"
+$LlamaServerExe = Join-Path $LlamaDir "llama-server.exe"
+if (-not (Test-Path $LlamaDir)) {
+    New-Item -ItemType Directory -Path $LlamaDir -Force | Out-Null
+}
+
+if (Test-Path $LlamaServerExe) {
+    Write-Ok "llama-server.exe đã có tại $LlamaDir"
+} else {
+    Write-Info "Đang tải prebuilt llama.cpp binaries (b11681)..."
+    $TempZipDir = Join-Path $env:TEMP "llama_setup_cache"
+    if (-not (Test-Path $TempZipDir)) {
+        New-Item -ItemType Directory -Path $TempZipDir -Force | Out-Null
+    }
+
+    $binZip = if ($hasNvidiaGpu) { "llama-b11681-bin-win-cuda-12.4-x64.zip" } else { "llama-b11681-bin-win-cpu-x64.zip" }
+    $binUrl = "https://github.com/ggml-org/llama.cpp/releases/download/b11681/$binZip"
+    $binZipPath = Join-Path $TempZipDir $binZip
+
+    try {
+        Write-Info "Tải binary $binZip..."
+        if (Get-Command "curl.exe" -ErrorAction SilentlyContinue) {
+            & curl.exe -L -C - --progress-bar -o $binZipPath $binUrl
+        } else {
+            Invoke-WebRequest -Uri $binUrl -OutFile $binZipPath
+        }
+        Expand-Archive -Path $binZipPath -DestinationPath $LlamaDir -Force
+
+        if ($hasNvidiaGpu) {
+            $cuZip = "cudart-llama-bin-win-cuda-12.4-x64.zip"
+            $cuUrl = "https://github.com/ggml-org/llama.cpp/releases/download/b11681/$cuZip"
+            $cuZipPath = Join-Path $TempZipDir $cuZip
+            Write-Info "Tải CUDA runtime DLLs ($cuZip)..."
+            if (Get-Command "curl.exe" -ErrorAction SilentlyContinue) {
+                & curl.exe -L -C - --progress-bar -o $cuZipPath $cuUrl
+            } else {
+                Invoke-WebRequest -Uri $cuUrl -OutFile $cuZipPath
+            }
+            Expand-Archive -Path $cuZipPath -DestinationPath $LlamaDir -Force
+        }
+        Write-Ok "Đã cài đặt llama-server vào $LlamaDir"
+    } catch {
+        Write-Warn "Không thể tự động tải llama-server: $_"
+        Write-Warn "Vui lòng tải prebuilt llama-server và đặt vào: $LlamaDir"
+    }
+}
+
+# ── 6. .env.dev ──────────────────────────────────────────────────────────────
+Write-Sep
+Write-Info "Bước 6/7: Kiểm tra .env.dev"
 
 if (Test-Path ".env.dev") {
     Write-Ok ".env.dev đã tồn tại"
@@ -126,9 +205,9 @@ if (Test-Path ".env.dev") {
     Write-Ok "Đã copy .env.example → .env.dev (sửa theo máy nếu cần)"
 }
 
-# ── 6. Smoke test ────────────────────────────────────────────────────────────
+# ── 7. Smoke test ────────────────────────────────────────────────────────────
 Write-Sep
-Write-Info "Bước 6/6: Smoke test"
+Write-Info "Bước 7/7: Smoke test"
 
 try {
     & $VenvPython -c @"
@@ -138,6 +217,8 @@ print(f'  YOLO path:    {cfg.vision.yolo_model_path}')
 print(f'  OCR langs:    {cfg.vision.ocr_language_list}')
 print(f'  Device:       {cfg.vision.device}')
 print(f'  gRPC port:    {cfg.server.grpc_port}')
+print(f'  LLM Provider: {cfg.llm.llm_provider}')
+print(f'  LLM Model:    {cfg.llm.local_llm_model_path}')
 "@
     Write-Ok "Config load thành công"
 } catch {
