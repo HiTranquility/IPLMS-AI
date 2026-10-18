@@ -1,12 +1,14 @@
 import { Lock } from 'lucide-react';
+import { useI18n } from '@/i18n/I18nProvider';
 import { EmptyState } from '../Ui/feedback/EmptyState';
 
 export function Forbidden() {
+  const { t } = useI18n();
   return (
     <EmptyState
       icon={<Lock size={28} />}
-      title="Vai trò của bạn không mở được mục này"
-      description="Quyền trong console do quản trị console cấp theo vai trò. Cần thêm quyền thì liên hệ AI Lead hoặc quản trị console."
+      title={t.app.forbiddenTitle}
+      description={t.app.forbiddenDesc}
     />
   );
 }

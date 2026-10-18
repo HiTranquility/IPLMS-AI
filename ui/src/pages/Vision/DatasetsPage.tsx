@@ -10,10 +10,12 @@ import { ReasonAction } from '@/components/common/Ui/form/ReasonAction';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useCan } from '@/hooks/useConsole';
 import { useCreateSnapshot, useFreezeSnapshot, useSnapshots } from '@/hooks/useVision';
+import { useI18n } from '@/i18n/I18nProvider';
 import { fmtDateTime, fmtInt } from '@/utils/format';
 import styles from './vision.module.css';
 
 function CreateSnapshot() {
+  const { t } = useI18n();
   const create = useCreateSnapshot();
   const [kind, setKind] = useState<'train' | 'golden'>('train');
   const [name, setName] = useState('');
@@ -25,25 +27,26 @@ function CreateSnapshot() {
 
   return (
     <form className={styles.panel} onSubmit={submit} aria-labelledby="snapshot-title">
-      <h2 id="snapshot-title" className={styles.sectionTitle}>Tạo snapshot</h2>
+      <h2 id="snapshot-title" className={styles.sectionTitle}>{t.datasets.createTitle}</h2>
       <p className={styles.note}>
-        Lấy mọi nhãn đã duyệt (bỏ ảnh hỏng). Train tự loại các nhóm ảnh đã nằm trong golden đã khoá để không rò giữa train và test; train/val chia theo nhóm, cố định giữa các lần tạo.
+        {t.datasets.createNote}
       </p>
       <div className={styles.formGrid}>
-        <SelectField label="Loại" value={kind} onChange={(e) => setKind(e.target.value as 'train' | 'golden')}>
+        <SelectField label={t.datasets.kind} value={kind} onChange={(e) => setKind(e.target.value as 'train' | 'golden')}>
           <option value="train">train (train + val)</option>
           <option value="golden">golden (test-golden)</option>
         </SelectField>
-        <TextField label="Tên" required minLength={3} maxLength={120} value={name} onChange={(e) => setName(e.target.value)} />
-        <Button type="submit" loading={create.isPending}>Tạo</Button>
+        <TextField label={t.common.name} required minLength={3} maxLength={120} value={name} onChange={(e) => setName(e.target.value)} />
+        <Button type="submit" loading={create.isPending}>{t.datasets.create}</Button>
       </div>
       {create.error && <ErrorBlock error={create.error} />}
-      {create.data && <p className={styles.note} role="status">Đã tạo snapshot {fmtInt(create.data.sample_count)} mẫu.</p>}
+      {create.data && <p className={styles.note} role="status">{t.datasets.created(fmtInt(create.data.sample_count))}</p>}
     </form>
   );
 }
 
 export function DatasetsPage() {
+  const { t } = useI18n();
   const snapshots = useSnapshots();
   const freeze = useFreezeSnapshot();
   const canCreate = useCan('ai:dataset:snapshot');
@@ -52,26 +55,26 @@ export function DatasetsPage() {
   return (
     <>
       <PageHeader
-        title="Dataset & golden"
-        description="Snapshot là manifest khoá bằng sha256 của danh sách mẫu. Golden phải khoá (AI Lead, xác thực lại) trước khi dùng làm thước đo model."
+        title={t.datasets.title}
+        description={t.datasets.desc}
       />
       {canCreate && <section className={styles.section}><CreateSnapshot /></section>}
       <section className={styles.section} aria-labelledby="snapshots-title">
-        <h2 id="snapshots-title" className={styles.sectionTitle}>Snapshot</h2>
+        <h2 id="snapshots-title" className={styles.sectionTitle}>{t.datasets.listTitle}</h2>
         {snapshots.isPending && <Loading />}
         {snapshots.error && <ErrorBlock error={snapshots.error} onRetry={() => void snapshots.refetch()} />}
-        {snapshots.data?.length === 0 && <EmptyState icon={<Database size={28} />} title="Chưa có snapshot" description="Cần nhãn đã duyệt trước khi tạo snapshot." />}
+        {snapshots.data?.length === 0 && <EmptyState icon={<Database size={28} />} title={t.datasets.emptyTitle} description={t.datasets.emptyDesc} />}
         {snapshots.data && snapshots.data.length > 0 && (
           <div className={table.wrap}>
             <table className={table.table}>
               <thead>
                 <tr>
-                  <th scope="col">Tên</th>
-                  <th scope="col">Loại</th>
-                  <th scope="col" className={table.num}>Mẫu</th>
+                  <th scope="col">{t.common.name}</th>
+                  <th scope="col">{t.datasets.kind}</th>
+                  <th scope="col" className={table.num}>{t.common.sample}</th>
                   <th scope="col">sha256</th>
-                  <th scope="col">Tạo</th>
-                  <th scope="col">Khoá</th>
+                  <th scope="col">{t.datasets.createdCol}</th>
+                  <th scope="col">{t.datasets.frozenCol}</th>
                 </tr>
               </thead>
               <tbody>
@@ -86,7 +89,7 @@ export function DatasetsPage() {
                       {s.frozen_at ? (
                         <span className={table.muted}><Lock size={12} aria-hidden /> {s.frozen_by} · {fmtDateTime(s.frozen_at)}</span>
                       ) : s.kind === 'golden' && canFreeze ? (
-                        <ReasonAction label="Khoá golden" onSubmit={(reason) => freeze.mutateAsync({ id: s.id, reason })} />
+                        <ReasonAction label={t.datasets.freeze} onSubmit={(reason) => freeze.mutateAsync({ id: s.id, reason })} />
                       ) : (
                         <span className={table.muted}>—</span>
                       )}

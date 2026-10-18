@@ -1,15 +1,20 @@
+import { messages } from '@/i18n/I18nProvider';
+
 /** Gọi API console cùng nguồn (/console/api). Cookie phiên httpOnly đi kèm tự động. */
 export const API_BASE = '/console/api';
 
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
+  /** `message` do server viết (luôn tiếng Việt), không phải câu client tự đặt theo ngôn ngữ đang dùng. */
+  readonly fromServer: boolean;
 
-  constructor(status: number, code: string, message: string) {
+  constructor(status: number, code: string, message: string, fromServer = false) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
+    this.fromServer = fromServer;
   }
 }
 
@@ -24,8 +29,8 @@ interface Envelope<T> {
 function messageOf(status: number, body: Partial<Envelope<unknown>> | null): string {
   if (body?.message) return body.message;
   // FastAPI trả {"detail": [...]} khi body/query sai kiểu (422).
-  if (status === 422) return 'Dữ liệu gửi lên chưa hợp lệ.';
-  return `Máy chủ console trả lỗi ${status}.`;
+  if (status === 422) return messages().errors.invalidData;
+  return messages().errors.http(status);
 }
 
 export async function request<T>(path: string, init: { method?: 'GET' | 'POST'; body?: unknown } = {}): Promise<T[]> {
@@ -46,17 +51,17 @@ export async function request<T>(path: string, init: { method?: 'GET' | 'POST'; 
       body: init.body === undefined ? undefined : init.body instanceof FormData ? init.body : JSON.stringify(init.body),
     });
   } catch {
-    throw new ApiError(0, 'NETWORK', 'Không kết nối được tới AI Console. Process console có đang chạy không?');
+    throw new ApiError(0, 'NETWORK', messages().errors.network);
   }
   const body = (await response.json().catch(() => null)) as Partial<Envelope<T>> | null;
   if (!response.ok || body?.success === false) {
-    throw new ApiError(response.status, body?.code ?? `HTTP_${response.status}`, messageOf(response.status, body));
+    throw new ApiError(response.status, body?.code ?? `HTTP_${response.status}`, messageOf(response.status, body), Boolean(body?.message));
   }
   return body?.data ?? [];
 }
 
 export async function requestOne<T>(path: string, init?: Parameters<typeof request>[1]): Promise<T> {
   const [first] = await request<T>(path, init);
-  if (first === undefined) throw new ApiError(500, 'EMPTY', 'Máy chủ không trả dữ liệu.');
+  if (first === undefined) throw new ApiError(500, 'EMPTY', messages().errors.empty);
   return first;
 }
