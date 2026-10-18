@@ -61,8 +61,8 @@ Hồ sơ riêng của repo ở `docs/`: mọi hồ sơ nằm dưới `projects/`
 
 ## Git và an toàn
 
-- Nhánh mới theo [Git workflow local](docs/standards/GIT_WORKFLOW.md): mã hồ sơ + tháng/năm tạo gốc, giữ nguyên nhánh cũ.
-- Bắt tay làm một ISSUE/bug (nhận việc, chuyển 🚧) thì tách **một nhánh riêng cho đúng hồ sơ đó** từ `develop` mới nhất, tên theo GIT_WORKFLOW; phiên khác đang dùng tree chung thì mở worktree ở `.worktrees/<nhánh>` trong repo này. Không gộp việc khác vào nhánh đang có; không tự tách thêm nhánh/worktree/PR ngoài một-hồ-sơ-một-nhánh, cần tách hơn thì hỏi trước. Mã ISSUE kế tiếp: đối chiếu bảng định danh ở gốc IPLMS `docs/projects/issue-registry.md` (mã duy nhất trong repo này, thư mục tháng chỉ để xếp chỗ).
+- **Một hồ sơ một nhánh:** bắt tay làm ISSUE/bug (chuyển 🚧) thì tách đúng một nhánh từ `develop` mới nhất, tên theo [GIT_WORKFLOW](docs/standards/GIT_WORKFLOW.md) (mã hồ sơ + tháng tạo); tree đang có phiên khác thì dùng worktree `.worktrees/<nhánh>`. Việc xuyên repo dùng cùng tên nhánh ở mỗi repo bị chạm. Tách thêm nhánh/worktree/PR cho cùng việc → hỏi trước. Merge xong gỡ worktree, xoá nhánh; nhánh cũ có sẵn giữ tên.
+- **Mã hồ sơ:** ISSUE/bug đánh số liên tục trong repo này, đếm qua **mọi** thư mục tháng (không chỉ tháng hiện tại); tạo hồ sơ xong push nhánh ngay để phiên khác thấy mã. Trong checkout IPLMS: cột *Mã kế tiếp* ở `docs/projects/issue-registry.md` của gốc.
 - Chỉ stage đúng file mình sửa; [NEVER] `git add .` / `git add -A`. Message mô tả thay đổi thật và ghi phần chưa làm/chưa test.
 - Commit trong repo này trước; cập nhật gitlink ở repo gốc là bước riêng khi thuộc phạm vi.
 - Hỏi người dùng trước khi cài package mới, chạy lệnh ghi dữ liệu dùng chung hoặc deploy.
