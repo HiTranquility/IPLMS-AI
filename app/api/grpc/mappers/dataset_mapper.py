@@ -103,3 +103,16 @@ def to_export_response(result: dict):
         watermark_id=result["watermark_id"],
         rejected_ids=result["rejected_ids"],
     )
+
+
+def to_accept_policy_response(policy: dict | None):
+    if policy is None:
+        return _pb2.GetAcceptPolicyResponse(found=False)
+    return _pb2.GetAcceptPolicyResponse(
+        found=True,
+        policy_id=policy["id"],
+        version=policy["version"],
+        auto_accept_threshold=policy["auto_accept_threshold"],
+        audit_rate=policy["audit_rate"],
+        decided_at=policy["decided_at"],
+    )
