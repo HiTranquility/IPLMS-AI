@@ -2,7 +2,7 @@
 
 > **Đích:** `ai/docs/guides/01-three-ai-pipelines-architecture.md`
 > **Áp dụng cho:** `ai/app/core/{vision, copilot, forecast}` — 3 domain AI engine
-> **Đọc trước khi sửa:** [`AI_CONVENTIONS.md`](../../AI_CONVENTIONS.md) · [`README.md`](../../../README.md)
+> **Đọc trước khi sửa:** [`AI_CONVENTIONS.md`](../../standards/AI_CONVENTIONS.md) · [`README.md`](../../../README.md)
 > **Đối chiếu source:** 2026-09-19; chưa kiểm chứng runtime/benchmark.
 
 ---
@@ -23,7 +23,7 @@ Dev học hoặc xây AI cho IPLMS. Đọc xong phân biệt ba nghiệp vụ, l
 ## ☑️ Điều kiện trước khi bắt đầu (Prerequisites)
 
 - [ ] Hiểu request/response và phân biệt huấn luyện với suy luận.
-- [ ] Đọc [AI conventions](../../AI_CONVENTIONS.md); chưa cần GPU để học luồng.
+- [ ] Đọc [AI conventions](../../standards/AI_CONVENTIONS.md); chưa cần GPU để học luồng.
 - [ ] Khi chạy thật: chuẩn bị môi trường theo [AI README](../../../README.md), weights và dữ liệu kiểm chứng.
 
 ## 🗺️ Bức tranh tổng quan
@@ -498,7 +498,7 @@ Luật hướng phụ thuộc:
 
 - [`02-rag-optimization-strategy.md`](02-rag-optimization-strategy.md) — Chiến lược tối ưu RAG chi tiết
 - [`03-image-processing-pipeline.md`](03-image-processing-pipeline.md) — Lý thuyết xử lý ảnh ANPR
-- [`../AI_CONVENTIONS.md`](../../AI_CONVENTIONS.md) — Luật viết code AI
+- [`../AI_CONVENTIONS.md`](../../standards/AI_CONVENTIONS.md) — Luật viết code AI
 - [`../../README.md`](../../../README.md) — Hướng dẫn chạy
 - [`../../../docs/guides/backend/grpc-nest-python-ai-integration.md`](../../../../docs/guides/09-2026/grpc-nest-python-ai-integration.md) — Nối NestJS ⇄ Python
 

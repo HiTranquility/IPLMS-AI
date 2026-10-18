@@ -1,6 +1,6 @@
 # 🐛 bug-NNN: <Tên lỗi>
 
-> **Đích:** `docs/projects/bugs/bug-NNN-slug/bug.md` · **Luật chung:** [templates/README](README.md)
+> **Đích:** `docs/projects/bugs/bug-NNN-slug/bug.md` — ngoài cùng chỉ file này; `review/` (cả `audit-N.md`), `evidence/`, `phase/` khi sửa nhiều chặng · **Luật chung:** [templates/README](README.md)
 
 | | |
 |---|---|
