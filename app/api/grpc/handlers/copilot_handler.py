@@ -6,8 +6,12 @@ from app.api.grpc.mappers.copilot_mapper import (
     to_ask_question_request,
     to_ask_question_response,
     to_dispute_request,
+    to_feedback_command,
+    to_feedback_response,
+    to_usage_summary_response,
 )
 from app.core.copilot.services.copilot_service import copilot_service
+from app.core.copilot.services.usage_service import usage_service
 from app.util.logger import logger
 
 _, _pb2_grpc = get_stub("copilot_service")
@@ -29,3 +33,10 @@ class CopilotHandler(_pb2_grpc.CopilotServiceServicer):
         payload = to_dispute_request(request)
         logger.info(f"CopilotService.ArbitrateDispute dispute={payload.dispute_id}")
         return to_arbitrate_dispute_response(await copilot_service.arbitrate_dispute(payload))
+
+    async def RecordFeedback(self, request, context):
+        turn_id, user_id, rating = to_feedback_command(request)
+        return to_feedback_response(await usage_service.feedback(turn_id, user_id, rating))
+
+    async def GetUsageSummary(self, request, context):
+        return to_usage_summary_response(await usage_service.summary(request.days or 7))

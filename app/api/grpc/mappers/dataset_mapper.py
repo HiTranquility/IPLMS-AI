@@ -68,3 +68,38 @@ def to_snapshot_response(lock: dict):
         samples_sha256=lock["samples_sha256"],
         manifest_json=json.dumps(lock, ensure_ascii=False, sort_keys=True),
     )
+
+
+def to_exported_captures(message):
+    from app.core.console.dtos import ExportedCapture
+
+    return [
+        ExportedCapture(
+            capture_id=s.capture_id.lower(),
+            image_url=s.image_url,
+            image_sha256=s.image_sha256.lower(),
+            machine_plate=s.machine_plate,
+            machine_confidence=s.machine_confidence if s.has_machine_confidence else None,
+            confirmed_plate=s.confirmed_plate,
+            human_corrected=s.human_corrected,
+            selection_reasons=tuple(s.selection_reasons),
+            status=s.status,
+            purpose=s.purpose or "train",
+            final_plate=s.final_plate,
+            group_ref=s.group_ref.lower(),
+            area_ref=s.area_ref.lower(),
+            updated_at=s.updated_at,
+            captured_at=s.captured_at,
+        )
+        for s in message.samples
+    ]
+
+
+def to_export_response(result: dict):
+    return _pb2.ExportForConsoleResponse(
+        accepted=result["accepted"],
+        rejected=result["rejected"],
+        watermark_at=result["watermark_at"],
+        watermark_id=result["watermark_id"],
+        rejected_ids=result["rejected_ids"],
+    )

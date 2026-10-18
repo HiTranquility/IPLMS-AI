@@ -1,0 +1,34 @@
+.page { min-height: 100%; display: grid; place-items: center; padding: var(--space-6) var(--space-4); }
+.panel {
+  width: 100%; max-width: 420px;
+  display: flex; flex-direction: column; gap: var(--space-4);
+  padding: var(--space-6);
+  background: var(--color-surface); border: var(--hairline); border-top: 3px solid var(--color-accent);
+  border-radius: var(--radius-lg);
+}
+.scope { font-size: var(--text-xs); font-weight: 600; color: var(--color-accent-dark); }
+.title { font-size: var(--text-xl); font-weight: 700; }
+.lead { color: var(--color-muted); }
+.alert { padding: var(--space-3); border-radius: var(--radius-md); background: var(--color-danger-soft); color: var(--color-danger); }
+.google {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  min-height: var(--control-height); border-radius: var(--radius-md);
+  background: var(--color-primary); color: var(--color-primary-contrast);
+  font-weight: 600; text-decoration: none;
+  transition: background-color var(--transition);
+}
+@media (hover: hover) { .google:hover { background: var(--color-primary-hover); } }
+.emergency { border-top: var(--hairline); padding-top: var(--space-3); }
+.emergency summary {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  min-height: var(--control-height); cursor: pointer; color: var(--color-muted); font-weight: 600;
+}
+.note { font-size: var(--text-xs); color: var(--color-muted); }
+.form { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-3); }
+.secretBox { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; }
+.secret {
+  display: block; width: 100%; padding: var(--space-3);
+  font-family: var(--font-mono); font-size: var(--text-md); letter-spacing: 0.04em;
+  background: var(--color-surface-2); border: var(--hairline); border-radius: var(--radius-md);
+  overflow-wrap: anywhere; user-select: all;
+}

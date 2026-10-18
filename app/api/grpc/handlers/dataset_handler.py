@@ -8,6 +8,8 @@ import asyncio
 from app.api.grpc.generated_stubs import get_stub
 from app.api.grpc.mappers.dataset_mapper import (
     to_evaluate_response,
+    to_export_response,
+    to_exported_captures,
     to_evaluation_samples,
     to_progress_event,
     to_result_event,
@@ -63,3 +65,16 @@ class DatasetHandler(_pb2_grpc.DatasetServiceServicer):
             summary.get("exact_match_strict", 0.0),
         )
         yield to_result_event(version, summary)
+
+    async def ExportForConsole(self, request, context):
+        # IPLMS ADR-0048 §5 (A2): ghi vào DB `ai_console`. Nhập trễ nạp để process
+        # inference không cần cấu hình console khi backend chưa bật kênh xuất.
+        from app.core.console.services.vision_import_service import console_vision_import_service
+
+        result = await console_vision_import_service.import_batch(to_exported_captures(request))
+        logger.info(
+            "DatasetService.ExportForConsole accepted=%d rejected=%d",
+            result["accepted"],
+            result["rejected"],
+        )
+        return to_export_response(result)
