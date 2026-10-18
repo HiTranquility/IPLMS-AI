@@ -96,8 +96,10 @@ All required deep learning checkpoints are pre-bundled directly within the repos
 3. **Launch All Services (One-Click Launcher)**:
    ```powershell
    .\start-dev.ps1
+   # Hoặc mở Command Prompt / Nhấp đúp chuột vào file:
+   .\start.bat
    ```
-   *This script starts `ai-db` (pgvector on port 5435), verifies CUDA availability, and launches the FastAPI Web UI on `http://localhost:8000/`.*
+   *This script starts `ai-db` (pgvector on port 5435), verifies CUDA availability, opens the default browser, and launches the FastAPI Web UI on `http://localhost:8000/`.*
 
 4. **Alternative: Run Manually**:
    * **FastAPI Web Server:**
