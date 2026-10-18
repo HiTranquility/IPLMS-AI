@@ -14,4 +14,4 @@ Tài liệu lý thuyết và chiến lược xây dựng cho ba pipeline IPLMS. 
 
 Đối chiếu mã nguồn đến ngày **2026-09-21**; Vision/Forecast data-path và source map seed/data-lake/cloud nằm trong guide 3–7. Các mục **đề xuất/mục tiêu** chưa phải tính năng đã chạy. Bộ tài liệu chưa chứng nhận chất lượng production; phần kiểm chứng mỗi guide chỉ rõ cách đánh giá tiếp.
 
-[AI README](../../README.md) · [AI conventions](../AI_CONVENTIONS.md)
+[AI README](../../README.md) · [AI conventions](../standards/AI_CONVENTIONS.md)

@@ -44,7 +44,7 @@ Khi User đưa vào **bất kỳ ý tưởng (Idea), vấn đề mới (Problem)
 - Đọc [DESIGN.md](DESIGN.md) trước khi đổi kiến trúc/runtime; cập nhật DESIGN và ngoại lệ cùng thay đổi. README giữ phần vào nhanh, conventions giữ luật code.
 
 - Python: FastAPI + gRPC cho ANPR, Forecast, Copilot/RAG; huấn luyện ở `training/`, notebook ở `notebook/`.
-- Quy ước: [AI_CONVENTIONS](docs/AI_CONVENTIONS.md). Hợp đồng ANPR lấy từ tài liệu này, proto và code; skill `anpr-pipeline` ở repo gốc là bản cũ viết cho C#.
+- Quy ước: [AI_CONVENTIONS](docs/standards/AI_CONVENTIONS.md). Hợp đồng ANPR lấy từ tài liệu này, proto và code; skill `anpr-pipeline` ở repo gốc là bản cũ viết cho C#.
 - Mở 1–2 file cùng loại trong cùng thư mục và theo đúng cách đang làm trước khi viết mới.
 - Tính năng gọi LLM theo [ADR-0029](../docs/projects/adrs/10-2026/0029-nguyen-tac-guardrail-llm.md) ở repo gốc: LLM không cầm quyền, đầu vào độc mặc định, đầu ra qua kiểm tất định (`app/core/copilot/engines/output_guard.py`), đổi prompt/guard phải chạy lại bộ tấn công.
 
@@ -61,7 +61,8 @@ Hồ sơ riêng của repo ở `docs/`: mọi hồ sơ nằm dưới `projects/`
 
 ## Git và an toàn
 
-- Nhánh mới theo [Git workflow local](docs/GIT_WORKFLOW.md): mã hồ sơ + tháng/năm tạo gốc, giữ nguyên nhánh cũ.
+- Nhánh mới theo [Git workflow local](docs/standards/GIT_WORKFLOW.md): mã hồ sơ + tháng/năm tạo gốc, giữ nguyên nhánh cũ.
+- Bắt tay làm một ISSUE/bug (nhận việc, chuyển 🚧) thì tách **một nhánh riêng cho đúng hồ sơ đó** từ `develop` mới nhất, tên theo GIT_WORKFLOW; phiên khác đang dùng tree chung thì mở worktree ở `.worktrees/<nhánh>` trong repo này. Không gộp việc khác vào nhánh đang có; không tự tách thêm nhánh/worktree/PR ngoài một-hồ-sơ-một-nhánh, cần tách hơn thì hỏi trước. Mã ISSUE kế tiếp: đối chiếu bảng định danh ở gốc IPLMS `docs/projects/issue-registry.md` (mã duy nhất trong repo này, thư mục tháng chỉ để xếp chỗ).
 - Chỉ stage đúng file mình sửa; [NEVER] `git add .` / `git add -A`. Message mô tả thay đổi thật và ghi phần chưa làm/chưa test.
 - Commit trong repo này trước; cập nhật gitlink ở repo gốc là bước riêng khi thuộc phạm vi.
 - Hỏi người dùng trước khi cài package mới, chạy lệnh ghi dữ liệu dùng chung hoặc deploy.

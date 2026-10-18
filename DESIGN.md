@@ -1,7 +1,7 @@
 # DESIGN — IPLMS AI
 
 Trạng thái: thiết kế hiện hành; đối chiếu cấu trúc/config ngày 2026-10-14, chưa chạy model hay chứng nhận chất lượng production trong lần rà này. Người viết: Codex.
-Luật code: [AI_CONVENTIONS](docs/AI_CONVENTIONS.md). Điểm vào: [README](README.md).
+Luật code: [AI_CONVENTIONS](docs/standards/AI_CONVENTIONS.md). Điểm vào: [README](README.md).
 Trong umbrella, xem thêm [naming chung](../docs/standards/NAMING_CONVENTIONS.md); clone riêng vẫn đọc được thiết kế và conventions tại đây.
 
 ## Quyết định thiết kế, UI và ngoại lệ
