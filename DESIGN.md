@@ -214,6 +214,8 @@ python -m app.script.ingest_knowledge path/to/quy-che.pdf --parking-lot-id <area
 
 # 3. Chạy đánh giá chất lượng truy hồi RAG (eval retrieval):
 python app/script/eval_retrieval.py
+#    Eval end-to-end (LLM thật: trả lời/từ chối, trích nguồn, p50/p95):
+python -m app.script.eval_copilot_e2e --dataset data/knowledge/eval_set_heldout.json
 
 # 4. Kiểm tra kết nối gRPC smoke check:
 python app/script/grpc_smoke_check.py
@@ -263,7 +265,7 @@ Danh sách biến chuẩn nằm trong `.env.example`:
 | `AI_LLM_MODEL` | `gpt-5.6-luna` | Model LLM sinh câu trả lời |
 | `AI_EMBEDDING_MODEL` | `text-embedding-3-small` | Model sinh vector cho tri thức |
 | `AI_RAG_TOP_K` | `5` | Số chunk tương đồng lấy từ pgvector |
-| `AI_RAG_MIN_SIMILARITY` | `0.35` | Ngưỡng tương đồng cosine tối thiểu |
+| `AI_RAG_MIN_SIMILARITY` | `0.35` | Ngưỡng cosine tối thiểu của nhánh vector, đồng thời là cổng từ chối: đoạn vector tốt nhất dưới ngưỡng → không gọi LLM. Phụ thuộc model embedding (`bge-m3`: 0.55) — bảng ở [core/copilot](app/core/copilot/README.md#cấu-hình) |
 | `AI_DATALAKE_LOCAL_PATH` | `data/datalake` | Workspace raw/manifest/watermark local |
 | `AI_DATALAKE_EXPORT_BATCH_SIZE` | `1000` | Số session đọc mỗi batch từ PostgreSQL |
 | `AI_DATALAKE_OCCUPANCY_SLOT_MINUTES` | `30` | Độ rộng slot nhãn occupancy |

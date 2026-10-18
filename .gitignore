@@ -32,6 +32,7 @@ data/*
 data/knowledge/*
 # Tập vàng làm tay — mất là không dựng lại được, [MUST] version.
 !data/knowledge/eval_set.json
+!data/knowledge/eval_set_heldout.json
 !data/knowledge/regulations_seed.json
 # Tài liệu demo để thử nạp Knowledge Base trên giao diện (ISSUE-009) — nội dung bịa, không PII.
 !data/knowledge/demo-upload/

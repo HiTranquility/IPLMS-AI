@@ -57,7 +57,7 @@
 
 | Việc | Hồ sơ | Người làm | Người duyệt |
 |---|---|---|---|
-| Cổng từ chối Copilot khi chunk vector tốt nhất < `AI_RAG_MIN_SIMILARITY` + eval end-to-end (đổi hành vi Copilot) | IPLMS ISSUE-126 review-7 · nhánh `feature/ISSUE-126-2026-10-copilot-abstention-gate` | Claude Code | Khoa / Dương |
+| *(trống)* | | | |
 
 ## ⛔ Bị chặn
 
@@ -73,6 +73,7 @@
 
 | Việc | Hồ sơ | Người làm | Ngày |
 |---|---|---|---|
+| Cổng từ chối Copilot (chunk vector tốt nhất < `AI_RAG_MIN_SIMILARITY` → NO_CONTEXT, không gọi LLM) + eval end-to-end + bộ held-out — **merge trước khi Khoa/Dương duyệt** theo quyết định chủ đồ án 2026-10-18; Khoa/Dương cần xem lại sau | IPLMS ISSUE-126 review-7 | Claude Code | 2026-10-18 |
 | Gộp `khoa-develop` (5f24a1f) vào nhánh console, giữ bản develop khi xung đột; bug-011 hết do ADR-0050 bỏ `/api/copilot/ask` | [bug-011](bugs/bug-011-copilot-ask-nhan-api-key-tu-client-va-tra-loi-gia-khi-llm-loi/bug.md) · IPLMS ISSUE-126 | Claude Code | 2026-10-17 |
 | Lỗi model không tồn tại bị nuốt thành "AI service unreachable" | IPLMS bug-014 | Dương | 2026-10-13 |
 | Sửa 4 lỗi sai im lặng (grader tiền, occupancy 0%, seasonal baseline, phân loại xe) + nâng ANPR/keyword/Forecast | bug-001 · IPLMS PROB-045 | Claude | 2026-10-06 |
