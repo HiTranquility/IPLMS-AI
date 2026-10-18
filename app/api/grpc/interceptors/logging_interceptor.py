@@ -11,6 +11,7 @@ from grpc import aio
 
 from app.core.exceptions import (
     AiServiceError,
+    ConsoleStoreError,
     FeatureNotImplementedError,
     FraudDetectedError,
     InvalidImageError,
@@ -40,6 +41,8 @@ _STATUS_BY_EXCEPTION: tuple[tuple[type[Exception], grpc.StatusCode], ...] = (
     (ModelConfigurationError, grpc.StatusCode.FAILED_PRECONDITION),
     # Hạ tầng phía sau (pgvector, LLM) hỏng.
     (RagPipelineError, grpc.StatusCode.UNAVAILABLE),
+    # DB AI Console (kênh A2) không truy cập được → backend thử lại ở chu kỳ sau.
+    (ConsoleStoreError, grpc.StatusCode.UNAVAILABLE),
     # Khai trong proto nhưng nghiệp vụ chưa có thật. UNIMPLEMENTED chứ không phải
     # INTERNAL: đây không phải sự cố, và client KHÔNG nên retry.
     (FeatureNotImplementedError, grpc.StatusCode.UNIMPLEMENTED),

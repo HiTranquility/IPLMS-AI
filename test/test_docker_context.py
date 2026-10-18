@@ -24,7 +24,7 @@ class DockerContextTest(unittest.TestCase):
         self.assertTrue(context.name.startswith("iplms-context-proof-"))
         tag = "iplms-context-proof:" + uuid.uuid4().hex[:12]
         name = "iplms-context-proof-" + uuid.uuid4().hex[:12]
-        allowed = {"ai/app/probe.py":"pass", "ai/requirements-service.txt":"# fixture", "ai/static/index.html":"fixture", "proto/probe.proto":"syntax = \"proto3\";"}
+        allowed = {"ai/app/probe.py":"pass", "ai/requirements-service.txt":"# fixture", "ai/static/cropped/.gitkeep":"", "proto/probe.proto":"syntax = \"proto3\";"}
         excluded = ["ai/static/original/", "ai/static/cropped/", "ai/data/golden/", "ai/data/datalake/", "ai/model/checkpoint/", "ai/.venv/", "other/"]
         for parent in excluded:
             allowed[parent + "private-fixture.txt"] = "synthetic exclusion sentinel"
@@ -44,7 +44,7 @@ class DockerContextTest(unittest.TestCase):
                 names = archive.getnames()
             self.assertFalse([n for n in names if n.endswith("private-fixture.txt")])
             self.assertIn("ai/app/probe.py", names)
-            self.assertIn("ai/static/index.html", names)
+            self.assertIn("ai/static/cropped/.gitkeep", names)
             self.assertIn("proto/probe.proto", names)
         finally:
             subprocess.run(["docker","rm",name], capture_output=True)
