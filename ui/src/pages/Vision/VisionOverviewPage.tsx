@@ -12,24 +12,39 @@ import { ReasonAction } from '@/components/common/Ui/form/ReasonAction';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useCan, useMe } from '@/hooks/useConsole';
 import { useAccuracy, useDecidePolicy, usePolicies, useProposePolicy, useVisionStatus } from '@/hooks/useVision';
+import { useI18n } from '@/i18n/I18nProvider';
+import type { Messages } from '@/i18n/vi';
 import { DASH, fmtDateTime, fmtInt, fmtPercent } from '@/utils/format';
-import { POLICY_LABEL, POLICY_TONE } from './labels';
+import { POLICY_TONE } from './labels';
 import styles from './vision.module.css';
 
 const SHOWN_THRESHOLDS = new Set([0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.99]);
 
+/** Lý do ngưỡng đề xuất dựng từ số liệu (cùng luật `audit_accuracy.py`) để hiện đúng ngôn ngữ đang dùng. */
+function suggestionReason(report: AccuracyReport, t: Messages): string {
+  const target = fmtPercent(report.target);
+  if (report.total < report.min_samples) return t.visionOverview.reasonFew(report.min_samples, report.total);
+  if (report.suggested_threshold === null) return t.visionOverview.reasonNone(target, report.min_samples);
+  return t.visionOverview.reasonOk(target, report.min_samples);
+}
+
 function AccuracySection({ report }: { report: AccuracyReport }) {
+  const { t } = useI18n();
   const rows = report.curve.filter((p) => SHOWN_THRESHOLDS.has(p.threshold) || p.threshold === report.suggested_threshold);
   return (
     <>
       <dl className={styles.stats}>
         <Stat
-          label="Máy đọc đúng (tập bốc ngẫu nhiên)"
+          label={t.visionOverview.machineAccuracy}
           value={fmtPercent(report.accuracy)}
-          hint={report.interval_95 ? `95%: ${fmtPercent(report.interval_95[0])} – ${fmtPercent(report.interval_95[1])}` : 'Chưa có mẫu'}
+          hint={report.interval_95 ? t.visionOverview.interval(fmtPercent(report.interval_95[0]), fmtPercent(report.interval_95[1])) : t.visionOverview.noSamples}
         />
-        <Stat label="Mẫu audit có nhãn người" value={fmtInt(report.total)} hint={`${fmtInt(report.truth_sources.console)} console · ${fmtInt(report.truth_sources.moderator)} moderator`} />
-        <Stat label="Ngưỡng đề xuất" value={report.suggested_threshold?.toFixed(2) ?? DASH} hint={report.suggestion_reason} />
+        <Stat
+          label={t.visionOverview.auditSamples}
+          value={fmtInt(report.total)}
+          hint={t.visionOverview.sources(fmtInt(report.truth_sources.console), fmtInt(report.truth_sources.moderator))}
+        />
+        <Stat label={t.visionOverview.suggested} value={report.suggested_threshold?.toFixed(2) ?? DASH} hint={suggestionReason(report, t)} />
       </dl>
       {report.total > 0 && <ThresholdCurve curve={report.curve} suggested={report.suggested_threshold} target={report.target} />}
       {report.total > 0 && (
@@ -37,17 +52,17 @@ function AccuracySection({ report }: { report: AccuracyReport }) {
           <table className={table.table}>
             <thead>
               <tr>
-                <th scope="col" className={table.num}>Ngưỡng</th>
-                <th scope="col" className={table.num}>Mẫu ≥ ngưỡng</th>
-                <th scope="col" className={table.num}>Đúng</th>
-                <th scope="col" className={table.num}>Tự nhận được</th>
+                <th scope="col" className={table.num}>{t.visionOverview.threshold}</th>
+                <th scope="col" className={table.num}>{t.visionOverview.aboveThreshold}</th>
+                <th scope="col" className={table.num}>{t.visionOverview.correct}</th>
+                <th scope="col" className={table.num}>{t.visionOverview.autoAccepted}</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((p) => (
                 <tr key={p.threshold}>
                   <td className={table.num}>
-                    {p.threshold.toFixed(2)} {p.threshold === report.suggested_threshold && <Badge tone="accent">đề xuất</Badge>}
+                    {p.threshold.toFixed(2)} {p.threshold === report.suggested_threshold && <Badge tone="accent">{t.visionOverview.suggestedBadge}</Badge>}
                   </td>
                   <td className={table.num}>{fmtInt(p.total)}</td>
                   <td className={table.num}>{fmtPercent(p.accuracy)}</td>
@@ -63,6 +78,7 @@ function AccuracySection({ report }: { report: AccuracyReport }) {
 }
 
 function ProposePolicy({ suggested }: { suggested: number | null }) {
+  const { t } = useI18n();
   const propose = useProposePolicy();
   const [threshold, setThreshold] = useState(String(suggested ?? 0.9));
   const [auditRate, setAuditRate] = useState('3');
@@ -78,20 +94,21 @@ function ProposePolicy({ suggested }: { suggested: number | null }) {
 
   return (
     <form className={styles.panel} onSubmit={submit} aria-labelledby="propose-title">
-      <h2 id="propose-title" className={styles.sectionTitle}>Đề xuất ngưỡng mới</h2>
+      <h2 id="propose-title" className={styles.sectionTitle}>{t.visionOverview.proposeTitle}</h2>
       <div className={styles.formGrid}>
-        <TextField label="Ngưỡng tự nhận" type="number" min={0.5} max={0.99} step={0.01} required value={threshold} onChange={(e) => setThreshold(e.target.value)} />
-        <TextField label="Bốc kiểm ngẫu nhiên (%)" type="number" min={1} max={50} step={0.5} required value={auditRate} onChange={(e) => setAuditRate(e.target.value)} />
-        <TextField label="Lý do" required minLength={3} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
-        <Button type="submit" loading={propose.isPending}>Đề xuất</Button>
+        <TextField label={t.visionOverview.thresholdField} type="number" min={0.5} max={0.99} step={0.01} required value={threshold} onChange={(e) => setThreshold(e.target.value)} />
+        <TextField label={t.visionOverview.auditRateField} type="number" min={1} max={50} step={0.5} required value={auditRate} onChange={(e) => setAuditRate(e.target.value)} />
+        <TextField label={t.common.reason} required minLength={3} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
+        <Button type="submit" loading={propose.isPending}>{t.common.propose}</Button>
       </div>
-      <p className={styles.note}>Số đo lúc đề xuất được lưu kèm để người duyệt thấy đúng bằng chứng.</p>
+      <p className={styles.note}>{t.visionOverview.proposeNote}</p>
       {propose.error && <ErrorBlock error={propose.error} />}
     </form>
   );
 }
 
 export function VisionOverviewPage() {
+  const { t } = useI18n();
   const me = useMe();
   const status = useVisionStatus();
   const accuracy = useAccuracy();
@@ -103,34 +120,34 @@ export function VisionOverviewPage() {
   return (
     <>
       <PageHeader
-        title="Tổng quan Vision"
-        description="“Máy đúng bao nhiêu %” chỉ tính trên mẫu bốc ngẫu nhiên đã có nhãn người — tập kém tự tin cố tình lệch xấu nên không dùng."
+        title={t.visionOverview.title}
+        description={t.visionOverview.desc}
       />
       <section className={styles.section} aria-labelledby="acc-title">
-        <h2 id="acc-title" className={styles.sectionTitle}>Độ chính xác thật của ANPR</h2>
+        <h2 id="acc-title" className={styles.sectionTitle}>{t.visionOverview.accuracyTitle}</h2>
         {accuracy.isPending && <Loading />}
         {accuracy.error && <ErrorBlock error={accuracy.error} onRetry={() => void accuracy.refetch()} />}
         {accuracy.data && <AccuracySection report={accuracy.data} />}
       </section>
 
       <section className={styles.section} aria-labelledby="policy-title">
-        <h2 id="policy-title" className={styles.sectionTitle}>Ngưỡng tự nhận (accept policy)</h2>
-        <p className={styles.note}>Backend kéo bản đã duyệt gần nhất mỗi chu kỳ xuất A2 (mặc định 10 phút) rồi áp vào ngưỡng đang chạy; khi kênh console bật, platform không sửa được hai số này nữa.</p>
+        <h2 id="policy-title" className={styles.sectionTitle}>{t.visionOverview.policyTitle}</h2>
+        <p className={styles.note}>{t.visionOverview.policyNote}</p>
         {canPropose && accuracy.data && <ProposePolicy suggested={accuracy.data.suggested_threshold} />}
         {policies.isPending && <Loading />}
         {policies.error && <ErrorBlock error={policies.error} onRetry={() => void policies.refetch()} />}
-        {policies.data?.length === 0 && <EmptyState title="Chưa có đề xuất ngưỡng nào" />}
+        {policies.data?.length === 0 && <EmptyState title={t.visionOverview.noPolicies} />}
         {policies.data && policies.data.length > 0 && (
           <div className={table.wrap}>
             <table className={table.table}>
               <thead>
                 <tr>
-                  <th scope="col" className={table.num}>Bản</th>
-                  <th scope="col" className={table.num}>Ngưỡng</th>
-                  <th scope="col" className={table.num}>Bốc kiểm</th>
-                  <th scope="col">Bằng chứng lúc đề xuất</th>
-                  <th scope="col">Trạng thái</th>
-                  <th scope="col">Thao tác</th>
+                  <th scope="col" className={table.num}>{t.visionOverview.version}</th>
+                  <th scope="col" className={table.num}>{t.visionOverview.threshold}</th>
+                  <th scope="col" className={table.num}>{t.visionOverview.auditRate}</th>
+                  <th scope="col">{t.visionOverview.evidence}</th>
+                  <th scope="col">{t.common.status}</th>
+                  <th scope="col">{t.common.actions}</th>
                 </tr>
               </thead>
               <tbody>
@@ -141,25 +158,25 @@ export function VisionOverviewPage() {
                     <td className={table.num}>{fmtPercent(p.audit_rate)}</td>
                     <td className={table.muted}>
                       {p.evidence.at_threshold
-                        ? `${fmtInt(p.evidence.at_threshold.total)} mẫu ≥ ngưỡng, đúng ${fmtPercent(p.evidence.at_threshold.accuracy)}`
+                        ? t.visionOverview.evidenceAt(fmtInt(p.evidence.at_threshold.total), fmtPercent(p.evidence.at_threshold.accuracy))
                         : DASH}
                       <div>{p.reason} — {p.proposed_by} · {fmtDateTime(p.proposed_at)}</div>
                     </td>
                     <td>
-                      <Badge tone={POLICY_TONE[p.status]}>{POLICY_LABEL[p.status]}</Badge>
+                      <Badge tone={POLICY_TONE[p.status]}>{t.vision.policy[p.status]}</Badge>
                       {p.decided_by && <div className={table.muted}>{p.decided_by}</div>}
                     </td>
                     <td>
                       {p.status === 'PROPOSED' && canDecide && (
                         <div className={styles.actions}>
                           <ReasonAction
-                            label="Duyệt"
+                            label={t.common.approve}
                             variant="accent"
                             disabled={p.proposed_by_id === me.data?.member_id}
-                            disabledHint="Cần AI Lead khác người đề xuất."
+                            disabledHint={t.visionOverview.fourEyes}
                             onSubmit={(note) => decide.mutateAsync({ id: p.id, decision: 'APPROVED', note })}
                           />
-                          <ReasonAction label="Từ chối" variant="danger" onSubmit={(note) => decide.mutateAsync({ id: p.id, decision: 'REJECTED', note })} />
+                          <ReasonAction label={t.common.reject} variant="danger" onSubmit={(note) => decide.mutateAsync({ id: p.id, decision: 'REJECTED', note })} />
                         </div>
                       )}
                     </td>
@@ -172,26 +189,30 @@ export function VisionOverviewPage() {
       </section>
 
       <section className={styles.section} aria-labelledby="import-title">
-        <h2 id="import-title" className={styles.sectionTitle}>Dữ liệu nhận từ backend (A2)</h2>
+        <h2 id="import-title" className={styles.sectionTitle}>{t.visionOverview.importTitle}</h2>
         {status.isPending && <Loading />}
         {status.error && <ErrorBlock error={status.error} onRetry={() => void status.refetch()} />}
         {status.data && (
           <>
             <dl className={styles.stats}>
-              <Stat label="Mẫu trong console" value={fmtInt(status.data.sample_count)} hint={status.data.last_imported_at ? `nhận lần cuối ${fmtDateTime(status.data.last_imported_at)}` : 'Chưa nhận lần nào'} />
-              <Stat label="Chờ duyệt" value={fmtInt(status.data.pending_review)} />
-              <Stat label="Đã duyệt" value={fmtInt(status.data.approved)} />
-              <Stat label="Bị trả lại" value={fmtInt(status.data.rejected)} />
+              <Stat
+                label={t.visionOverview.samplesInConsole}
+                value={fmtInt(status.data.sample_count)}
+                hint={status.data.last_imported_at ? t.visionOverview.lastImported(fmtDateTime(status.data.last_imported_at)) : t.visionOverview.neverImported}
+              />
+              <Stat label={t.visionOverview.pending} value={fmtInt(status.data.pending_review)} />
+              <Stat label={t.visionOverview.approved} value={fmtInt(status.data.approved)} />
+              <Stat label={t.visionOverview.rejected} value={fmtInt(status.data.rejected)} />
             </dl>
             {status.data.recent_errors.length > 0 && (
               <div className={table.wrap}>
                 <table className={table.table}>
-                  <caption className="visually-hidden">Lỗi nhận gần nhất</caption>
+                  <caption className="visually-hidden">{t.visionOverview.importErrors}</caption>
                   <thead>
                     <tr>
-                      <th scope="col">Lúc</th>
-                      <th scope="col">Mẫu</th>
-                      <th scope="col">Lỗi</th>
+                      <th scope="col">{t.common.at}</th>
+                      <th scope="col">{t.visionOverview.captureId}</th>
+                      <th scope="col">{t.common.error}</th>
                     </tr>
                   </thead>
                   <tbody>

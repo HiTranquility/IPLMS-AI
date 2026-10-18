@@ -1,4 +1,5 @@
 import type { AccuracyPoint } from '@/api/types';
+import { useI18n } from '@/i18n/I18nProvider';
 import { fmtPercent } from '@/utils/format';
 import styles from './ThresholdCurve.module.css';
 
@@ -37,6 +38,7 @@ function segments(curve: AccuracyPoint[], pick: (p: AccuracyPoint) => number | n
  * Bảng số vẫn hiện bên dưới — biểu đồ chỉ giúp nhìn nhanh chỗ đánh đổi.
  */
 export function ThresholdCurve({ curve, suggested, target }: { curve: AccuracyPoint[]; suggested: number | null; target: number }) {
+  const { t } = useI18n();
   const points = curve.filter((p) => p.threshold >= X_MIN && p.threshold <= X_MAX);
   const accuracy = segments(points, (p) => p.accuracy);
   const coverage = segments(points, (p) => p.coverage);
@@ -44,12 +46,12 @@ export function ThresholdCurve({ curve, suggested, target }: { curve: AccuracyPo
 
   const at = suggested === null ? null : points.find((p) => p.threshold === suggested);
   const summary = at
-    ? `Ở ngưỡng đề xuất ${at.threshold.toFixed(2)}: đúng ${fmtPercent(at.accuracy)}, tự nhận ${fmtPercent(at.coverage)}.`
-    : 'Chưa có ngưỡng đề xuất.';
+    ? t.curve.summary(at.threshold.toFixed(2), fmtPercent(at.accuracy), fmtPercent(at.coverage))
+    : t.curve.noSuggestion;
 
   return (
     <figure className={styles.figure}>
-      <svg viewBox={`0 0 ${W} ${H}`} className={styles.chart} role="img" aria-label={`Đường cong ngưỡng. ${summary}`}>
+      <svg viewBox={`0 0 ${W} ${H}`} className={styles.chart} role="img" aria-label={t.curve.aria(summary)}>
         {[0, 0.5, 1].map((v) => (
           <g key={v}>
             <line x1={PAD.left} x2={W - PAD.right} y1={y(v)} y2={y(v)} className={styles.grid} />
@@ -67,10 +69,10 @@ export function ThresholdCurve({ curve, suggested, target }: { curve: AccuracyPo
         {accuracy.map((pts) => <polyline key={`a${pts}`} points={pts} className={styles.accuracy} />)}
       </svg>
       <figcaption className={styles.legend}>
-        <span><Swatch className={styles.accuracy} />Đúng (ảnh ≥ ngưỡng)</span>
-        <span><Swatch className={styles.coverage} />Tự nhận được</span>
-        <span><Swatch className={styles.target} />Mục tiêu {fmtPercent(target)}</span>
-        {suggested !== null && <span><Swatch className={styles.suggested} />Đề xuất {suggested.toFixed(2)}</span>}
+        <span><Swatch className={styles.accuracy} />{t.curve.accuracy}</span>
+        <span><Swatch className={styles.coverage} />{t.curve.coverage}</span>
+        <span><Swatch className={styles.target} />{t.curve.target(fmtPercent(target))}</span>
+        {suggested !== null && <span><Swatch className={styles.suggested} />{t.curve.suggested(suggested.toFixed(2))}</span>}
       </figcaption>
     </figure>
   );
