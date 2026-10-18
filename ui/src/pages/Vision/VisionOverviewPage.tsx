@@ -113,7 +113,7 @@ export function VisionOverviewPage() {
 
       <section className={styles.section} aria-labelledby="policy-title">
         <h2 id="policy-title" className={styles.sectionTitle}>Ngưỡng tự nhận (accept policy)</h2>
-        <p className={styles.note}>Ngưỡng đã duyệt được lưu phiên bản ở đây; áp vào backend là bước P6 — hiện ngưỡng đang chạy vẫn sửa ở platform.</p>
+        <p className={styles.note}>Backend kéo bản đã duyệt gần nhất mỗi chu kỳ xuất A2 (mặc định 10 phút) rồi áp vào ngưỡng đang chạy; khi kênh console bật, platform không sửa được hai số này nữa.</p>
         {canPropose && accuracy.data && <ProposePolicy suggested={accuracy.data.suggested_threshold} />}
         {policies.isPending && <Loading />}
         {policies.error && <ErrorBlock error={policies.error} onRetry={() => void policies.refetch()} />}

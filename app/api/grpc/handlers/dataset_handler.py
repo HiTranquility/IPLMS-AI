@@ -7,6 +7,7 @@ import asyncio
 
 from app.api.grpc.generated_stubs import get_stub
 from app.api.grpc.mappers.dataset_mapper import (
+    to_accept_policy_response,
     to_evaluate_response,
     to_export_response,
     to_exported_captures,
@@ -78,3 +79,16 @@ class DatasetHandler(_pb2_grpc.DatasetServiceServicer):
             result["rejected"],
         )
         return to_export_response(result)
+
+    async def GetAcceptPolicy(self, request, context):
+        # IPLMS ADR-0051: backend kéo ngưỡng đã duyệt; chỉ đọc DB `ai_console`.
+        from app.core.console.services.accept_policy_service import console_accept_policy_service
+
+        policy = await console_accept_policy_service.approved(request.model_name)
+        logger.info(
+            "DatasetService.GetAcceptPolicy model=%s found=%s version=%s",
+            request.model_name or "anpr",
+            policy is not None,
+            policy["version"] if policy else "-",
+        )
+        return to_accept_policy_response(policy)
