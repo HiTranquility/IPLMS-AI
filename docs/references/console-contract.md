@@ -136,4 +136,4 @@ Proto ở `proto/` phải giống từng byte với `backend/src/infrastructures
 
 ## 6. Token giao diện
 
-`ai/ui/src/index.css` dùng **cùng tên token** với ba app frontend (`--color-bg`, `--color-surface`, `--color-accent`, `--color-accent-ink`, `--space-*`, `--text-*`, `--radius-*`…), giá trị riêng, có light/dark. Luật đầy đủ: [ui/DESIGN.md](../ui/DESIGN.md).
+`ai/ui/src/index.css` dùng **cùng tên token** với ba app frontend (`--color-bg`, `--color-surface`, `--color-accent`, `--color-accent-ink`, `--space-*`, `--text-*`, `--radius-*`…), giá trị riêng, có light/dark. Luật đầy đủ: [ui/DESIGN.md](../../ui/DESIGN.md).

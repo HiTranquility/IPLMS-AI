@@ -4,7 +4,7 @@ Dịch vụ Python/FastAPI + gRPC cho ANPR, Copilot/Knowledge và vòng đời m
 Backend gọi qua gateway; Forecast chưa được bật phục vụ vì chưa có model qua gate.
 
 - [DESIGN.md](DESIGN.md): kiến trúc, data flow, môi trường Traefik, quyết định và ngoại lệ; runbook chi tiết.
-- [AI_CONVENTIONS](docs/AI_CONVENTIONS.md): luật phân tầng và naming.
+- [AI_CONVENTIONS](docs/standards/AI_CONVENTIONS.md): luật phân tầng và naming.
 - [Contract cấu hình mẫu](.env.example): tên biến và giá trị mẫu, không chứa cấu hình thật.
 
 ## Bắt đầu

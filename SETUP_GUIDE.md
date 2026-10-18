@@ -2,7 +2,7 @@
 
 This integration retains the current CPU Docker contract and modular ONNX/two-line pipeline. CUDA is not installed or enabled automatically. No real-model benchmark is certified by this guide.
 
-- Read [DESIGN](DESIGN.md), [AI conventions](docs/AI_CONVENTIONS.md), and [branch workflow](docs/GIT_WORKFLOW.md).
+- Read [DESIGN](DESIGN.md), [AI conventions](docs/standards/AI_CONVENTIONS.md), and [branch workflow](docs/standards/GIT_WORKFLOW.md).
 - Image build context remains the umbrella root: `docker build -f ai/Dockerfile .`. Standalone image CI recreates this layout. `Dockerfile.dockerignore` travels with the Dockerfile and excludes runtime photos, training checkpoints and unrelated data. Do not build from the AI directory alone.
 - `setup-dev.ps1` / `setup-dev.sh` install requirements and may download models/create local configuration. Run only after dependency/setup approval; this integration did not execute setup or install packages.
 - Once dependencies and service prerequisites are prepared, `start-dev.ps1 -NoBrowser` or `bash start-dev.sh` supervises native REST and gRPC together. A busy port or exited child is an error; existing Docker services are never stopped. A listener is not proof that model/DB/provider are ready.

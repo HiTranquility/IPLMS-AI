@@ -45,7 +45,7 @@
 | Đo ANPR trên test-golden snapshot & đối chiếu xe chống tráo | IPLMS ISSUE-010 | Khoa | 2026-10-17 | Chuẩn bị test suite & dữ liệu snapshot |
 | AI Console nội bộ: DB riêng, 7 vai trò, đăng nhập Google + TOTP, `ai/ui` | IPLMS ISSUE-126 | Claude Code | — | P1a–P6 + EN (`98c2a88`) + cổng từ chối RAG (`e616fee`) đã code; PR #22, #23 + nhánh xếp chồng chờ CI. Việc còn lại đã tách thành dòng riêng ngày 2026-10-18 |
 | Chạy bộ test Knowledge Base với LLM thật (cần `AI_LLM_API_KEY`) | IPLMS ISSUE-009 | Dương | 2026-10-15 | 299 test unit/mock đã pass; chờ key/ollama chạy live |
-| LangGraph workflow cho Copilot tranh chấp (Phase 3) | IPLMS ISSUE-005 | Dương | 2026-10-18 | Xong phase 2; đang làm tiếp state interrupt/resume |
+| LangGraph workflow cho Copilot tranh chấp (Phase 3) | [ai ISSUE-001](issues/09-2026/ISSUE-001-langgraph-dispute-workflow/issue.md) (IPLMS ISSUE-005) | Dương | 2026-10-18 | Xong phase 2; đang làm tiếp state interrupt/resume |
 | Nạp liệu tri thức RAG — phần AI & hoàn tất E2E | IPLMS ISSUE-004 | Dương | 2026-10-16 | Nhóm 5 code xong; chờ E2E container & nối FE |
 | Sửa vi phạm so với AI_CONVENTIONS (bổ sung luật lỗi & test doc) | IPLMS AUDIT-004 | Dương | 2026-10-19 | Đã có báo cáo AUDIT-004; cập nhật doc & gRPC mapping |
 | Đưa Postgres 16 + pgvector vào job CI Python để test DB thật chạy mỗi PR | IPLMS ISSUE-126 review-6 S3 | Dương | — | Mới giao 2026-10-18 |

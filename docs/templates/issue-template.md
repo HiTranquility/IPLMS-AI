@@ -1,6 +1,6 @@
 # 🏷️ ISSUE-NNN: <Tên việc>
 
-> **Đích:** `docs/projects/issues/MM-YYYY/ISSUE-NNN-slug/issue.md` · **Luật chung:** [templates/README](README.md)
+> **Đích:** `docs/projects/issues/MM-YYYY/ISSUE-NNN-slug/issue.md` — ngoài cùng chỉ file này; `phase/`, `review/` (cả `audit-N.md`), `handoff/`, `evidence/` tạo khi có file đầu · **Luật chung:** [templates/README](README.md)
 
 | | |
 |---|---|

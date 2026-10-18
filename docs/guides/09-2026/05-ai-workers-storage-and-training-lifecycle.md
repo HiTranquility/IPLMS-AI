@@ -23,7 +23,7 @@ Dev cần biến các pipeline lý thuyết thành cấu trúc file và luồng 
 ## ☑️ Điều kiện trước khi bắt đầu (Prerequisites)
 
 - [ ] Đọc [Vision](03-image-processing-pipeline.md), [RAG](02-rag-optimization-strategy.md), [Forecast](04-forecast-training-strategy.md).
-- [ ] Giữ quy tắc tầng trong [AI conventions](../../AI_CONVENTIONS.md).
+- [ ] Giữ quy tắc tầng trong [AI conventions](../../standards/AI_CONVENTIONS.md).
 - [ ] Dùng [ADR-0003](../../../../docs/projects/adrs/09-2026/0003-duong-du-lieu-vision-tu-phien-do-toi-checkpoint.md) làm nền cho nhãn phân loại xe, test-golden và checkpoint có version.
 - [ ] Trước triển khai, chốt lưu lượng ảnh, dung lượng trung bình, thời hạn giữ, hạ tầng production và tài nguyên train. Chưa có số này thì chưa chốt dung lượng/chi phí.
 
