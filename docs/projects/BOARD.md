@@ -36,13 +36,15 @@
 
 Chủ dự án chọn B và yêu cầu hoạch định lại ngày 2026-10-19: **HiTranquility phụ trách phần tổng thể/tích hợp**, Khoa/Dương phụ trách phần AI. **Dự kiến cho** chưa có nghĩa đã bắt đầu. Không chia đều số việc; không tự ấn định hạn tuần hoặc suy ra tiến độ thực tế từ hạn cũ.
 
-Thứ tự là gợi ý trong từng người, sau khi rà việc đang làm và review 🔴 ở mục 🙋. HiTranquility thực hiện nối tiếp theo điều kiện, không phải 8 việc đồng thời. Chuyển dòng sang 🚧 khi xác nhận bắt đầu và hạn. M3/M4 vẫn cần chốt người; Claude Code là tác nhân viết code, không thay người tích hợp.
+Thứ tự là gợi ý trong từng người, sau khi rà việc đang làm và review 🔴 ở mục 🙋. HiTranquility thực hiện nối tiếp theo điều kiện, không phải 7 việc đồng thời. Chuyển dòng sang 🚧 khi xác nhận bắt đầu và hạn. M3/M4 vẫn cần chốt người; Claude Code là tác nhân viết code, không thay người tích hợp.
+
+**Làm rõ theo chủ dự án:** demo liên vai là các vai trên UI của IPLMS-AI, do Dương phụ trách. Thao tác giữa `ui/` và phần API/service trong cùng repo IPLMS-AI vẫn thuộc phạm vi AI. Nếu kịch bản cần sửa code ở repo gốc, backend, frontend, analytic hoặc repo khác, ghi điểm chặn và báo chủ dự án để chốt phần tích hợp với HiTranquility; không tự mở rộng demo.
 
 | Người | Phạm vi phụ trách trong kế hoạch này | Bàn giao / phối hợp |
 |---|---|---|
 | Khoa | ANPR, model và phần M2 Copilot trong `ai/` | Bàn giao kết quả đo, fixture và test AI cho HiTranquility; không tự nhận sửa caller hoặc cấu trúc repo gốc |
-| Dương | RAG/KB, workflow và test Python trong `ai/` | Bàn giao contract/fixture/test AI; HiTranquility lo caller backend/frontend, CI và E2E toàn stack |
-| HiTranquility | Repo gốc, liên kết thư mục/module, proto chung, CI/stack, tích hợp backend/frontend/analytic và demo liên vai | Chủ trì phần tổng thể; nhờ Khoa/Dương hỗ trợ AI; việc xuyên repo được theo dõi cả ở BOARD gốc |
+| Dương | RAG/KB, workflow, test AI và demo liên vai trên UI IPLMS-AI | Tự kiểm UI/API trong IPLMS-AI; cần sửa code ngoài repo thì báo chủ dự án; HiTranquility lo phần tích hợp được chốt |
+| HiTranquility | Repo gốc, liên kết thư mục/module, proto chung, CI/stack, tích hợp backend/frontend/analytic | Chủ trì phần tổng thể; hỗ trợ khi demo AI phát sinh điểm chặn ngoài repo và chủ dự án chốt; không nhận thay demo UI của Dương |
 
 | Dự kiến cho | Thứ tự | Việc | Hồ sơ | Ưu tiên | Bắt đầu khi | Đầu ra để duyệt |
 |---|---|---|---|---|---|---|
@@ -50,16 +52,16 @@ Thứ tự là gợi ý trong từng người, sau khi rà việc đang làm và
 | Khoa | 2 | Đánh giá & calibration phân bố confidence ANPR theo camera — phần AI | IPLMS PROB-045 | 🟢 | `materialize_dataset` và test-golden được xác minh, có tập theo camera đủ dùng | Báo cáo phân bố/sai số theo camera cho HiTranquility đối chiếu tích hợp; chưa áp ngưỡng khi chưa duyệt |
 | Dương | 1 | Mở rộng bộ held-out Copilot và rà nhãn độc lập | IPLMS ISSUE-126 review-7 S3 | 🟠 | Xong lượt test KB đang nhận; thống nhất nhãn với Khoa và có người viết câu độc lập | ≥ 30 câu held-out có nhãn/nguồn; tách bộ chọn ngưỡng khỏi bộ đánh giá; ghi kết quả khi môi trường local sẵn sàng |
 | Dương | 2 | Rà test restart/resume và duyệt sai — phần workflow AI | [ai ISSUE-001](issues/09-2026/ISSUE-001-langgraph-dispute-workflow/issue.md) | 🟠 | Đối chiếu test phase 1–2; dùng fixture evidence theo hợp đồng do HiTranquility đối chiếu với backend | Test local cho restart/resume, thread sai, duyệt lặp; chỉ bổ sung ca thiếu; bàn giao phần cần caller backend cho HiTranquility |
+| Dương | 3 | I-3: demo liên vai trên UI IPLMS-AI bằng `iplms-demo-loop` | IPLMS ISSUE-126; UI và quyền của AI Console | 🟢 | Có tài khoản test theo vai, dữ liệu test AI và môi trường console local; bước thiếu dữ liệu ghi chặn, không tự cấu hình A2/backend | Kịch bản data engineer, annotator, reviewer, ML engineer, lead và các vai liên quan theo quyền hiện có; kiểm UI, lưu/tải lại và từ chối sai quyền trong AI; cần sửa code ngoài IPLMS-AI thì báo chủ dự án |
 | HiTranquility | 1 | Kiểm và sửa thứ tự chọn proto gốc↔AI của `compile_proto.py` nếu còn lệch | IPLMS ISSUE-126 review-6 BUG-06 | 🟢 | Tái hiện trên revision tích hợp; xác nhận nguồn proto chung; Khoa cung cấp fixture AI | Kiểm stub/RPC và caller NestJS cùng revision; ghi bằng chứng nếu đã được sửa |
 | HiTranquility | 2 | Restart container `ai` trên stack dev, xác nhận gRPC nạp đúng revision | IPLMS bug-006 | 🟠 | Có cửa sổ thao tác stack dùng chung; xác nhận tác động trước khi restart | Endpoint/version và kiểm gRPC/warmup; Khoa hỗ trợ đo ANPR; chuyển từ dòng Khoa hạn cũ 2026-10-14, chưa coi HiTranquility đã bắt đầu |
 | HiTranquility | 3 | Đưa Postgres 16 + pgvector vào job CI Python và nối kiểm tích hợp | IPLMS ISSUE-126 review-6 S3 | 🟠 | Dương cung cấp lệnh/fixture test DB local; rõ cấu hình job và quyền CI | Job có DB thật và báo test đúng; phần billing còn chặn phải ghi rõ; chuyển từ việc mới giao Dương ngày 2026-10-18 |
 | HiTranquility | 4 | Rà revision và tích hợp console/RAG giữa gốc, AI, backend, frontend | IPLMS ISSUE-126 review-7; IPLMS ISSUE-004 | 🟠 | Khoa/Dương bàn giao kết quả AI; kiểm `review-7.md`/`eval_copilot_e2e.py` lệch sau `e616fee`; CI và quyền môi trường sẵn sàng cho phần chạy thật | Bảng revision/gitlink, hợp đồng caller và kết quả E2E RAG; chưa merge/deploy hoặc đổi trạng thái chặn khi chưa có bằng chứng |
 | HiTranquility | 5 | I-2: tổ chức security review AI Console trước buổi bảo vệ | IPLMS ISSUE-126; IPLMS ADR-0048, ADR-0051 | 🟠 | Xác định revision; có tài khoản test và môi trường local cô lập | Checklist đăng nhập/phiên/quyền/PII và bằng chứng từ chối sai quyền; người review độc lập với người viết phần quyền |
-| HiTranquility | 6 | I-3: soạn và điều phối demo liên vai console bằng `iplms-demo-loop` | IPLMS ISSUE-126; kênh A2 phase-6 6.3 | 🟢 | Khoa/Dương hỗ trợ dữ liệu/kết quả AI; chỉ chạy thật khi A2, tài khoản test và ngưỡng duyệt sẵn sàng | Kịch bản annotator → reviewer → lead → backend áp ngưỡng và kết quả đúng; ghi phần bị chặn; không giao Dương sửa backend/UI |
-| HiTranquility | 7 | Chốt người phụ trách M3/M4 và thứ tự phối hợp console | IPLMS ISSUE-126 — bảng chia việc M0–M4 | 🟠 | Xác nhận lịch và năng lực của nhóm; có thể chốt sớm để gỡ phụ thuộc cho các việc trước | Người được xác nhận, phạm vi file/module và người duyệt; không mặc định Khoa/Dương nhận phần ngoài AI |
-| HiTranquility | 8 | Điều phối gỡ chặn dữ liệu Forecast F0 với analytic | IPLMS ISSUE-014 F0; IPLMS PROB-039 | 🟢 | Xác định người cung cấp export/capacity; chưa bật model phục vụ | Chốt nguồn dữ liệu, timezone và lịch sử capacity; AI chỉ backtest khi dữ liệu đủ điều kiện |
+| HiTranquility | 6 | Chốt người phụ trách M3/M4 và thứ tự phối hợp console | IPLMS ISSUE-126 — bảng chia việc M0–M4 | 🟠 | Xác nhận lịch và năng lực của nhóm; có thể chốt sớm để gỡ phụ thuộc cho các việc trước | Người được xác nhận, phạm vi file/module và người duyệt; không mặc định Khoa/Dương nhận phần ngoài AI |
+| HiTranquility | 7 | Điều phối gỡ chặn dữ liệu Forecast F0 với analytic | IPLMS ISSUE-014 F0; IPLMS PROB-039 | 🟢 | Xác định người cung cấp export/capacity; chưa bật model phục vụ | Chốt nguồn dữ liệu, timezone và lịch sử capacity; AI chỉ backtest khi dữ liệu đủ điều kiện |
 
-Hoạch định lại theo IPLMS REQ-006 F8 / ISSUE-125 review-2: chuyển 2 việc dự kiến của Khoa/Dương, 2 dòng 🚧 cũ (restart/CI) và 1 dòng 🙋 (rà revision) sang hàng đợi HiTranquility. Không giữ các dòng đó ở hai chỗ hoặc suy ra người mới đã bắt đầu. Không chạy model, gọi LLM, đổi quyền hoặc thao tác stack trong lượt lập kế hoạch.
+Kế hoạch mới nhất theo IPLMS REQ-006 F9 / ISSUE-125 review-3: 12 việc dự kiến (Khoa 2, Dương 3, HiTranquility 7). I-3 trả về Dương trong phạm vi IPLMS-AI; các việc tổng thể đã chuyển ở review-2 vẫn thuộc HiTranquility. Không chạy demo, model, LLM, đổi quyền hoặc thao tác stack trong lượt lập kế hoạch.
 
 ## 🚧 Đang làm
 
