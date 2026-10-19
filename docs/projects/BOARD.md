@@ -8,7 +8,8 @@
 | | |
 |---|---|
 | **Người giữ bảng** | Chủ đồ án |
-| **Cập nhật lần cuối** | 2026-10-18 |
+| **Cập nhật lần cuối** | 2026-10-19 |
+| **Người cập nhật** | Codex — bổ sung dự trù theo lựa chọn B của chủ dự án |
 
 ## 📏 Luật dùng bảng
 
@@ -29,12 +30,28 @@
 | Review trước tích hợp: Prior loại xe không phải observation | [bug-006](bugs/bug-006-vehicle-prior-gia-lam-observation/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
 | Review trước tích hợp: Ingest mapping thời gian sai DTO | [bug-007](bugs/bug-007-ingest-response-sai-duration/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
 | Review trước tích hợp: Dashboard render dữ liệu bằng HTML | [bug-008](bugs/bug-008-dashboard-render-html-khong-escape/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
-| Đánh giá & calibration phân bố confidence ANPR theo camera | IPLMS PROB-045 | 🟢 | Chuẩn bị dữ liệu sau khi materialize xong |
 | Đo weights ứng viên chưa nạp: nạp theo `artifact_key` trong process đo riêng (module M4) | IPLMS ISSUE-126 phase-6 6.12 | 🟢 | M4 chưa có người |
-| `app/script/compile_proto.py` ưu tiên `proto/` repo gốc trước `ai/proto` → stub thiếu RPC khi gốc chưa bump | IPLMS ISSUE-126 review-6 BUG-06 | 🟢 | Việc nhỏ, ai cũng làm được |
 | Kiểm `review-7.md` + `app/script/eval_copilot_e2e.py` bị sửa trên đĩa sau commit `e616fee`, trước khi push/merge | IPLMS ISSUE-126 review-7 | 🟠 | Người merge chuỗi PR console |
-| I-2: security review AI Console (đăng nhập, quyền, PII ảnh cắt) trước buổi bảo vệ | IPLMS ISSUE-126 | 🟠 | Ý mới 2026-10-18 |
-| I-3: kịch bản demo liên vai console (annotator → reviewer → lead → backend áp ngưỡng) bằng `iplms-demo-loop` | IPLMS ISSUE-126 | 🟢 | Ý mới 2026-10-18 |
+
+## 🗓️ Dự kiến theo thành viên — chưa nhận việc
+
+Chủ dự án chọn phương án B ngày 2026-10-19: dự trù theo người, chưa giao hạn tuần. **Dự kiến cho** không có nghĩa người đó đã nhận. Các dòng 🚧 bên dưới giữ nguyên theo lần cập nhật trước; hạn cũ cần thành viên xác nhận lại, không suy ra đã xong hoặc đang trễ thực tế.
+
+Thứ tự 1 → 3 là gợi ý trong từng người, sau khi rà việc đang làm và các review 🔴 ở mục 🙋. Chỉ chuyển một việc sang 🚧 khi người nhận xác nhận, điền hạn và bảo đảm đủ điều kiện; di chuyển dòng, không sao chép. M3/M4 chưa có người xác nhận; không coi Claude Code là một thành viên mới của nhóm.
+
+| Dự kiến cho | Thứ tự | Việc | Hồ sơ | Ưu tiên | Bắt đầu khi | Đầu ra để duyệt |
+|---|---|---|---|---|---|---|
+| Khoa | 1 | Duyệt phần M2 của cổng từ chối Copilot sau đợt code console | IPLMS ISSUE-126 review-7 OPEN-01; BOARD ✅ ngày 2026-10-18 | 🟠 | Chốt revision cần duyệt với Dương; dành được thời gian sau việc M2 đang nhận | Nhận xét chấp nhận/cần sửa, ghi rõ model, ngưỡng và rủi ro câu có similarity cao; chưa tự thay ngưỡng |
+| Khoa | 2 | Kiểm và sửa thứ tự chọn proto của `compile_proto.py` nếu còn lệch | IPLMS ISSUE-126 review-6 BUG-06 | 🟢 | Tái hiện trên revision tích hợp; xác nhận nguồn proto và dành được thời gian sau việc M2 | Fixture lệch phiên bản không còn sinh stub thiếu RPC; kiểm đồng bộ caller; nếu đã sửa thì ghi bằng chứng thay vì sửa lại |
+| Khoa | 3 | Đánh giá & calibration phân bố confidence ANPR theo camera | IPLMS PROB-045 | 🟢 | `materialize_dataset` và test-golden được xác minh, có tập theo camera đủ dùng | Báo cáo phân bố/sai số theo camera và đề xuất ngưỡng; chưa áp ngưỡng khi chưa duyệt |
+| Dương | 1 | Mở rộng bộ held-out Copilot và rà nhãn độc lập | IPLMS ISSUE-126 review-7 S3 | 🟠 | Xong lượt test KB đang nhận; thống nhất nhãn với Khoa và có người viết câu độc lập | ≥ 30 câu held-out có nhãn/nguồn; tách bộ chọn ngưỡng khỏi bộ đánh giá; ghi kết quả khi môi trường local sẵn sàng |
+| Dương | 2 | Rà ca kiểm thử restart/resume và duyệt sai cho workflow tranh chấp | [ai ISSUE-001](issues/09-2026/ISSUE-001-langgraph-dispute-workflow/issue.md) | 🟠 | Đối chiếu test phase 1–2 trước; backend xác nhận hợp đồng evidence có quyền cho phần tích hợp | Ma trận test và bằng chứng cho restart/resume, thread không hợp lệ, duyệt lặp; chỉ bổ sung ca còn thiếu; không thực thi hoàn tiền |
+| Dương | 3 | I-3: soạn kịch bản demo liên vai console bằng `iplms-demo-loop` | IPLMS ISSUE-126; kênh A2 phase-6 6.3 | 🟢 | Có thời gian sau việc RAG/workflow; chỉ chạy demo thật khi A2, tài khoản test và ngưỡng duyệt sẵn sàng | Kịch bản annotator → reviewer → lead → backend áp ngưỡng, mỗi bước có kết quả đúng; phần chưa chạy ghi rõ bị chặn |
+| HiTranquility | 1 | I-2: tổ chức security review AI Console trước buổi bảo vệ | IPLMS ISSUE-126; IPLMS ADR-0048, ADR-0051 | 🟠 | Xác định revision cần review; có tài khoản test và môi trường local cô lập | Checklist đăng nhập/phiên/quyền và PII ảnh cắt, bằng chứng từ chối sai quyền; tách người viết phần quyền với người review khi thực hiện |
+| HiTranquility | 2 | Chốt người phụ trách M3/M4 và thứ tự phối hợp console | IPLMS ISSUE-126 — bảng chia việc M0–M4 | 🟠 | Xác nhận lịch và năng lực của nhóm; không mặc định người thứ ba là một tài khoản cụ thể | Tên người được xác nhận cho M3/M4, phạm vi file và người duyệt; cập nhật BOARD khi nhận, không tạo owner trùng |
+| HiTranquility | 3 | Điều phối gỡ chặn dữ liệu Forecast F0 | IPLMS ISSUE-014 F0; IPLMS PROB-039 | 🟢 | Xác định người cung cấp export/capacity từ analytic; chưa bật model phục vụ | Danh sách dữ liệu còn thiếu, người cung cấp, timezone và lịch sử capacity cần xác nhận; có nguồn đủ điều kiện mới lên lịch backtest |
+
+Lượt này chỉ lập hàng đợi từ hồ sơ hiện có (IPLMS REQ-006 F7 / ISSUE-125 review-1). Không chạy model, tải dữ liệu, gọi LLM hoặc thay đổi quyền. Các dòng này không thay thế việc đang làm ở dưới.
 
 ## 🚧 Đang làm
 
