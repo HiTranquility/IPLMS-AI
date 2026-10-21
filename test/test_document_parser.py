@@ -5,9 +5,10 @@ lại khi đã cài. Nhánh TXT/MD cùng toàn bộ phép kiểm đầu vào th�
 gói nào, chạy được ngay.
 """
 import importlib.util
+import os
 import unittest
 
-from app.core.constants import KNOWLEDGE_MAX_FILE_BYTES
+from app.core.constants import CHUNK_MIN_CHARS, KNOWLEDGE_MAX_FILE_BYTES
 from app.core.enums import DocumentFormat
 from app.core.exceptions import (
     DocumentTooLargeError,
@@ -91,7 +92,7 @@ class ChanDauVaoXauTest(unittest.TestCase):
         self.assertLess(KNOWLEDGE_MAX_FILE_BYTES, 10 * 1024 * 1024)
 
 
-@unittest.skipUnless(CO_PYPDF, "Chưa cài pypdf")
+@unittest.skipUnless(CO_PYPDF and os.getenv("AI_TEST_OCR"), "Cần pypdf + AI_TEST_OCR=1")
 class PdfTest(unittest.TestCase):
     def test_pdf_hop_le_nhung_khong_co_lop_van_ban(self):
         """PDF scan: cấu trúc đúng, chữ ký đúng, nhưng không có chữ nào."""
@@ -105,6 +106,28 @@ class PdfTest(unittest.TestCase):
 
         with self.assertRaises(NoTextLayerError):
             parse_document(buf.getvalue(), "ban_scan.pdf")
+
+    def test_pdf_scan_co_chu_duoc_ocr_thanh_ban_nhap(self):
+        """A raster-only PDF must yield text instead of being treated as empty."""
+        import io as _io
+        from PIL import Image, ImageDraw, ImageFont
+        from pypdf import PdfReader
+
+        image = Image.new("RGB", (2300, 1350), "white")
+        draw = ImageDraw.Draw(image)
+        font = ImageFont.load_default(size=90)
+        draw.text((100, 140), "PARKING RULES", fill="black", font=font)
+        draw.text((100, 360), "MOTORBIKE FEE 25000 VND", fill="black", font=font)
+        draw.text((100, 580), "CAR FEE 50000 VND PER HOUR", fill="black", font=font)
+        draw.text((100, 800), "OPEN FROM SIX AM TO TEN PM", fill="black", font=font)
+        draw.text((100, 1020), "KEEP YOUR TICKET AT ALL TIMES", fill="black", font=font)
+        buf = _io.BytesIO()
+        image.save(buf, "PDF", resolution=150)
+        self.assertFalse(PdfReader(_io.BytesIO(buf.getvalue())).pages[0].extract_text())
+
+        parsed = parse_document(buf.getvalue(), "scanned-rules.pdf")
+        self.assertGreaterEqual(len(parsed.text.strip()), CHUNK_MIN_CHARS)
+        self.assertTrue(any("nhận dạng chữ từ ảnh" in warning for warning in parsed.warnings))
 
 
 @unittest.skipUnless(CO_DOCX, "Chưa cài python-docx")
@@ -128,6 +151,48 @@ class DocxTest(unittest.TestCase):
         self.assertIn("Biểu phí gửi xe", ket_qua.text)
         self.assertIn("Xe máy", ket_qua.text)
         self.assertIn("6000", ket_qua.text)
+
+
+def _treo_mai():
+    """Giả lập PDF độc làm pypdf treo. Ở cấp module để process con (spawn) import được."""
+    import time
+    while True:
+        time.sleep(1)
+
+
+def _bao_loi_dinh_dang():
+    raise UnsupportedFormatError("File PDF được đặt mật khẩu nên không đọc được nội dung.")
+
+
+class XuLyCachLyTest(unittest.TestCase):
+    """bug-026: bước pypdf chạy trong process con, quá hạn thì bị GIẾT — thread thì không giết được."""
+
+    def test_process_treo_bi_giet_khi_qua_han(self):
+        import multiprocessing
+        import time
+        from app.core.knowledge.engines.document_parser import _run_isolated
+
+        bat_dau = time.perf_counter()
+        with self.assertRaises(DocumentTooLargeError):
+            _run_isolated(_treo_mai, (), timeout=2)
+        self.assertLess(time.perf_counter() - bat_dau, 15)
+        self.assertEqual([], [p for p in multiprocessing.active_children() if p.is_alive()])
+
+    def test_loi_nghiep_vu_tra_ve_dung_kieu(self):
+        from app.core.knowledge.engines.document_parser import _run_isolated
+
+        with self.assertRaises(UnsupportedFormatError) as raised:
+            _run_isolated(_bao_loi_dinh_dang, (), timeout=30)
+        self.assertIn("mật khẩu", str(raised.exception))
+
+    @unittest.skipUnless(CO_PYPDF, "Cần pypdf")
+    def test_pdf_co_lop_chu_doc_qua_process_con(self):
+        duong_dan = os.path.join(os.path.dirname(__file__), "..", "data", "knowledge", "demo-upload", "04-an-ninh-demo.pdf")
+        with open(duong_dan, "rb") as f:
+            ket_qua = parse_document(f.read(), "an-ninh.pdf")
+        self.assertEqual(DocumentFormat.PDF, ket_qua.doc_format)
+        self.assertGreater(len(ket_qua.text.strip()), 20)
+        self.assertGreaterEqual(ket_qua.page_count, 1)
 
 
 if __name__ == "__main__":

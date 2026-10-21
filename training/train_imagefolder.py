@@ -39,7 +39,7 @@ import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from model.architectures.m1.nets import NetV1
 from model.architectures.m2.nets import NetV2
-import writeLogAcc as wA
+import write_log_acc as wA
 
 path_ReIN = './model/dataset/Animal-10'
 
@@ -322,7 +322,7 @@ def main():
 
         line = 'Epoch {}/{} summary: loss_train={:.5f}, acc_train={:.2f}%, loss_val={:.5f}, acc_val={:.2f}% (best: {:.2f}% @ epoch {})'.format(
             epoch, args.epochs, loss_temp, train_prec1_temp, val_loss, prec1, best_prec1, epoch_max)
-        wA.writeLogAcc(filenameLOG, line)
+        wA.write_log_acc(filenameLOG, line)
         end_time = time.time()
         time_value = (end_time - start_time) / 3600
         print("-" * 80)

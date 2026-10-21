@@ -15,6 +15,7 @@ Module này CỐ Ý không import gì ngoài stdlib: cắt đoạn là thuật t
 được mà không cần network, không cần API key, không cần model nào nạp sẵn.
 """
 import re
+import unicodedata
 from typing import List, Optional, Tuple
 
 from app.core.constants import CHUNK_MIN_CHARS, CHUNK_OVERLAP_CHARS, CHUNK_TARGET_CHARS
@@ -38,7 +39,10 @@ def _normalize(text: str) -> str:
 
     PDF tách text ra thường kèm khoảng trắng cuối dòng và hàng loạt dòng trống —
     nếu không dọn, chúng ăn vào hạn mức ký tự của đoạn và đẩy nội dung thật ra ngoài.
+    PDF còn hay trả chữ Việt ở dạng dấu tách rời (NFD): "phí" thành "phi" + dấu
+    sắc, tìm keyword gõ "phí" (NFC) sẽ trượt — nên gộp về NFC.
     """
+    text = unicodedata.normalize("NFC", text)
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = re.sub(r"[ \t]+\n", "\n", text)
     text = re.sub(r"\n{3,}", "\n\n", text)

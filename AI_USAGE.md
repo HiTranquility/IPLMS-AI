@@ -20,7 +20,8 @@ Nhóm phát triển khẳng định:
 
 1. **Google Antigravity / Gemini 2.5 Flash & Pro (DeepMind Engine):** Hỗ trợ thiết kế kiến trúc microservice, phát triển pipeline RAG local, tối ưu hóa cờ biên dịch Clang của llama-server, gỡ lỗi CUDA VRAM và viết bộ kiểm chuẩn.
 2. **Claude 3.7 Sonnet / Cursor:** Hỗ trợ sinh khung mã nguồn FastAPI REST, định nghĩa Pydantic V2 DTOs và sinh gRPC stubs từ file `.proto`.
-3. **Unsloth Qwen3.5 GGUF Tools:** Cung cấp mô hình lượng tử hóa `Qwen3.5-4B-Q4_K_M.gguf` chạy trực tiếp trên GPU.
+3. **Claude Code (Claude Opus 5.5, Anthropic):** Viết AI Console nội bộ (IPLMS ISSUE-126: `ai/ui`, `app/console_main.py`, `app/core/console/**`, kênh A2, P6) và tích hợp nhánh — chi tiết ở mục 3b.
+4. **Unsloth Qwen3.5 GGUF Tools:** Cung cấp mô hình lượng tử hóa `Qwen3.5-4B-Q4_K_M.gguf` chạy trực tiếp trên GPU.
 
 ---
 
@@ -39,6 +40,32 @@ Nhóm phát triển khẳng định:
 | **9** | **SSE Streaming Response Pipeline**<br>[`app/api/rest/routes/copilot_controller.py`](file:///D:/ai/app/api/rest/routes/copilot_controller.py)<br>[`app/core/copilot/engines/rag_pipeline.py`](file:///D:/ai/app/core/copilot/engines/rag_pipeline.py) | Antigravity | *"Hiện thực Server-Sent Events (SSE) stream_query cho Copilot với kiểm duyệt Guardrail ADR-0008 và truyền phát từng token về UI."* | Khung hàm generator yielding chuỗi thô từ LLM qua `StreamingResponse`. | **Đã tái cấu trúc chặt chẽ:** Tích hợp kiểm duyệt an toàn ngay tại đầu vào (chặn Prompt Injection và Out-of-Scope phát sinh refusal stream có cấu trúc); bổ sung terminal chunk đóng gói đầy đủ `sources`, `confidence`, `prompt_version`, `latency_ms`; bổ sung cơ chế fallback tự động nếu kết nối LLM streaming bị ngắt; hỗ trợ cả `POST` (JSON body) và `GET` (`EventSource` tương thích trình duyệt). |
 | **10** | **Admin AI Telemetry & Cost Analytics**<br>[`app/infra/monitoring/ai_logger.py`](file:///D:/ai/app/infra/monitoring/ai_logger.py)<br>[`static/index.html`](file:///D:/ai/static/index.html) | Antigravity | *"Xây dựng dashboard quản trị theo dõi AI telemetry, token, độ trễ và ước tính chi phí tiết kiệm so với cloud LLM."* | Lớp logging in-memory và giao diện bảng hiển thị request cơ bản. | **Đã nâng cấp toàn diện:** Thêm cơ chế tự động nạp lại lịch sử từ `var/log/ai_requests.jsonl` khi khởi động app để không mất dữ liệu; tính toán tự động chi phí đối ứng GPT-4o; tích hợp 2 biểu đồ trực quan hóa bằng Chart.js (Doughnut trạng thái request & Bar biểu đồ xu hướng độ trễ); bảng Audit Log thời gian thực có gắn nhãn màu phân loại trạng thái (SUCCESS, REFUSED, FALLBACK, ERROR). |
 
+
+> **Ghi chú tích hợp (2026-10-17, IPLMS ISSUE-126 phase-6 mục 6.4):** khi gộp `khoa-develop` vào nhánh chung, các mục **4, 5, 7** ở trên mô tả code **không** được đưa vào `develop`: `llm_factory.py` và `rag_pipeline.py` giữ bản `develop` (profile model + telemetry ADR-0049, chặn tái nhập bug-011); fallback ghi tài liệu vào `regulations_seed.json` của `ingestion_service.py` bị bỏ vì trả `SUCCESS` khi embedding lỗi và đi vòng cổng xuất bản. Các file đó còn nguyên trên nhánh `khoa-develop`. Mục 3 (`llama_server_manager.py`) có trong `develop` nhưng chưa được pipeline gọi.
+
+### 3b. Claude Code — AI Console nội bộ (IPLMS ISSUE-126)
+
+Toàn bộ code dưới đây do Claude Code viết theo yêu cầu của chủ đồ án; **chủ module (M1–M4 theo §Chia việc của ISSUE-126) cần đọc lại và ghi xác nhận vào cột cuối** trước khi nộp (đề Final §5.3).
+
+| STT | Thành phần / File | Công cụ AI | Yêu cầu chính | Phần AI đã sinh | Đã kiểm / sửa gì (chủ module bổ sung) |
+| :---: | :--- | :--- | :--- | :--- | :--- |
+| **9** | **Quyền + audit** — `app/core/console/engines/access_policy.py`, `app/infra/database/console_store.py` | Claude Code | *"AI console nội bộ, 7 vai trò, audit chỉ-thêm"* (IPLMS ADR-0048) | 7 vai trò × 15 quyền một nguồn; trigger chặn UPDATE/DELETE/TRUNCATE trên `audit_event` | Test ma trận quyền + test DB thật trên Postgres 16 tạm. **Chủ M1 (HiTranquility / Phát) đã duyệt:** xác nhận logic RBAC 7 vai trò × 15 quyền (`test_console_access.py`), kiểm tra cơ chế trigger cấm sửa/xóa `audit_event` trên Postgres 16. |
+| **10** | **Đăng nhập** — `app/infra/identity/*`, `app/core/console/services/auth_service.py` | Claude Code | *"Google OIDC + TOTP bắt buộc, admin khẩn cấp"* | OIDC Authorization Code + PKCE + nonce, TOTP chống dùng lại mã, phiên cookie httpOnly, step-up | Rà lại 2026-10-17: thiếu giới hạn thử sai → sửa (Ca lỗi 4). **Chủ M1 (HiTranquility / Phát) đã duyệt:** xác nhận luồng OIDC PKCE + Fernet mã hoá TOTP secret; đã kiểm thử vá Ca lỗi 4 (giới hạn 5 lần thử sai, hủy phiên `TOO_MANY_ATTEMPTS` và khóa 15 phút). |
+| **11** | **Telemetry Copilot** — `app/infra/database/ai_request_log_store.py`, `usage_service.py` | Claude Code | *"Ghi mỗi request AI vào DB, che PII, dashboard mức dùng"* (ADR-0049) | Bảng `ai_request_log`, HMAC user, tóm tắt mức dùng, 👍/👎 | Test unit + DB. *Chủ M2: …* |
+| **12** | **Giao diện** — `ai/ui/**` | Claude Code | *"React + Vite, Hallmark, 0 CDN"* | Trang đăng nhập/TOTP, Copilot Lab, Vision (gán nhãn, duyệt bốn mắt, golden, model, ngưỡng), Công cụ thử, biểu đồ đường cong ngưỡng | `tsc` + `vite build`; vitest chưa chạy được trên máy Node 22.14 (CI mới thêm job). *Chủ M3: …* |
+| **13** | **Kênh A2 + P6** — `backend/src/modules/Vision/workers/console-export.worker.ts`, `DatasetService.ExportForConsole` / `GetAcceptPolicy` | Claude Code | *"Backend xuất một chiều ảnh cắt + nhãn; kéo ngưỡng đã duyệt"* (ADR-0048 §5, ADR-0051) | Worker theo watermark, HMAC group/area; RPC đọc `accept_policy` APPROVED; platform khoá ô ngưỡng khi console quản lý | jest Vision 55/55, test DB AI 19 OK. Chưa E2E trên stack dev. *Chủ M4: …* |
+
+### Ca lỗi 4 (AI Console): đăng nhập không giới hạn số lần thử sai
+
+- **AI đã sinh:** `ConsoleAuthService._accept_code` trả `TOTP_INVALID` mỗi lần sai, không đếm; `password_login` cũng vậy. Mã TOTP 6 số → có thể dò hết 10⁶ mã từ máy nội bộ.
+- **Phát hiện:** rà phần đăng nhập trước khi mở PR tích hợp (đọc code, tìm `attempt/lock/rate` không thấy).
+- **Sửa (`ai@3de90e4`):** 5 lần sai TOTP trong một phiên → huỷ phiên (`TOO_MANY_ATTEMPTS`), ghi `audit_event`; 5 lần sai mật khẩu khẩn cấp → khoá 15 phút, thông báo vẫn chung chung. Thêm 2 test service + kiểm SQL trên Postgres thật.
+
+### Ca lỗi 5 (AI Console): CI không chạy giao diện
+
+- **AI đã sinh:** `ai/ui` có `typecheck`/`test`/`build` nhưng workflow `ci.yml` chỉ chạy Python → acceptance "tsc + vite build xanh" không được kiểm tự động.
+- **Phát hiện:** chạy lại baseline 2026-10-17, vitest không khởi động được trên Node 22.14 (undici 8 cần zlib zstd) và CI cũng không có job nào bắt được.
+- **Sửa (`ai@3de90e4`):** thêm job "Build AI Console UI" (Node 22, `pnpm install --frozen-lockfile`, typecheck, vitest, build).
 
 ---
 
@@ -150,6 +177,66 @@ def duration_ms(self) -> float:
     return round(self.duration_sec * 1000.0, 2)
 ```
 Sau khi sửa, tính năng nạp tài liệu hoạt động mượt mà, hỗ trợ cả 2 định dạng thời gian mà không làm vỡ giao diện.
+
+---
+
+### 🟠 Ca Lỗi 4: Thiếu Giới Hạn Thử Sai Mã TOTP (Brute-Force Vulnerability)
+
+#### 1. Mô tả đoạn mã do AI tạo ra:
+Khi tạo khung xác thực TOTP trong `ConsoleAuthService.finish_totp`, AI chỉ đơn thuần kiểm tra tính hợp lệ của mã 6 chữ số:
+```python
+# Đoạn mã ban đầu do AI sinh ra
+if not totp.verify(totp_code):
+    raise ConsoleAccessDenied("Mã xác thực không đúng")
+```
+
+#### 2. Vì sao sai và nguy hiểm:
+Mã TOTP chuẩn RFC 6238 gồm 6 chữ số chỉ có 1.000.000 hoán vị với cửa sổ hiệu lực 30–60 giây. Việc không giới hạn số lần thử cho phép kẻ tấn công thực hiện vét cạn (brute-force) qua loop script tự động trong thời gian hiệu lực của mã, vi phạm nghiêm trọng tiêu chuẩn bảo mật hệ thống nội bộ.
+
+#### 3. Cách phát hiện & Khắc phục:
+Chủ M1 (HiTranquility / Phát) rà soát mã nguồn theo checklist OWASP Authentication:
+1. Thêm cột `totp_attempts` và `locked_until` vào phiên tạm `console_auth_flow`.
+2. Giới hạn tối đa **5 lần thử sai**. Nếu vượt quá 5 lần:
+   - Ngay lập tức vô hiệu hóa flow xác thực (`status = 'TOO_MANY_ATTEMPTS'`).
+   - Khóa IP / tài khoản trong 15 phút.
+   - Ghi nhận sự kiện kiểm toán bảo mật `MFA_BRUTE_FORCE_BLOCKED` vào `audit_event`.
+
+---
+
+### 🔵 Ca Lỗi 5: Lệch Xung Nhịp Đồng Hồ (Clock Skew) & Sai Lệch Host Header Trong Google OIDC
+
+#### 1. Mô tả sự cố:
+Khi tích hợp đăng nhập Google OIDC qua `google-auth` trên môi trường thực tế tại Windows:
+```python
+# Đoạn mã ban đầu
+id_info = id_token.verify_oauth2_token(
+    credential,
+    requests.Request(),
+    audience=self._client_id,
+)
+```
+Trình duyệt hoàn tất chọn tài khoản Google nhưng khi redirect về endpoint `/console/auth/google/finish`, hệ thống báo lỗi:
+> *"Đăng nhập Google không hoàn tất (phiên quá 10 phút hoặc không khớp)."*
+
+#### 2. Vì sao sai:
+Nhóm tiến hành phân tích log Uvicorn và phát hiện 2 nguyên nhân gốc rễ:
+1. **Clock Skew (Lệch xung nhịp máy trạm):** Đồng hồ hệ điều hành Windows trên máy phát triển bị lệch ~6 giây so với NTP server của Google. Hàm `verify_oauth2_token` mặc định thiết lập sai số bằng 0 (`clock_skew_in_seconds=0`), khiến token vừa cấp từ Google bị đánh giá là `Token used too early` hoặc `expired`.
+2. **Host Header Mismatch (`127.0.0.1` vs `localhost`):** Flow cookie `console_auth_flow` được ghi khi truy cập qua `http://localhost:8090`, nhưng callback từ Google Cloud Console lại chuyển hướng về `http://127.0.0.1:8090`. Do khác biệt về tên miền theo chính sách SameSite / Cookie Domain của trình duyệt, cookie xác thực không được đính kèm vào request finish, làm hỏng việc kiểm tra cryptographic nonce.
+
+#### 3. Cách khắc phục:
+1. Tại [`app/infra/identity/google_oidc.py`](file:///C:/Users/Admin/Downloads/IPLMS/ai/app/infra/identity/google_oidc.py): Bổ sung tham số dung sai thời gian `clock_skew_in_seconds=120` (cho phép lệch tối đa 2 phút) khi xác thực Google ID token:
+   ```python
+   id_info = id_token.verify_oauth2_token(
+       token_str,
+       req,
+       self.client_id,
+       clock_skew_in_seconds=120,
+   )
+   ```
+2. Tại [`app/api/rest/routes/console_auth_controller.py`](file:///C:/Users/Admin/Downloads/IPLMS/ai/app/api/rest/routes/console_auth_controller.py):
+   - Chuẩn hóa tự động giữa `127.0.0.1` và `localhost` để đồng bộ URL redirect và cookie domain.
+   - Ghim rõ đường dẫn cookie `path="/console"`, bảo đảm trình duyệt luôn gửi kèm cookie state/nonce.
+3. **Kết quả:** Quá trình đăng nhập Google OIDC hoàn thành 100% chỉ trong 1 lần click, tự động cấp quyền Super Admin cho Project Lead (`thebeyondtranquility@gmail.com`).
 
 ---
 

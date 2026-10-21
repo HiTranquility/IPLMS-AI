@@ -1,6 +1,7 @@
-"""Forecast Engines — mô hình dự báo công suất bãi đỗ.
+"""Forecast Engines — CHƯA có engine phục vụ.
 
-[GOTCHA] Chưa có mô hình thật. `occupancy_model` hiện đọc lịch sử rồi BỎ QUA,
-trả về một công thức răng cưa viết cứng. Docstring cũ ghi "Prophet / LightGBM"
-nhưng repo không có thư viện nào trong hai cái đó — xem SUGGESTION-008 §1.2.
+`occupancy_model.py` (sinh tỷ lệ bằng công thức răng cưa, không đọc lịch sử) đã
+bị xoá 2026-09-25: không nơi nào gọi và giữ lại chỉ là chỗ để bật lại số giả.
+Engine thật được dựng khi một model vượt quality gate (PROB-039) — dùng lại
+`training/forecast/features.py`, nạp artifact, predict; xem README của domain.
 """

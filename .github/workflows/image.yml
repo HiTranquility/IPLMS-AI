@@ -3,19 +3,20 @@
 #
 #   PR vào main/develop : build + quét, KHÔNG push (chặn image lỗi trước khi merge)
 #   push main           : push  sha-<7>  +  main
+#   push develop        : push  sha-<7>  +  develop   (cụm dev kéo :develop)
 #   push tag vX.Y.Z     : push  X.Y.Z  +  X.Y  +  sha-<7>   (bản phát hành → prod)
 #
 # [NEVER] tag `latest`. Deploy luôn trỏ sha-<7> hoặc X.Y.Z để trả lời được câu
 # "đang chạy mã nào" và rollback = đổi tag.
 # Action ghim theo commit SHA (tag có thể bị dời — supply-chain); Trivy ghim digest.
 # ============================================================================
-name: Image
+name: AI · Image
 
 on:
   pull_request:
     branches: [main, develop]
   push:
-    branches: [main]
+    branches: [main, develop]
     tags: ['v*.*.*']
   workflow_dispatch:
 
@@ -32,7 +33,7 @@ env:
 
 jobs:
   image:
-    name: Build, scan, push
+    name: Build, scan and push image
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -60,6 +61,7 @@ jobs:
           tags: |
             type=sha,format=short,prefix=sha-
             type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=develop,enable=${{ github.ref == 'refs/heads/develop' }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
 

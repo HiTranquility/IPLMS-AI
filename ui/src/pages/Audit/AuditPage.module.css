@@ -1,0 +1,220 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+
+@media (max-width: 1100px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tableContainer {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border-bottom: var(--hairline);
+  flex-wrap: wrap;
+}
+
+.searchWrap {
+  display: flex;
+  align-items: center;
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+  max-width: 400px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 10px;
+  color: var(--color-faded);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  height: 36px;
+  padding: 0 var(--space-3) 0 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: var(--text-xs);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-soft);
+  background: var(--color-surface);
+}
+
+.filterSelect {
+  height: 36px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.exportGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tableCount {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  font-weight: 500;
+  margin-left: auto;
+}
+
+/* Row Specific Styling */
+.timeCell {
+  display: flex;
+  flex-direction: column;
+}
+
+.relativeTime {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: var(--text-xs);
+}
+
+.absoluteTime {
+  font-size: 11px;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.actorCell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.actorAvatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-2);
+  color: var(--color-accent-dark);
+  border: 1px solid var(--color-border);
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+:global([data-theme='dark']) .actorAvatar {
+  color: #fbbf24;
+}
+
+.systemAvatar {
+  background: var(--color-surface-3);
+  color: var(--color-muted);
+}
+
+.actorInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.actorName {
+  font-weight: 600;
+  font-size: var(--text-xs);
+  color: var(--color-text);
+}
+
+.actorEmail {
+  font-size: 11px;
+  color: var(--color-muted);
+}
+
+.targetCell {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--text-xs);
+}
+
+.targetType {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--color-faded);
+  letter-spacing: 0.04em;
+}
+
+.targetName {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.reasonCell {
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inspectBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.inspectBtn:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}

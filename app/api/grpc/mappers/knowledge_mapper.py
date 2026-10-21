@@ -1,6 +1,10 @@
 """Map Knowledge protobuf messages to/from domain DTOs."""
 from app.api.grpc.generated_stubs import get_stub
-from app.core.knowledge.dtos.knowledge_dto import IngestDocumentCommand, IngestResult
+from app.core.knowledge.dtos.knowledge_dto import (
+    IngestDocumentCommand,
+    IngestResult,
+    KnowledgeDocumentSummary,
+)
 
 _pb2, _ = get_stub("knowledge_service")
 
@@ -23,6 +27,8 @@ def to_ingest_response(result: IngestResult):
         chunk_count=result.chunk_count,
         message=result.message,
         process_time_ms=result.process_time * 1000,
+        version_id=result.version_id,
+        version_no=result.version_no,
     )
 
 
@@ -30,4 +36,34 @@ def to_delete_response(removed_chunk_count: int):
     return _pb2.DeleteDocumentResponse(
         deleted=removed_chunk_count > 0,
         removed_chunk_count=removed_chunk_count,
+    )
+
+
+def to_list_response(documents: list[KnowledgeDocumentSummary]):
+    return _pb2.ListDocumentsResponse(
+        documents=[
+            _pb2.KnowledgeDocument(
+                document_id=doc.document_id,
+                file_name=doc.file_name,
+                category=doc.category,
+                uploaded_by=doc.uploaded_by or "",
+                chunk_count=doc.chunk_count,
+                created_at=doc.created_at,
+                updated_at=doc.updated_at,
+                latest_version_no=doc.latest_version_no,
+                latest_status=doc.latest_status,
+                published_version_no=doc.published_version_no,
+            )
+            for doc in documents
+        ]
+    )
+
+
+def to_chunks_response(result: dict):
+    return _pb2.ListDocumentChunksResponse(
+        version_no=result["version_no"],
+        status=result["status"],
+        total=result["total"],
+        chunks=[_pb2.KnowledgeChunkPreview(**chunk) for chunk in result["chunks"]],
+        versions=[_pb2.KnowledgeDocumentVersionSummary(**version) for version in result["versions"]],
     )

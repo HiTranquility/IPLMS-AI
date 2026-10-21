@@ -25,6 +25,14 @@ async def _main() -> int:
         default=None,
         help="UUID ổn định để retry không tạo tài liệu/chunk trùng",
     )
+    parser.add_argument(
+        "--publish",
+        action="store_true",
+        help=(
+            "Xuất bản NGAY bản vừa nạp (bỏ qua bộ test). Chỉ dành cho vận hành phía "
+            "server; owner/admin xuất bản qua giao diện, có cổng kiểm thử (ISSUE-009)."
+        ),
+    )
     args = parser.parse_args()
 
     path: Path = args.file.resolve()
@@ -44,7 +52,16 @@ async def _main() -> int:
     )
     if result.message:
         print(result.message)
-    return 0 if result.status is IngestStatus.SUCCESS else 1
+    if result.status is not IngestStatus.SUCCESS:
+        return 1
+    if args.publish:
+        from app.infra.database.pgvector_client import pgvector_client
+
+        await pgvector_client.publish_versions(
+            args.parking_lot_id, [result.version_id], args.uploaded_by
+        )
+        print(f"published version_no={result.version_no}")
+    return 0
 
 
 if __name__ == "__main__":

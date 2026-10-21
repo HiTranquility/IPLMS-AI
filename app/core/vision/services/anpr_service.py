@@ -48,9 +48,9 @@ class AnprService:
             original_url = generate_original_image_url(plate_number, event_id)
             save_bytes_image(command.image_data, original_url)
 
-        plate_color = result.get("plate_color", "white")
+        plate_color = result.get("plate_color")
 
-        # Phân loại loại phương tiện bằng CNN kết hợp tiên nghiệm quy chuẩn biển số
+        # Phân loại ảnh bằng CNN; không suy diễn loại xe từ biển số/màu nền.
         vehicle_type = (
             classify_vehicle(
                 command.image_data,

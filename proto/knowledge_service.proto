@@ -16,10 +16,15 @@ service KnowledgeService {
 
   // Gỡ toàn bộ chunk sinh ra từ 1 tài liệu (owner xoá quy chế cũ).
   rpc DeleteDocument (DeleteDocumentRequest) returns (DeleteDocumentResponse);
+
+  // Liệt kê tài liệu đã nạp của 1 bãi (owner xem mình đã đưa quy chế nào vào).
+  // `knowledge_documents` là nguồn duy nhất — backend KHÔNG giữ bản sao metadata.
+  rpc ListDocuments (ListDocumentsRequest) returns (ListDocumentsResponse);
+  // Xem các đoạn của phiên bản mới nhất hoặc một phiên bản cũ trong đúng phạm vi tài liệu.
+  rpc ListDocumentChunks (ListDocumentChunksRequest) returns (ListDocumentChunksResponse);
 }
 
-// Định dạng tài liệu service này đọc được. KHÔNG nhận PDF scan (không có lớp
-// văn bản) — nó cần OCR toàn trang, là bài toán khác, xem Non-goals của SUGGESTION-008.
+// PDF có trang scan được OCR tối đa 6 trang cần nhận dạng mỗi lần nạp.
 enum DocumentFormat {
   DOCUMENT_FORMAT_UNSPECIFIED = 0;
   PDF = 1;
@@ -33,7 +38,7 @@ enum DocumentFormat {
 enum IngestStatus {
   INGEST_STATUS_UNSPECIFIED = 0;
   SUCCESS = 1;
-  // Parse ra chuỗi rỗng: gần như chắc chắn là PDF scan/ảnh chụp.
+  // Không tìm được chữ đọc được, kể cả sau khi OCR các trang PDF scan.
   NO_TEXT_LAYER = 2;
   // Định dạng không nằm trong DocumentFormat.
   UNSUPPORTED_FORMAT = 3;
@@ -84,6 +89,10 @@ message IngestDocumentResponse {
   // Mô tả lỗi cho người đọc, đã sẵn sàng hiển thị cho owner.
   string message = 4;
   double process_time_ms = 5;
+  // Bản NHÁP vừa ghi (ISSUE-009). Khách chưa thấy bản này cho tới khi scope
+  // được xuất bản qua KnowledgeEvalService.PublishScope.
+  string version_id = 6;
+  int32 version_no = 7;
 }
 
 message DeleteDocumentRequest {
@@ -91,9 +100,222 @@ message DeleteDocumentRequest {
   // Chốt chặn: caller phải nói rõ tài liệu thuộc bãi nào, để backend không xoá
   // nhầm tài liệu của bãi khác khi document_id bị truyền sai.
   string parking_lot_id = 2;
+  // true = chỉ bỏ bản nháp; bản PUBLISHED (nếu có) vẫn phục vụ khách.
+  bool draft_only = 3;
 }
 
 message DeleteDocumentResponse {
   bool deleted = 1;
   int32 removed_chunk_count = 2;
+}
+
+message ListDocumentsRequest {
+  // Cùng quy ước phạm vi với DeleteDocument: RỖNG = chỉ tài liệu toàn hệ thống,
+  // có giá trị = chỉ tài liệu của đúng bãi đó (không gộp tài liệu chung vào).
+  string parking_lot_id = 1;
+}
+
+message KnowledgeDocument {
+  string document_id = 1;
+  string file_name = 2;
+  string category = 3;
+  string uploaded_by = 4;
+  int32 chunk_count = 5;
+  // ISO-8601 UTC.
+  string created_at = 6;
+  string updated_at = 7;
+  // Phiên bản mới nhất chưa lưu trữ: DRAFT | TESTED | PUBLISHED.
+  int32 latest_version_no = 8;
+  string latest_status = 9;
+  // Phiên bản khách đang thấy; 0 = khách chưa thấy tài liệu này.
+  int32 published_version_no = 10;
+}
+
+message ListDocumentsResponse {
+  // Mới cập nhật trước.
+  repeated KnowledgeDocument documents = 1;
+}
+
+message ListDocumentChunksRequest {
+  string document_id = 1;
+  string parking_lot_id = 2;
+  // 0 = bản mới nhất; số khác = xem cả phiên bản đã lưu trữ.
+  int32 version_no = 3;
+}
+
+message KnowledgeChunkPreview {
+  int32 ordinal = 1;
+  string section_title = 2;
+  string content = 3;
+}
+
+message KnowledgeDocumentVersionSummary {
+  int32 version_no = 1;
+  string status = 2;
+  int32 chunk_count = 3;
+  string created_at = 4;
+  string published_at = 5;
+}
+
+message ListDocumentChunksResponse {
+  int32 version_no = 1;
+  string status = 2;
+  int32 total = 3;
+  repeated KnowledgeChunkPreview chunks = 4;
+  repeated KnowledgeDocumentVersionSummary versions = 5;
+}
+
+// ============================================================================
+// KNOWLEDGE EVAL SERVICE (ISSUE-009 — bộ test + cổng xuất bản Knowledge Base)
+// ============================================================================
+// Scope = parking_lot_id (ID ParkingArea); RỖNG = tài liệu chung. Backend kiểm
+// quyền theo scope TRƯỚC khi gọi. Khách chỉ thấy bản PUBLISHED; PublishScope là
+// đường DUY NHẤT đưa bản nháp tới khách từ giao diện và bị chặn bởi cổng R3/R4.
+service KnowledgeEvalService {
+  rpc ListTestCases (EvalScope) returns (TestCaseList);
+  // id rỗng = tạo mới. Sửa case của scope khác → FAILED_PRECONDITION.
+  rpc UpsertTestCase (UpsertTestCaseRequest) returns (TestCase);
+  rpc DeleteTestCase (DeleteTestCaseRequest) returns (DeleteTestCaseResponse);
+  // AI ĐỀ XUẤT câu hỏi từ tài liệu của scope — KHÔNG lưu; người duyệt rồi Upsert.
+  rpc GenerateTestCases (GenerateTestCasesRequest) returns (TestCaseList);
+  // Trả ngay lượt chạy RUNNING; phần chạy nằm nền trong ai/. Poll bằng GetTestRun.
+  rpc StartTestRun (StartTestRunRequest) returns (TestRun);
+  rpc GetTestRun (GetTestRunRequest) returns (TestRunDetail);
+  // Người phụ trách duyệt từng kết quả; ý kiến này được lưu và tham gia cổng xuất bản.
+  rpc ReviewTestResult (ReviewTestResultRequest) returns (TestResult);
+  rpc ListTestRuns (EvalScope) returns (TestRunList);
+  rpc GetPublishReadiness (EvalScope) returns (PublishReadiness);
+  // Chặn khi chưa đạt cổng — KHÔNG có cờ bỏ qua (chốt 2026-09-25).
+  rpc PublishScope (PublishScopeRequest) returns (PublishScopeResponse);
+}
+
+message EvalScope {
+  string parking_lot_id = 1;
+}
+
+message TestCase {
+  string id = 1;
+  string parking_lot_id = 2;
+  string question = 3;
+  string expected_answer = 4;
+  // Thông tin bắt buộc phải có nguyên văn (sau chuẩn hoá) trong câu trả lời,
+  // vd "25.000đ", "22:00". Chấm tất định, không qua LLM.
+  repeated string expected_facts = 5;
+  string expected_source = 6;
+  // "fact" | "explain" | "abstain" — CỐ Ý để string như `category`.
+  string kind = 7;
+  // "ai" | "user"
+  string created_by = 8;
+  string author_id = 9;
+  string updated_at = 10;
+}
+
+message TestCaseList {
+  repeated TestCase cases = 1;
+}
+
+message UpsertTestCaseRequest {
+  TestCase test_case = 1;
+  string actor_id = 2;
+}
+
+message DeleteTestCaseRequest {
+  string id = 1;
+  string parking_lot_id = 2;
+}
+
+message DeleteTestCaseResponse {
+  bool deleted = 1;
+}
+
+message GenerateTestCasesRequest {
+  string parking_lot_id = 1;
+  int32 max_cases = 2;
+}
+
+message StartTestRunRequest {
+  string parking_lot_id = 1;
+  string started_by = 2;
+  string answer_profile_id = 3; // Admin-only candidate; empty = active profile.
+}
+
+message GetTestRunRequest {
+  string run_id = 1;
+  string parking_lot_id = 2;
+}
+
+message ReviewTestResultRequest {
+  string run_id = 1;
+  string case_id = 2;
+  string parking_lot_id = 3;
+  bool approved = 4;
+  string note = 5;
+  string reviewer_id = 6;
+}
+
+message TestRun {
+  string id = 1;
+  string parking_lot_id = 2;
+  // RUNNING | PASSED | FAILED | ABORTED (nhịp tim quá hạn — replica đã chết)
+  string status = 3;
+  int32 total = 4;
+  int32 done = 5;
+  int32 passed = 6;
+  int32 failed_facts = 7;
+  int32 failed_abstain = 8;
+  // Vì sao lượt chạy không đạt ngưỡng (rỗng khi PASSED).
+  repeated string verdict_reasons = 9;
+  // Lỗi hạ tầng làm lượt chạy mất giá trị (thiếu key, DB/LLM lỗi).
+  string error = 10;
+  string started_by = 11;
+  string started_at = 12;
+  string finished_at = 13;
+  string answer_profile_id = 14;
+  string judge_profile_id = 15;
+}
+
+message TestResult {
+  string case_id = 1;
+  string question = 2;
+  string kind = 3;
+  string expected_answer = 4;
+  repeated string expected_facts = 5;
+  string answer = 6;
+  repeated string sources = 7;
+  bool passed = 8;
+  repeated string reasons = 9;
+  bool reviewed = 10;
+  bool approved = 11;
+  string review_note = 12;
+  string reviewed_by = 13;
+  string reviewed_at = 14;
+  string expected_source = 15;
+}
+
+message TestRunDetail {
+  TestRun run = 1;
+  repeated TestResult results = 2;
+}
+
+message TestRunList {
+  repeated TestRun runs = 1;
+}
+
+message PublishReadiness {
+  bool ready = 1;
+  // Vì sao chưa được xuất bản — hiển thị nguyên văn cho người dùng.
+  repeated string reasons = 2;
+  bool has_run = 3;
+  TestRun latest_run = 4;
+  // Số bản nháp trong lượt chạy gần nhất sẽ được xuất bản.
+  int32 draft_count = 5;
+}
+
+message PublishScopeRequest {
+  string parking_lot_id = 1;
+  string published_by = 2;
+}
+
+message PublishScopeResponse {
+  int32 published_count = 1;
 }

@@ -70,6 +70,27 @@ class IngestResult:
     chunk_count: int = 0
     message: str = ""
     process_time: float = 0.0
+    # Bản NHÁP vừa ghi (ISSUE-009). Rỗng/0 khi status != SUCCESS.
+    version_id: str = ""
+    version_no: int = 0
+
+
+@dataclass
+class KnowledgeDocumentSummary:
+    """1 dòng `knowledge_documents` — metadata tài liệu đã nạp, không kèm nội dung."""
+
+    document_id: str
+    file_name: str
+    category: str
+    uploaded_by: Optional[str]
+    chunk_count: int
+    created_at: str
+    updated_at: str
+    # Phiên bản mới nhất chưa lưu trữ + trạng thái của nó; 0/"" nếu chưa có.
+    latest_version_no: int = 0
+    latest_status: str = ""
+    # Phiên bản khách đang thấy; 0 = khách chưa thấy tài liệu này.
+    published_version_no: int = 0
 
     @property
     def duration_ms(self) -> float:

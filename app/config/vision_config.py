@@ -21,10 +21,14 @@ class VisionConfig(BaseConfig):
     # Thư mục lưu model EasyOCR. Rỗng = để EasyOCR dùng EASYOCR_MODULE_PATH env
     # hoặc ~/.EasyOCR/ mặc định. setup-dev script đặt vào var/easyocr-cache/.
     ocr_model_storage_dir: str = ""
-    # Production warm-up trước readiness; dev có thể tắt để khởi động nhanh và
-    # lazy-load vào cache volume ở request ANPR đầu tiên.
+    # True (production): nạp model XONG mới mở cổng/readiness.
+    # False (dev): mở cổng ngay, nạp model ở nền vào cache volume.
     vision_warmup_on_start: bool = True
-    device: str = "cuda"
+    device: str = "cpu"
+
+    # Tăng tốc ANPR bằng ONNX Runtime (AI_ONNX_ENABLED và AI_ONNX_MODEL_DIR)
+    onnx_enabled: bool = True
+    onnx_model_dir: str = "data/models"
 
     # CNN phân loại loại xe (stage tùy chọn — tắt khi không có checkpoint).
     vehicle_model: str = "NetV2"
@@ -35,6 +39,8 @@ class VisionConfig(BaseConfig):
     vehicle_num_classes: int = 4
     vehicle_img_size: int = 32
     vehicle_labels: str = "car_sedan,car_suv,motorbike,truck"
+    # Xác suất softmax cao nhất dưới ngưỡng → trả "không rõ" (None) thay vì đoán.
+    vehicle_min_confidence: float = 0.6
 
     @property
     def ocr_language_list(self) -> List[str]:

@@ -11,6 +11,8 @@ pillow>=10.0
 opencv-python-headless>=4.9
 easyocr>=1.7
 ultralytics>=8.3
+onnxruntime>=1.17.0
+pyarrow>=14.0.0
 matplotlib>=3.7
 torchsummary>=1.5.1
 ptflops>=0.7
@@ -34,6 +36,7 @@ psycopg2-binary>=2.9.9
 # doạ; ghim phiên bản chỉ chặn được CVE đã biết, vì vậy còn có thêm trần kích
 # thước + trần thời gian parse trong app/core/constants.py.
 pypdf>=6.19.0
+pypdfium2==5.13.0
 python-docx>=1.2.0
 # Responses API + typed streaming events are required by LlmFactory.
 openai>=1.68.0,<2.0.0
@@ -46,3 +49,12 @@ langgraph-checkpoint>=4.1.1,<5.0.0
 langgraph-checkpoint-postgres>=3.1.2,<3.2.0
 langgraph-sdk>=0.4.4,<0.5.0
 psycopg[binary,pool]>=3.3.6,<4.0.0
+
+# ── AI Console nội bộ — đăng nhập (ADR-0048 §4, ISSUE-126 P1b) ────────────────
+# Duyệt 2026-10-16. Không dùng authlib: nhiều CVE 2025–2026, CVE-2026-96760 (giả
+# mạo JWS) chưa xác nhận bản vá. cryptography là phụ thuộc của google-auth, khai
+# rõ vì console dùng trực tiếp Fernet để mã hoá secret TOTP khi lưu DB.
+google-auth>=2.62.0,<3.0.0
+cryptography>=50.0.2
+pyotp==2.9.0
+argon2-cffi==25.1.0

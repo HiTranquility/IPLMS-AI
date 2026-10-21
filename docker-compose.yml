@@ -24,8 +24,8 @@ services:
   # ─── AI Service (REST :8000 + gRPC :50051) ─────────────────────────────────
   ai:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: ai/Dockerfile
     image: ${AI_IMAGE:-iplms-ai:latest}
     restart: unless-stopped
     logging: *default-logging
@@ -81,12 +81,15 @@ services:
       POSTGRES_USER: ${AI_DB_USER:-postgres}
       POSTGRES_PASSWORD: ${AI_DB_PASSWORD:-postgres}
       POSTGRES_DB: ${AI_DB_NAME:-iplms_knowledge}
+      # DB riêng của AI Console (ADR-0048 §3); trống thì script init bỏ qua.
+      AI_CONSOLE_DB_PASSWORD: ${AI_CONSOLE_DB_PASSWORD:-}
     ports:
       # Keep the host port distinct from the backend DB (:5433) and the
       # knowledge-graph dev stack (:5434). Containers still use ai-db:5432.
       - "${AI_DB_HOST_PORT:-5435}:5432"
     volumes:
       - ai_db_data:/var/lib/postgresql/data
+      - ./docker/ai-db/init:/docker-entrypoint-initdb.d:ro
     networks:
       default:
         aliases:
@@ -98,6 +101,34 @@ services:
       timeout: 5s
       retries: 5
 
+  # ─── AI Console nội bộ (ADR-0048) ───────────────────────────────────────────
+  # Bật bằng `--profile console`. Cùng image với `ai`, process riêng (không chung
+  # tải với inference). [NEVER] gắn label Traefik hay publish ra ngoài 127.0.0.1.
+  ai-console:
+    image: ${AI_IMAGE:-iplms-ai:latest}
+    profiles: ["console"]
+    restart: unless-stopped
+    logging: *default-logging
+    entrypoint: ["uvicorn", "app.console_main:app", "--host", "0.0.0.0", "--port", "8090"]
+    ports:
+      - "127.0.0.1:${AI_CONSOLE_HOST_PORT:-8090}:8090"
+    # Giao diện build ở host (`pnpm --dir ui build`); image AI không chứa Node (ADR-0048 §5).
+    volumes:
+      - ./ui/dist:/app/ui/dist:ro
+    depends_on:
+      ai-db:
+        condition: service_healthy
+    env_file:
+      - path: .env.dev
+        required: true
+    environment:
+      - AI_CONSOLE_DATABASE_URL=postgresql://${AI_DB_USER:-postgres}:${AI_DB_PASSWORD:-***REMOVED***}@ai-db:5432/ai_console
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8090/console/api/health')\" || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
   # ─── Traefik v3 L7 Gateway & Load Balancer ──────────────────────────────────
   gateway:
     # v3.6.16+ negotiates a modern Docker API; v3.3 falls back to v1.24 and
@@ -108,13 +139,14 @@ services:
     logging: *default-logging
     environment:
       - DOCKER_API_VERSION=1.45
+    # bug-032: chỉ bind localhost — AI không có xác thực; backend đi qua alias mạng Docker.
     ports:
-      - "${AI_GATEWAY_REST_PORT:-8000}:8000"      # REST Entrypoint
-      - "${AI_GATEWAY_GRPC_PORT:-50051}:50051"    # gRPC Entrypoint (h2c L7 Load Balanced)
-      - "${AI_GATEWAY_DASHBOARD_PORT:-8080}:8080" # Web Dashboard UI & API
+      - "127.0.0.1:${AI_GATEWAY_REST_PORT:-8000}:8000"      # REST Entrypoint
+      - "127.0.0.1:${AI_GATEWAY_GRPC_PORT:-50051}:50051"    # gRPC Entrypoint (h2c L7 Load Balanced)
+      - "127.0.0.1:${AI_GATEWAY_DASHBOARD_PORT:-8080}:8080" # Web Dashboard UI & API
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./docker/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
     networks:
       default:
         aliases:

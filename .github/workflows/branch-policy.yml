@@ -1,0 +1,28 @@
+# Offline record validation; no notifications, secrets, installs or deployments.
+name: AI · Branch policy
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [main, develop]
+  push:
+    branches: ['**']
+    tags-ignore: ['**']
+permissions:
+  contents: read
+concurrency:
+  group: branch-policy-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  policy-check:
+    name: Check branch & PR record
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout record documents and offline validator
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          submodules: false
+      - name: Test branch policy validator
+        run: python3 -B -m unittest discover -s script -p test_branch_policy.py
+      - name: Validate branch and primary PR record
+        run: python3 -B script/check_branch_policy.py

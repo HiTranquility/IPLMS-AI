@@ -7,4 +7,4 @@ sinh được stub và chạy test.
 - `app/script/compile_proto.py` tìm `../proto` **trước**, nên trong monorepo và
   khi build Docker (context = gốc repo cha) bản này **không được dùng**.
 - [NEVER] sửa tay ở đây. Đổi hợp đồng → sửa `IPLMS/proto/` → chép sang đây.
-- Lệch được bắt bởi `IPLMS/proto/check-proto-sync.py` (CI repo cha).
+- Lệch được bắt bởi `IPLMS/proto/check_proto_sync.py` (CI repo cha).

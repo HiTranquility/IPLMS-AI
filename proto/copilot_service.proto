@@ -14,6 +14,13 @@ service CopilotService {
 
   // Trọng tài AI tự động thẩm định và phân xử tranh chấp vé phạt
   rpc ArbitrateDispute (ArbitrateDisputeRequest) returns (ArbitrateDisputeResponse);
+
+  // 👍/👎 cho một lượt hỏi (turn_id). Chỉ chủ lượt chấm được: AI đối chiếu
+  // HMAC(user_id) với lượt đã lưu (IPLMS ADR-0049).
+  rpc RecordFeedback (RecordFeedbackRequest) returns (RecordFeedbackResponse);
+
+  // Tóm tắt mức dùng AI cho dashboard admin (đề Final §6.6, IPLMS ADR-0049).
+  rpc GetUsageSummary (UsageSummaryRequest) returns (UsageSummaryResponse);
 }
 
 // Phán quyết tranh chấp — từ vựng do AI service sở hữu.
@@ -30,18 +37,27 @@ message AskQuestionRequest {
   string user_role = 3;        // "member" | "operator" | "admin" (vai trò do backend sở hữu)
   string parking_lot_id = 4;   // Bãi xe liên quan
   string session_id = 5;       // Mã phiên gửi xe (nếu hỏi về phiên cụ thể)
+  // true = trả lời trên BẢN XEM TRƯỚC của scope parking_lot_id (rỗng = tài liệu
+  // chung) thay vì bản khách thấy. Backend chỉ bật cho người quản lý scope đó.
+  bool preview = 6;
 }
 
 message AskQuestionResponse {
   string answer = 1;           // Câu trả lời hoàn chỉnh
   repeated string sources = 2; // Các điều khoản quy chế trích dẫn
   double confidence = 3;
+  string model_revision = 4;
+  string turn_id = 5;          // Mã lượt hỏi — dùng cho RecordFeedback
+  string prompt_version = 6;   // Nhãn phiên bản system prompt đã dùng
 }
 
 message AnswerChunk {
   string token = 1;            // Từng từ stream về theo thời gian thực
   bool is_finished = 2;
   repeated string sources = 3;
+  string model_revision = 4;
+  string turn_id = 5;          // Chỉ có ở chunk cuối (is_finished = true)
+  string prompt_version = 6;   // Chỉ có ở chunk cuối
 }
 
 message ArbitrateDisputeRequest {
@@ -56,4 +72,45 @@ message ArbitrateDisputeResponse {
   double recommended_refund = 2;
   string justification = 3;    // Lập luận chi tiết đối chiếu quy chế
   repeated string evidence_urls = 4;
+}
+
+message RecordFeedbackRequest {
+  string turn_id = 1;
+  string user_id = 2;          // Người đang chấm — phải là người đã hỏi lượt đó
+  int32 rating = 3;            // 1 = 👍, -1 = 👎
+}
+
+message RecordFeedbackResponse {
+  bool recorded = 1;           // false: không thấy lượt, hết hạn giữ, hoặc không phải chủ lượt
+}
+
+message UsageSummaryRequest {
+  int32 days = 1;              // Cửa sổ thống kê, 1–90 ngày
+}
+
+message UsageDay {
+  string date = 1;             // YYYY-MM-DD theo giờ Việt Nam
+  int64 requests = 2;
+  int64 errors = 3;
+  int64 refused = 4;
+  double avg_latency_ms = 5;
+}
+
+message UsageSummaryResponse {
+  int32 window_days = 1;
+  int64 total_requests = 2;
+  int64 success_requests = 3;
+  int64 refused_requests = 4;   // Guardrail chặn câu trả lời
+  int64 no_context_requests = 5; // Kho tri thức không có nội dung liên quan
+  int64 error_requests = 6;
+  double avg_latency_ms = 7;
+  double p95_latency_ms = 8;
+  int64 input_tokens = 9;
+  int64 output_tokens = 10;
+  bool cost_known = 11;         // false: chưa cấu hình giá → UI hiện "—"
+  double total_cost_usd = 12;
+  double avg_cost_usd = 13;
+  int64 thumbs_up = 14;
+  int64 thumbs_down = 15;
+  repeated UsageDay days = 16;
 }

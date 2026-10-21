@@ -34,6 +34,7 @@ $VenvPip    = Join-Path $ScriptDir ".venv\Scripts\pip.exe"
 if (-not (Test-Path $VenvPython)) {
     Write-Info "Đang tạo .venv..."
     python -m venv .venv
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     Write-Ok "Đã tạo .venv"
 } else {
     Write-Ok ".venv đã tồn tại, bỏ qua"
@@ -50,25 +51,9 @@ if (Test-Path ".\.venv\Scripts\Activate.ps1") {
 }
 
 & $VenvPip install --upgrade pip -q
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-# Kiểm tra xem máy có GPU NVIDIA không
-$hasNvidiaGpu = $false
-try {
-    $smi = Get-Command "nvidia-smi" -ErrorAction SilentlyContinue
-    if ($smi) {
-        $gpuOut = & nvidia-smi --query-gpu=name --format=csv,noheader 2>$null
-        if ($LASTEXITCODE -eq 0 -and $gpuOut) {
-            $hasNvidiaGpu = $true
-            Write-Ok "Phát hiện GPU NVIDIA: $gpuOut"
-        }
-    }
-} catch { }
-
-if ($hasNvidiaGpu) {
-    Write-Info "Đang cài đặt PyTorch với hỗ trợ CUDA 12.4..."
-    & $VenvPip install torch==2.6.0+cu124 torchvision==0.21.0+cu124 --index-url https://download.pytorch.org/whl/cu124 --default-timeout=1000 --retries=10
-}
-
+# CPU/default requirements only. CUDA is a separate, explicitly chosen setup.
 & $VenvPip install -r requirements.txt --default-timeout=1000 --retries=10
 if ($LASTEXITCODE -ne 0) {
     Write-Fail "Cài đặt dependencies thất bại!"
@@ -85,6 +70,7 @@ if ((Test-Path $StubDir) -and (Get-ChildItem $StubDir -ErrorAction SilentlyConti
     Write-Ok "gRPC stubs đã tồn tại"
 } else {
     & $VenvPython app\script\compile_proto.py
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     Write-Ok "Đã sinh gRPC stubs"
 }
 

@@ -37,7 +37,7 @@ services:
     restart: "no"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik/traefik.develop.yml:/etc/traefik/traefik.yml:ro
+      - ./docker/traefik/traefik.develop.yml:/etc/traefik/traefik.yml:ro
     healthcheck:
       # In dev, prove that the Docker provider discovered the REST router.
       test:
@@ -45,3 +45,8 @@ services:
           "CMD-SHELL",
           "wget --spider -q 'http://127.0.0.1:8080/api/http/routers/ai-rest@docker'",
         ]
+
+  ai-console:
+    volumes:
+      - ./app:/app/app:ro
+      - ./ui/dist:/app/ui/dist:ro

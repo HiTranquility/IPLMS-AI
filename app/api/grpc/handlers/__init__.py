@@ -1,8 +1,11 @@
 """1 proto service = 1 handler. Handler chỉ điều phối: map request, gọi service, map response."""
 from app.api.grpc.handlers.copilot_handler import CopilotHandler
+from app.api.grpc.handlers.dataset_handler import DatasetHandler
 from app.api.grpc.handlers.forecast_handler import ForecastHandler
 from app.api.grpc.handlers.health_handler import HealthHandler
+from app.api.grpc.handlers.knowledge_eval_handler import KnowledgeEvalHandler
 from app.api.grpc.handlers.knowledge_handler import KnowledgeHandler
+from app.api.grpc.handlers.model_policy_handler import ModelPolicyHandler
 from app.api.grpc.handlers.vision_handler import VisionHandler
 
 __all__ = [
@@ -11,4 +14,7 @@ __all__ = [
     "ForecastHandler",
     "HealthHandler",
     "KnowledgeHandler",
+    "KnowledgeEvalHandler",
+    "ModelPolicyHandler",
+    "DatasetHandler",
 ]
