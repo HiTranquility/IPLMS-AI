@@ -1,21 +1,19 @@
-# IPLMS-AI documentation
+# Tài liệu IPLMS-AI
 
-This folder contains documentation that is local to IPLMS-AI.
+Thư mục này chứa tài liệu riêng của IPLMS-AI.
 
-## Scope
+## Phạm vi
 
-AI service, model/runtime behavior, Python dependencies and AI-specific operations.
+Dịch vụ AI, hành vi model/runtime, dependency Python và vận hành riêng của AI.
 
-## Existing source-of-truth documents
+## Nguồn chuẩn hiện có
 
-- Repository README: ../README.md
-- Local conventions: ./AI_CONVENTIONS.md
-- Suggestions: suggestions/README.md
-- Projects and ADRs: projects/README.md
-- Templates: templates/README.md
+- README của repo: [../README.md](../README.md)
+- Quy ước: [AI_CONVENTIONS.md](standards/AI_CONVENTIONS.md)
+- Hồ sơ (suggestions, usecases, adrs, issues, bugs, qas): [projects/README.md](projects/README.md)
+- Đề xuất: [projects/suggestions/README.md](projects/suggestions/README.md)
+- Bộ mẫu: [templates/README.md](templates/README.md)
 
-Existing guides live in docs/guides/.
+Các guide hiện có nằm ở `guides/`.
 
-Cross-module architecture, shared contracts, release coordination and repository-boundary
-decisions stay in the root IPLMS documentation.
-
+Kiến trúc xuyên module, hợp đồng dùng chung, điều phối release và quyết định về ranh giới repo nằm ở tài liệu của repo gốc IPLMS.

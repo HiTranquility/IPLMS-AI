@@ -13,7 +13,7 @@ from training.forecast.dataset import regularize_history
 from training.forecast.features import build_feature_rows, temporal_split
 from training.forecast.snapshot import load_snapshot, write_snapshot
 from training.forecast.ridge_model import (
-    beats_persistence_every_horizon,
+    beats_baselines_every_horizon,
     evaluate_models,
     fit_ridge_models,
     predict,
@@ -338,13 +338,13 @@ class ForecastDatasetTest(unittest.TestCase):
 
         self.assertEqual(set(models), {"1", "2"})
         self.assertTrue(
-            beats_persistence_every_horizon(
+            beats_baselines_every_horizon(
                 validation,
                 required_horizons=(1, 2),
             )
         )
         self.assertFalse(
-            beats_persistence_every_horizon(
+            beats_baselines_every_horizon(
                 validation,
                 required_horizons=(1, 2, 4),
             )
@@ -404,6 +404,91 @@ class ForecastDatasetTest(unittest.TestCase):
                 candidate["status"], "candidate_passed_validation_baseline"
             )
             self.assertIn("never automatic", candidate["promotion"])
+
+    def test_calendar_features_use_vietnam_local_time_and_holidays(self) -> None:
+        # 2026-01-04 17:00 UTC = 00:00 thứ Hai 05/01 giờ VN. Tính theo UTC sẽ ra
+        # 17:00 Chủ nhật (cuối tuần).
+        monday_local_midnight = int(datetime(2026, 1, 4, 17, 0, tzinfo=timezone.utc).timestamp())
+        origin = monday_local_midnight - SLOT
+        rows = regularize_history(
+            [
+                {**_row(0, 0.1), "timestamp": origin},
+                {**_row(0, 0.2), "timestamp": monday_local_midnight},
+            ]
+        )
+        [feature] = build_feature_rows(rows, horizons=(1,), lag_slots=(1,), rolling_windows=(1,))
+
+        self.assertEqual(feature["target_is_weekend"], 0.0)
+        self.assertAlmostEqual(feature["target_hour_sin"], 0.0, places=9)
+        self.assertAlmostEqual(feature["target_hour_cos"], 1.0, places=9)
+        self.assertEqual(feature["target_is_holiday"], 0.0)
+
+        tet_noon = int(datetime(2026, 2, 17, 5, 0, tzinfo=timezone.utc).timestamp())
+        rows = regularize_history(
+            [
+                {**_row(0, 0.1), "timestamp": tet_noon - SLOT},
+                {**_row(0, 0.2), "timestamp": tet_noon},
+            ]
+        )
+        [feature] = build_feature_rows(rows, horizons=(1,), lag_slots=(1,), rolling_windows=(1,))
+        self.assertEqual(feature["target_is_holiday"], 1.0)
+
+    def test_holiday_is_unknown_outside_the_lunar_table(self) -> None:
+        [feature] = build_feature_rows(
+            regularize_history([_row(0, 0.1), _row(1, 0.2)]),
+            horizons=(1,),
+            lag_slots=(1,),
+            rolling_windows=(1,),
+        )
+        self.assertIsNone(feature["target_is_holiday"])
+
+    def test_same_slot_features_align_to_target_not_origin(self) -> None:
+        rows = regularize_history([_row(slot, slot / 100) for slot in range(12)])
+        features = build_feature_rows(
+            rows,
+            horizons=(2, 5),
+            lag_slots=(1,),
+            rolling_windows=(1,),
+            seasonal_slots=(4,),
+        )
+        by_key = {(row["origin_timestamp"] // SLOT, row["horizon_slots"]): row for row in features}
+
+        # Gốc ô 6, đích ô 8 → "cùng khung 4 ô trước đích" là ô 4.
+        self.assertEqual(by_key[(6, 2)]["target_same_slot_4"], 0.04)
+        # Đích ô 11 → ô 7 nằm SAU gốc ô 6: chưa biết lúc dự báo, phải là None.
+        self.assertIsNone(by_key[(6, 5)]["target_same_slot_4"])
+
+    def test_seasonal_baseline_uses_target_week_and_gate_needs_best_baseline(self) -> None:
+        model = {
+            "horizon_slots": 2,
+            "feature_columns": [],
+            "means": {},
+            "scales": {},
+            "lot_ids": ["lot-a"],
+            "alpha": 1.0,
+            "train_rows": 100,
+            "weights": [0.5, 0.0],
+        }
+        row = {
+            "parking_lot_id": "lot-a",
+            "horizon_slots": 2,
+            "target_occupancy": 0.9,
+            "last_occupancy": 0.1,
+            "lag_336": 0.1,
+            "target_same_slot_336": 0.9,
+        }
+        summary = evaluate_models({"2": model}, [row])
+        mae = {
+            item["model"]: item["mae"]
+            for item in summary
+            if item["parking_lot_id"] == "__all__"
+        }
+
+        self.assertAlmostEqual(mae["seasonal_naive"], 0.0)
+        self.assertAlmostEqual(mae["persistence"], 0.8)
+        self.assertAlmostEqual(mae["ridge"], 0.4)
+        # Thắng persistence nhưng thua seasonal-naive → không qua cổng.
+        self.assertFalse(beats_baselines_every_horizon(summary, required_horizons=(2,)))
 
 
 if __name__ == "__main__":

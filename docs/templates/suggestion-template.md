@@ -1,28 +1,31 @@
-# 🌱 SUGGESTION-NNN: <Short title>
+# 🌱 SUGGESTION-NNN: <Tên đề xuất ngắn>
 
-> Status: 💡 DRAFT
-> Date: YYYY-MM-DD
-> Proposer: <name>
-> Scope: <this repository>
+> **Đích:** `docs/projects/suggestions/MM-YYYY/SUGGESTION-NNN-slug.md` · **Luật chung:** [templates/README](README.md)
 
-## Suggestion
+| | |
+|---|---|
+| **Trạng thái** | 💡 DRAFT / 🔄 REVIEWING / 🟢 ACCEPTED / 🔴 REJECTED |
+| **Ngày** | YYYY-MM-DD |
+| **Người đề xuất** | <tên> |
+| **Phạm vi** | <repo này> |
 
-<What should be improved or explored?>
+## Đề xuất
 
-## Problem it addresses
+<Nên cải thiện hoặc thử điều gì?>
 
-<Who is affected and what is painful today?>
+## Vấn đề nó giải quyết
 
-## Scope
+<Ai bị ảnh hưởng, hôm nay đang khó ở đâu?>
 
-- <in scope>
-- <out of scope>
+## Phạm vi
 
-## Evidence / references
+- <trong phạm vi>
+- <ngoài phạm vi>
 
-- <link, file, screenshot, or observation>
+## Bằng chứng / tham khảo
 
-## Next step
+- <link, file:line, ảnh chụp hoặc quan sát>
 
-<What would make this ready for an issue or ADR?>
+## Bước tiếp theo
 
+<Cần gì để đề xuất này thành issue hoặc ADR? Nếu ảnh hưởng nhiều repo → mở IDEA ở repo gốc và link sang.>

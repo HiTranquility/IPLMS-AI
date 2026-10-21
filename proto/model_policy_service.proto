@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package iplms.ai.modelpolicy.v1;
+
+// Admin-only API: backend enforces RBAC before calling this service.
+// Provider credentials are provisioned on the AI service, never sent over gRPC.
+service ModelPolicyService {
+  rpc ListProfiles (ListModelProfilesRequest) returns (ListModelProfilesResponse);
+  rpc CreateProfile (CreateModelProfileRequest) returns (ModelProfile);
+  rpc TestProfile (ModelProfileId) returns (ModelProfile);
+  rpc ActivateProfile (ActivateModelProfileRequest) returns (ModelProfile);
+}
+
+message ListModelProfilesRequest {}
+message ListModelProfilesResponse { repeated ModelProfile profiles = 1; }
+message ModelProfileId { string id = 1; }
+message ActivateModelProfileRequest {
+  string id = 1;
+  string actor_id = 2;
+}
+message CreateModelProfileRequest {
+  string task = 1;
+  string provider = 2;
+  string model = 3;
+  string reasoning_effort = 4;
+  int32 max_output_tokens = 5;
+  int32 timeout_seconds = 6;
+  string actor_id = 7;
+}
+message ModelProfile {
+  string id = 1;
+  string task = 2;
+  int32 revision = 3;
+  string provider = 4;
+  string model = 5;
+  string reasoning_effort = 6;
+  int32 max_output_tokens = 7;
+  int32 timeout_seconds = 8;
+  string status = 9;
+  string tested_at = 10;
+  string created_by = 11;
+  string created_at = 12;
+  string activated_at = 13;
+  string activated_by = 14;
+}

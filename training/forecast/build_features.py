@@ -13,7 +13,7 @@ from training.forecast.features import build_feature_rows, temporal_split
 from training.forecast.snapshot import load_snapshot, write_immutable
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 def _positive_csv(value: str) -> tuple[int, ...]:

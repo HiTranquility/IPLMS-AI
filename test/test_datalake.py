@@ -184,6 +184,78 @@ class OccupancyHistoryReaderTest(unittest.TestCase):
             self.assertEqual(result[1]["session_count"], 2)
             self.assertEqual(result[1]["data_quality"], "observed_sessions_only")
 
+    def _write_sessions(self, directory, records, windows):
+        raw = Path(directory) / "raw" / "parking_sessions" / "export_date=2026-01-01"
+        raw.mkdir(parents=True)
+        (raw / "part.jsonl").write_text(
+            "".join(json.dumps(record) + "\n" for record in records), encoding="utf-8"
+        )
+        for index, (after, until) in enumerate(windows):
+            (raw / f"run{index}.manifest.json").write_text(
+                json.dumps({"window": {"after_exclusive": after, "until_inclusive": until}}),
+                encoding="utf-8",
+            )
+
+    def test_empty_slots_inside_contiguous_export_coverage_are_zero(self):
+        records = [
+            {
+                "session_id": "s-1",
+                "parking_lot_id": "lot-1",
+                "start_time": "2026-01-01T00:00:00Z",
+                "end_time": "2026-01-01T00:30:00Z",
+                "capacity_at_export": 2,
+                "updated_at": "2026-01-01T00:30:00Z",
+            }
+        ]
+        windows = [
+            ("1970-01-01T00:00:00Z", "2026-01-01T01:00:00Z"),
+            ("2026-01-01T01:00:00Z", "2026-01-01T02:00:00Z"),
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            self._write_sessions(directory, records, windows)
+            reader = OccupancyHistoryReader(directory, slot_minutes=30)
+            self.assertEqual(reader.coverage_end(), datetime(2026, 1, 1, 2, 0, tzinfo=UTC))
+            result = reader.load_historical_occupancy(
+                "lot-1", days=1, now=datetime(2026, 1, 1, 3, 0, tzinfo=UTC)
+            )
+
+        self.assertEqual([row["avg_occupancy"] for row in result], [0.5, 0.0, 0.0, 0.0])
+        self.assertEqual(result[0]["data_quality"], "observed_sessions_only")
+        self.assertEqual(
+            result[1]["data_quality"], "observed_zero_within_export_coverage"
+        )
+        # 02:00–03:00 nằm sau vùng phủ: vẫn là thiếu, không phải 0%.
+        self.assertEqual(result[-1]["datetime_iso"], "2026-01-01T01:30:00Z")
+
+    def test_export_gap_stops_zero_filling(self):
+        records = [
+            {
+                "session_id": "s-1",
+                "parking_lot_id": "lot-1",
+                "start_time": "2026-01-01T00:00:00Z",
+                "end_time": "2026-01-01T00:30:00Z",
+                "capacity_at_export": 2,
+                "updated_at": "2026-01-01T00:30:00Z",
+            }
+        ]
+        windows = [
+            ("1970-01-01T00:00:00Z", "2026-01-01T00:30:00Z"),
+            # Export lẻ bằng `since`: lỗ hổng 00:30–01:30 không được tính là trống.
+            ("2026-01-01T01:30:00Z", "2026-01-01T03:00:00Z"),
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            self._write_sessions(directory, records, windows)
+            reader = OccupancyHistoryReader(directory, slot_minutes=30)
+            self.assertEqual(
+                reader.coverage_end(), datetime(2026, 1, 1, 0, 30, tzinfo=UTC)
+            )
+            result = reader.load_historical_occupancy(
+                "lot-1", days=1, now=datetime(2026, 1, 1, 3, 0, tzinfo=UTC)
+            )
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["data_quality"], "observed_sessions_only")
+
 
 if __name__ == "__main__":
     unittest.main()

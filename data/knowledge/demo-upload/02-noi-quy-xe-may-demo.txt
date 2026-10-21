@@ -1,0 +1,8 @@
+NOI QUY BAI XE DEMO IPLMS
+
+Dieu 5. Xe may
+Phi gui xe may 5.000d moi luot, khong gioi han thoi gian trong ngay.
+Gui qua dem xe may phu thu 5.000d.
+
+Dieu 6. Mat ve
+Mat ve xe phai xuat trinh giay dang ky xe va can cuoc cong dan. Phi lam lai ve 50.000d.

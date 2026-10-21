@@ -13,12 +13,34 @@ from app.core.exceptions import (
     NoTextLayerError,
     UnsupportedFormatError,
 )
-from app.core.knowledge.dtos.knowledge_dto import IngestDocumentCommand, IngestResult
+from app.core.knowledge.dtos.knowledge_dto import (
+    IngestDocumentCommand,
+    IngestResult,
+    KnowledgeDocumentSummary,
+)
 from app.core.knowledge.engines.chunker import chunk_text
 from app.core.knowledge.engines.document_parser import parse_document
+from app.core.knowledge.engines.injection_scan import find_instructions
 from app.infra.database.pgvector_client import pgvector_client
 from app.infra.embedding import embedding_client
 from app.util.logger import logger
+
+
+def _injection_flags(content: str) -> dict:
+    # Cổng xuất bản đọc khoá này (PROB-046 phase 2); đoạn sạch thì không có khoá.
+    flags = find_instructions(content)
+    return {"injection_flags": flags} if flags else {}
+
+
+def _ingest_message(flagged: list[str]) -> str:
+    # UI ghép sau câu "Đã nạp <file> thành bản nháp vN (M đoạn)." nên không lặp lại ý đó.
+    if not flagged:
+        return "Chạy test rồi xuất bản để khách thấy."
+    return (
+        f"Lưu ý: có {len(flagged)} chỗ giống lệnh gửi cho trợ lý AI "
+        f"(vd “{flagged[0]}”). Bản này sẽ không xuất bản được cho tới khi bạn xoá "
+        "những chỗ đó và nạp lại."
+    )
 
 
 class IngestionService:
@@ -79,11 +101,13 @@ class IngestionService:
                     "document_format": parsed.doc_format.value,
                     "page_count": parsed.page_count,
                     "warnings": parsed.warnings,
+                    **_injection_flags(chunk.content),
                 },
             }
             for chunk, vector in zip(text_chunks, vectors, strict=True)
         ]
-        await self.vector_store.replace_document(
+        flagged = [s for c in chunks for s in c["metadata"].get("injection_flags", [])]
+        version = await self.vector_store.save_draft_version(
             document_id=document_id,
             file_name=command.file_name,
             category=command.category,
@@ -95,12 +119,24 @@ class IngestionService:
             document_id=document_id,
             status=IngestStatus.SUCCESS,
             chunk_count=len(chunks),
-            message="Đã nạp tài liệu vào kho tri thức.",
+            message=_ingest_message(flagged),
             process_time=time.perf_counter() - started,
+            version_id=version["version_id"],
+            version_no=version["version_no"],
         )
 
-    async def delete(self, document_id: str, parking_lot_id: str | None) -> int:
-        return await self.vector_store.delete_document(document_id, parking_lot_id)
+    async def delete(
+        self, document_id: str, parking_lot_id: str | None, draft_only: bool = False
+    ) -> int:
+        return await self.vector_store.delete_document(document_id, parking_lot_id, draft_only)
+
+    async def list(self, parking_lot_id: str | None) -> list[KnowledgeDocumentSummary]:
+        rows = await self.vector_store.list_documents(parking_lot_id)
+        return [KnowledgeDocumentSummary(**row) for row in rows]
+
+    async def list_chunks(self, document_id: str, parking_lot_id: str | None,
+                          version_no: int = 0) -> dict:
+        return await self.vector_store.list_document_chunks(document_id, parking_lot_id, version_no)
 
     @staticmethod
     def _result(

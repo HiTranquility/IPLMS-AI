@@ -1,21 +1,25 @@
-# 🏷️ ISSUE-NNN: <Work title>
+# 🏷️ ISSUE-NNN: <Tên việc>
 
-> Status: 📝 Draft
-> Owner: <name>
-> Scope: <this repository>
+> **Đích:** `docs/projects/issues/MM-YYYY/ISSUE-NNN-slug/issue.md` — ngoài cùng chỉ file này; `phase/`, `review/` (cả `audit-N.md`), `handoff/`, `evidence/` tạo khi có file đầu · **Luật chung:** [templates/README](README.md)
 
-## Goal
+| | |
+|---|---|
+| **Trạng thái** | 📝 Draft / 🚧 In progress / ✅ Done |
+| **Người phụ trách** | <tên> |
+| **Phạm vi** | <repo này> |
 
-<What outcome must be delivered?>
+## Mục tiêu
 
-## Acceptance criteria
+<Kết quả phải giao là gì?>
 
-- [ ] <criterion>
+## Tiêu chí chấp nhận
 
-## Plan
+- [ ] <tiêu chí kiểm chứng được>
 
-1. <step>
+## Kế hoạch
 
-## Related documents
+1. <bước> → kiểm: <lệnh / thao tác>
 
-- <suggestion, problem, ADR, bug, or PR>
+## Hồ sơ liên quan
+
+- <suggestion, usecase, ADR, bug, PR hoặc hồ sơ ở repo gốc>

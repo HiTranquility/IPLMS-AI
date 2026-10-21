@@ -1,6 +1,6 @@
 # `model/dataset/` — các snapshot huấn luyện đã vật hoá
 
-> Luật đầy đủ: [ADR-0003](../../../docs/projects/adrs/0003-duong-du-lieu-vision-tu-phien-do-toi-checkpoint.md)
+> Luật đầy đủ: [ADR-0003](../../../docs/projects/adrs/09-2026/0003-duong-du-lieu-vision-tu-phien-do-toi-checkpoint.md)
 > Bản đồ tổng thể: [`model/README.md`](../README.md)
 
 Đây là workspace local mà PyTorch đọc, không phải nơi backend upload ảnh trực

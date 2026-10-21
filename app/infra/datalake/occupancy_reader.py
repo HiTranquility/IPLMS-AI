@@ -75,6 +75,21 @@ class OccupancyHistoryReader:
                     bucket["session_count"] = int(bucket["session_count"]) + 1
                 cursor += slot_seconds
 
+        coverage_end = self.coverage_end()
+        if aggregates and coverage_end is not None:
+            # Trong vùng export liền mạch, khung không có phiên nào là bãi TRỐNG
+            # thật (0%), không phải thiếu dữ liệu. Bỏ những khung này thì model
+            # không bao giờ thấy lúc bãi vắng (ban đêm) và dự báo lệch lên cao.
+            capacity = max(int(item["capacity"]) for item in aggregates.values())
+            fill_until = int(min(end, coverage_end).timestamp())
+            cursor = min(aggregates)
+            while cursor + slot_seconds <= fill_until:
+                aggregates.setdefault(
+                    cursor,
+                    {"occupied_seconds": 0.0, "capacity": capacity, "session_count": 0},
+                )
+                cursor += slot_seconds
+
         output: List[Dict[str, Any]] = []
         for timestamp, aggregate in sorted(aggregates.items()):
             slot_start = datetime.fromtimestamp(timestamp, timezone.utc)
@@ -93,13 +108,48 @@ class OccupancyHistoryReader:
                     "session_count": int(aggregate["session_count"]),
                     "day_of_week": slot_start.weekday(),
                     "hour": slot_start.hour,
-                    # No row is manufactured for an empty interval: absence can
-                    # mean zero occupancy or missing exports, so callers must
-                    # keep this quality boundary explicit.
-                    "data_quality": "observed_sessions_only",
+                    # Ngoài vùng export liền mạch, khung trống KHÔNG được sinh
+                    # dòng: vắng mặt ở đó có thể là thiếu export chứ chưa chắc 0%.
+                    "data_quality": (
+                        "observed_sessions_only"
+                        if aggregate["session_count"]
+                        else "observed_zero_within_export_coverage"
+                    ),
                 }
             )
         return output
+
+    def coverage_end(self) -> datetime | None:
+        """Mốc cuối của chuỗi cửa sổ export LIỀN MẠCH tính từ epoch.
+
+        Exporter lấy mọi phiên có ``updated_at`` trong ``(after, until]``. Chuỗi
+        cửa sổ nối nhau từ epoch tới mốc này nghĩa là mọi phiên tồn tại trước mốc
+        đều đã có ít nhất một bản ghi — nên khung trống trước mốc là 0% thật.
+        Export lẻ bằng ``since`` tạo lỗ hổng thì dừng ở lỗ hổng đầu tiên.
+        """
+        raw_root = self.base_path / "raw" / "parking_sessions"
+        if not raw_root.exists():
+            return None
+        windows: list[tuple[datetime, datetime]] = []
+        try:
+            for path in raw_root.rglob("*.manifest.json"):
+                window = json.loads(path.read_text(encoding="utf-8")).get("window")
+                # Manifest không ghi cửa sổ thì không chứng minh được vùng phủ.
+                if not window:
+                    continue
+                windows.append(
+                    (_instant(window["after_exclusive"]), _instant(window["until_inclusive"]))
+                )
+        except (OSError, KeyError, TypeError, ValueError, AttributeError) as exc:
+            raise DataLakeError("Manifest data lake không hợp lệ.") from exc
+
+        epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
+        covered = epoch
+        for after, until in sorted(windows):
+            if after > covered:
+                break
+            covered = max(covered, until)
+        return covered if covered > epoch else None
 
     def _records(self) -> Iterable[dict[str, Any]]:
         raw_root = self.base_path / "raw" / "parking_sessions"
