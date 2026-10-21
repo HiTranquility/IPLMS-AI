@@ -7,8 +7,9 @@ import os
 from pathlib import Path, PurePosixPath
 import re
 
-BRANCH = re.compile(r"(?:feature|bugfix|hotfix|chore|docs|codex)/(?P<record>(?:ISSUE|bug|PROB)-[0-9]{3})-(?P<month>[0-9]{4}-[0-9]{2})-[a-z0-9]+(?:-[a-z0-9]+)*\Z")
-ROOTS = {"ISSUE": "docs/projects/issues", "bug": "docs/projects/bugs", "PROB": "docs/problems"}
+BRANCH = re.compile(r"(?:feature|bugfix|hotfix|chore|docs|codex)/(?P<record>(?:ISSUE|bug|PROB|CHORE)-[0-9]{3})-(?P<month>[0-9]{4}-[0-9]{2})-[a-z0-9]+(?:-[a-z0-9]+)*\Z")
+ROOTS = {"ISSUE": "docs/projects/issues", "bug": "docs/projects/bugs", "PROB": "docs/problems",
+         "CHORE": "docs/projects/chores"}
 
 
 def safe_path(value, record):
@@ -24,7 +25,7 @@ def safe_path(value, record):
     if parts and re.fullmatch(r"[0-9]{2}-[0-9]{4}", parts[0]):
         parts = parts[1:]
     flat = len(parts) == 1 and re.fullmatch(re.escape(record) + r"(?:-[a-z0-9]+(?:-[a-z0-9]+)*)?\.md", parts[0])
-    canonical_name = {"ISSUE": "issue.md", "bug": "bug.md"}.get(kind)
+    canonical_name = {"ISSUE": "issue.md", "bug": "bug.md", "CHORE": "issue.md"}.get(kind)
     folder = (len(parts) == 2 and canonical_name and parts[1] == canonical_name
               and re.fullmatch(re.escape(record) + r"(?:-[a-z0-9]+(?:-[a-z0-9]+)*)?", parts[0]))
     if not (flat or folder):
@@ -88,7 +89,7 @@ def fields(body):
 
 def validate(repo, config, branch, pr=None):
     # Naming exemptions do not waive ADR-0042's universal PR title traceability.
-    if pr is not None and not re.search(r"(?<![A-Za-z0-9-])(?:ISSUE|bug|PROB)-[0-9]{3}(?![A-Za-z0-9-])", pr.get("title", "")):
+    if pr is not None and not re.search(r"(?<![A-Za-z0-9-])(?:ISSUE|bug|PROB|CHORE)-[0-9]{3}(?![A-Za-z0-9-])", pr.get("title", "")):
         raise ValueError("Every PR title must reference a record, including exempt branch names")
     if branch in {"main", "develop"} or branch.startswith("dependabot/"):
         return "EXEMPT_NAME: stable/dependency branch; PR title traceability required, full record metadata not verified"
@@ -96,8 +97,11 @@ def validate(repo, config, branch, pr=None):
         return "LEGACY: exact pre-existing name; PR title traceability required, full record metadata not verified"
     match = BRANCH.fullmatch(branch)
     if not match:
-        raise ValueError("Expected <type>/<ISSUE|bug|PROB>-NNN-YYYY-MM-english-kebab-slug")
+        raise ValueError("Expected <type>/<ISSUE|bug|PROB|CHORE>-NNN-YYYY-MM-english-kebab-slug")
     record, month = match["record"], match["month"]
+    # Nhánh chore gom việc vặt theo tháng (ADR-0055): CHORE chỉ đi với type chore/.
+    if record.startswith("CHORE-") and not branch.startswith("chore/"):
+        raise ValueError("CHORE records only use the chore/ branch type")
     date.fromisoformat(month + "-01")
     if pr is not None:
         if not re.search(r"(?<![A-Za-z0-9-])" + re.escape(record) + r"(?![A-Za-z0-9-])", pr.get("title", "")):
