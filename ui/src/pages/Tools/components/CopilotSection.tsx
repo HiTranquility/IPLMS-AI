@@ -6,6 +6,7 @@ import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
 import { TextArea, TextField } from '@/components/common/Ui/form/Field';
 import { useI18n } from '@/i18n/I18nProvider';
 import { fmtPercent } from '@/utils/format';
+import { FormattedAnswer } from '@/components/common/Ui/data-display/FormattedAnswer';
 import styles from '../ToolsPage.module.css';
 
 interface StreamState {
@@ -155,10 +156,10 @@ export function CopilotSection() {
       {streamData?.error && <ErrorBlock error={new Error(streamData.error)} />}
       {streamData && (
         <div className={styles.answer} role="status">
-          <p className={styles.answerText}>
-            {streamData.answer}
-            {streamData.isStreaming && <span className="animate-pulse font-mono"> ▋</span>}
-          </p>
+          <FormattedAnswer
+            content={streamData.answer}
+            isStreaming={streamData.isStreaming}
+          />
 
           {/* Live speed counter while streaming (LM Studio / llama.cpp style) */}
           {streamData.isStreaming && (
