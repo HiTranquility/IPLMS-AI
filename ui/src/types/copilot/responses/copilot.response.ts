@@ -9,6 +9,7 @@ export interface UsageSummary {
   error_requests: number;
   avg_latency_ms: number;
   p95_latency_ms: number;
+  avg_speed_tok_s?: number;
   input_tokens: number;
   output_tokens: number;
   cost_known: boolean;

@@ -303,6 +303,9 @@ class RagPipelineEngine:
                 "refused": True,
                 "guardrail_triggered": guard_in.risk_type,
             }
+            in_toks = len(query_text.split())
+            out_toks = len(refusal.split())
+            speed_tok_s = round(out_toks / (lat / 1000.0), 1) if lat > 0 else 0.0
             yield {
                 "token": "",
                 "is_finished": True,
@@ -313,8 +316,13 @@ class RagPipelineEngine:
                 "prompt_version": prompt_manager.default_version,
                 "latency_ms": lat,
                 "status": "REFUSED",
-                "usage": {},
+                "usage": {"input_tokens": in_toks, "output_tokens": out_toks},
                 "model": str(getattr(self.llm, "model", "")),
+                "input_tokens": in_toks,
+                "output_tokens": out_toks,
+                "speed_tok_s": speed_tok_s,
+                "context_tokens": in_toks,
+                "context_limit": 4096,
             }
             return
 
@@ -362,6 +370,9 @@ class RagPipelineEngine:
                 "refused": True,
                 "guardrail_triggered": guard_scope.risk_type,
             }
+            in_toks = len(query_text.split())
+            out_toks = len(refusal.split())
+            speed_tok_s = round(out_toks / (lat / 1000.0), 1) if lat > 0 else 0.0
             yield {
                 "token": "",
                 "is_finished": True,
@@ -372,8 +383,13 @@ class RagPipelineEngine:
                 "prompt_version": prompt_manager.default_version,
                 "latency_ms": lat,
                 "status": "REFUSED",
-                "usage": {},
+                "usage": {"input_tokens": in_toks, "output_tokens": out_toks},
                 "model": str(getattr(self.llm, "model", "")),
+                "input_tokens": in_toks,
+                "output_tokens": out_toks,
+                "speed_tok_s": speed_tok_s,
+                "context_tokens": in_toks,
+                "context_limit": 4096,
             }
             return
 
@@ -395,7 +411,10 @@ class RagPipelineEngine:
         full_text = "".join(answer_parts)
         in_toks = len((SYSTEM_PROMPT + " " + query_text + " " + context).split())
         out_toks = len(full_text.split())
+        speed_tok_s = round(out_toks / (lat / 1000.0), 1) if lat > 0 else 0.0
         status = "REFUSED" if tripped else "SUCCESS"
+        usage["input_tokens"] = in_toks
+        usage["output_tokens"] = out_toks
 
         ai_telemetry_logger.record(
             endpoint="/api/copilot/stream",
@@ -423,6 +442,11 @@ class RagPipelineEngine:
             "usage": usage,
             "model": str(getattr(llm, "model", "")),
             "answer": full_text,
+            "input_tokens": in_toks,
+            "output_tokens": out_toks,
+            "speed_tok_s": speed_tok_s,
+            "context_tokens": in_toks,
+            "context_limit": 4096,
         }
 
 

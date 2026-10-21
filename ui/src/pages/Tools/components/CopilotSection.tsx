@@ -18,6 +18,13 @@ interface StreamState {
   latencyMs?: number;
   guardrailTriggered?: string;
   error?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  speedTokPerSec?: number;
+  contextTokens?: number;
+  contextLimit?: number;
+  liveSpeed?: number;
+  liveTokens?: number;
 }
 
 export function CopilotSection() {
@@ -41,7 +48,12 @@ export function CopilotSection() {
       answer: '',
       isStreaming: true,
       sources: [],
+      liveSpeed: 0,
+      liveTokens: 0,
     });
+
+    const streamStart = performance.now();
+    let tokenChunksReceived = 0;
 
     try {
       const response = await fetch('/console/api/tools/copilot/stream', {
@@ -81,6 +93,12 @@ export function CopilotSection() {
           if (trimmed.startsWith('data: ')) {
             try {
               const chunk = JSON.parse(trimmed.slice(6));
+              if (chunk.token) {
+                tokenChunksReceived += 1;
+              }
+              const elapsedSec = (performance.now() - streamStart) / 1000;
+              const liveSpeed = elapsedSec > 0.05 ? Math.round((tokenChunksReceived / elapsedSec) * 10) / 10 : 0;
+
               setStreamData((prev) => {
                 if (!prev) return null;
                 const newAnswer = prev.answer + (chunk.token || '');
@@ -94,6 +112,13 @@ export function CopilotSection() {
                   turnId: chunk.turn_id ?? prev.turnId,
                   latencyMs: chunk.latency_ms ?? prev.latencyMs,
                   guardrailTriggered: chunk.guardrail_triggered ?? prev.guardrailTriggered,
+                  inputTokens: chunk.input_tokens ?? prev.inputTokens,
+                  outputTokens: chunk.output_tokens ?? prev.outputTokens,
+                  speedTokPerSec: chunk.speed_tok_s ?? prev.speedTokPerSec,
+                  contextTokens: chunk.context_tokens ?? prev.contextTokens,
+                  contextLimit: chunk.context_limit ?? prev.contextLimit ?? 4096,
+                  liveSpeed,
+                  liveTokens: tokenChunksReceived,
                 };
               });
             } catch {
@@ -103,7 +128,7 @@ export function CopilotSection() {
         }
       }
 
-      setStreamData((prev) => prev ? { ...prev, isStreaming: false } : null);
+      setStreamData((prev) => (prev ? { ...prev, isStreaming: false } : null));
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') return;
       setStreamData((prev) => ({
@@ -134,31 +159,55 @@ export function CopilotSection() {
             {streamData.answer}
             {streamData.isStreaming && <span className="animate-pulse font-mono"> ▋</span>}
           </p>
+
+          {/* Live speed counter while streaming (LM Studio / llama.cpp style) */}
+          {streamData.isStreaming && (
+            <div className={styles.liveTicker} role="status" aria-live="polite">
+              <span className="animate-spin text-[10px]">⚙</span>
+              <span>⚡ {streamData.liveSpeed || 0} tok/s</span>
+              <span>·</span>
+              <span>~{streamData.liveTokens || 0} tokens</span>
+              <span>·</span>
+              <span>đang suy luận...</span>
+            </div>
+          )}
+
+          {/* Full LM Studio style metrics bar when completed */}
           {!streamData.isStreaming && (
-            <p className={styles.note}>
-              {streamData.confidence !== undefined && (
-                <>
-                  {t.tools.confidence(fmtPercent(streamData.confidence))} ·{' '}
-                </>
+            <div className={styles.metricsBar}>
+              {streamData.speedTokPerSec !== undefined && (
+                <span className={styles.speedBadge} title="Tốc độ sinh token (Tokens per second)">
+                  ⚡ {streamData.speedTokPerSec} tok/s
+                </span>
               )}
-              {streamData.promptVersion && (
-                <>
-                  {t.tools.prompt} <span className={styles.mono}>{streamData.promptVersion}</span> ·{' '}
-                </>
+              {streamData.inputTokens !== undefined && streamData.outputTokens !== undefined && (
+                <span className={styles.tokensBadge} title="Phân bổ token: Prompt + Generated">
+                  📊 {streamData.inputTokens}p + {streamData.outputTokens}g = {streamData.inputTokens + streamData.outputTokens} tok
+                </span>
               )}
-              {streamData.turnId && (
-                <>
-                  {t.tools.turn} <span className={styles.mono}>{streamData.turnId}</span> ·{' '}
-                </>
+              {streamData.contextTokens !== undefined && (
+                <span className={styles.contextBadge} title="Độ dài ngữ cảnh / Giới hạn cửa sổ">
+                  🧠 Context: {streamData.contextTokens.toLocaleString()} / {(streamData.contextLimit || 4096).toLocaleString()} ({Math.round((streamData.contextTokens / (streamData.contextLimit || 4096)) * 100)}%)
+                </span>
               )}
               {streamData.latencyMs !== undefined && (
-                <span>{Math.round(streamData.latencyMs)}ms</span>
+                <span>⏱️ {Math.round(streamData.latencyMs)}ms</span>
+              )}
+              {streamData.confidence !== undefined && (
+                <span>{t.tools.confidence(fmtPercent(streamData.confidence))}</span>
+              )}
+              {streamData.promptVersion && (
+                <span>{t.tools.prompt} <span className={styles.mono}>{streamData.promptVersion}</span></span>
+              )}
+              {streamData.turnId && (
+                <span>{t.tools.turn} <span className={styles.mono}>{streamData.turnId.slice(0, 8)}</span></span>
               )}
               {streamData.guardrailTriggered && (
                 <Badge tone="danger">Guard: {streamData.guardrailTriggered}</Badge>
               )}
-            </p>
+            </div>
           )}
+
           {streamData.sources.length > 0 && (
             <div className={styles.sources}>
               {streamData.sources.map((s) => <Badge key={s}>{s}</Badge>)}
