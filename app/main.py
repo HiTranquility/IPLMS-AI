@@ -1,6 +1,5 @@
 """FastAPI entrypoint for the IPLMS AI service."""
 import os
-os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -22,11 +21,13 @@ os.makedirs(os.path.join(STATIC_DIR, "original"), exist_ok=True)
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     """Load vision dependencies before the REST service accepts ANPR traffic."""
-    if not get_config().vision.vision_warmup_on_start:
-        logger.info("Vision warm-up skipped; models will lazy-load on first ANPR request.")
-    else:
-        from app.core.vision.engines.anpr_engine import warmup
+    from app.core.vision.engines.anpr_engine import warmup
 
+    if not get_config().vision.vision_warmup_on_start:
+        # Dev: serve immediately, load in the background (bug-006).
+        logger.info("Vision warm-up running in background; early ANPR requests wait for it.")
+        asyncio.get_running_loop().run_in_executor(None, warmup)
+    else:
         if await asyncio.to_thread(warmup):
             logger.info("Vision model loaded — REST ANPR is ready.")
         else:
@@ -38,18 +39,10 @@ app = FastAPI(title="IPLMS AI — Microservice API", version="0.3.0", lifespan=l
 register_cors(app)
 app.add_exception_handler(AiServiceError, ai_service_error_handler)
 app.add_exception_handler(Exception, generic_error_handler)
-from fastapi.responses import FileResponse, HTMLResponse
-
 app.include_router(api_router, prefix="/api")
+app.include_router(api_router)
+
+
+# Ảnh cắt/gốc của ANPR. Trang dev `/dashboard` cũ đã bỏ — công cụ thử nằm trong AI
+# Console (IPLMS ADR-0050), không chạy trong process inference.
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-
-@app.get("/health")
-def health() -> dict:
-    return {"status": "ok", "service": "iplms-ai"}
-
-@app.get("/", include_in_schema=False)
-@app.get("/dashboard", include_in_schema=False)
-@app.get("/ui", include_in_schema=False)
-def dashboard() -> FileResponse:
-    index_file = os.path.join(STATIC_DIR, "index.html")
-    return FileResponse(index_file)

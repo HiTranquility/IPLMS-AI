@@ -7,11 +7,16 @@ from app.config.base_config import BaseConfig
 class LlmConfig(BaseConfig):
     model_config = SettingsConfigDict(env_prefix="AI_")
 
-    database_url: str = "postgresql://postgres:CaVN2004@localhost:5434/iplms_knowledge"
+    database_url: str = ""
 
     # Dùng chung cho cả embedding lẫn sinh câu trả lời — một tài khoản OpenAI.
     # Các tham số riêng của embedding (model, số chiều, lô) ở `embedding_config.py`.
     llm_api_key: str = ""
+
+    # ISSUE-011: endpoint tương thích OpenAI khác (vd Ollama chạy trên máy dev:
+    # http://host.docker.internal:11434/v1 khi ai chạy trong Docker). Rỗng = OpenAI.
+    # Có base_url mà không có key → dùng key giả "ollama" (Ollama bỏ qua key).
+    llm_base_url: str = ""
 
     # Model sinh câu trả lời. Cấu hình bằng env để có thể đổi model/alias mà
     # không phải build lại image. Luna phù hợp đường chat có lưu lượng cao;

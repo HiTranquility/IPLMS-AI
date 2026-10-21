@@ -19,7 +19,10 @@ SERVICE_REGISTRY = (
     ("vision_service", "add_VisionServiceServicer_to_server", "VisionHandler", "ANPR & Anti-Fraud"),
     ("copilot_service", "add_CopilotServiceServicer_to_server", "CopilotHandler", "RAG & Dispute"),
     ("knowledge_service", "add_KnowledgeServiceServicer_to_server", "KnowledgeHandler", "Knowledge ingestion"),
+    ("knowledge_service", "add_KnowledgeEvalServiceServicer_to_server", "KnowledgeEvalHandler", "KB test + publish gate"),
+    ("model_policy_service", "add_ModelPolicyServiceServicer_to_server", "ModelPolicyHandler", "Admin model profiles"),
     ("forecast_service", "add_ForecastServiceServicer_to_server", "ForecastHandler", "Occupancy & Tariff"),
+    ("dataset_service", "add_DatasetServiceServicer_to_server", "DatasetHandler", "ANPR data curation + snapshot"),
     ("health_service", "add_HealthServicer_to_server", "HealthHandler", "grpc.health.v1"),
 )
 
@@ -49,13 +52,15 @@ async def serve() -> None:
         _, pb2_grpc = get_stub(proto_name)
         getattr(pb2_grpc, register_fn)(getattr(handler_module, handler_name)(), server)
 
-    # Production nạp model trước khi mở cổng. Dev có thể bỏ warm-up để startup
-    # nhanh; request đầu tiên lazy-load vào cache volume bền.
-    if not get_config().vision.vision_warmup_on_start:
-        logger.info("Bỏ qua Vision warm-up; model sẽ lazy-load ở request ANPR đầu tiên.")
-    else:
-        from app.core.vision.engines.anpr_engine import warmup
+    # Production nạp model trước khi mở cổng. Dev mở cổng ngay nhưng vẫn nạp ở
+    # nền: để dồn cả lượt nạp (~22s từ cache, vài phút nếu phải tải) vào request
+    # ANPR đầu tiên thì nó vượt deadline 30s của backend (bug-006).
+    from app.core.vision.engines.anpr_engine import warmup
 
+    if not get_config().vision.vision_warmup_on_start:
+        logger.info("Vision warm-up chạy nền; request ANPR tới sớm sẽ chờ lượt nạp này xong.")
+        asyncio.get_running_loop().run_in_executor(None, warmup)
+    else:
         if await asyncio.to_thread(warmup):
             logger.info("Model Vision đã nạp xong — sẵn sàng nhận request.")
         else:
@@ -63,7 +68,9 @@ async def serve() -> None:
                 "Chưa nạp được OCR reader — RecognizePlate sẽ trả FAILED_PRECONDITION."
             )
 
-    server.add_insecure_port(f"[::]:{config.grpc_port}")
+    bound_port = server.add_insecure_port(f"{config.grpc_bind_host}:{config.grpc_port}")
+    if not bound_port:
+        raise RuntimeError("Cannot bind the configured gRPC address")
     await server.start()
 
     logger.info(f"🚀 IPLMS AI gRPC Server started on port {config.grpc_port}")

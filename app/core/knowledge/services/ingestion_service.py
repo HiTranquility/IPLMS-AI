@@ -13,12 +13,34 @@ from app.core.exceptions import (
     NoTextLayerError,
     UnsupportedFormatError,
 )
-from app.core.knowledge.dtos.knowledge_dto import IngestDocumentCommand, IngestResult
+from app.core.knowledge.dtos.knowledge_dto import (
+    IngestDocumentCommand,
+    IngestResult,
+    KnowledgeDocumentSummary,
+)
 from app.core.knowledge.engines.chunker import chunk_text
 from app.core.knowledge.engines.document_parser import parse_document
+from app.core.knowledge.engines.injection_scan import find_instructions
 from app.infra.database.pgvector_client import pgvector_client
 from app.infra.embedding import embedding_client
 from app.util.logger import logger
+
+
+def _injection_flags(content: str) -> dict:
+    # Cổng xuất bản đọc khoá này (PROB-046 phase 2); đoạn sạch thì không có khoá.
+    flags = find_instructions(content)
+    return {"injection_flags": flags} if flags else {}
+
+
+def _ingest_message(flagged: list[str]) -> str:
+    # UI ghép sau câu "Đã nạp <file> thành bản nháp vN (M đoạn)." nên không lặp lại ý đó.
+    if not flagged:
+        return "Chạy test rồi xuất bản để khách thấy."
+    return (
+        f"Lưu ý: có {len(flagged)} chỗ giống lệnh gửi cho trợ lý AI "
+        f"(vd “{flagged[0]}”). Bản này sẽ không xuất bản được cho tới khi bạn xoá "
+        "những chỗ đó và nạp lại."
+    )
 
 
 class IngestionService:
@@ -62,18 +84,6 @@ class IngestionService:
             vectors = await self.embedder.embed_texts([chunk.content for chunk in text_chunks])
         except EmbeddingError as exc:
             logger.warning("Knowledge embedding failed document=%s: %s", document_id, exc)
-            try:
-                self._save_to_local_seed(command, text_chunks)
-                return IngestResult(
-                    document_id=document_id,
-                    status=IngestStatus.SUCCESS,
-                    chunk_count=len(text_chunks),
-                    message="Đã nạp vào kho tri thức cục bộ (Local Knowledge Seed).",
-                    process_time=time.perf_counter() - started,
-                )
-            except Exception as seed_exc:
-                logger.warning("Failed to save to local seed: %s", seed_exc)
-
             return self._result(
                 document_id,
                 IngestStatus.EMBEDDING_FAILED,
@@ -91,11 +101,13 @@ class IngestionService:
                     "document_format": parsed.doc_format.value,
                     "page_count": parsed.page_count,
                     "warnings": parsed.warnings,
+                    **_injection_flags(chunk.content),
                 },
             }
             for chunk, vector in zip(text_chunks, vectors, strict=True)
         ]
-        await self.vector_store.replace_document(
+        flagged = [s for c in chunks for s in c["metadata"].get("injection_flags", [])]
+        version = await self.vector_store.save_draft_version(
             document_id=document_id,
             file_name=command.file_name,
             category=command.category,
@@ -107,12 +119,24 @@ class IngestionService:
             document_id=document_id,
             status=IngestStatus.SUCCESS,
             chunk_count=len(chunks),
-            message="Đã nạp tài liệu vào kho tri thức.",
+            message=_ingest_message(flagged),
             process_time=time.perf_counter() - started,
+            version_id=version["version_id"],
+            version_no=version["version_no"],
         )
 
-    async def delete(self, document_id: str, parking_lot_id: str | None) -> int:
-        return await self.vector_store.delete_document(document_id, parking_lot_id)
+    async def delete(
+        self, document_id: str, parking_lot_id: str | None, draft_only: bool = False
+    ) -> int:
+        return await self.vector_store.delete_document(document_id, parking_lot_id, draft_only)
+
+    async def list(self, parking_lot_id: str | None) -> list[KnowledgeDocumentSummary]:
+        rows = await self.vector_store.list_documents(parking_lot_id)
+        return [KnowledgeDocumentSummary(**row) for row in rows]
+
+    async def list_chunks(self, document_id: str, parking_lot_id: str | None,
+                          version_no: int = 0) -> dict:
+        return await self.vector_store.list_document_chunks(document_id, parking_lot_id, version_no)
 
     @staticmethod
     def _result(
@@ -128,39 +152,6 @@ class IngestionService:
             message=message,
             process_time=time.perf_counter() - started,
         )
-
-    @staticmethod
-    def _save_to_local_seed(command: IngestDocumentCommand, text_chunks: list[TextChunk]) -> None:
-        import json
-        import os
-        candidates = [
-            os.path.join(os.getcwd(), "data", "knowledge", "regulations_seed.json"),
-            os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../data/knowledge/regulations_seed.json")),
-        ]
-        seed_path = next((c for c in candidates if os.path.exists(c)), candidates[0])
-        existing = []
-        if os.path.exists(seed_path):
-            try:
-                with open(seed_path, "r", encoding="utf-8") as f:
-                    existing = json.load(f)
-            except Exception:
-                existing = []
-
-        existing = [item for item in existing if item.get("source") != command.file_name]
-
-        for idx, chunk in enumerate(text_chunks, 1):
-            title = chunk.section_title or f"{command.file_name} (Đoạn {idx})"
-            existing.append({
-                "category": command.category or "regulation",
-                "title": title,
-                "content": chunk.content,
-                "source": command.file_name,
-                "parking_lot_id": command.parking_lot_id,
-            })
-
-        os.makedirs(os.path.dirname(seed_path), exist_ok=True)
-        with open(seed_path, "w", encoding="utf-8") as f:
-            json.dump(existing, f, ensure_ascii=False, indent=2)
 
 
 ingestion_service = IngestionService()

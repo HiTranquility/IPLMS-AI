@@ -42,14 +42,7 @@ ok "Đã activate venv"
 
 pip install --upgrade pip -q
 
-# Kiểm tra xem máy có GPU NVIDIA không
-if command -v nvidia-smi &> /dev/null && nvidia-smi &> /dev/null; then
-    GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n1)
-    ok "Phát hiện GPU NVIDIA: $GPU_NAME"
-    info "Đang cài đặt PyTorch với hỗ trợ CUDA 12.4..."
-    pip install torch==2.6.0+cu124 torchvision==0.21.0+cu124 --index-url https://download.pytorch.org/whl/cu124
-fi
-
+# CPU/default requirements only; CUDA setup is a separate explicit choice.
 pip install -r requirements.txt -q
 ok "Đã cài đặt dependencies (requirements.txt)"
 

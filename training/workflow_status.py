@@ -13,6 +13,6 @@ def run_planned_step(step: str, purpose: str) -> None:
     if args.status:
         print(f"{step}: PLANNED")
         print(purpose)
-        print("Runbook: docs/guides/06-google-colab-training-runbook.md")
+        print("Runbook: docs/guides/09-2026/06-google-colab-training-runbook.md")
         return
     parser.error("Bước này mới là scaffold; dùng --status để xem mốc triển khai")

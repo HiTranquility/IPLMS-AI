@@ -45,8 +45,20 @@ class FraudDetectedError(AiServiceError):
 
 # ── Copilot ───────────────────────────────────────────────────────────────────
 
+class KnowledgeGateError(AiServiceError):
+    """Thao tác Knowledge Base bị cổng nghiệp vụ chặn (ISSUE-009).
+
+    Vd. bộ test trống, đã có lượt chạy đang chạy, chưa đạt ngưỡng xuất bản.
+    Message viết sẵn cho người dùng; map FAILED_PRECONDITION để backend giữ nguyên.
+    """
+
+
 class RagPipelineError(AiServiceError):
     """Lỗi trong quá trình truy vấn RAG (embedding, LLM, pgvector)."""
+
+
+class ModelConfigurationError(AiServiceError):
+    """Cấu hình model hoặc kết nối tới provider LLM không hợp lệ (sai tên model, provider không phản hồi...)."""
 
 
 class WorkflowConfigurationError(AiServiceError):
@@ -64,11 +76,7 @@ class UnsupportedFormatError(AiServiceError):
 
 
 class NoTextLayerError(AiServiceError):
-    """Tài liệu không có lớp văn bản — gần như chắc chắn là bản scan/ảnh chụp.
-
-    Tách riêng khỏi ``UnsupportedFormatError`` vì hướng xử lý của owner khác hẳn:
-    đây là file ĐÚNG định dạng nhưng cần bản gốc số hoá, không phải đổi định dạng.
-    """
+    """Định dạng hợp lệ nhưng không có chữ đọc được, kể cả sau khi OCR PDF."""
 
 
 class DocumentTooLargeError(AiServiceError):
@@ -89,3 +97,21 @@ class EmbeddingError(AiServiceError):
 
 class DataLakeError(AiServiceError):
     """Không thể export hoặc đọc snapshot lịch sử từ data lake."""
+
+
+# ── AI Console (ADR-0048) ─────────────────────────────────────────────────────
+
+class ConsoleAuthError(AiServiceError):
+    """Chưa đăng nhập console, phiên hết hạn, hoặc cần xác thực lại (step-up)."""
+
+    def __init__(self, message: str, code: str = "UNAUTHENTICATED") -> None:
+        super().__init__(message)
+        self.code = code
+
+
+class ConsoleAccessDenied(AiServiceError):
+    """Thành viên console không có quyền, hoặc vi phạm luật bốn mắt."""
+
+
+class ConsoleStoreError(AiServiceError):
+    """Thao tác với DB ``ai_console`` bị từ chối hoặc không truy cập được DB."""

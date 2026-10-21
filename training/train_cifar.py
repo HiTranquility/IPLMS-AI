@@ -14,7 +14,7 @@ import torchvision.datasets
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from model.architectures.m2.nets import NetV2
-import writeLogAcc as wA
+import write_log_acc as wA
 
 
 class LabelSmoothingCrossEntropy(nn.Module):
@@ -265,7 +265,7 @@ def main():
         print('=' * len(line))
         print(line)
         print('=' * len(line))
-        wA.writeLogAcc(filenameLOG, line)
+        wA.write_log_acc(filenameLOG, line)
 
 
 if __name__ == '__main__':

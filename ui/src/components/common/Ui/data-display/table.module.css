@@ -1,0 +1,9 @@
+/* Bảng dữ liệu dùng chung các trang console: hàng hairline, số tabular, không zebra. */
+.wrap { overflow-x: auto; border: var(--hairline); border-radius: var(--radius-md); background: var(--color-surface); }
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: var(--space-2) var(--space-3); text-align: left; border-bottom: var(--hairline); vertical-align: top; }
+.table th { font-size: var(--text-xs); font-weight: 600; color: var(--color-muted); background: var(--color-surface-2); white-space: nowrap; }
+.table tr:last-child td { border-bottom: 0; }
+.num { text-align: right !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mono { font-family: var(--font-mono); font-size: var(--text-xs); }
+.muted { color: var(--color-muted); }

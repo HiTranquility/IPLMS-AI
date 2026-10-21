@@ -1,9 +1,10 @@
 """Unit test cho các tối ưu hóa Vision: màu biển số (vàng, trắng, xanh, đỏ), deskew, tách kênh R-B và phân loại xe."""
 import unittest
+from unittest.mock import patch
 import numpy as np
 import cv2
 
-from app.core.vision.engines.anpr_engine import (
+from app.core.vision.engines.anpr.preprocess import (
     detect_plate_color,
     enhance_yellow_plate,
     deskew_plate,
@@ -12,6 +13,10 @@ from app.core.vision.engines.vehicle_classifier import classify_vehicle
 
 
 class PlateColorDetectionTest(unittest.TestCase):
+    def test_no_color_evidence_is_unknown(self):
+        for image in (None, np.zeros((0, 0, 3), dtype=np.uint8), np.zeros((30, 70, 3), dtype=np.uint8), np.zeros((30, 70), dtype=np.uint8)):
+            self.assertIsNone(detect_plate_color(image))
+
     def test_nhan_dien_bien_mau_vang(self):
         # Biển vàng kinh doanh: R ~ 240, G ~ 200, B ~ 20 (BGR: 20, 200, 240)
         img = np.zeros((100, 200, 3), dtype=np.uint8)
@@ -62,6 +67,16 @@ class YellowPlateEnhancementTest(unittest.TestCase):
 
 
 class DeskewPlateTest(unittest.TestCase):
+    def test_rotated_plate_expands_canvas_and_does_not_mutate_evidence(self):
+        img = np.zeros((120, 240, 3), dtype=np.uint8)
+        box = cv2.boxPoints(((120, 60), (200, 60), 12)).astype(np.int32)
+        cv2.fillPoly(img, [box], (255, 255, 255))
+        original = img.copy()
+        result = deskew_plate(img)
+        self.assertGreater(result.shape[0], img.shape[0])
+        self.assertGreaterEqual(result.shape[1], img.shape[1])
+        np.testing.assert_array_equal(img, original)
+
     def test_khong_xoay_khi_bien_thang(self):
         img = np.zeros((80, 200, 3), dtype=np.uint8)
         cv2.rectangle(img, (10, 10), (190, 70), (255, 255, 255), -1)
@@ -74,25 +89,13 @@ class DeskewPlateTest(unittest.TestCase):
         self.assertEqual(res.shape, (10, 10, 3))
 
 
-class VehicleClassifierPriorTest(unittest.TestCase):
-    def test_phan_loai_xe_may_theo_quy_chuan_seri_viet_nam(self):
-        fake_img = b"\xff\xd8\xff" + b"\x00" * 100
-        # 59-V1, 29-B1, 59V1 -> Đều là xe máy (motorbike)
-        for plate in ("59-V1-793.79", "29-B1-123.45", "59V179379", "50N1-888.88"):
-            vtype = classify_vehicle(fake_img, plate_number=plate)
-            self.assertEqual(vtype, "motorbike", f"Lỗi với biển: {plate}")
-
-    def test_phan_loai_xe_tai_theo_seri_c_h_hoac_bien_vang(self):
-        fake_img = b"\xff\xd8\xff" + b"\x00" * 100
-        # 50H, 29C -> Xe tải (truck)
-        for plate in ("50H-123.45", "29C-999.99"):
-            vtype = classify_vehicle(fake_img, plate_number=plate)
-            self.assertEqual(vtype, "truck", f"Lỗi với biển: {plate}")
-
-    def test_phan_loai_o_to_con_theo_seri_a_f_k(self):
-        fake_img = b"\xff\xd8\xff" + b"\x00" * 100
-        vtype = classify_vehicle(fake_img, plate_number="51F-178.12")
-        self.assertIn(vtype, ("car_sedan", "car_suv"))
+class VehicleClassifierEvidenceTest(unittest.TestCase):
+    def test_missing_model_never_infers_vehicle_from_plate_metadata(self):
+        for plate, color in (("59-V1-793.79", "white"), ("50H-123.45", "yellow"), ("51F-178.12", "white")):
+            with self.subTest(plate=plate), patch(
+                "app.core.vision.engines.vehicle_classifier._ensure_loaded", return_value=False
+            ):
+                self.assertIsNone(classify_vehicle(b"not-an-image", plate_number=plate, plate_color=color))
 
 
 if __name__ == "__main__":

@@ -1,22 +1,25 @@
-# ❓ QA-NNN: <Question>
+# ❓ QA-NNN: <Câu hỏi>
 
-> Status: 🟡 OPEN
-> Asked by: <name>
-> Answered by: <name or pending>
+> **Đích:** `docs/projects/qas/MM-YYYY/QA-NNN-slug.md` · **Luật chung:** [templates/README](README.md)
 
-## Question
+| | |
+|---|---|
+| **Trạng thái** | 🟡 OPEN / ✅ ANSWERED |
+| **Người hỏi** | <tên> |
+| **Người trả lời** | <tên hoặc chưa có> |
 
-<The technical question>
+## Câu hỏi
 
-## What was checked
+<Câu hỏi kỹ thuật>
 
-- <docs, code path, experiment>
+## Đã kiểm những gì
 
-## Answer
+- <tài liệu, đường đi code, thử nghiệm>
 
-<Answer with evidence and links.>
+## Trả lời
 
-## Follow-up
+<Câu trả lời kèm bằng chứng và link.>
 
-<Whether a guide, issue, or ADR should be created.>
+## Việc tiếp theo
 
+<Có cần tạo guide, issue hoặc ADR không?>
