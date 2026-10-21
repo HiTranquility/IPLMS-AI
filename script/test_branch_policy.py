@@ -114,6 +114,12 @@ class BranchPolicyTests(unittest.TestCase):
         with self.assertRaises(ValueError):  # hồ sơ CHORE phải nằm trong docs/projects/chores
             validate(self.repo, self.config, branch, self.pr(
                 record="CHORE-001", path="docs/projects/issues/10-2026/CHORE-001-monthly-maintenance/issue.md", created="2026-10-01"))
+        with self.assertRaises(ValueError):  # CHORE thuộc namespace của chính repo, không trỏ hồ sơ gốc
+            validate(self.repo, self.config, branch, self.pr(owner="IPLMS", record="CHORE-001", path=relative, created="2026-10-01"))
+        flat = "docs/projects/chores/10-2026/CHORE-001-monthly-maintenance.md"
+        (self.repo / flat).write_text("| **Ngày tạo** | 2026-10-01 |\n", encoding="utf-8")
+        with self.assertRaises(ValueError):  # CHORE chỉ có dạng thư mục .../issue.md
+            validate(self.repo, self.config, branch, self.pr(record="CHORE-001", path=flat, created="2026-10-01"))
         with self.assertRaises(ValueError):
             validate(self.repo, self.config, branch, self.pr(record="CHORE-001", path=relative, created="2026-09-30"))
 

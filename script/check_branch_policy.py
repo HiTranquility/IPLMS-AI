@@ -24,7 +24,8 @@ def safe_path(value, record):
     parts = path.relative_to(ROOTS[kind]).parts
     if parts and re.fullmatch(r"[0-9]{2}-[0-9]{4}", parts[0]):
         parts = parts[1:]
-    flat = len(parts) == 1 and re.fullmatch(re.escape(record) + r"(?:-[a-z0-9]+(?:-[a-z0-9]+)*)?\.md", parts[0])
+    # CHORE mới có từ ADR-0055: chỉ dạng thư mục, không có hồ sơ phẳng cũ cần giữ.
+    flat = kind != "CHORE" and len(parts) == 1 and re.fullmatch(re.escape(record) + r"(?:-[a-z0-9]+(?:-[a-z0-9]+)*)?\.md", parts[0])
     canonical_name = {"ISSUE": "issue.md", "bug": "bug.md", "CHORE": "issue.md"}.get(kind)
     folder = (len(parts) == 2 and canonical_name and parts[1] == canonical_name
               and re.fullmatch(re.escape(record) + r"(?:-[a-z0-9]+(?:-[a-z0-9]+)*)?", parts[0]))
@@ -115,6 +116,8 @@ def validate(repo, config, branch, pr=None):
             raise ValueError("Record namespace is neither this repository nor umbrella IPLMS")
         if record.startswith("PROB-") and owner != "IPLMS":
             raise ValueError("PROB records belong to umbrella IPLMS")
+        if record.startswith("CHORE-") and owner != config["namespace"]:
+            raise ValueError("CHORE records belong to this repository's own namespace")
         relative = safe_path(meta["Path"], record)
         if not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", meta["Created"]):
             raise ValueError("Policy-Created must use YYYY-MM-DD")
