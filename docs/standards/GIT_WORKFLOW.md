@@ -9,9 +9,9 @@ Hiệu lực: **2026-10-15**. Bản local của quyết định **ADR-0043** ở
 ```
 
 - `type`: `feature`, `bugfix`, `hotfix`, `chore`, `docs`; slug tiếng Anh, chữ thường, nối bằng dấu gạch ngang.
-- `record` giữ đúng mã hồ sơ chính: `ISSUE-NNN`, `bug-NNN`, hoặc `PROB-NNN` nếu namespace sở hữu có loại đó. Không tự tạo mã hay suy ra mã từ số GitHub issue.
+- `record` giữ đúng mã hồ sơ chính: `ISSUE-NNN`, `bug-NNN`, `CHORE-NNN` (chỉ với `chore/`, nhánh gom việc vặt theo tháng `chore/CHORE-NNN-YYYY-MM-monthly-maintenance` — IPLMS ADR-0055), hoặc `PROB-NNN` nếu namespace sở hữu có loại đó. Không tự tạo mã hay suy ra mã từ số GitHub issue.
 - `YYYY-MM` là tháng/năm **tạo gốc của hồ sơ chính**, giữ nguyên khi tiếp tục sang tháng khác. Không dùng tháng làm việc hiện tại. Bug không có thư mục tháng thì đọc metadata ngày tạo; nếu chưa có ngày, xác minh và bổ sung ngày gốc, ghi nguồn ngày rõ trong PR trước khi đặt nhánh, không đoán.
-- Mỗi nhánh giải quyết một việc; một issue lớn có thể tách phần việc qua hồ sơ con trước khi tạo nhiều nhánh. Người phụ trách nằm ở assignee/PR, không thêm tên developer vào nhánh.
+- Mỗi nhánh giải quyết một việc (trừ nhánh chore gom việc vặt của tháng); một issue lớn có thể tách phần việc qua hồ sơ con trước khi tạo nhiều nhánh. Người phụ trách nằm ở assignee/PR, không thêm tên developer vào nhánh.
 - Agent mặc định dùng `codex/<record>-<YYYY-MM>-<english-kebab-slug>` khi host yêu cầu prefix `codex/`; PR nêu loại công việc tương ứng. Nhánh Dependabot/release tiếp tục theo workflow riêng hiện hữu.
 
 Ví dụ **giả định**, không cấp mã hồ sơ thật: hồ sơ `ISSUE-013` tạo ngày 2026-09-20 → `feature/ISSUE-013-2026-09-materialize-dataset`; sửa tiếp trong tháng 10 vẫn giữ `2026-09`.
