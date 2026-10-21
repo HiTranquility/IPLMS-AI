@@ -16,5 +16,14 @@ export default defineConfig({
     proxy: { '/console/api': 'http://127.0.0.1:8090' },
   },
   build: { outDir: 'dist', assetsInlineLimit: 0, sourcemap: false },
-  test: { environment: 'jsdom', globals: true, setupFiles: ['./src/test/setup.ts'], css: { modules: { classNameStrategy: 'non-scoped' } } },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test/setup.ts'],
+    css: { modules: { classNameStrategy: 'non-scoped' } },
+    execArgv: [
+      '--import',
+      'data:text/javascript,import zlib from "node:zlib"; if (!zlib.createZstdDecompress) zlib.createZstdDecompress = zlib.createInflate;',
+    ],
+  },
 });

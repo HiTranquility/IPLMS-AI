@@ -14,6 +14,7 @@ from app.config import get_config
 from app.core.console.dtos import ConsoleActor, ConsoleSession
 from app.core.console.engines import access_policy, session_policy
 from app.core.exceptions import ConsoleAccessDenied, ConsoleAuthError
+from app.util.logger import logger
 from app.infra.database.console_store import console_store
 from app.infra.identity.google_oidc import GoogleOidcClient, new_pkce_pair
 from app.infra.identity.password import verify_password
@@ -74,17 +75,25 @@ class ConsoleAuthService:
         return url, browser
 
     async def finish_google(self, code: str, state: str, browser: str) -> str:
+        logger.info(f"[finish_google] Step 1: validating inputs code_len={len(code)}, state_len={len(state)}, browser_len={len(browser)}")
         if not code or not state or not browser:
+            logger.warning("[finish_google] Missing code, state, or browser cookie!")
             raise ConsoleAuthError("Thiếu dữ liệu đăng nhập Google.")
+        logger.info(f"[finish_google] Step 2: consuming auth flow with state_hash={token_hash(state)[:10]}..., browser_hash={token_hash(browser)[:10]}...")
         flow = await self.store.consume_auth_flow(token_hash(state), token_hash(browser))
         if flow is None:
+            logger.warning("[finish_google] consume_auth_flow returned None (no matching flow or expired > 10m)!")
             raise ConsoleAuthError("Phiên đăng nhập Google không hợp lệ hoặc đã quá 10 phút.")
+        logger.info("[finish_google] Step 3: exchanging code with Google and verifying id_token...")
         identity = await asyncio.to_thread(
             self._google_client().login, code, flow["code_verifier"], flow["nonce"]
         )
+        logger.info(f"[finish_google] Step 4: Google verified identity email={identity.email}, sub={identity.sub}")
         member = await self.store.get_login_member(identity.email)
         if member is None or member["status"] == "DISABLED":
+            logger.warning(f"[finish_google] Member {identity.email} is None or DISABLED: {member}")
             raise ConsoleAuthError("Email này chưa được mời vào console.", "NOT_INVITED")
+        logger.info(f"[finish_google] Step 5: opening session for member id={member['id']}")
         return await self._open(member["id"], "google", identity.sub)
 
     async def password_login(self, email: str, password: str) -> str:

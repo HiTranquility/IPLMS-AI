@@ -1,87 +1,95 @@
-import { ClipboardCheck } from 'lucide-react';
+import { CheckCheck, ClipboardCheck } from 'lucide-react';
 import { useState } from 'react';
-import type { ReviewItem } from '@/api/types';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/common/Ui/button/Button';
-import { Badge } from '@/components/common/Ui/data-display/Badge';
 import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
 import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
-import { TextField } from '@/components/common/Ui/form/Field';
-import { CropImage } from '@/components/common/Ui/media/CropImage';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { useDecideLabel, useReviewQueue } from '@/hooks/useVision';
+import { queryKeys } from '@/constants/queryKeys';
+import { useReviewQueue } from '@/hooks/queries/useVisionQueries';
 import { useI18n } from '@/i18n/I18nProvider';
-import { DASH, fmtDateTime, fmtPercent } from '@/utils/format';
-import styles from './vision.module.css';
-
-function proposed(item: ReviewItem): string {
-  if (item.label.verdict === 'CORRECTED') return item.label.plate_text;
-  if (item.label.verdict === 'CORRECT') return item.confirmed_plate;
-  return DASH;
-}
-
-function ReviewRow({ item }: { item: ReviewItem }) {
-  const { t } = useI18n();
-  const decide = useDecideLabel();
-  const [rejecting, setRejecting] = useState(false);
-  const [note, setNote] = useState('');
-
-  return (
-    <li className={styles.reviewRow}>
-      <CropImage captureId={item.capture_id} size="md" />
-      <div className={styles.reviewBody}>
-        <p>
-          <Badge tone={item.label.verdict === 'UNUSABLE' ? 'danger' : 'accent'}>{t.vision.verdict[item.label.verdict]}</Badge>{' '}
-          <span className={styles.plate}>{proposed(item)}</span>
-        </p>
-        <p className={styles.note}>
-          {t.review.machine} <span className={styles.mono}>{item.machine_plate || DASH}</span> ({fmtPercent(item.machine_confidence)}) · {t.review.gateConfirmed}{' '}
-          <span className={styles.mono}>{item.confirmed_plate || DASH}</span>
-        </p>
-        <p className={styles.note}>{t.review.labeledBy(item.label.labeler, fmtDateTime(item.label.created_at))}</p>
-        {decide.error && <ErrorBlock error={decide.error} />}
-        {rejecting ? (
-          <form
-            className={styles.inline}
-            onSubmit={(event) => {
-              event.preventDefault();
-              decide.mutate({ labelId: item.label.id, decision: 'REJECTED', note: note.trim() });
-            }}
-          >
-            <TextField label={t.review.whyReject} required minLength={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} />
-            <Button type="submit" variant="danger" size="sm" loading={decide.isPending} disabled={note.trim().length < 3}>{t.review.reject}</Button>
-            <Button size="sm" variant="ghost" onClick={() => setRejecting(false)}>{t.review.cancel}</Button>
-          </form>
-        ) : (
-          <div className={styles.actions}>
-            <Button size="sm" loading={decide.isPending} onClick={() => decide.mutate({ labelId: item.label.id, decision: 'APPROVED', note: '' })}>
-              {t.common.approve}
-            </Button>
-            <Button size="sm" variant="secondary" onClick={() => setRejecting(true)}>{t.review.rejectOpen}</Button>
-          </div>
-        )}
-      </div>
-    </li>
-  );
-}
+import { decideLabel } from '@/services/apiEndpoints/vision.endpoint';
+import { ReviewRow } from './components/ReviewRow';
+import styles from './ReviewPage.module.css';
 
 export function ReviewPage() {
   const { t } = useI18n();
   const queue = useReviewQueue();
+  const queryClient = useQueryClient();
+  const [isBatchApproving, setIsBatchApproving] = useState(false);
+
+  const items = queue.data || [];
+  const exactMatches = items.filter(
+    (item) => item.machine_plate && item.confirmed_plate && item.machine_plate === item.confirmed_plate,
+  );
+
+  const handleApproveAllExact = async () => {
+    if (exactMatches.length === 0 || isBatchApproving) return;
+    setIsBatchApproving(true);
+    try {
+      for (const item of exactMatches) {
+        await decideLabel(item.label.id, 'APPROVED', 'Duyệt nhanh theo lô: Khớp 100%');
+      }
+      void queryClient.invalidateQueries({ queryKey: queryKeys.vision.reviewQueue() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.vision.accuracy() });
+    } finally {
+      setIsBatchApproving(false);
+    }
+  };
 
   return (
-    <>
+    <div className={styles.page}>
       <PageHeader
         title={t.review.title}
         description={t.review.desc}
       />
+
       {queue.isPending && <Loading />}
       {queue.error && <ErrorBlock error={queue.error} onRetry={() => void queue.refetch()} />}
-      {queue.data?.length === 0 && <EmptyState icon={<ClipboardCheck size={28} />} title={t.review.empty} />}
-      {queue.data && queue.data.length > 0 && (
-        <ul className={styles.reviewList} aria-label={t.review.listLabel}>
-          {queue.data.map((item) => <ReviewRow key={item.label.id} item={item} />)}
-        </ul>
+
+      {items.length === 0 && !queue.isPending && (
+        <EmptyState icon={<ClipboardCheck size={28} />} title={t.review.empty} />
       )}
-    </>
+
+      {items.length > 0 && (
+        <>
+          <div className={styles.toolbarCard}>
+            <div className={styles.queueStats}>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Hàng đợi chờ duyệt</span>
+                <span className={styles.statValue}>{items.length} mẫu</span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Khớp 100% máy & cổng</span>
+                <span className={styles.statValue} style={{ color: 'var(--color-success)' }}>
+                  {exactMatches.length} mẫu
+                </span>
+              </div>
+            </div>
+
+            {exactMatches.length > 0 && (
+              <Button
+                variant="secondary"
+                size="sm"
+                loading={isBatchApproving}
+                onClick={handleApproveAllExact}
+                title={`Duyệt nhanh ${exactMatches.length} mẫu khớp 100%`}
+              >
+                <CheckCheck size={14} aria-hidden />
+                Duyệt nhanh {exactMatches.length} mẫu khớp 100%
+              </Button>
+            )}
+          </div>
+
+          <ul className={styles.reviewList} aria-label={t.review.listLabel}>
+            {items.map((item) => (
+              <ReviewRow key={item.label.id} item={item} />
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
   );
 }
+
+export default ReviewPage;

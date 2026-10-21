@@ -13,6 +13,7 @@ from app.api.rest.schemas.base_response import BaseResponse
 from app.core.console.engines import access_policy
 from app.core.console.services import console_auth_service
 from app.core.exceptions import ConsoleAuthError
+from app.util.logger import logger
 
 router = APIRouter(tags=["AI Console auth"])
 
@@ -53,7 +54,13 @@ class Me(BaseModel):
 
 
 @router.get("/auth/google/start")
-async def google_start() -> RedirectResponse:
+async def google_start(request: Request) -> RedirectResponse:
+    host_hdr = request.headers.get("host", "")
+    logger.info(f"[Google Auth] /start requested. Host: {host_hdr}, Client: {request.client}")
+    if host_hdr.startswith("127.0.0.1"):
+        target_url = str(request.url).replace("127.0.0.1", "localhost", 1)
+        logger.info(f"[Google Auth] Normalizing 127.0.0.1 -> localhost: {target_url}")
+        return RedirectResponse(target_url, status_code=302)
     url, browser = await console_auth_service.start_google()
     response = RedirectResponse(url, status_code=302)
     set_flow_cookie(response, browser)
@@ -65,17 +72,31 @@ async def google_callback(
     request: Request, code: Optional[str] = None, state: Optional[str] = None,
     error: Optional[str] = None,
 ) -> RedirectResponse:
-    # Lỗi chỉ trả mã ngắn trên URL — không đưa thông điệp/token vào query.
+    flow_cookie = request.cookies.get(FLOW_COOKIE, "")
+    host_hdr = request.headers.get("host", "")
+    has_code = "present" if code else "MISSING"
+    has_state = "present" if state else "MISSING"
+    has_cookie = "present" if flow_cookie else "MISSING"
+    logger.info(
+        f"[Google Auth] /callback received. Host: {host_hdr}, "
+        f"code={has_code}, state={has_state}, flow_cookie={has_cookie}, error={error}"
+    )
     if error:
+        logger.warning(f"[Google Auth] Google returned error in callback: {error}")
         response = RedirectResponse(f"{_UI_HOME}?login_error=GOOGLE_DENIED", status_code=302)
     else:
         try:
             raw = await console_auth_service.finish_google(
-                code or "", state or "", request.cookies.get(FLOW_COOKIE, "")
+                code or "", state or "", flow_cookie
             )
         except ConsoleAuthError as exc:
+            logger.warning(f"[Google Auth] finish_google failed with ConsoleAuthError: {exc} (code={exc.code})")
             response = RedirectResponse(f"{_UI_HOME}?login_error={exc.code}", status_code=302)
+        except Exception as exc:
+            logger.error(f"[Google Auth] finish_google unexpected exception: {exc}", exc_info=True)
+            response = RedirectResponse(f"{_UI_HOME}?login_error=UNAUTHENTICATED", status_code=302)
         else:
+            logger.info("[Google Auth] finish_google succeeded! Setting session cookie.")
             response = RedirectResponse(_UI_HOME, status_code=302)
             set_session_cookie(response, raw)
     clear_flow_cookie(response)

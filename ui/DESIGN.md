@@ -9,25 +9,40 @@ Trạng thái: thiết kế hiện hành của P1c (IPLMS ISSUE-126), 2026-10-16
 - Ẩn nút/menu theo `permissions` của `/me` chỉ là tiện dụng; backend kiểm quyền ở mọi route.
 - Build ra `ui/dist`; `console_main` phục vụ SPA với CSP `default-src 'self'` — không CDN, không font ngoài, không script inline.
 
-## Cấu trúc
+## Cấu trúc (theo khuôn chuẩn `frontend-store` / `FRONTEND_CONVENTIONS_V2`)
 
 ```text
 src/
-  api/          client.ts (fetch + envelope + ApiError), console.ts (endpoint), types.ts, queryKeys.ts
-  hooks/        useConsole.ts, useVision.ts — mọi useQuery/useMutation, queryKey lấy từ QUERY_KEYS
+  types/        api.ts + {auth,copilot,tool,member,audit,vision}/{requests,responses,shares}/ + index.ts
+  services/     apiClient.ts (fetch + envelope + ApiError), apiEndpoints/{auth,copilot,tool,member,audit,vision}.endpoint.ts
+  constants/    queryKeys.ts (queryKeys factory phân cấp + QUERY_KEYS)
+  hooks/
+    common/     useCan.ts
+    queries/    use{Auth,Copilot,Tool,Member,Audit,Vision}Queries.ts
+    mutations/  use{Auth,Copilot,Tool,Member,Vision}Mutations.ts
+  libs/         query-client.ts
+  stores/       useThemeStore.ts, useLanguageStore.ts
+  providers/    QueryProvider.tsx, ThemeProvider.tsx, I18nProvider.tsx
+  routes/       AppRoutes.tsx, AuthenticatedRoutes.tsx, AnonymousRoutes.tsx
   components/
-    common/Ui/{button,data-display,feedback,form,media}/   component có props
-    common/Shared/                                         màn hình tĩnh (Forbidden, NotFound)
-    layout/                                                AppShell (rail trái), PageHeader, navigation, LanguageSwitch
+    common/
+      Boundary/ PageBoundary, QueryBoundary, WidgetBoundary, ModalBoundary
+      Fallback/ ErrorFallback, LoadingFallback
+      Guard/    PermissionGuard, AuthenticatedGuard, AnonymousGuard
+      Shared/   Forbidden, NotFound
+      System/   ScrollToTop
+      Ui/{button,data-display,feedback,form,media}/   UI primitive thuần (không gọi API)
+    layout/     AppShell (rail trái + PageBoundary), PageHeader, navigation, LanguageSwitch
   i18n/         vi.ts (từ điển gốc, kiểu `Messages`), en.ts, I18nProvider (useI18n)
   pages/{Auth,Overview,Copilot,Tools,Members,Audit,Vision}/
+    {Name}Page.tsx + {Name}Page.module.css + {Name}PageContext.tsx + components/ + index.ts
   test/         setup + helper giả fetch
   utils/        format.ts (số/ngày theo ngôn ngữ), lang.ts, theme.ts
 ```
 
-Đặt tên khớp `frontend` (`packages/platform/src/pages/Common/Auth`): thư mục page `PascalCase`; component/page `PascalCase.tsx` + `PascalCase.module.css` đặt cạnh; CSS dùng chung cả thư mục viết thường (`auth.module.css`, `vision.module.css`, `Ui/data-display/table.module.css`); helper `camelCase.ts`.
+Đặt tên theo khuôn `frontend-store` & `frontend` (`FRONTEND_CONVENTIONS_V2.md`): thư mục page `PascalCase` kèm `index.ts` barrel; mỗi page có `{Name}Page.tsx` (`export default`) + `{Name}Page.module.css` riêng; sub-component tách vào `pages/{Domain}/components/`; page phức tạp có `{Name}PageContext.tsx`; helper `camelCase.ts`.
 
-Theo cùng luật `Shared/` vs `Ui/<nhóm>/` của `frontend/` (IPLMS PAT-006). Primitive chép từ `@iplms/shared` ghi nguồn ở đầu file (`frontend@b4eaa5c`); `Button` bỏ bóng màu và hiệu ứng nhấc nút cho đúng luật "không glow".
+Theo cùng luật `Boundary/`, `Fallback/`, `Guard/`, `Shared/`, `System/`, `Ui/<nhóm>/` của `frontend-store` (IPLMS PAT-006). Primitive chép từ `@iplms/shared` ghi nguồn ở đầu file (`frontend@b4eaa5c`); `Button` bỏ bóng màu và hiệu ứng nhấc nút cho đúng luật "không glow".
 
 ## Thị giác — Graphite & Amber
 
@@ -45,7 +60,7 @@ Font hệ thống (`system-ui`, `ui-monospace`) — không tải font. Theme sá
 ## Ngôn ngữ — VI/EN
 
 - Từ điển tự viết, **không** dùng `i18next` như `frontend/` (IPLMS ISSUE-126 6.13, người dùng chọn 2026-10-17): 0 package mới, đúng ranh giới "không import `@iplms/shared`". `src/i18n/vi.ts` là khuôn `Messages`; `en.ts` khai `en: Messages` nên thiếu/thừa khoá là `tsc` báo lỗi — cổng L5 kiểm bằng typecheck. Câu có số/tên là hàm nhận chuỗi đã định dạng.
-- Component đọc `const { t } = useI18n()`; code ngoài React (`api/client.ts`) dùng `messages()`. Nhãn enum (trạng thái, kết luận, giai đoạn model) nằm trong từ điển; `labels.ts` chỉ còn tông Badge.
+- Component đọc `const { t } = useI18n()`; code ngoài React (`services/apiClient.ts`) dùng `messages()`. Nhãn enum (trạng thái, kết luận, giai đoạn model) nằm trong từ điển; `labels.ts` chỉ còn tông Badge.
 - Mặc định tiếng Việt; đổi ở rail và ở trang đăng nhập/TOTP (`LanguageSwitch`, nhãn nhóm hai thứ tiếng), nhớ ở `localStorage` `ai-console-lang`, đặt `<html lang>`. Số/ngày theo `vi-VN`/`en-US`, múi giờ vẫn `Asia/Ho_Chi_Minh`; tiền luôn USD.
 - Server viết thông điệp lỗi bằng tiếng Việt. `ErrorBlock` ở EN hiện câu dịch theo `code` (`errors.serverCodes`), giữ nguyên văn server (`lang="vi"`) và mã bên dưới; mã không có trong bảng thì hiện nguyên văn. `ApiError.fromServer` phân biệt câu của server với câu client tự đặt theo ngôn ngữ đang dùng.
 - Chữ server gửi kèm dữ liệu: nhãn mục kiểm ở Công cụ thử dịch theo `key` (`tools.checks`); lý do ngưỡng đề xuất dựng lại ở client từ `total/min_samples/target/suggested_threshold` theo đúng luật `audit_accuracy.py` (bỏ `suggestion_reason`). Dữ liệu (câu hỏi, câu trả lời, lý do người nhập, lỗi nhận A2) giữ nguyên văn.
