@@ -105,6 +105,26 @@ export function LoginPage() {
               <LockKeyhole size={13} className={styles.hintIcon} aria-hidden />
               <span>Xác thực an toàn qua OAuth 2.0 PKCE · Phiên làm việc RBAC 7 vai trò</span>
             </div>
+            <div style={{ marginTop: '10px', textAlign: 'center' }}>
+              <a
+                href="/console/api/auth/dev-session"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  color: 'var(--color-primary-600, #4f46e5)',
+                  textDecoration: 'none',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  backgroundColor: 'rgba(99, 102, 241, 0.08)',
+                }}
+              >
+                <span>⚡</span>
+                <span>Truy cập nhanh (Trưởng dự án Nguyễn Tấn Phát - Full 7 Roles)</span>
+              </a>
+            </div>
           </div>
 
           {/* Divider */}

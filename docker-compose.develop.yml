@@ -45,3 +45,8 @@ services:
           "CMD-SHELL",
           "wget --spider -q 'http://127.0.0.1:8080/api/http/routers/ai-rest@docker'",
         ]
+
+  ai-console:
+    volumes:
+      - ./app:/app/app:ro
+      - ./ui/dist:/app/ui/dist:ro
