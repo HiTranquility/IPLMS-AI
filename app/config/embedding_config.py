@@ -19,6 +19,11 @@ class EmbeddingConfig(BaseConfig):
 
     model: str = "text-embedding-3-small"
 
+    # ISSUE-011: endpoint embedding tương thích OpenAI (vd Ollama). Rỗng = OpenAI.
+    # [GOTCHA] Đổi sang model khác = đổi không gian vector → phải nạp lại TOÀN BỘ
+    # tài liệu, và model phải trả đúng `dimensions` (cột vector cố định số chiều).
+    base_url: str = ""
+
     # Phải khớp `vector(N)` của cột embedding trong DB. Đổi số này mà không
     # migration + embed lại thì mọi lượt ghi sẽ hỏng ở tầng DB.
     dimensions: int = 1536

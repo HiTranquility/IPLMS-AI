@@ -6,6 +6,7 @@ from typing import Optional
 
 from app.config import get_config
 from app.infra.model_registry import ModelArtifactSpec, get_model_artifact_registry
+from app.util.logger import logger
 
 _state: dict = {"init": False, "model": None, "device": None, "labels": None, "tf": None}
 _load_lock = threading.Lock()
@@ -51,7 +52,18 @@ def _ensure_loaded() -> bool:
             ckpt = torch.load(checkpoint_path, map_location=device)
         state = ckpt.get("model_state_dict") or ckpt.get("state_dict") or ckpt if isinstance(ckpt, dict) else ckpt
         state = {(k[7:] if k.startswith("module.") else k): v for k, v in state.items()}
-        model.load_state_dict(state, strict=False)
+        try:
+            # strict: checkpoint lệch kiến trúc/số lớp mà nạp "lỏng" thì các lớp
+            # thiếu giữ trọng số khởi tạo ngẫu nhiên — model vẫn trả nhãn, chỉ là
+            # nhãn rác, và chống gian lận đem nhãn rác đó đi so.
+            model.load_state_dict(state, strict=True)
+        except RuntimeError as exc:
+            logger.error(
+                f"Checkpoint phân loại xe không khớp {vision.vehicle_model}; tắt tầng "
+                f"phân loại: {str(exc)[:300]}"
+            )
+            _state["init"] = True
+            return False
         model.eval()
 
         _state.update(
@@ -59,11 +71,21 @@ def _ensure_loaded() -> bool:
             model=model,
             device=device,
             labels=vision.vehicle_label_list,
+            min_confidence=vision.vehicle_min_confidence,
             tf=T.Compose([T.Resize((vision.vehicle_img_size, vision.vehicle_img_size)), T.ToTensor()]),
         )
         return True
 
-def classify_vehicle(image_bytes: bytes) -> Optional[str]:
+def classify_vehicle(
+    image_bytes: bytes,
+    plate_number: Optional[str] = None,
+    plate_color: Optional[str] = None,
+) -> Optional[str]:
+    """Return a measured CNN label; plate metadata must never override visual evidence.
+
+    Optional metadata arguments are accepted for compatibility with callers from
+    the integration branch. A missing model or weak prediction remains unknown.
+    """
     if not _ensure_loaded():
         return None
     import torch
@@ -72,6 +94,9 @@ def classify_vehicle(image_bytes: bytes) -> Optional[str]:
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     x = _state["tf"](img).unsqueeze(0).to(_state["device"])
     with torch.no_grad():
-        idx = int(_state["model"](x).argmax(dim=1).item())
+        probabilities = torch.softmax(_state["model"](x), dim=1)[0]
+    confidence, idx = (float(value) for value in probabilities.max(dim=0))
+    if confidence < _state["min_confidence"]:
+        return None
     labels = _state["labels"]
-    return labels[idx] if idx < len(labels) else str(idx)
+    return labels[int(idx)] if int(idx) < len(labels) else str(int(idx))

@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime, timezone
 from math import cos, pi, sin
 from typing import Any, Iterable, Sequence
+
+from training.forecast.calendar_vn import (
+    VN_UTC_OFFSET_HOURS,
+    is_vn_public_holiday,
+    to_local,
+)
 
 
 def _observed(row: dict[str, Any]) -> bool:
@@ -35,21 +40,29 @@ def build_feature_rows(
     horizons: Sequence[int] = (1, 2, 4, 8),
     lag_slots: Sequence[int] = (1, 2, 48, 336),
     rolling_windows: Sequence[int] = (4, 48),
+    seasonal_slots: Sequence[int] = (48, 336),
+    utc_offset_hours: float = VN_UTC_OFFSET_HOURS,
 ) -> list[dict[str, Any]]:
     """Build supervised rows without reading data after the forecast origin.
 
-    Calendar features describe the target timestamp and are therefore known in
-    advance. Occupancy lag and rolling features use only indices at or before
-    ``origin_timestamp``. Missing lag values stay ``None``.
+    Calendar features describe the target timestamp in the lot's local time and
+    are therefore known in advance. Occupancy lag and rolling features use only
+    indices at or before ``origin_timestamp``. ``target_same_slot_<n>`` is the
+    value ``n`` slots before the TARGET (same slot yesterday / last week), kept
+    only when that slot is not after the origin. Missing values stay ``None``.
     """
 
     normalized_horizons = sorted({int(value) for value in horizons})
     normalized_lags = sorted({int(value) for value in lag_slots})
     normalized_windows = sorted({int(value) for value in rolling_windows})
+    normalized_seasonal = sorted({int(value) for value in seasonal_slots})
     if not normalized_horizons or any(value <= 0 for value in normalized_horizons):
         raise ValueError("horizons must contain positive integers")
-    if any(value <= 0 for value in normalized_lags + normalized_windows):
-        raise ValueError("lag slots and rolling windows must be positive")
+    if any(
+        value <= 0
+        for value in normalized_lags + normalized_windows + normalized_seasonal
+    ):
+        raise ValueError("lag slots, rolling windows and seasonal slots must be positive")
 
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
@@ -70,11 +83,12 @@ def build_feature_rows(
                 if target_index >= len(series) or not _observed(series[target_index]):
                     continue
                 target = series[target_index]
-                target_time = datetime.fromtimestamp(
-                    int(target["timestamp"]), tz=timezone.utc
-                )
-                hour_angle = 2 * pi * target_time.hour / 24
+                # Giờ/ngày theo giờ VN: tính theo UTC thì "thứ Hai" bắt đầu lúc
+                # 07:00 sáng và cờ cuối tuần/ngày lễ lệch 7 tiếng.
+                target_time = to_local(int(target["timestamp"]), utc_offset_hours)
+                hour_angle = 2 * pi * (target_time.hour + target_time.minute / 60) / 24
                 weekday_angle = 2 * pi * target_time.weekday() / 7
+                holiday = is_vn_public_holiday(target_time.date())
                 feature_row: dict[str, Any] = {
                     "parking_lot_id": lot_id,
                     "origin_timestamp": int(origin["timestamp"]),
@@ -89,7 +103,14 @@ def build_feature_rows(
                     "target_hour_cos": cos(hour_angle),
                     "target_weekday_sin": sin(weekday_angle),
                     "target_weekday_cos": cos(weekday_angle),
+                    "target_is_weekend": 1.0 if target_time.weekday() >= 5 else 0.0,
+                    "target_is_holiday": None if holiday is None else float(holiday),
                 }
+                for period in normalized_seasonal:
+                    source_index = target_index - period
+                    feature_row[f"target_same_slot_{period}"] = (
+                        _value(series, source_index) if source_index <= origin_index else None
+                    )
                 for lag in normalized_lags:
                     feature_row[f"lag_{lag}"] = _value(series, origin_index - lag)
                 for window in normalized_windows:

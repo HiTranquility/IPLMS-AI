@@ -6,7 +6,7 @@ Model: `NetV1` (M1) ở [`../model/architectures/m1`](../model/architectures/m1)
 > **Chạy từ đâu?** Luôn `cd ai` rồi gọi `python training/<script>.py`. Mỗi script tự thêm `ai/` vào `sys.path` nên `from model...` chạy được. Dataset/checkpoint mặc định nằm ở `ai/model/dataset/` và `ai/model/checkpoint/` (đều gitignored).
 >
 > Bản đồ dữ liệu/artifact: [`model/README.md`](../model/README.md) · Runbook GPU:
-> [Google Colab](../docs/guides/06-google-colab-training-runbook.md).
+> [Google Colab](../docs/guides/09-2026/06-google-colab-training-runbook.md).
 
 ## 0. Cài đặt (1 lần)
 
@@ -54,7 +54,7 @@ ai/model/checkpoint/<dataset>_<size>_<Net>/
 ├── checkpoint.pth.tar      # (M1) epoch cuối
 └── checkpoint_epochXXXX.pth # (M2) — key: model_state_dict
 ```
-Chi tiết định dạng key checkpoint: [`../checkpoint_config_guide.md`](../checkpoint_config_guide.md).
+Chi tiết định dạng key checkpoint: [`../checkpoint-config-guide.md`](../checkpoint-config-guide.md).
 
 ## 4. Xem / kiểm tra model
 
@@ -90,7 +90,7 @@ python training/eval_plates.py --label before-B2
 
 Bộ vàng + cách đọc từng chỉ số: [`../data/golden/plates/README.md`](../data/golden/plates/README.md).
 
-**[MUST]** PR nào đụng `anpr_engine.py` hoặc đổi `model/artifacts/bootstrap/anpr/best.pt` phải kèm số
+**[MUST]** PR nào đụng `anpr_engine.py`, thư mục `engines/anpr/` hoặc đổi `model/artifacts/bootstrap/anpr/best.pt` phải kèm số
 **trước và sau** trên cùng bộ vàng. Không có số ⇒ không biết là tốt lên hay tệ đi.
 
 **[GOTCHA]** Chỉ số `exact_match_strict` và `exact_match_relaxed` chênh nhau bao
@@ -141,7 +141,7 @@ Phần nhận diện **biển số** do YOLO+EasyOCR trong [`../app/core/vision/
 | `draw_graph.py` | Vẽ biểu đồ acc/loss từ log |
 | `prepare_cifar.py` | Tạo CIFAR ImageFolder (cho train_imagefolder) |
 | `split_data.py` | Chia Animal-10 raw-img → train/val |
-| `writeLogAcc.py` · `calculate_w_h.py` | Tiện ích (ghi log / tính W-H feature map) |
+| `write_log_acc.py` · `calculate_w_h.py` | Tiện ích (ghi log / tính W-H feature map) |
 | `import_plate_dataset.py` | Nạp dataset biển số công khai → bộ vàng (`data/golden/plates/`) |
 | `eval_plates.py` | Đo `exact-match` / CER / latency của pipeline đọc biển trên bộ vàng |
 | `plate_metrics.py` | Hàm thuần tính CER / exact-match (không nạp model — `test/` import được) |

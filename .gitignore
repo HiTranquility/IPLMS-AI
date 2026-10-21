@@ -32,7 +32,10 @@ data/*
 data/knowledge/*
 # Tập vàng làm tay — mất là không dựng lại được, [MUST] version.
 !data/knowledge/eval_set.json
+!data/knowledge/eval_set_heldout.json
 !data/knowledge/regulations_seed.json
+# Tài liệu demo để thử nạp Knowledge Base trên giao diện (ISSUE-009) — nội dung bịa, không PII.
+!data/knowledge/demo-upload/
 
 # Bộ vàng đo ANPR: nhãn + số đo VÀO git, ảnh thì KHÔNG (PII, nặng).
 !data/golden
@@ -74,6 +77,15 @@ var/model-cache/*
 
 # EasyOCR models (~113MB) do setup-dev tải sẵn — runtime cache, không commit.
 var/easyocr-cache/
+
+# Local llama binaries & GGUF model weights
+var/bin/
+*.gguf
+
+# Runtime logs
+var/log/
+*.log
+*.jsonl
 
 # Saved crops/originals produced at runtime
 static/cropped/*

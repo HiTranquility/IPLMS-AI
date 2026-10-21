@@ -21,11 +21,13 @@ os.makedirs(os.path.join(STATIC_DIR, "original"), exist_ok=True)
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     """Load vision dependencies before the REST service accepts ANPR traffic."""
-    if not get_config().vision.vision_warmup_on_start:
-        logger.info("Vision warm-up skipped; models will lazy-load on first ANPR request.")
-    else:
-        from app.core.vision.engines.anpr_engine import warmup
+    from app.core.vision.engines.anpr_engine import warmup
 
+    if not get_config().vision.vision_warmup_on_start:
+        # Dev: serve immediately, load in the background (bug-006).
+        logger.info("Vision warm-up running in background; early ANPR requests wait for it.")
+        asyncio.get_running_loop().run_in_executor(None, warmup)
+    else:
         if await asyncio.to_thread(warmup):
             logger.info("Vision model loaded — REST ANPR is ready.")
         else:
@@ -38,8 +40,9 @@ register_cors(app)
 app.add_exception_handler(AiServiceError, ai_service_error_handler)
 app.add_exception_handler(Exception, generic_error_handler)
 app.include_router(api_router, prefix="/api")
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.include_router(api_router)
 
-@app.get("/health")
-def health() -> dict:
-    return {"status": "ok", "service": "iplms-ai"}
+
+# Ảnh cắt/gốc của ANPR. Trang dev `/dashboard` cũ đã bỏ — công cụ thử nằm trong AI
+# Console (IPLMS ADR-0050), không chạy trong process inference.
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

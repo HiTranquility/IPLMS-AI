@@ -1,0 +1,4 @@
+.stat { display: flex; flex-direction: column; gap: 2px; padding: var(--space-3) var(--space-4); border-left: var(--hairline); }
+.label { color: var(--color-muted); font-size: var(--text-xs); }
+.value { margin: 0; font-size: var(--text-xl); font-weight: 600; font-variant-numeric: tabular-nums; }
+.hint { margin: 0; color: var(--color-faded); font-size: var(--text-xs); }

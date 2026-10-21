@@ -119,6 +119,7 @@ async def _ingest_demo_data() -> None:
     """
     from app.core.knowledge.dtos.knowledge_dto import IngestDocumentCommand
     from app.core.knowledge.services import ingestion_service
+    from app.infra.database.pgvector_client import pgvector_client
 
     for index, chunk in enumerate(SAMPLE_KNOWLEDGE_CHUNKS, start=1):
         source = f"demo_{index:02d}_{chunk['category']}.md"
@@ -140,7 +141,12 @@ async def _ingest_demo_data() -> None:
         )
         if result.status.value != "SUCCESS":
             raise RuntimeError(f"Không nạp được {source}: {result.message}")
-        print(f"[OK] Ingested {source}: {result.chunk_count} chunks")
+        # Dữ liệu demo: xuất bản luôn để Copilot demo có cái để trả lời. Tài liệu
+        # thật đi qua bộ test + cổng xuất bản trên giao diện (ISSUE-009).
+        await pgvector_client.publish_versions(
+            chunk.get("parking_lot_id"), [result.version_id], "seed-script"
+        )
+        print(f"[OK] Ingested + published {source}: {result.chunk_count} chunks")
 
 
 def seed_knowledge():

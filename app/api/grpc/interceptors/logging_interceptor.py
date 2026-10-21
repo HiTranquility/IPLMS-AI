@@ -11,9 +11,12 @@ from grpc import aio
 
 from app.core.exceptions import (
     AiServiceError,
+    ConsoleStoreError,
     FeatureNotImplementedError,
     FraudDetectedError,
     InvalidImageError,
+    KnowledgeGateError,
+    ModelConfigurationError,
     ModelNotLoadedError,
     PlateRecognitionError,
     RagPipelineError,
@@ -31,8 +34,15 @@ _STATUS_BY_EXCEPTION: tuple[tuple[type[Exception], grpc.StatusCode], ...] = (
     (FraudDetectedError, grpc.StatusCode.FAILED_PRECONDITION),
     # Thiếu checkpoint/model → server chưa sẵn sàng, client retry sau có thể được.
     (ModelNotLoadedError, grpc.StatusCode.FAILED_PRECONDITION),
+    # Cổng nghiệp vụ Knowledge Base (bộ test trống, chưa đạt ngưỡng…) → message
+    # đi thẳng tới người dùng qua backend.
+    (KnowledgeGateError, grpc.StatusCode.FAILED_PRECONDITION),
+    # Lỗi cấu hình model/provider (không có model, không kết nối được provider)
+    (ModelConfigurationError, grpc.StatusCode.FAILED_PRECONDITION),
     # Hạ tầng phía sau (pgvector, LLM) hỏng.
     (RagPipelineError, grpc.StatusCode.UNAVAILABLE),
+    # DB AI Console (kênh A2) không truy cập được → backend thử lại ở chu kỳ sau.
+    (ConsoleStoreError, grpc.StatusCode.UNAVAILABLE),
     # Khai trong proto nhưng nghiệp vụ chưa có thật. UNIMPLEMENTED chứ không phải
     # INTERNAL: đây không phải sự cố, và client KHÔNG nên retry.
     (FeatureNotImplementedError, grpc.StatusCode.UNIMPLEMENTED),

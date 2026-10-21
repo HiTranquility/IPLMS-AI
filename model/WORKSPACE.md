@@ -51,7 +51,7 @@ Không dùng chung một layout/nhãn cho mọi bài toán:
 
 Forecast dùng snapshot chuỗi thời gian/Parquet; RAG dùng corpus và bộ câu hỏi
 đánh giá. Không nhét hai loại này vào ImageFolder chỉ để mọi thứ cùng tên
-“dataset”. Xem [worker, storage và vòng đời dữ liệu](../docs/guides/05-ai-workers-storage-and-training-lifecycle.md).
+“dataset”. Xem [worker, storage và vòng đời dữ liệu](../docs/guides/09-2026/05-ai-workers-storage-and-training-lifecycle.md).
 
 ## Tối thiểu cần có trước một lần train thật
 
@@ -95,7 +95,7 @@ nghìn ảnh trực tiếp từ Google Drive trong mỗi epoch. Checkpoint resum
 dataset hash, class mapping, preprocessing và source commit; “Download model” về
 laptop chỉ là bản sao tiện dụng, không phải nguồn sự thật.
 
-Runbook: [Google Colab training](../docs/guides/06-google-colab-training-runbook.md).
+Runbook: [Google Colab training](../docs/guides/09-2026/06-google-colab-training-runbook.md).
 
 ## Dọn dữ liệu mà không phá khả năng tái lập
 
@@ -108,4 +108,4 @@ Runbook: [Google Colab training](../docs/guides/06-google-colab-training-runbook
 - Dataset mới tạo `dataset_id` mới; không sửa âm thầm snapshot cũ để làm metric
   đẹp hơn.
 
-Quyết định nền: [ADR-0003](../../docs/projects/adrs/0003-duong-du-lieu-vision-tu-phien-do-toi-checkpoint.md).
+Quyết định nền: [ADR-0003](../../docs/projects/adrs/09-2026/0003-duong-du-lieu-vision-tu-phien-do-toi-checkpoint.md).

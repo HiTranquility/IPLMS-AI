@@ -45,7 +45,7 @@ class ModelArtifactRegistryTest(unittest.TestCase):
                 )
             )
 
-            self.assertEqual(resolved, artifact)
+            self.assertEqual(resolved.resolve(), artifact.resolve())
 
     def test_download_once_then_reuse_verified_cache(self):
         content = b"model artifact"
