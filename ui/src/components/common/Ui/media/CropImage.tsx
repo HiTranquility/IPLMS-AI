@@ -1,11 +1,17 @@
 import { ImageOff } from 'lucide-react';
 import { useState } from 'react';
-import { API_BASE } from '@/api/client';
 import { useI18n } from '@/i18n/I18nProvider';
+import { VISION_ENDPOINTS } from '@/services/apiEndpoints/vision.endpoint';
 import styles from './CropImage.module.css';
 
+export interface CropImageProps {
+  captureId: string;
+  size?: 'sm' | 'md' | 'lg';
+  src?: string;
+}
+
 /** Ảnh cắt biển số lấy từ DB console (cùng nguồn, không cache). Lỗi tải thì nói rõ, không để ô trống. */
-export function CropImage({ captureId, size = 'md' }: { captureId: string; size?: 'sm' | 'md' | 'lg' }) {
+export function CropImage({ captureId, size = 'md', src }: CropImageProps) {
   const { t } = useI18n();
   const [failed, setFailed] = useState(false);
   if (failed) {
@@ -18,9 +24,11 @@ export function CropImage({ captureId, size = 'md' }: { captureId: string; size?
   return (
     <img
       className={`${styles.frame} ${styles[size]}`}
-      src={`${API_BASE}/vision/samples/${captureId}/crop`}
+      src={src ?? VISION_ENDPOINTS.SAMPLE_CROP(captureId)}
       alt={t.crop.alt}
       onError={() => setFailed(true)}
     />
   );
 }
+
+export default CropImage;

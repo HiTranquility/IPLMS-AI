@@ -1,36 +1,58 @@
 import { LogOut, Moon, Sun } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
-import { NavLink } from 'react-router-dom';
-import type { Me } from '@/api/types';
+import { type ReactNode } from 'react';
+import { NavLink, Outlet } from 'react-router-dom';
+import { PageBoundary } from '@/components/common/Boundary/PageBoundary';
+import { ScrollToTop } from '@/components/common/System/ScrollToTop';
 import { Button } from '@/components/common/Ui/button/Button';
-import { useLogout } from '@/hooks/useConsole';
+import { useLogout } from '@/hooks/mutations/useAuthMutations';
 import { useI18n } from '@/i18n/I18nProvider';
-import { applyTheme, initialTheme, type Theme } from '@/utils/theme';
+import { useThemeStore } from '@/stores/useThemeStore';
+import { useWorkspaceStore } from '@/stores/useWorkspaceStore';
+import type { Me } from '@/types/auth';
 import { LanguageSwitch } from './LanguageSwitch';
+import { PersonaSwitcher } from './PersonaSwitcher';
 import { allowed, NAV_GROUPS } from './navigation';
 import styles from './AppShell.module.css';
 
-export function AppShell({ me, children }: { me: Me; children: ReactNode }) {
+export interface AppShellProps {
+  me: Me;
+  children?: ReactNode;
+}
+
+export function AppShell({ me, children }: AppShellProps) {
   const { t } = useI18n();
   const logout = useLogout();
-  const [theme, setTheme] = useState<Theme>(() => initialTheme());
-  const groups = NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => allowed(item, me.permissions)) })).filter(
-    (group) => group.items.length > 0,
-  );
+  const { theme, toggleTheme } = useThemeStore();
+  const { persona } = useWorkspaceStore();
 
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    applyTheme(next);
-    setTheme(next);
+  const groups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => allowed(item, me.permissions, persona)),
+  })).filter((group) => group.items.length > 0);
+
+  const formatUserRoles = () => {
+    if (!me.roles.length) return t.shell.rolesNone;
+    const clean = me.roles.map((r) => r.replace(/^ai_/, ''));
+    if (clean.includes('lead') && clean.length >= 4) {
+      return 'lead (toàn quyền)';
+    }
+    if (clean.length > 3) {
+      return `${clean.slice(0, 2).join(', ')} (+${clean.length - 2})`;
+    }
+    return clean.join(', ');
   };
 
   return (
     <div className={styles.shell}>
+      <ScrollToTop />
       <aside className={styles.rail}>
         <div className={styles.brand}>
           <span className={styles.brandName}>AI Console</span>
           <span className={styles.brandScope}>{t.shell.scope}</span>
         </div>
+
+        <PersonaSwitcher me={me} />
+
         <nav aria-label={t.shell.navLabel} className={styles.navWrap}>
           {groups.map((group) => (
             <div key={group.label} className={styles.group}>
@@ -38,9 +60,14 @@ export function AppShell({ me, children }: { me: Me; children: ReactNode }) {
               <ul className={styles.nav}>
                 {group.items.map(({ to, label, icon: Icon }) => (
                   <li key={to}>
-                    <NavLink to={to} end={to === '/' || to === '/vision'} className={({ isActive }) => (isActive ? `${styles.link} ${styles.active}` : styles.link)}>
+                    <NavLink
+                      to={to}
+                      end={to === '/' || to === '/vision'}
+                      className={({ isActive }) => (isActive ? `${styles.link} ${styles.active}` : styles.link)}
+                      title={t.nav[label]}
+                    >
                       <Icon size={16} aria-hidden />
-                      {t.nav[label]}
+                      <span className={styles.linkLabel}>{t.nav[label]}</span>
                     </NavLink>
                   </li>
                 ))}
@@ -52,7 +79,9 @@ export function AppShell({ me, children }: { me: Me; children: ReactNode }) {
         <div className={styles.account}>
           <p className={styles.name}>{me.display_name}</p>
           <p className={styles.email}>{me.email}</p>
-          <p className={styles.roles}>{me.roles.length ? me.roles.join(', ') : t.shell.rolesNone}</p>
+          <p className={styles.roles} title={me.roles.map((r) => r.replace(/^ai_/, '')).join(', ')}>
+            {formatUserRoles()}
+          </p>
           <div className={styles.accountActions}>
             <LanguageSwitch />
             <Button variant="ghost" size="sm" onClick={toggleTheme} aria-label={theme === 'dark' ? t.shell.toLight : t.shell.toDark}>
@@ -65,7 +94,11 @@ export function AppShell({ me, children }: { me: Me; children: ReactNode }) {
           </div>
         </div>
       </aside>
-      <main className={styles.main}>{children}</main>
+      <main className={styles.main}>
+        <PageBoundary>{children ?? <Outlet />}</PageBoundary>
+      </main>
     </div>
   );
 }
+
+export default AppShell;

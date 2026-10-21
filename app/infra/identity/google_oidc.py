@@ -20,6 +20,7 @@ from google.auth import transport
 from google.oauth2 import id_token as google_id_token
 
 from app.core.exceptions import ConsoleAuthError
+from app.util.logger import logger
 
 AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
@@ -108,8 +109,12 @@ class GoogleOidcClient:
         try:
             with urlopen(request, timeout=_TIMEOUT_SECONDS) as response:
                 payload = json.loads(response.read())
-        except (HTTPError, URLError, ValueError) as exc:
-            # Không đưa body/URL vào lỗi: có thể chứa code hoặc secret.
+        except HTTPError as exc:
+            err_body = exc.read().decode("utf-8", errors="replace") if hasattr(exc, "read") else ""
+            logger.error(f"[google_oidc] Google token endpoint HTTPError {exc.code}: {err_body}")
+            raise ConsoleAuthError(f"Google từ chối đổi mã đăng nhập: {err_body}") from exc
+        except (URLError, ValueError) as exc:
+            logger.error(f"[google_oidc] Google token endpoint error: {exc}")
             raise ConsoleAuthError("Google từ chối đổi mã đăng nhập.") from exc
         token = payload.get("id_token")
         if not isinstance(token, str) or not token:
@@ -118,8 +123,11 @@ class GoogleOidcClient:
 
     def _verify(self, token: str, nonce: str) -> GoogleIdentity:
         try:
-            claims = google_id_token.verify_oauth2_token(token, _UrllibRequest(), self._client_id)
+            claims = google_id_token.verify_oauth2_token(
+                token, _UrllibRequest(), self._client_id, clock_skew_in_seconds=120
+            )
         except (ValueError, google_exceptions.GoogleAuthError) as exc:
+            logger.error(f"[google_oidc] verify_oauth2_token failed: {exc}")
             raise ConsoleAuthError("id_token Google không hợp lệ.") from exc
         if not secrets.compare_digest(str(claims.get("nonce", "")).encode("utf-8"), nonce.encode("utf-8")):
             raise ConsoleAuthError("id_token Google sai nonce.")

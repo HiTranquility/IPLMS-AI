@@ -1,28 +1,44 @@
 import { ShieldCheck } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
-import { ApiError } from '@/api/client';
-import { consoleApi } from '@/api/console';
 import { useI18n } from '@/i18n/I18nProvider';
 import { Button, type ButtonProps } from '../button/Button';
 import { ErrorBlock } from '../feedback/LoadState';
 import { TextField } from './Field';
 import styles from './ReasonAction.module.css';
 
-interface ReasonActionProps {
+export interface ReasonActionProps {
   label: string;
   reasonLabel?: string;
   variant?: ButtonProps['variant'];
   disabled?: boolean;
   disabledHint?: string;
   onSubmit: (reason: string) => Promise<unknown>;
+  onStepUp?: (code: string, reason: string) => Promise<unknown>;
+}
+
+function isStepUpRequiredError(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'code' in err &&
+    (err as { code?: unknown }).code === 'STEP_UP_REQUIRED'
+  );
 }
 
 /**
- * Thao tác bắt buộc ghi lý do. Nếu server trả STEP_UP_REQUIRED (quyền nhạy cảm,
- * ADR-0048 §4), hiện ô mã TOTP ngay tại chỗ rồi làm tiếp — không bắt người dùng
- * rời màn hình đi xác thực lại.
+ * Thao tác bắt buộc ghi lý do (UI Primitive thuần — không gọi trực tiếp apiEndpoints).
+ * Nếu server trả STEP_UP_REQUIRED (quyền nhạy cảm, ADR-0048 §4), hiện ô mã TOTP
+ * ngay tại chỗ và gọi `onStepUp` rồi làm tiếp.
  */
-export function ReasonAction({ label, reasonLabel, variant = 'secondary', disabled, disabledHint, onSubmit }: ReasonActionProps) {
+export function ReasonAction({
+  label,
+  reasonLabel,
+  variant = 'secondary',
+  disabled,
+  disabledHint,
+  onSubmit,
+  onStepUp,
+}: ReasonActionProps) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState('');
@@ -47,14 +63,14 @@ export function ReasonAction({ label, reasonLabel, variant = 'secondary', disabl
     setPending(true);
     setError(null);
     try {
-      if (needStepUp) await consoleApi.stepUp(code, reason.trim());
+      if (needStepUp && onStepUp) await onStepUp(code, reason.trim());
       await onSubmit(reason.trim());
       setOpen(false);
       setReason('');
       setCode('');
       setNeedStepUp(false);
     } catch (err) {
-      if (err instanceof ApiError && err.code === 'STEP_UP_REQUIRED') setNeedStepUp(true);
+      if (isStepUpRequiredError(err)) setNeedStepUp(true);
       else setError(err);
     } finally {
       setPending(false);
@@ -92,3 +108,5 @@ export function ReasonAction({ label, reasonLabel, variant = 'secondary', disabl
     </form>
   );
 }
+
+export default ReasonAction;

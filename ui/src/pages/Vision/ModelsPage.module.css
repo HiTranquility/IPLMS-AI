@@ -1,0 +1,189 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.sectionTitle {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.note {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* KPI Grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+
+@media (max-width: 1100px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Production Model Hero Card */
+.prodCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 0 0 1px rgba(21, 128, 61, 0.15), 0 2px 6px rgba(0, 0, 0, 0.04);
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.prodInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.prodDot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-success);
+  box-shadow: 0 0 0 3px var(--color-success-soft);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(21, 128, 61, 0.4); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(21, 128, 61, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(21, 128, 61, 0); }
+}
+
+.prodName {
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.prodMeta {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+/* Table Card */
+.tableCard {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+}
+
+.tableCardHeader {
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-surface);
+  border-bottom: var(--hairline);
+}
+
+.tableCardTitle {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-muted);
+  margin: 0;
+}
+
+/* Form Panel */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.formHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.presetBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.presetLabel {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.presetSelect {
+  height: 34px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.testConnRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.connStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+}
+
+.connSuccess {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.connError {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}

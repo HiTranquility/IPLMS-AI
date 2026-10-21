@@ -63,10 +63,10 @@ def clear_session_cookie(response: Response) -> None:
 def set_flow_cookie(response: Response, browser: str) -> None:
     # Lax: phải đi kèm lần Google chuyển về callback (điều hướng cấp cao nhất, GET).
     response.set_cookie(
-        FLOW_COOKIE, browser, max_age=600, path="/console/api/auth",
+        FLOW_COOKIE, browser, max_age=600, path="/console",
         httponly=True, samesite="lax", secure=get_config().console.cookie_secure,
     )
 
 
 def clear_flow_cookie(response: Response) -> None:
-    response.delete_cookie(FLOW_COOKIE, path="/console/api/auth")
+    response.delete_cookie(FLOW_COOKIE, path="/console")

@@ -1,95 +1,38 @@
-import { Boxes } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
-import type { EvalRun } from '@/api/types';
-import { Button } from '@/components/common/Ui/button/Button';
+import { Activity, Boxes, CheckCircle2, Rocket, ShieldCheck } from 'lucide-react';
 import { Badge } from '@/components/common/Ui/data-display/Badge';
 import table from '@/components/common/Ui/data-display/table.module.css';
 import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
 import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
-import { SelectField, TextField } from '@/components/common/Ui/form/Field';
 import { ReasonAction } from '@/components/common/Ui/form/ReasonAction';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { useCan, useMe } from '@/hooks/useConsole';
-import { useEvals, useModels, usePromoteModel, useProposeModel, useRegisterModel, useSnapshots, useStartEval } from '@/hooks/useVision';
 import { useI18n } from '@/i18n/I18nProvider';
+import { MemberStatCard } from '@/pages/Members/components/MemberStatCard';
+import type { EvalRun } from '@/types/vision';
 import { DASH, fmtDateTime, fmtInt, fmtPercent } from '@/utils/format';
+import { RegisterModelForm } from './components/RegisterModelForm';
+import { StartEvalForm } from './components/StartEvalForm';
 import { STAGE_TONE } from './labels';
-import styles from './vision.module.css';
+import { ModelsPageProvider, useModelsPageContext } from './ModelsPageContext';
+import styles from './ModelsPage.module.css';
 
 const EVAL_TONE = { RUNNING: 'warning', DONE: 'success', FAILED: 'danger' } as const;
-
-function StartEval() {
-  const { t } = useI18n();
-  const snapshots = useSnapshots();
-  const start = useStartEval();
-  const [snapshotId, setSnapshotId] = useState('');
-  const frozen = snapshots.data?.filter((s) => s.kind === 'golden' && s.frozen_at) ?? [];
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    start.mutate(snapshotId);
-  };
-
-  return (
-    <form className={styles.panel} onSubmit={submit} aria-labelledby="eval-title">
-      <h2 id="eval-title" className={styles.sectionTitle}>{t.models.evalTitle}</h2>
-      <p className={styles.note}>{t.models.evalNote}</p>
-      {snapshots.error && <ErrorBlock error={snapshots.error} />}
-      <div className={styles.formGrid}>
-        <SelectField label={t.models.frozenGolden} required value={snapshotId} onChange={(e) => setSnapshotId(e.target.value)}>
-          <option value="">{frozen.length ? t.models.pickGolden : t.models.noGolden}</option>
-          {frozen.map((s) => <option key={s.id} value={s.id}>{t.models.goldenOption(s.name, fmtInt(s.sample_count))}</option>)}
-        </SelectField>
-        <Button type="submit" disabled={!snapshotId} loading={start.isPending}>{t.models.startEval}</Button>
-      </div>
-      {start.error && <ErrorBlock error={start.error} />}
-    </form>
-  );
-}
-
-function RegisterModel() {
-  const { t } = useI18n();
-  const register = useRegisterModel();
-  const empty = { name: 'anpr-yolo', version: '', artifact_key: '', sha256: '', note: '' };
-  const [form, setForm] = useState(empty);
-  const set = (key: keyof typeof empty) => (e: { target: { value: string } }) => setForm({ ...form, [key]: e.target.value });
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    register.mutate(form, { onSuccess: () => setForm(empty) });
-  };
-
-  return (
-    <form className={styles.panel} onSubmit={submit} aria-labelledby="register-title">
-      <h2 id="register-title" className={styles.sectionTitle}>{t.models.registerTitle}</h2>
-      <div className={styles.formGrid}>
-        <TextField label={t.common.name} required value={form.name} onChange={set('name')} />
-        <TextField label={t.models.version} required maxLength={64} value={form.version} onChange={set('version')} />
-        <TextField label="artifact_key" hint={t.models.artifactHint} required value={form.artifact_key} onChange={set('artifact_key')} />
-        <TextField label="sha256 weights" required minLength={64} maxLength={64} value={form.sha256} onChange={set('sha256')} />
-        <TextField label={t.models.note} maxLength={500} value={form.note} onChange={set('note')} />
-        <Button type="submit" loading={register.isPending}>{t.models.register}</Button>
-      </div>
-      {register.error && <ErrorBlock error={register.error} />}
-    </form>
-  );
-}
 
 function metric(run: EvalRun, key: 'exact_match_relaxed' | 'exact_match_strict' | 'mean_cer') {
   const value = run.metrics?.[key];
   return typeof value === 'number' ? (key === 'mean_cer' ? value.toFixed(3) : fmtPercent(value)) : DASH;
 }
 
-export function ModelsPage() {
+function ModelsPageContent() {
   const { t } = useI18n();
-  const me = useMe();
-  const models = useModels();
-  const evals = useEvals();
-  const propose = useProposeModel();
-  const promote = usePromoteModel();
-  const canEvaluate = useCan('ai:model:evaluate');
-  const canPropose = useCan('ai:model:propose');
-  const canPromote = useCan('ai:model:promote');
+  const { me, models, evals, propose, promote, stepUp, canEvaluate, canPropose, canPromote } = useModelsPageContext();
+  const handleStepUp = (code: string, reason: string) => stepUp.mutateAsync({ code, reason });
+
+  const modelList = models.data || [];
+  const evalList = evals.data || [];
+
+  // Model đang chạy production
+  const prodModel = modelList.find((m) => m.stage === 'production');
+  const proposedCount = modelList.filter((m) => m.stage === 'proposed').length;
 
   return (
     <>
@@ -97,97 +40,198 @@ export function ModelsPage() {
         title={t.models.title}
         description={t.models.desc}
       />
-      {canEvaluate && <section className={styles.section}><StartEval /></section>}
+
+      {/* 4 Thẻ chỉ số tổng quan MLOps */}
+      <div className={styles.statsGrid}>
+        <MemberStatCard
+          icon={<Rocket size={22} />}
+          label="Model Production"
+          value={prodModel ? `${prodModel.name}@${prodModel.version}` : 'Chưa có'}
+          tone="success"
+          subtext={prodModel ? `Đã duyệt bởi ${prodModel.approved_by || 'Lead'}` : 'Cần thăng cấp 1 model'}
+        />
+        <MemberStatCard
+          icon={<Boxes size={22} />}
+          label="Tổng số Model"
+          value={modelList.length}
+          tone="primary"
+          subtext={`${modelList.filter((m) => m.stage === 'candidate').length} candidate`}
+        />
+        <MemberStatCard
+          icon={<Activity size={22} />}
+          label="Đợt đo Benchmark"
+          value={evalList.length}
+          tone="accent"
+          subtext={`${evalList.filter((e) => e.status === 'DONE').length} hoàn thành`}
+        />
+        <MemberStatCard
+          icon={<ShieldCheck size={22} />}
+          label="Model Chờ duyệt"
+          value={proposedCount}
+          tone="warning"
+          subtext={proposedCount > 0 ? 'Cần Lead xác nhận promote' : 'Không có tồn đọng'}
+        />
+      </div>
+
+      {/* Production Hero Card */}
+      {prodModel && (
+        <div className={styles.prodCard}>
+          <div className={styles.prodInfo}>
+            <span className={styles.prodDot} />
+            <div>
+              <div className={styles.prodName}>
+                Mô hình đang chạy thực tế: {prodModel.name} <span style={{ fontWeight: 400 }}>({prodModel.version})</span>
+              </div>
+              <div className={styles.prodMeta}>
+                Artifact: <code>{prodModel.artifact_key}</code> · Phê duyệt lúc {fmtDateTime(prodModel.approved_at || prodModel.registered_at)}
+              </div>
+            </div>
+          </div>
+          <Badge tone="success">
+            <CheckCircle2 size={12} aria-hidden />
+            ĐANG PHỤC VỤ CỔNG
+          </Badge>
+        </div>
+      )}
+
+      {/* Đăng ký Model mới (có Presets & Test Connection) */}
+      {canPropose && (
+        <section className={styles.section}>
+          <RegisterModelForm />
+        </section>
+      )}
+
+      {/* Bắt đầu đo kiểm Eval */}
+      {canEvaluate && (
+        <section className={styles.section}>
+          <StartEvalForm />
+        </section>
+      )}
+
+      {/* Bảng kết quả Benchmark Eval */}
       <section className={styles.section} aria-labelledby="evals-title">
         <h2 id="evals-title" className={styles.sectionTitle}>{t.models.evalsTitle}</h2>
         {evals.isPending && <Loading />}
         {evals.error && <ErrorBlock error={evals.error} onRetry={() => void evals.refetch()} />}
         {evals.data?.length === 0 && <EmptyState title={t.models.noEvals} />}
         {evals.data && evals.data.length > 0 && (
-          <div className={table.wrap}>
-            <table className={table.table}>
-              <thead>
-                <tr>
-                  <th scope="col">{t.models.started}</th>
-                  <th scope="col">Golden</th>
-                  <th scope="col">{t.common.status}</th>
-                  <th scope="col">Engine</th>
-                  <th scope="col" className={table.num}>{t.common.sample}</th>
-                  <th scope="col" className={table.num}>{t.models.relaxed}</th>
-                  <th scope="col" className={table.num}>{t.models.strict}</th>
-                  <th scope="col" className={table.num}>{t.models.cer}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {evals.data.map((run) => (
-                  <tr key={run.id}>
-                    <td className={table.num}>{fmtDateTime(run.started_at)}</td>
-                    <td>{run.snapshot_name}</td>
-                    <td><Badge tone={EVAL_TONE[run.status]}>{run.status}</Badge>{run.error && <div className={table.muted}>{run.error}</div>}</td>
-                    <td className={table.mono}>{run.engine_version || DASH}</td>
-                    <td className={table.num}>{fmtInt(run.metrics?.total ?? null)}</td>
-                    <td className={table.num}>{metric(run, 'exact_match_relaxed')}</td>
-                    <td className={table.num}>{metric(run, 'exact_match_strict')}</td>
-                    <td className={table.num}>{metric(run, 'mean_cer')}</td>
+          <div className={styles.tableCard}>
+            <div className={table.wrap}>
+              <table className={table.table}>
+                <thead>
+                  <tr>
+                    <th scope="col">{t.models.started}</th>
+                    <th scope="col">Tập Golden</th>
+                    <th scope="col">{t.common.status}</th>
+                    <th scope="col">Engine</th>
+                    <th scope="col" className={table.num}>{t.common.sample}</th>
+                    <th scope="col" className={table.num}>{t.models.relaxed}</th>
+                    <th scope="col" className={table.num}>{t.models.strict}</th>
+                    <th scope="col" className={table.num}>{t.models.cer}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {evals.data.map((run) => (
+                    <tr key={run.id}>
+                      <td className={table.num}>{fmtDateTime(run.started_at)}</td>
+                      <td style={{ fontWeight: 600 }}>{run.snapshot_name}</td>
+                      <td>
+                        <Badge tone={EVAL_TONE[run.status]}>{run.status}</Badge>
+                        {run.error && <div className={table.muted}>{run.error}</div>}
+                      </td>
+                      <td className={table.mono}>{run.engine_version || DASH}</td>
+                      <td className={table.num}>{fmtInt(run.metrics?.total ?? null)}</td>
+                      <td className={table.num}>{metric(run, 'exact_match_relaxed')}</td>
+                      <td className={table.num} style={{ fontWeight: 600, color: 'var(--color-success)' }}>
+                        {metric(run, 'exact_match_strict')}
+                      </td>
+                      <td className={table.num}>{metric(run, 'mean_cer')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </section>
-      {canPropose && <section className={styles.section}><RegisterModel /></section>}
+
+      {/* Danh sách các phiên bản Model đã đăng ký */}
       <section className={styles.section} aria-labelledby="models-title">
         <h2 id="models-title" className={styles.sectionTitle}>{t.models.modelsTitle}</h2>
         {models.isPending && <Loading />}
         {models.error && <ErrorBlock error={models.error} onRetry={() => void models.refetch()} />}
         {models.data?.length === 0 && <EmptyState icon={<Boxes size={28} />} title={t.models.noModels} />}
         {models.data && models.data.length > 0 && (
-          <div className={table.wrap}>
-            <table className={table.table}>
-              <thead>
-                <tr>
-                  <th scope="col">Model</th>
-                  <th scope="col">{t.common.status}</th>
-                  <th scope="col">sha256</th>
-                  <th scope="col">{t.models.proposedApproved}</th>
-                  <th scope="col">{t.common.actions}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {models.data.map((m) => (
-                  <tr key={m.id}>
-                    <td>
-                      <div>{m.name}@{m.version}</div>
-                      <div className={table.mono}>{m.artifact_key}</div>
-                    </td>
-                    <td><Badge tone={STAGE_TONE[m.stage]}>{t.vision.stage[m.stage]}</Badge></td>
-                    <td className={table.mono} title={m.sha256}>{m.sha256.slice(0, 12)}</td>
-                    <td className={table.muted}>
-                      {m.proposed_by ? `${m.proposed_by} · ${fmtDateTime(m.proposed_at!)}` : DASH}
-                      {m.approved_by && <div>{t.models.approvedBy(m.approved_by, fmtDateTime(m.approved_at!))}</div>}
-                    </td>
-                    <td>
-                      {m.stage === 'candidate' && canPropose && (
-                        <ReasonAction label={t.common.propose} onSubmit={(reason) => propose.mutateAsync({ id: m.id, reason })} />
-                      )}
-                      {m.stage === 'proposed' && canPromote && (
-                        <ReasonAction
-                          label={t.models.promote}
-                          variant="accent"
-                          disabled={m.proposed_by_id === me.data?.member_id}
-                          disabledHint={t.models.selfProposed}
-                          onSubmit={(reason) => promote.mutateAsync({ id: m.id, reason })}
-                        />
-                      )}
-                    </td>
+          <div className={styles.tableCard}>
+            <div className={table.wrap}>
+              <table className={table.table}>
+                <thead>
+                  <tr>
+                    <th scope="col">Model</th>
+                    <th scope="col">{t.common.status}</th>
+                    <th scope="col">Checksum sha256</th>
+                    <th scope="col">{t.models.proposedApproved}</th>
+                    <th scope="col" style={{ textAlign: 'right' }}>{t.common.actions}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {models.data.map((m) => (
+                    <tr key={m.id}>
+                      <td>
+                        <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>
+                          {m.name}@{m.version}
+                        </div>
+                        <div className={table.mono} style={{ fontSize: '11px', color: 'var(--color-muted)' }}>
+                          {m.artifact_key}
+                        </div>
+                      </td>
+                      <td>
+                        <Badge tone={STAGE_TONE[m.stage]}>{t.vision.stage[m.stage]}</Badge>
+                      </td>
+                      <td className={table.mono} title={m.sha256}>
+                        {m.sha256.slice(0, 16)}...
+                      </td>
+                      <td className={table.muted}>
+                        {m.proposed_by ? `${m.proposed_by} · ${fmtDateTime(m.proposed_at!)}` : DASH}
+                        {m.approved_by && <div>{t.models.approvedBy(m.approved_by, fmtDateTime(m.approved_at!))}</div>}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        {m.stage === 'candidate' && canPropose && (
+                          <ReasonAction
+                            label={t.common.propose}
+                            onStepUp={handleStepUp}
+                            onSubmit={(reason) => propose.mutateAsync({ id: m.id, reason })}
+                          />
+                        )}
+                        {m.stage === 'proposed' && canPromote && (
+                          <ReasonAction
+                            label={t.models.promote}
+                            variant="accent"
+                            disabled={m.proposed_by_id === me.data?.member_id}
+                            disabledHint={t.models.selfProposed}
+                            onStepUp={handleStepUp}
+                            onSubmit={(reason) => promote.mutateAsync({ id: m.id, reason })}
+                          />
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </section>
     </>
   );
 }
+
+export function ModelsPage() {
+  return (
+    <ModelsPageProvider>
+      <ModelsPageContent />
+    </ModelsPageProvider>
+  );
+}
+
+export default ModelsPage;

@@ -1,13 +1,14 @@
 import { Copy, ShieldCheck } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
-import type { Me } from '@/api/types';
 import { Button } from '@/components/common/Ui/button/Button';
 import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
 import { TextField } from '@/components/common/Ui/form/Field';
 import { LanguageSwitch } from '@/components/layout/LanguageSwitch';
-import { useEnrollTotp, useLogout, useVerifyTotp } from '@/hooks/useConsole';
+import { useEnrollTotp, useLogout, useVerifyTotp } from '@/hooks/mutations/useAuthMutations';
 import { useI18n } from '@/i18n/I18nProvider';
-import styles from './auth.module.css';
+import type { Me } from '@/types/auth';
+import { EnterpriseBackground } from './components/EnterpriseBackground';
+import styles from './MfaPage.module.css';
 
 /** Lấy secret từ otpauth URI để nhập tay (console không thêm lib QR — ít phụ thuộc, 0 CDN). */
 export function secretFromUri(uri: string): string {
@@ -20,7 +21,11 @@ export function secretFromUri(uri: string): string {
 
 const groupSecret = (secret: string) => secret.replace(/(.{4})/g, '$1 ').trim();
 
-export function MfaPage({ me }: { me: Me }) {
+export interface MfaPageProps {
+  me: Me;
+}
+
+export function MfaPage({ me }: MfaPageProps) {
   const { t } = useI18n();
   const enroll = useEnrollTotp();
   const verify = useVerifyTotp();
@@ -47,6 +52,7 @@ export function MfaPage({ me }: { me: Me }) {
 
   return (
     <div className={styles.page}>
+      <EnterpriseBackground />
       <section className={styles.panel} aria-labelledby="mfa-title">
         <div className={styles.top}>
           <p className={styles.scope}>{t.mfa.step(me.email)}</p>
@@ -69,7 +75,7 @@ export function MfaPage({ me }: { me: Me }) {
           <div className={styles.secretBox}>
             <p className={styles.lead}>{t.mfa.manualLead}</p>
             <code className={styles.secret} aria-label={t.mfa.keyLabel}>{groupSecret(secret)}</code>
-            <Button variant="secondary" size="sm" onClick={copy}>
+            <Button variant="ghost" size="sm" onClick={copy}>
               <Copy size={14} aria-hidden />
               {copied ? t.mfa.copied : t.mfa.copy}
             </Button>
@@ -92,12 +98,18 @@ export function MfaPage({ me }: { me: Me }) {
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
             />
             {verify.error && <ErrorBlock error={verify.error} />}
-            <Button type="submit" loading={verify.isPending} disabled={code.length !== 6}>{t.mfa.confirm}</Button>
+            <Button type="submit" loading={verify.isPending} disabled={code.length !== 6}>
+              {t.mfa.confirm}
+            </Button>
           </form>
         )}
 
-        <Button variant="ghost" size="sm" onClick={() => logout.mutate()}>{t.mfa.otherAccount}</Button>
+        <Button variant="ghost" size="sm" onClick={() => logout.mutate()} loading={logout.isPending}>
+          {t.mfa.otherAccount}
+        </Button>
       </section>
     </div>
   );
 }
+
+export default MfaPage;
