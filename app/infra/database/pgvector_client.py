@@ -29,7 +29,15 @@ class PgVectorClient:
             import psycopg2
             from pgvector.psycopg2 import register_vector
 
-            connection = psycopg2.connect(self.db_url, connect_timeout=5)
+            try:
+                connection = psycopg2.connect(self.db_url, connect_timeout=3)
+            except Exception:
+                if "@ai-db:5432/" in self.db_url:
+                    fallback_url = self.db_url.replace("@ai-db:5432/", "@127.0.0.1:5435/")
+                    connection = psycopg2.connect(fallback_url, connect_timeout=3)
+                    self.db_url = fallback_url
+                else:
+                    raise
             if register:
                 register_vector(connection)
             return connection
