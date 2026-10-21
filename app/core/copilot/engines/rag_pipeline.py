@@ -40,6 +40,10 @@ NO_CONTEXT_ANSWER = (
 )
 
 
+def _sources(chunks: Iterable[dict[str, Any]]) -> list[str]:
+    return list(dict.fromkeys(str(chunk["source"]) for chunk in chunks if chunk.get("source")))
+
+
 def _citation_key(name: str) -> str:
     return name.strip().casefold()
 
@@ -235,11 +239,29 @@ class RagPipelineEngine:
             return
 
         chunks = await self._grounded_chunks(query_text, parking_lot_id, preview)
+        if not chunks:
+            lat = round((time.perf_counter() - start_time) * 1000.0, 2)
+            yield {"token": NO_CONTEXT_ANSWER, "is_finished": False, "sources": []}
+            yield {
+                "token": "",
+                "is_finished": True,
+                "sources": [],
+                "confidence": 0.0,
+                "refused": False,
+                "guardrail_triggered": None,
+                "prompt_version": PROMPT_VERSION,
+                "latency_ms": lat,
+                "status": "NO_CONTEXT",
+                "usage": {},
+                "model": str(getattr(self.llm, "model", "")),
+            }
+            return
+
         sources = _sources(chunks)
 
         # 2. Rào chắn phạm vi & độ tương đồng (Mục 4.2: Scope Filter & ADR-0008)
         guard_scope = guardrail_manager.check_scope_and_chunks(query_text, chunks, self.min_similarity)
-        if not guard_scope.is_safe or not chunks:
+        if not guard_scope.is_safe:
             refusal = guard_scope.refusal_message or NO_CONTEXT_ANSWER
             lat = round((time.perf_counter() - start_time) * 1000.0, 2)
             ai_telemetry_logger.record(

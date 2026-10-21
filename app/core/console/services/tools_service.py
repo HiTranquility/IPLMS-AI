@@ -67,6 +67,20 @@ class ConsoleToolsService:
             "vision_retention_days": cfg.console.vision_retention_days,
         }
 
+    async def try_copilot_stream(
+        self, actor: ConsoleActor, query: str, parking_lot_id: Optional[str] = None
+    ):
+        access_policy.require(actor, "ai:prompt:edit")
+        query = (query or "").strip()
+        if not 1 <= len(query) <= 2000:
+            raise ValueError("Câu hỏi cần 1–2000 ký tự.")
+        request = AskQuestionRequest(
+            query=query, user_id=actor.member_id, user_role="console",
+            parking_lot_id=_lot(parking_lot_id), preview=False,
+        )
+        async for chunk in self.copilot.stream_answer(request):
+            yield chunk
+
     async def try_copilot(
         self, actor: ConsoleActor, query: str, parking_lot_id: Optional[str] = None
     ) -> CopilotAnswer:
