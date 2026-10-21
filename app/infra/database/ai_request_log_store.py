@@ -29,7 +29,15 @@ class AiRequestLogStore:
         try:
             import psycopg2
 
-            connection = psycopg2.connect(self.db_url, connect_timeout=5)
+            try:
+                connection = psycopg2.connect(self.db_url, connect_timeout=3)
+            except Exception:
+                if "@ai-db:5432/" in self.db_url:
+                    fallback_url = self.db_url.replace("@ai-db:5432/", "@127.0.0.1:5435/")
+                    connection = psycopg2.connect(fallback_url, connect_timeout=3)
+                    self.db_url = fallback_url
+                else:
+                    raise
             try:
                 with connection:
                     with connection.cursor() as cursor:
