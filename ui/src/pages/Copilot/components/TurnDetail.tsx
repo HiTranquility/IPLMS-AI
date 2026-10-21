@@ -4,6 +4,7 @@ import type { Turn } from '@/types/copilot';
 import { DASH, fmtDateTime, fmtInt, fmtMs, fmtUsd } from '@/utils/format';
 import { STATUS_TONE, VERDICT_TONE } from '../labels';
 import { ReviewForm } from './ReviewForm';
+import { FormattedAnswer } from '@/components/common/Ui/data-display/FormattedAnswer';
 import styles from '../CopilotLabPage.module.css';
 
 export interface TurnDetailProps {
@@ -22,7 +23,11 @@ export function TurnDetail({ turn, canReview }: TurnDetailProps) {
       </section>
       <section>
         <h2 className={styles.label}>{t.copilot.answer}</h2>
-        <p className={styles.text}>{turn.answer || (turn.error_code ? t.copilot.errorAnswer(turn.error_code) : DASH)}</p>
+        {turn.answer ? (
+          <FormattedAnswer content={turn.answer} />
+        ) : (
+          <p className={styles.text}>{turn.error_code ? t.copilot.errorAnswer(turn.error_code) : DASH}</p>
+        )}
       </section>
       <dl className={styles.meta}>
         <dt>{t.copilot.at}</dt><dd className="num">{fmtDateTime(turn.at)}</dd>
