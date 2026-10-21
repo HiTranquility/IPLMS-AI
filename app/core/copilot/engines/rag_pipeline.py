@@ -119,6 +119,82 @@ class RagPipelineEngine:
         self.top_k = config.rag_top_k
         self.min_similarity = config.rag_min_similarity
 
+    def _retrieve_from_seed(self, query: str, parking_lot_id: str | None) -> list[dict[str, Any]]:
+        import json
+        import os
+        import re
+
+        candidates_paths = [
+            os.path.join(os.getcwd(), "data", "knowledge", "regulations_seed.json"),
+            os.path.join("/app", "data", "knowledge", "regulations_seed.json"),
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../data/knowledge/regulations_seed.json")),
+        ]
+        seed_path = next((p for p in candidates_paths if os.path.exists(p)), None)
+        if not seed_path:
+            return []
+
+        try:
+            with open(seed_path, "r", encoding="utf-8") as f:
+                seeds = json.load(f)
+        except Exception:
+            return []
+
+        STOPWORDS = {
+            "là", "có", "và", "của", "cho", "các", "tại", "trong", "được", "những",
+            "một", "này", "thì", "khi", "sau", "theo", "gì", "bao", "nhiêu", "thế",
+            "nào", "ở", "ra", "sao", "với", "đến", "từ", "hãy", "tôi", "mình",
+            "bạn", "biết", "về", "cách", "làm", "như", "hay"
+        }
+        q_lower = query.lower()
+        all_words = re.findall(r'\w+', q_lower)
+        keywords = [w for w in all_words if len(w) >= 2 and w not in STOPWORDS]
+        if not keywords:
+            keywords = [w for w in all_words if len(w) >= 2]
+
+        if not keywords:
+            return []
+
+        scored = []
+        for item in seeds:
+            lot = item.get("parking_lot_id")
+            if parking_lot_id and lot and lot != parking_lot_id:
+                continue
+            if not parking_lot_id and lot:
+                continue
+
+            content = item.get("content", "")
+            title = item.get("title", "")
+
+            matched_kw_count = 0
+            score = 0.0
+            for kw in keywords:
+                hit = False
+                if kw in title.lower():
+                    score += 2.0
+                    hit = True
+                if kw in content.lower():
+                    score += 1.0
+                    hit = True
+                if hit:
+                    matched_kw_count += 1
+
+            if matched_kw_count == 0:
+                continue
+
+            match_ratio = matched_kw_count / len(keywords)
+            similarity = round(match_ratio * 0.70 + min(1.0, score / (len(keywords) * 2.5)) * 0.30, 4)
+            if similarity >= self.min_similarity:
+                scored.append({
+                    "content": content,
+                    "source": item.get("source", "regulations_seed.json"),
+                    "category": item.get("category", "general"),
+                    "similarity": similarity,
+                    "_score": score,
+                })
+
+        scored.sort(key=lambda x: x["_score"], reverse=True)
+        return scored[:self.top_k]
+
     async def _retrieve(
         self, query_text: str, parking_lot_id: str | None, preview: bool = False
     ) -> list[dict[str, Any]]:
@@ -135,12 +211,16 @@ class RagPipelineEngine:
                 min_similarity=self.min_similarity,
                 preview=preview,
             )
-        except (RagPipelineError, ModelNotLoadedError):
-            raise
-        except EmbeddingError as exc:
-            raise RagPipelineError(str(exc)) from exc
+        except (RagPipelineError, ModelNotLoadedError, EmbeddingError) as exc:
+            if not isinstance(self.vector_store, pgvector_client.__class__):
+                raise
+            logger.warning("Kho tri thức pgvector/embedding không khả dụng (%s), fallback sang local knowledge seed.", exc)
+            return self._retrieve_from_seed(query, parking_lot_id)
         except Exception as exc:
-            raise RagPipelineError("Không truy xuất được kho tri thức.") from exc
+            if not isinstance(self.vector_store, pgvector_client.__class__):
+                raise RagPipelineError("Không truy xuất được kho tri thức.") from exc
+            logger.warning("Lỗi truy xuất kho tri thức (%s), fallback sang local seed.", exc)
+            return self._retrieve_from_seed(query, parking_lot_id)
 
     async def _grounded_chunks(
         self, query_text: str, parking_lot_id: str | None, preview: bool
