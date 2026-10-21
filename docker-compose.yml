@@ -121,6 +121,8 @@ services:
     env_file:
       - path: .env.dev
         required: true
+    environment:
+      - AI_CONSOLE_DATABASE_URL=postgresql://${AI_DB_USER:-postgres}:${AI_DB_PASSWORD:-***REMOVED***}@ai-db:5432/ai_console
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8090/console/api/health')\" || exit 1"]
       interval: 15s
