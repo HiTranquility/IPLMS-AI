@@ -23,7 +23,7 @@ grpcio==1.71.0
 grpcio-tools==1.71.0
 protobuf==5.29.5
 pydantic-settings>=2.0.0
-pgvector>=0.2.5
+pgvector>=0.5.1
 psycopg2-binary>=2.9.9
 
 # ── Nạp liệu tri thức (RAG) — xem SUGGESTION-008 ───────────────────────────────────
