@@ -5,7 +5,7 @@
 # Lý do: hợp đồng `proto/` nằm ở gốc repo và dùng chung với backend. Đặt context
 # ở ai/ thì proto nằm ngoài tầm COPY, buộc phải nhân bản proto — đúng thứ gây
 # lệch hợp đồng giữa hai phía.
-FROM python:3.10-slim
+FROM python:3.14-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
