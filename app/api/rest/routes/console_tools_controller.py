@@ -1,8 +1,9 @@
+import json
 """Công cụ thử trong AI Console — thay trang dev `/dashboard` cũ (IPLMS ADR-0050)."""
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.rest.console_access import require_permission
@@ -50,6 +51,29 @@ class IngestOut(BaseModel):
 @router.get("/system", response_model=BaseResponse[SystemCheck])
 async def system(actor: ConsoleActor = Depends(require_permission("ai:metrics:read"))):
     return BaseResponse.ok([SystemCheck(**await console_tools_service.system_check(actor))], "OK")
+
+
+@router.post("/copilot/stream")
+async def try_copilot_stream(payload: AskIn, actor: ConsoleActor = Depends(require_permission("ai:prompt:edit"))):
+    async def event_generator():
+        async for chunk in console_tools_service.try_copilot_stream(actor, payload.query, payload.parking_lot_id):
+            data = {
+                "token": chunk.token,
+                "is_finished": chunk.is_finished,
+                "sources": chunk.sources,
+                "confidence": chunk.confidence,
+                "refused": chunk.refused,
+                "guardrail_triggered": chunk.guardrail_triggered,
+                "prompt_version": chunk.prompt_version,
+                "turn_id": chunk.turn_id,
+                "latency_ms": chunk.latency_ms,
+            }
+            yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.post("/copilot", response_model=BaseResponse[CopilotAnswer])

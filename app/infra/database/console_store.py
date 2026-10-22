@@ -49,7 +49,20 @@ class ConsoleStore:
         try:
             import psycopg2
 
-            connection = psycopg2.connect(self.db_url, connect_timeout=5)
+            try:
+                connection = psycopg2.connect(self.db_url, connect_timeout=3)
+            except Exception:
+                for old in ("@ai-db:5432/", "@127.0.0.1:5432/", "@localhost:5432/"):
+                    if old in self.db_url:
+                        fallback_url = self.db_url.replace(old, "@127.0.0.1:5435/")
+                        try:
+                            connection = psycopg2.connect(fallback_url, connect_timeout=3)
+                            self.db_url = fallback_url
+                            break
+                        except Exception:
+                            pass
+                else:
+                    raise
             try:
                 with connection:
                     with connection.cursor() as cursor:

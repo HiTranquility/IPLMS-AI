@@ -4,6 +4,7 @@ export interface UsageDay {
   errors: number;
   refused: number;
   avg_latency_ms: number;
+  speed_tok_s?: number;
 }
 
 export type TurnStatus = 'SUCCESS' | 'REFUSED' | 'NO_CONTEXT' | 'ERROR';
@@ -34,4 +35,7 @@ export interface Turn {
   error_code: string;
   feedback: 1 | -1 | null;
   review: TurnReview | null;
+  speed_tok_s?: number | null;
+  context_tokens?: number | null;
+  context_limit?: number | null;
 }

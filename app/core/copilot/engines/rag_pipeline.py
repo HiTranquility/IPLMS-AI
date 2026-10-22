@@ -3,11 +3,14 @@ from __future__ import annotations
 
 import hashlib
 import re
+import time
 from typing import Any, AsyncGenerator, Dict, Iterable
 
 from app.config import get_config
 from app.core.copilot.engines import output_guard
 from app.core.copilot.guardrails import guardrail_manager
+from app.core.copilot.prompts import prompt_manager
+from app.infra.monitoring.ai_logger import ai_telemetry_logger
 from app.core.exceptions import EmbeddingError, ModelNotLoadedError, RagPipelineError
 from app.infra.database.pgvector_client import pgvector_client
 from app.infra.embedding import embedding_client
@@ -35,6 +38,10 @@ NO_CONTEXT_ANSWER = (
     "Mình chưa tìm thấy thông tin đủ liên quan trong kho tri thức để trả lời "
     "chắc chắn. Bạn hãy chọn đúng bãi xe hoặc nhờ chủ bãi bổ sung quy chế."
 )
+
+
+def _sources(chunks: Iterable[dict[str, Any]]) -> list[str]:
+    return list(dict.fromkeys(str(chunk["source"]) for chunk in chunks if chunk.get("source")))
 
 
 def _citation_key(name: str) -> str:
@@ -112,6 +119,82 @@ class RagPipelineEngine:
         self.top_k = config.rag_top_k
         self.min_similarity = config.rag_min_similarity
 
+    def _retrieve_from_seed(self, query: str, parking_lot_id: str | None) -> list[dict[str, Any]]:
+        import json
+        import os
+        import re
+
+        candidates_paths = [
+            os.path.join(os.getcwd(), "data", "knowledge", "regulations_seed.json"),
+            os.path.join("/app", "data", "knowledge", "regulations_seed.json"),
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../data/knowledge/regulations_seed.json")),
+        ]
+        seed_path = next((p for p in candidates_paths if os.path.exists(p)), None)
+        if not seed_path:
+            return []
+
+        try:
+            with open(seed_path, "r", encoding="utf-8") as f:
+                seeds = json.load(f)
+        except Exception:
+            return []
+
+        STOPWORDS = {
+            "là", "có", "và", "của", "cho", "các", "tại", "trong", "được", "những",
+            "một", "này", "thì", "khi", "sau", "theo", "gì", "bao", "nhiêu", "thế",
+            "nào", "ở", "ra", "sao", "với", "đến", "từ", "hãy", "tôi", "mình",
+            "bạn", "biết", "về", "cách", "làm", "như", "hay"
+        }
+        q_lower = query.lower()
+        all_words = re.findall(r'\w+', q_lower)
+        keywords = [w for w in all_words if len(w) >= 2 and w not in STOPWORDS]
+        if not keywords:
+            keywords = [w for w in all_words if len(w) >= 2]
+
+        if not keywords:
+            return []
+
+        scored = []
+        for item in seeds:
+            lot = item.get("parking_lot_id")
+            if parking_lot_id and lot and lot != parking_lot_id:
+                continue
+            if not parking_lot_id and lot:
+                continue
+
+            content = item.get("content", "")
+            title = item.get("title", "")
+
+            matched_kw_count = 0
+            score = 0.0
+            for kw in keywords:
+                hit = False
+                if kw in title.lower():
+                    score += 2.0
+                    hit = True
+                if kw in content.lower():
+                    score += 1.0
+                    hit = True
+                if hit:
+                    matched_kw_count += 1
+
+            if matched_kw_count == 0:
+                continue
+
+            match_ratio = matched_kw_count / len(keywords)
+            similarity = round(match_ratio * 0.70 + min(1.0, score / (len(keywords) * 2.5)) * 0.30, 4)
+            if similarity >= self.min_similarity:
+                scored.append({
+                    "content": content,
+                    "source": item.get("source", "regulations_seed.json"),
+                    "category": item.get("category", "general"),
+                    "similarity": similarity,
+                    "_score": score,
+                })
+
+        scored.sort(key=lambda x: x["_score"], reverse=True)
+        return scored[:self.top_k]
+
     async def _retrieve(
         self, query_text: str, parking_lot_id: str | None, preview: bool = False
     ) -> list[dict[str, Any]]:
@@ -128,12 +211,16 @@ class RagPipelineEngine:
                 min_similarity=self.min_similarity,
                 preview=preview,
             )
-        except (RagPipelineError, ModelNotLoadedError):
-            raise
-        except EmbeddingError as exc:
-            raise RagPipelineError(str(exc)) from exc
+        except (RagPipelineError, ModelNotLoadedError, EmbeddingError) as exc:
+            if not isinstance(self.vector_store, pgvector_client.__class__):
+                raise
+            logger.warning("Kho tri thức pgvector/embedding không khả dụng (%s), fallback sang local knowledge seed.", exc)
+            return self._retrieve_from_seed(query, parking_lot_id)
         except Exception as exc:
-            raise RagPipelineError("Không truy xuất được kho tri thức.") from exc
+            if not isinstance(self.vector_store, pgvector_client.__class__):
+                raise RagPipelineError("Không truy xuất được kho tri thức.") from exc
+            logger.warning("Lỗi truy xuất kho tri thức (%s), fallback sang local seed.", exc)
+            return self._retrieve_from_seed(query, parking_lot_id)
 
     async def _grounded_chunks(
         self, query_text: str, parking_lot_id: str | None, preview: bool
@@ -187,18 +274,126 @@ class RagPipelineEngine:
     async def stream_query(
         self, query_text: str, parking_lot_id: str | None = None, preview: bool = False
     ) -> AsyncGenerator[Dict[str, Any], None]:
+        start_time = time.perf_counter()
         logger.info(
             "Executing RAG stream query_chars=%d lot_scoped=%s",
             len(query_text),
             bool(parking_lot_id),
         )
-        chunks = await self._grounded_chunks(query_text, parking_lot_id, preview)
-        if not chunks:
-            yield {"token": NO_CONTEXT_ANSWER, "is_finished": False, "sources": []}
-            yield {"token": "", "is_finished": True, "sources": [],
-                   "status": "NO_CONTEXT", "usage": {}, "model": ""}
+        # 1. Rào chắn đầu vào (Mục 4.2: Prompt Injection)
+        guard_in = guardrail_manager.check_input(query_text)
+        if not guard_in.is_safe:
+            refusal = guard_in.refusal_message or NO_CONTEXT_ANSWER
+            lat = round((time.perf_counter() - start_time) * 1000.0, 2)
+            ai_telemetry_logger.record(
+                endpoint="/api/copilot/stream",
+                model=getattr(self.llm, "model", "local"),
+                prompt_version=prompt_manager.default_version,
+                tools_called=[],
+                input_tokens=len(query_text.split()),
+                output_tokens=len(refusal.split()),
+                latency_ms=lat,
+                status="REFUSED",
+            )
+            yield {
+                "token": refusal,
+                "is_finished": False,
+                "sources": [],
+                "confidence": 0.0,
+                "refused": True,
+                "guardrail_triggered": guard_in.risk_type,
+            }
+            in_toks = len(query_text.split())
+            out_toks = len(refusal.split())
+            speed_tok_s = round(out_toks / (lat / 1000.0), 1) if lat > 0 else 0.0
+            yield {
+                "token": "",
+                "is_finished": True,
+                "sources": [],
+                "confidence": 0.0,
+                "refused": True,
+                "guardrail_triggered": guard_in.risk_type,
+                "prompt_version": prompt_manager.default_version,
+                "latency_ms": lat,
+                "status": "REFUSED",
+                "usage": {"input_tokens": in_toks, "output_tokens": out_toks},
+                "model": str(getattr(self.llm, "model", "")),
+                "input_tokens": in_toks,
+                "output_tokens": out_toks,
+                "speed_tok_s": speed_tok_s,
+                "context_tokens": in_toks,
+                "context_limit": 4096,
+            }
             return
 
+        chunks = await self._grounded_chunks(query_text, parking_lot_id, preview)
+        if not chunks:
+            lat = round((time.perf_counter() - start_time) * 1000.0, 2)
+            yield {"token": NO_CONTEXT_ANSWER, "is_finished": False, "sources": []}
+            yield {
+                "token": "",
+                "is_finished": True,
+                "sources": [],
+                "confidence": 0.0,
+                "refused": False,
+                "guardrail_triggered": None,
+                "prompt_version": PROMPT_VERSION,
+                "latency_ms": lat,
+                "status": "NO_CONTEXT",
+                "usage": {},
+                "model": str(getattr(self.llm, "model", "")),
+            }
+            return
+
+        sources = _sources(chunks)
+
+        # 2. Rào chắn phạm vi & độ tương đồng (Mục 4.2: Scope Filter & ADR-0008)
+        guard_scope = guardrail_manager.check_scope_and_chunks(query_text, chunks, self.min_similarity)
+        if not guard_scope.is_safe:
+            refusal = guard_scope.refusal_message or NO_CONTEXT_ANSWER
+            lat = round((time.perf_counter() - start_time) * 1000.0, 2)
+            ai_telemetry_logger.record(
+                endpoint="/api/copilot/stream",
+                model=getattr(self.llm, "model", "local"),
+                prompt_version=prompt_manager.default_version,
+                tools_called=[],
+                input_tokens=len(query_text.split()),
+                output_tokens=len(refusal.split()),
+                latency_ms=lat,
+                status="REFUSED",
+            )
+            yield {
+                "token": refusal,
+                "is_finished": False,
+                "sources": [],
+                "confidence": 0.0,
+                "refused": True,
+                "guardrail_triggered": guard_scope.risk_type,
+            }
+            in_toks = len(query_text.split())
+            out_toks = len(refusal.split())
+            speed_tok_s = round(out_toks / (lat / 1000.0), 1) if lat > 0 else 0.0
+            yield {
+                "token": "",
+                "is_finished": True,
+                "sources": [],
+                "confidence": 0.0,
+                "refused": True,
+                "guardrail_triggered": guard_scope.risk_type,
+                "prompt_version": prompt_manager.default_version,
+                "latency_ms": lat,
+                "status": "REFUSED",
+                "usage": {"input_tokens": in_toks, "output_tokens": out_toks},
+                "model": str(getattr(self.llm, "model", "")),
+                "input_tokens": in_toks,
+                "output_tokens": out_toks,
+                "speed_tok_s": speed_tok_s,
+                "context_tokens": in_toks,
+                "context_limit": 4096,
+            }
+            return
+
+        # 3. Nạp Prompt & Stream
         llm = await self.llm.for_task("copilot_answer") if isinstance(self.llm, LlmFactory) else self.llm
         context = _context(chunks)
         tripped: list[str] = []
@@ -212,11 +407,47 @@ class RagPipelineEngine:
             answer_parts.append(token)
             yield {"token": token, "is_finished": False, "sources": []}
 
-        sources = [] if tripped else _cited_sources("".join(answer_parts), chunks)
-        yield {"token": "", "is_finished": True, "sources": sources,
-               "model_revision": getattr(llm, "profile_revision", ""),
-               "status": "REFUSED" if tripped else "SUCCESS", "usage": usage,
-               "model": str(getattr(llm, "model", "")), "answer": "".join(answer_parts)}
+        lat = round((time.perf_counter() - start_time) * 1000.0, 2)
+        full_text = "".join(answer_parts)
+        in_toks = len((SYSTEM_PROMPT + " " + query_text + " " + context).split())
+        out_toks = len(full_text.split())
+        speed_tok_s = round(out_toks / (lat / 1000.0), 1) if lat > 0 else 0.0
+        status = "REFUSED" if tripped else "SUCCESS"
+        usage["input_tokens"] = in_toks
+        usage["output_tokens"] = out_toks
+
+        ai_telemetry_logger.record(
+            endpoint="/api/copilot/stream",
+            model=str(getattr(llm, "model", "local")),
+            prompt_version=PROMPT_VERSION,
+            tools_called=[],
+            input_tokens=in_toks,
+            output_tokens=out_toks,
+            latency_ms=lat,
+            status=status,
+        )
+
+        final_sources = [] if tripped else (_cited_sources(full_text, chunks) or sources)
+        yield {
+            "token": "",
+            "is_finished": True,
+            "sources": final_sources,
+            "confidence": _confidence(chunks),
+            "refused": bool(tripped),
+            "guardrail_triggered": tripped[0] if tripped else None,
+            "model_revision": getattr(llm, "profile_revision", ""),
+            "prompt_version": PROMPT_VERSION,
+            "latency_ms": lat,
+            "status": status,
+            "usage": usage,
+            "model": str(getattr(llm, "model", "")),
+            "answer": full_text,
+            "input_tokens": in_toks,
+            "output_tokens": out_toks,
+            "speed_tok_s": speed_tok_s,
+            "context_tokens": in_toks,
+            "context_limit": 4096,
+        }
 
 
 rag_pipeline = RagPipelineEngine()

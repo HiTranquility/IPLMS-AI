@@ -42,18 +42,29 @@ class LlamaServerManager:
         if self.is_server_alive():
             return
 
-        bin_path = Path(config.local_llm_binary_path).resolve()
-        if not bin_path.exists():
-            linux_bin = bin_path.with_suffix("")
-            if linux_bin.exists():
-                bin_path = linux_bin
-            else:
-                raise RagPipelineError(
-                    f"Không tìm thấy binary llama-server tại {bin_path}. "
-                    "Vui lòng kiểm tra thư mục var/bin/llama."
-                )
+        def _find_path(p_str: str) -> Path:
+            p = Path(p_str)
+            if p.is_absolute() and p.exists():
+                return p
+            candidates = [
+                Path(os.getcwd()) / p,
+                Path(__file__).resolve().parents[3] / p,
+            ]
+            for c in candidates:
+                if c.exists():
+                    return c.resolve()
+                if c.with_suffix("").exists():
+                    return c.with_suffix("").resolve()
+            return p.resolve()
 
-        model_path = Path(config.local_llm_model_path).resolve()
+        bin_path = _find_path(config.local_llm_binary_path)
+        if not bin_path.exists():
+            raise RagPipelineError(
+                f"Không tìm thấy binary llama-server tại {bin_path}. "
+                "Vui lòng kiểm tra thư mục var/bin/llama."
+            )
+
+        model_path = _find_path(config.local_llm_model_path)
         if not model_path.exists():
             raise RagPipelineError(
                 f"Không tìm thấy file trọng số GGUF tại {model_path}. "
@@ -63,7 +74,7 @@ class LlamaServerManager:
         cmd = [
             str(bin_path),
             "-m", str(model_path),
-            "--alias", "Qwen3.5-4B-Q4_K_M,qwen,default",
+            "--alias", "Qwen3.5-4B-Q4_K_M,qwen,default,qwen2.5:3b",
             "--host", config.local_llm_host,
             "--port", str(config.local_llm_port),
             "-c", str(config.local_llm_ctx_size),

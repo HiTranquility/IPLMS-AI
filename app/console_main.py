@@ -6,7 +6,7 @@ Chạy native: `python -m app.console_main` (nghe AI_CONSOLE_BIND_HOST, mặc đ
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 
 from app.api.rest.console_router import console_router
 from app.api.rest.middlewares.error_handler import ai_service_error_handler, generic_error_handler
@@ -78,6 +78,11 @@ app.include_router(console_router, prefix="/console/api")
 def api_not_found(_path: str) -> JSONResponse:
     # Đường /console/api sai không được rơi xuống SPA và trả HTML 200.
     return _error(404, "Không có API này.", "NOT_FOUND")
+
+
+@app.get("/", include_in_schema=False)
+def root_redirect():
+    return RedirectResponse(url="/console/")
 
 
 @app.get("/console", include_in_schema=False)

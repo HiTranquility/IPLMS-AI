@@ -30,9 +30,18 @@ class AnswerChunk(BaseModel):
     token: str
     is_finished: bool
     sources: List[str] = Field(default_factory=list)
+    confidence: Optional[float] = None
+    refused: bool = False
+    guardrail_triggered: Optional[str] = None
     model_revision: str = ""
     turn_id: str = ""          # chỉ có ở chunk cuối
-    prompt_version: str = ""   # chỉ có ở chunk cuối
+    prompt_version: str = "v2"   # chỉ có ở chunk cuối
+    latency_ms: Optional[float] = None
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+    speed_tok_s: Optional[float] = None
+    context_tokens: Optional[int] = None
+    context_limit: Optional[int] = 4096
 
 
 class DisputeArbitrationRequest(BaseModel):
@@ -55,6 +64,7 @@ class UsageDay(BaseModel):
     errors: int
     refused: int
     avg_latency_ms: float
+    speed_tok_s: Optional[float] = None
 
 
 class UsageSummary(BaseModel):
@@ -68,6 +78,7 @@ class UsageSummary(BaseModel):
     error_requests: int
     avg_latency_ms: float
     p95_latency_ms: float
+    avg_speed_tok_s: Optional[float] = None
     input_tokens: int
     output_tokens: int
     cost_known: bool
