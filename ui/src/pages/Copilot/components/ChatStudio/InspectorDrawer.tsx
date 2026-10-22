@@ -1,18 +1,31 @@
-import { Activity, BookOpen, Sliders, X } from 'lucide-react';
+import { Activity, BookOpen, Check, Cpu, Database, GitBranch, Sliders, Sparkles, X } from 'lucide-react';
 import { useI18n } from '@/i18n/I18nProvider';
 import { fmtInt, fmtMs } from '@/utils/format';
-import type { ChatMessage, PlaygroundParams, RagSource } from './types';
+import { DisputeSimulator } from './DisputeSimulator';
+import { KnowledgeExplorer } from './KnowledgeExplorer';
+import {
+  type ChatMessage,
+  type InspectorTab,
+  MODEL_PROFILES,
+  type ModelProfilePreset,
+  type PlaygroundParams,
+  type RagSource,
+  type SeedDocument,
+} from './types';
 import styles from './ChatStudio.module.css';
 
 export interface InspectorDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  activeTab: 'citations' | 'telemetry' | 'params';
-  setActiveTab: (tab: 'citations' | 'telemetry' | 'params') => void;
+  activeTab: InspectorTab;
+  setActiveTab: (tab: InspectorTab) => void;
   activeMessage: ChatMessage | null;
   params: PlaygroundParams;
   setParams: React.Dispatch<React.SetStateAction<PlaygroundParams>>;
   selectedCitation: RagSource | null;
+  onAskAboutDocument?: (doc: SeedDocument) => void;
+  onAskAboutDispute?: (summary: string) => void;
+  onSelectModelProfile?: (profile: ModelProfilePreset) => void;
 }
 
 export function InspectorDrawer({
@@ -24,27 +37,68 @@ export function InspectorDrawer({
   params,
   setParams,
   selectedCitation,
+  onAskAboutDocument,
+  onAskAboutDispute,
+  onSelectModelProfile,
 }: InspectorDrawerProps) {
   const { t } = useI18n();
 
+  const handleApplyProfile = (profile: ModelProfilePreset) => {
+    setParams((prev) => ({
+      ...prev,
+      temperature: profile.params.temperature,
+      topK: profile.params.topK,
+      maxTokens: profile.params.maxTokens,
+      minSimilarity: profile.params.minSimilarity,
+      modelProfileId: profile.id,
+    }));
+    onSelectModelProfile?.(profile);
+  };
+
   return (
-    <aside className={`${styles.inspector} ${!isOpen ? styles.inspectorClosed : ''}`} aria-hidden={!isOpen}>
+    <aside
+      className={`${styles.inspector} ${!isOpen ? styles.inspectorClosed : ''}`}
+      aria-hidden={!isOpen}
+    >
+      {/* Tab Navigation (5 Tabs) */}
       <div className={styles.inspectorTabs}>
         <button
           type="button"
           className={`${styles.inspectorTab} ${activeTab === 'citations' ? styles.inspectorTabActive : ''}`}
           onClick={() => setActiveTab('citations')}
+          title="Trích dẫn tài liệu quy chế (RAG)"
         >
-          <BookOpen size={14} />
+          <BookOpen size={13} />
           <span>{t.copilot.citationsTitle}</span>
+        </button>
+
+        <button
+          type="button"
+          className={`${styles.inspectorTab} ${activeTab === 'knowledge' ? styles.inspectorTabActive : ''}`}
+          onClick={() => setActiveTab('knowledge')}
+          title="Kho tri thức & quy chế bãi xe"
+        >
+          <Database size={13} />
+          <span>{t.copilot.knowledgeTitle || 'Kho tri thức'}</span>
+        </button>
+
+        <button
+          type="button"
+          className={`${styles.inspectorTab} ${activeTab === 'dispute' ? styles.inspectorTabActive : ''}`}
+          onClick={() => setActiveTab('dispute')}
+          title="Mô phỏng máy trạng thái phân xử tranh chấp (LangGraph)"
+        >
+          <GitBranch size={13} />
+          <span>{t.copilot.disputeTitle || 'Mô phỏng phân xử'}</span>
         </button>
 
         <button
           type="button"
           className={`${styles.inspectorTab} ${activeTab === 'telemetry' ? styles.inspectorTabActive : ''}`}
           onClick={() => setActiveTab('telemetry')}
+          title="Chỉ số hiệu năng & thời gian xử lý"
         >
-          <Activity size={14} />
+          <Activity size={13} />
           <span>{t.copilot.telemetryTitle}</span>
         </button>
 
@@ -52,8 +106,9 @@ export function InspectorDrawer({
           type="button"
           className={`${styles.inspectorTab} ${activeTab === 'params' ? styles.inspectorTabActive : ''}`}
           onClick={() => setActiveTab('params')}
+          title="Cấu hình tham số & gợi ý Model"
         >
-          <Sliders size={14} />
+          <Sliders size={13} />
           <span>{t.copilot.paramsTitle}</span>
         </button>
 
@@ -68,13 +123,15 @@ export function InspectorDrawer({
       </div>
 
       <div className={styles.inspectorContent}>
-        {/* 1. Trích dẫn RAG */}
+        {/* 1. Tab Trích Dẫn RAG */}
         {activeTab === 'citations' && (
           <div className={styles.citationsTab}>
             {activeMessage?.ragSources && activeMessage.ragSources.length > 0 ? (
               <div className={styles.citationList}>
                 {activeMessage.ragSources.map((source, idx) => {
-                  const isSelected = selectedCitation?.chunkId === source.chunkId || selectedCitation?.title === source.title;
+                  const isSelected =
+                    selectedCitation?.chunkId === source.chunkId ||
+                    selectedCitation?.title === source.title;
                   return (
                     <article
                       key={source.chunkId || idx}
@@ -106,13 +163,24 @@ export function InspectorDrawer({
               </div>
             ) : (
               <div className={styles.emptyInspector}>
+                <BookOpen size={24} className={styles.emptyIcon} />
                 <p className={styles.inspectorHint}>{t.copilot.noCitations}</p>
               </div>
             )}
           </div>
         )}
 
-        {/* 2. Chỉ số thực thi (Telemetry) */}
+        {/* 2. Tab Kho Tri Thức & Dictionary Explorer */}
+        {activeTab === 'knowledge' && (
+          <KnowledgeExplorer onAskAboutDocument={onAskAboutDocument} />
+        )}
+
+        {/* 3. Tab Mô Phỏng Phân Xử LangGraph */}
+        {activeTab === 'dispute' && (
+          <DisputeSimulator onAskAboutDispute={onAskAboutDispute} />
+        )}
+
+        {/* 4. Tab Chỉ Số Thực Thi (Telemetry) */}
         {activeTab === 'telemetry' && (
           <div className={styles.telemetryTab}>
             {activeMessage ? (
@@ -148,34 +216,91 @@ export function InspectorDrawer({
                       style={{
                         width: `${Math.min(
                           100,
-                          (((activeMessage.inputTokens || 0) + (activeMessage.outputTokens || 0)) / 4096) * 100,
+                          (((activeMessage.inputTokens || 0) + (activeMessage.outputTokens || 0)) /
+                            4096) *
+                            100,
                         )}%`,
                       }}
                     />
                   </div>
                   <span className={`${styles.contextSubText} num`}>
-                    {fmtInt((activeMessage.inputTokens || 0) + (activeMessage.outputTokens || 0))} / 4,096 tokens
+                    {fmtInt((activeMessage.inputTokens || 0) + (activeMessage.outputTokens || 0))} /
+                    4,096 tokens
                   </span>
                 </div>
 
                 {activeMessage.promptVersion && (
                   <div className={styles.metricCard}>
                     <span className={styles.metricLabel}>Prompt Revision</span>
-                    <span className={`${styles.promptVersionText} num`}>{activeMessage.promptVersion}</span>
+                    <span className={`${styles.promptVersionText} num`}>
+                      {activeMessage.promptVersion}
+                    </span>
                   </div>
                 )}
               </div>
             ) : (
               <div className={styles.emptyInspector}>
+                <Activity size={24} className={styles.emptyIcon} />
                 <p className={styles.inspectorHint}>Gửi câu hỏi để xem chỉ số viễn trắc chi tiết.</p>
               </div>
             )}
           </div>
         )}
 
-        {/* 3. Tham số thử nghiệm (Playground Parameters) */}
+        {/* 5. Tab Tham Số Thử Nghiệm & Model Profiles */}
         {activeTab === 'params' && (
           <div className={styles.paramsTab}>
+            {/* Model Profile Presets Section */}
+            <div className={styles.profileSection}>
+              <div className={styles.profileSectionHeader}>
+                <span className={styles.profileSectionTitle}>
+                  <Sparkles size={13} className={styles.accentColor} />{' '}
+                  {t.copilot.modelProfilesTitle || 'Gợi ý cấu hình Model'}
+                </span>
+                <span className={styles.profileSectionHint}>1-click apply</span>
+              </div>
+
+              <div className={styles.profileCardsGrid}>
+                {MODEL_PROFILES.map((pf) => {
+                  const isCurrent =
+                    params.modelProfileId === pf.id ||
+                    (params.temperature === pf.params.temperature && params.topK === pf.params.topK);
+
+                  return (
+                    <button
+                      key={pf.id}
+                      type="button"
+                      className={`${styles.profileCard} ${isCurrent ? styles.profileCardActive : ''}`}
+                      onClick={() => handleApplyProfile(pf)}
+                    >
+                      <div className={styles.profileCardTop}>
+                        <div className={styles.profileTitleRow}>
+                          <Cpu size={13} />
+                          <span className={styles.profileName}>{pf.name}</span>
+                          <code className={styles.profileModelTag}>{pf.model}</code>
+                        </div>
+                        {isCurrent && <Check size={13} className={styles.successColor} />}
+                      </div>
+
+                      <p className={styles.profileDesc}>{pf.description}</p>
+
+                      <div className={styles.profileMetaRow}>
+                        <span className={`${styles.profileParamPill} num`}>
+                          Temp: {pf.params.temperature}
+                        </span>
+                        <span className={`${styles.profileParamPill} num`}>
+                          Top-K: {pf.params.topK}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Sliders */}
+            <div className={styles.slidersDivider} />
+
             <div className={styles.sliderRow}>
               <div className={styles.sliderLabelRow}>
                 <label htmlFor="param-temperature">{t.copilot.temperature}</label>
@@ -188,7 +313,9 @@ export function InspectorDrawer({
                 max="1.0"
                 step="0.05"
                 value={params.temperature}
-                onChange={(e) => setParams((p) => ({ ...p, temperature: parseFloat(e.target.value) }))}
+                onChange={(e) =>
+                  setParams((p) => ({ ...p, temperature: parseFloat(e.target.value), modelProfileId: undefined }))
+                }
               />
             </div>
 
@@ -204,7 +331,9 @@ export function InspectorDrawer({
                 max="0.95"
                 step="0.01"
                 value={params.minSimilarity}
-                onChange={(e) => setParams((p) => ({ ...p, minSimilarity: parseFloat(e.target.value) }))}
+                onChange={(e) =>
+                  setParams((p) => ({ ...p, minSimilarity: parseFloat(e.target.value) }))
+                }
               />
             </div>
 
@@ -220,7 +349,9 @@ export function InspectorDrawer({
                 max="10"
                 step="1"
                 value={params.topK}
-                onChange={(e) => setParams((p) => ({ ...p, topK: parseInt(e.target.value, 10) }))}
+                onChange={(e) =>
+                  setParams((p) => ({ ...p, topK: parseInt(e.target.value, 10), modelProfileId: undefined }))
+                }
               />
             </div>
 
@@ -233,9 +364,10 @@ export function InspectorDrawer({
                 onChange={(e) => setParams((p) => ({ ...p, parkingLotId: e.target.value }))}
               >
                 <option value="">{t.copilot.allLots}</option>
+                <option value="lot_landmark_81">Vincom Landmark 81</option>
+                <option value="lot_vincom_center">Vincom Đồng Khởi</option>
                 <option value="lot_central_01">Bãi đỗ Trung tâm (Central Lot 01)</option>
                 <option value="lot_west_gate">Bãi đỗ Cổng Tây (West Gate)</option>
-                <option value="lot_airport_longterm">Bãi đỗ Dài hạn Sân bay</option>
               </select>
             </div>
           </div>
@@ -244,3 +376,5 @@ export function InspectorDrawer({
     </aside>
   );
 }
+
+export default InspectorDrawer;

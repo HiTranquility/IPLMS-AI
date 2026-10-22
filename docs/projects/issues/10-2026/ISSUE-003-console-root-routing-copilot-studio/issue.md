@@ -20,6 +20,10 @@ Mục tiêu của ISSUE-003:
    - Cột giữa: Khung chat streaming SSE thời gian thực, hiển thị trích dẫn RAG, hỗ trợ phím tắt, copy và phản hồi nhanh.
    - Cột phải: Ngăn kéo kiểm định (Inspector Drawer) hiển thị Citations tài liệu, Telemetry thực thi (độ trễ, số lượng token, tốc độ tokens/s, mức dùng ngữ cảnh) và bảng điều khiển tham số mô hình (Playground Parameters).
 3. **Phân rã Component & Tuân thủ Hallmark:** Phân rã giao diện thành các sub-components chuẩn `PAT-006` và `ai/ui/DESIGN.md`, 100% token CSS, 0 pixel cứng, 0 emoji, bảo đảm 100% test suite xanh.
+4. **Tích hợp Prototype Khoa & Mở rộng Studio:**
+   - **Vision & Anti-Fraud Studio:** Bộ sinh biển số xe Việt Nam bằng HTML5 Canvas 2D (ô tô 51A-888.88 viền đôi bo góc, xe máy 29-B1 999.99 2 tầng, biển vàng kinh doanh, biển xanh công vụ), ANPR Inference Sandbox và Anti-Fraud Vehicle Matcher (bắt lệch loại xe vào/ra báo động khóa barie).
+   - **Knowledge Base & Dispute Studio:** Trình khám phá kho quy chế bãi xe (Knowledge Explorer) phân loại theo danh mục và Bộ mô phỏng máy trạng thái phân xử tranh chấp LangGraph 5-node (`validate_ticket` -> `verify_snapshots` -> `assess_claim` -> `supervisor_approval` -> `finalize_dispute`) kèm cảnh báo Bounded Autonomy.
+   - **Diagnostics & Forecast Studio:** Bảng chẩn đoán động cơ YOLO, EasyOCR, PyTorch phần cứng, 4 nguyên tắc kiến trúc cốt lõi cùng Bộ mô phỏng dự báo sức chứa 24 giờ (Occupancy Curve SVG nội bộ không dùng thư viện ngoài) và tính cước giờ cao điểm có van an toàn ADR-0008.
 
 ## Tiêu chí chấp nhận
 
@@ -28,8 +32,11 @@ Mục tiêu của ISSUE-003:
 - [x] Giao diện Copilot Lab hỗ trợ chuyển đổi linh hoạt giữa `Chat Studio` và `Review Lab` qua Segmented control. Mặc định `viewMode = 'review'` để bảo đảm tính tương thích với các bài kiểm thử hiện hữu.
 - [x] Tích hợp đầy đủ streaming SSE từ `/tools/copilot/stream`, hiển thị từng chunk token theo thời gian thực, có nút dừng stream (`AbortController`).
 - [x] Tính năng UX nâng cao: Copy câu trả lời vào clipboard, phản hồi nhanh Thích/Không thích (tương thích review log), xuất hội thoại dạng Markdown, phím tắt `Ctrl+Enter` gửi tin và `Escape` đóng drawer.
+- [x] Tích hợp ANPR Sandbox & Anti-Fraud Gatekeeper vào `VisionOverviewPage`.
+- [x] Tích hợp Knowledge Explorer & LangGraph Dispute Workflow Simulator vào 5-tab Inspector Drawer.
+- [x] Tích hợp System Diagnostics & 24h Occupancy Forecast Simulator vào `ToolsPage`.
 - [x] Tuân thủ 8 quy tắc Hallmark Design System: Không emoji làm icon, không fake metrics, không gradient/glow/box-shadow, không hardcode `px`, dùng font hệ thống và token Graphite & Amber.
-- [x] 100% test suite pass: `pnpm test` (25/25 tests PASS), `pnpm build` pass, `python -m unittest` pass.
+- [x] 100% test suite pass: `pnpm test` (43/43 tests PASS, 11 test files), `pnpm build` pass (1.4s), `python -m unittest` pass (44/44 tests OK).
 
 ## Hồ sơ liên quan
 
