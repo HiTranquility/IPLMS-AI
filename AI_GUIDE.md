@@ -257,11 +257,14 @@ Mỗi yêu cầu AI đều được module giám sát tự động lưu vết c�
 * **Thống kê chi phí trung bình:**
   - **Mô hình Local GPU (GTX 1650):** **$0.0000 / request** (Chỉ tiêu tốn ~45W điện năng card đồ họa).
   - **So sánh Cloud OpenAI:** Tiết kiệm khoảng **$120 – $250 USD/tháng** trên lưu lượng 100.000 lượt xe ra vào so với việc gọi `gpt-4o`.
-* **API Dashboard Quản trị:** Endpoint `GET /api/copilot/metrics` cung cấp số liệu tổng quan trực tiếp cho UI Admin:
-  - Tổng số request: đếm lũy tiến.
-  - Tỷ lệ từ chối hợp lệ (Refused / Blocked rate).
-  - Độ trễ phản hồi trung bình (Average Latency: ~2.1s).
-  - Lượng token tiêu thụ và tổng chi phí tiết kiệm được.
+* **API & Giao Diện Quản Trị Phân Tích (Admin Dashboard & Telemetry):**
+  - **Endpoint Backend:** `GET /api/copilot/metrics` cung cấp tổng hợp dữ liệu thời gian thực được tự động bảo toàn qua file `var/log/ai_requests.jsonl` (không bị mất khi restart server).
+  - **Giao diện Quản trị Chuyên dụng (Tab 6 - `static/index.html`):**
+    1. **5 Thẻ Chỉ số Cốt lõi (KPI Cards):** Tổng số yêu cầu, Độ trễ trung bình (ms), Tổng token tiêu thụ, Chi phí thực tế ($0 local) kèm ước tính số tiền tiết kiệm so với Cloud GPT-4o, Tỷ lệ kích hoạt phòng hộ an toàn (Refusal Rate - ADR-0008).
+    2. **2 Biểu đồ Trực quan hóa (Chart.js):**
+       - **Biểu đồ Doughnut (Phân bổ trạng thái):** Phản ánh tỷ lệ `SUCCESS`, `REFUSED`, `FALLBACK`, `ERROR`.
+       - **Biểu đồ Cột (Xu hướng độ trễ):** Đo lường chi tiết độ trễ (ms) của 15 yêu cầu gần nhất để phát hiện hiện tượng nghẽn VRAM hoặc chậm trễ suy luận.
+    3. **Bảng Nhật Ký Kiểm Toán (Live Request Audit Log Table):** Liệt kê chi tiết 20 yêu cầu gần nhất gồm Request ID, Thời điểm, Endpoint (`/stream` hoặc `/ask`), Mô hình & Phiên bản Prompt, Số lượng Token, Độ trễ (ms), Chi phí, và Trạng thái có gắn huy hiệu màu trực quan.
 
 ### 4.6 Cơ chế Suy thoái Mềm & Dự phòng (Fallback)
 
@@ -290,8 +293,8 @@ Hệ thống xây dựng **10 User Stories** chuẩn mực kèm ma trận liên 
 │ US-03 │ Tra cứu biểu phí bãi xe theo     │ POST /api/copilot/   │ app/core/copilot/      │ test/                │
 │       │ chính sách chính thức kèm nguồn  │ ask                  │ engines/rag_pipeline.py│ test_rag_pipeline.py │
 ├───────┼──────────────────────────────────┼──────────────────────┼────────────────────────┼──────────────────────┤
-│ US-04 │ Nhận câu trả lời thời gian thực  │ POST /api/copilot/   │ app/api/rest/routes/   │ test/test_rag_       │
-│       │ qua luồng truyền phát (SSE)      │ stream               │ copilot_controller.py  │ rigorous_eval.py     │
+│ US-04 │ Nhận câu trả lời thời gian thực  │ POST/GET /api/copilot/ │ app/api/rest/routes/   │ test/test_copilot_   │
+│       │ qua luồng truyền phát (SSE)      │ stream                 │ copilot_controller.py  │ streaming_api.py     │
 ├───────┼──────────────────────────────────┼──────────────────────┼────────────────────────┼──────────────────────┤
 │ US-05 │ Tự động từ chối câu hỏi ngoài luồng POST /api/copilot/  │ app/core/copilot/      │ test/test_rag_       │
 │       │ và phát hiện Prompt Injection    │ ask                  │ guardrails/guardrail.py│ rigorous_eval.py     │
@@ -305,8 +308,8 @@ Hệ thống xây dựng **10 User Stories** chuẩn mực kèm ma trận liên 
 │ US-08 │ Quản lý duyệt bồi thường trước   │ POST /api/copilot/   │ app/core/copilot/      │ test/test_dispute_   │
 │       │ khi hệ thống thực hiện hoàn tiền │ dispute/approve      │ dispute_workflow/nodes │ workflow.py          │
 ├───────┼──────────────────────────────────┼──────────────────────┼────────────────────────┼──────────────────────┤
-│ US-09 │ Theo dõi số lượng token và độ    │ GET /api/copilot/    │ app/infra/monitoring/  │ test/                │
-│       │ trễ của các yêu cầu AI trên UI   │ metrics              │ ai_logger.py           │ test_ai_metrics.py   │
+│ US-09 │ Theo dõi số lượng token và độ    │ GET /api/copilot/    │ app/infra/monitoring/  │ test/test_copilot_   │
+│       │ trễ của các yêu cầu AI trên UI   │ metrics              │ ai_logger.py           │ streaming_api.py     │
 ├───────┼──────────────────────────────────┼──────────────────────┼────────────────────────┼──────────────────────┤
 │ US-10 │ Duy trì hoạt động quét biển số   │ POST /api/anpr/      │ app/infra/llm/         │ test/test_ai_        │
 │       │ ngay cả khi LLM hoặc mạng bị tắt │ recognize-plate      │ llama_server_manager.py│ engineering_4_2.py   │

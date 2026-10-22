@@ -58,7 +58,7 @@ class CopilotService:
             async for chunk in rag_pipeline.stream_query(
                 request.query,
                 parking_lot_id=request.parking_lot_id,
-                preview=request.preview,
+                preview=getattr(request, "preview", False),
             ):
                 finished = chunk["is_finished"]
                 if finished:
@@ -70,10 +70,19 @@ class CopilotService:
                 yield AnswerChunk(
                     token=chunk["token"],
                     is_finished=finished,
-                    sources=chunk["sources"],
+                    sources=chunk.get("sources", []),
+                    confidence=chunk.get("confidence"),
+                    refused=chunk.get("refused", False),
+                    guardrail_triggered=chunk.get("guardrail_triggered"),
                     model_revision=chunk.get("model_revision", ""),
                     turn_id=turn_id if finished else "",
-                    prompt_version=PROMPT_VERSION if finished else "",
+                    prompt_version=chunk.get("prompt_version", PROMPT_VERSION if finished else ""),
+                    latency_ms=chunk.get("latency_ms"),
+                    input_tokens=chunk.get("input_tokens"),
+                    output_tokens=chunk.get("output_tokens"),
+                    speed_tok_s=chunk.get("speed_tok_s"),
+                    context_tokens=chunk.get("context_tokens"),
+                    context_limit=chunk.get("context_limit", 4096),
                 )
         except Exception as exc:
             usage_service.record_soon(usage_service.build_entry(
