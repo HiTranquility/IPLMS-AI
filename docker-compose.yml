@@ -22,7 +22,8 @@ x-logging: &default-logging
 
 services:
   # ─── AI Service (REST :8000 + gRPC :50051) ─────────────────────────────────
-  ai:
+  # Tên service theo vai (IPLMS ADR-0055): container tự có tên <project>-api-<n>.
+  api:
     build:
       context: ..
       dockerfile: ai/Dockerfile
@@ -33,11 +34,12 @@ services:
       - "8000"
       - "50051"
     depends_on:
-      ai-db:
+      database-vector:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=${APP_NETWORK:-iplms-backend-dev_default}"
+      # Traefik tới api qua mạng riêng của stack (ADR-0055).
+      - "traefik.docker.network=${COMPOSE_PROJECT_NAME:-iplms-ai-dev}_default"
       # ── REST Routing (:8000) ──
       - "traefik.http.routers.ai-rest.rule=PathPrefix(`/`)"
       - "traefik.http.routers.ai-rest.entrypoints=rest"
@@ -60,10 +62,6 @@ services:
       - ./var/model-cache:/app/var/model-cache
       - ./static:/app/static
       - ./data:/app/data
-    networks:
-      default:
-        aliases:
-          - ai
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\" || exit 1"]
       interval: 15s
@@ -72,9 +70,8 @@ services:
       start_period: 20s
 
   # ─── Dedicated pgvector Database for Copilot Knowledge Base ────────────────
-  ai-db:
+  database-vector:
     image: pgvector/pgvector:0.8.6-pg16-bookworm
-    container_name: ${COMPOSE_PROJECT_NAME:-iplms-ai-dev}-postgres
     restart: unless-stopped
     logging: *default-logging
     environment:
@@ -85,16 +82,11 @@ services:
       AI_CONSOLE_DB_PASSWORD: ${AI_CONSOLE_DB_PASSWORD:-}
     ports:
       # Keep the host port distinct from the backend DB (:5433) and the
-      # knowledge-graph dev stack (:5434). Containers still use ai-db:5432.
+      # knowledge-graph dev stack (:5434). Containers still use database-vector:5432.
       - "${AI_DB_HOST_PORT:-5435}:5432"
     volumes:
-      - ai_db_data:/var/lib/postgresql/data
-      - ./docker/ai-db/init:/docker-entrypoint-initdb.d:ro
-    networks:
-      default:
-        aliases:
-          - ai-db
-          - postgres-vector
+      - database-vector-data:/var/lib/postgresql/data
+      - ./docker/database-vector/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${AI_DB_USER:-postgres} -d ${AI_DB_NAME:-iplms_knowledge}"]
       interval: 10s
@@ -104,7 +96,7 @@ services:
   # ─── AI Console nội bộ (ADR-0048) ───────────────────────────────────────────
   # Bật bằng `--profile console`. Cùng image với `ai`, process riêng (không chung
   # tải với inference). [NEVER] gắn label Traefik hay publish ra ngoài 127.0.0.1.
-  ai-console:
+  console:
     image: ${AI_IMAGE:-iplms-ai:latest}
     profiles: ["console"]
     restart: unless-stopped
@@ -116,13 +108,13 @@ services:
     volumes:
       - ./ui/dist:/app/ui/dist:ro
     depends_on:
-      ai-db:
+      database-vector:
         condition: service_healthy
     env_file:
       - path: .env.dev
         required: true
     environment:
-      - AI_CONSOLE_DATABASE_URL=postgresql://${AI_DB_USER:-postgres}:${AI_DB_PASSWORD:-CaVN2004}@ai-db:5432/ai_console
+      - AI_CONSOLE_DATABASE_URL=postgresql://${AI_DB_USER:-postgres}:${AI_DB_PASSWORD:-CaVN2004}@database-vector:5432/ai_console
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8090/console/api/health')\" || exit 1"]
       interval: 15s
@@ -134,12 +126,11 @@ services:
     # v3.6.16+ negotiates a modern Docker API; v3.3 falls back to v1.24 and
     # cannot discover routes on Docker Engine 29.
     image: traefik:v3.6.16
-    container_name: ${COMPOSE_PROJECT_NAME:-iplms-ai-dev}-gateway
     restart: unless-stopped
     logging: *default-logging
     environment:
       - DOCKER_API_VERSION=1.45
-    # bug-032: chỉ bind localhost — AI không có xác thực; backend đi qua alias mạng Docker.
+    # bug-032: chỉ bind localhost — AI không có xác thực; backend gọi qua alias ai-gateway trên mạng chung.
     ports:
       - "127.0.0.1:${AI_GATEWAY_REST_PORT:-8000}:8000"      # REST Entrypoint
       - "127.0.0.1:${AI_GATEWAY_GRPC_PORT:-50051}:50051"    # gRPC Entrypoint (h2c L7 Load Balanced)
@@ -148,7 +139,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./docker/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
     networks:
-      default:
+      default: {}
+      shared:
         aliases:
           - ai-gateway
     healthcheck:
@@ -158,10 +150,12 @@ services:
       retries: 3
 
 volumes:
-  ai_db_data:
+  database-vector-data:
     driver: local
 
+# Mạng riêng <project>_default cho gọi nội bộ; mạng chung do stack backend tạo, chỉ gateway nối vào
+# (alias ai-gateway) — IPLMS ADR-0055.
 networks:
-  default:
-    name: ${APP_NETWORK:-iplms-backend-dev_default}
+  shared:
+    name: ${SHARED_NETWORK:-iplms-shared-dev}
     external: true
