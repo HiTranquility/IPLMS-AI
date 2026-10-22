@@ -1,0 +1,812 @@
+/* ── Copilot Chat Studio 3-Panel — Hallmark Graphite & Amber Token System ── */
+
+.studioWrapper {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 170px);
+  min-height: 560px;
+  background: var(--color-surface);
+  border: var(--hairline);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-top: var(--space-4);
+}
+
+/* ── Header ── */
+.studioHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-2);
+  border-bottom: var(--hairline);
+}
+
+.studioTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.headerToggleBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-8);
+  height: var(--space-8);
+  background: transparent;
+  border: var(--hairline);
+  border-radius: var(--radius-md);
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: background-color var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.headerToggleBtn:hover {
+  background: var(--color-surface-3);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+
+.headerToggleBtnActive {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-dark);
+  border-color: var(--color-accent);
+}
+
+.modelBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: var(--hairline);
+  border-radius: var(--radius-full);
+}
+
+.statusDot {
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-success);
+}
+
+.statusDotStreaming {
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.studioBody {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Panel Trái: Presets & Sidebar ── */
+.sidebar {
+  width: 260px;
+  min-width: 240px;
+  background: var(--color-surface-2);
+  border-right: var(--hairline);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width var(--transition), transform var(--transition);
+}
+
+.sidebarClosed {
+  width: 0;
+  min-width: 0;
+  border-right: none;
+  visibility: hidden;
+}
+
+.sidebarTop {
+  padding: var(--space-3);
+  border-bottom: var(--hairline);
+}
+
+.newChatFullBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.presetSection {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sectionHeading {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-faded);
+  margin-bottom: var(--space-1);
+}
+
+.presetList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.presetCard {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: var(--hairline);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: border-color var(--transition), background-color var(--transition), color var(--transition);
+  line-height: 1.4;
+}
+
+.presetCard:hover {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-dark);
+}
+
+.presetCategory {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  margin-bottom: var(--space-1);
+}
+
+.presetTitle {
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.sidebarFooter {
+  padding: var(--space-3);
+  border-top: var(--hairline);
+  background: var(--color-surface-2);
+}
+
+.clearChatBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: var(--hairline);
+  border-radius: var(--radius-md);
+  color: var(--color-danger);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: background-color var(--transition), border-color var(--transition);
+}
+
+.clearChatBtn:hover {
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger);
+}
+
+/* ── Panel Giữa: Chat Area ── */
+.chatCenter {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  overflow: hidden;
+  position: relative;
+}
+
+.messagesContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.heroWelcome {
+  margin: auto;
+  text-align: center;
+  max-width: 500px;
+  padding: var(--space-6) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.heroIcon {
+  width: calc(var(--space-6) * 2);
+  height: calc(var(--space-6) * 2);
+  border-radius: var(--radius-lg);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.heroTitle {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.heroDesc {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.heroPresets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+  margin-top: var(--space-2);
+}
+
+.heroPresetBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-2);
+  border: var(--hairline);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: border-color var(--transition), background-color var(--transition);
+}
+
+.heroPresetBtn:hover {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-dark);
+}
+
+.sparkleIcon {
+  color: var(--color-accent);
+}
+
+/* ── Chat Messages ── */
+.messageRow {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.messageRowUser {
+  flex-direction: row-reverse;
+}
+
+.avatar {
+  width: var(--space-8);
+  height: var(--space-8);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatarUser {
+  background: var(--color-primary-soft);
+  color: var(--color-text);
+  border: var(--hairline);
+}
+
+.avatarBot {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-dark);
+  border: 1px solid var(--color-accent);
+}
+
+.messageContentBox {
+  max-width: 80%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.messageRowUser .messageBubble {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg) var(--radius-sm) var(--radius-lg) var(--radius-lg);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.userText {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.messageRowBot .messageBubble {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: var(--hairline);
+  padding: var(--space-4);
+  border-radius: var(--radius-sm) var(--radius-lg) var(--radius-lg) var(--radius-lg);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
+.thinkingHint {
+  color: var(--color-muted);
+  font-style: italic;
+  margin: 0;
+}
+
+.citationsBlock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: var(--hairline);
+}
+
+.citationTag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: var(--color-surface);
+  border: var(--hairline);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition);
+}
+
+.citationTag:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent-dark);
+}
+
+.citationTitle {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.citationScore {
+  font-weight: 700;
+  color: var(--color-success);
+}
+
+.messageMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  color: var(--color-faded);
+  margin-top: var(--space-1);
+}
+
+.metaStats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-mono);
+}
+
+.metaActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.iconBtn {
+  background: transparent;
+  border: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition), background-color var(--transition);
+}
+
+.iconBtn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-3);
+}
+
+.checkIcon {
+  color: var(--color-success);
+}
+
+.feedbackActiveUp {
+  color: var(--color-success) !important;
+  background: var(--color-success-soft) !important;
+}
+
+.feedbackActiveDown {
+  color: var(--color-danger) !important;
+  background: var(--color-danger-soft) !important;
+}
+
+/* ── Input Area ── */
+.inputArea {
+  padding: var(--space-3) var(--space-6) var(--space-4);
+  background: var(--color-surface);
+  border-top: var(--hairline);
+}
+
+.inputForm {
+  background: var(--color-surface-2);
+  border: var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  transition: border-color var(--transition);
+}
+
+.inputForm:focus-within {
+  border-color: var(--color-accent);
+}
+
+.chatTextarea {
+  width: 100%;
+  border: none;
+  background: transparent;
+  resize: none;
+  min-height: 44px;
+  max-height: 160px;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-text);
+  outline: none;
+}
+
+.inputControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: var(--space-2);
+}
+
+.inputHints {
+  font-size: var(--text-xs);
+  color: var(--color-faded);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.kbd {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  background: var(--color-surface-3);
+  border: var(--hairline);
+  border-radius: var(--radius-sm);
+  padding: 1px var(--space-1);
+  color: var(--color-muted);
+}
+
+.inputButtons {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sendBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity var(--transition);
+}
+
+.sendBtn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.sendBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.stopBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-danger);
+  color: var(--color-primary-contrast);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ── Panel Phải: Inspector Drawer ── */
+.inspector {
+  width: 320px;
+  min-width: 300px;
+  background: var(--color-surface-2);
+  border-left: var(--hairline);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width var(--transition), transform var(--transition);
+}
+
+.inspectorClosed {
+  width: 0;
+  min-width: 0;
+  border-left: none;
+  visibility: hidden;
+}
+
+.inspectorTabs {
+  display: flex;
+  align-items: center;
+  border-bottom: var(--hairline);
+  background: var(--color-surface-3);
+}
+
+.inspectorTab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-align: center;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition), background-color var(--transition);
+}
+
+.inspectorTabActive {
+  color: var(--color-text);
+  border-bottom-color: var(--color-accent);
+  background: var(--color-surface-2);
+}
+
+.inspectorCloseBtn {
+  background: transparent;
+  border: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  padding: var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition);
+}
+
+.inspectorCloseBtn:hover {
+  color: var(--color-text);
+}
+
+.inspectorContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.citationsTab,
+.telemetryTab,
+.paramsTab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.citationList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.citationCard {
+  background: var(--color-surface);
+  border: var(--hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  transition: border-color var(--transition);
+}
+
+.citationCardActive {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.citationCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.citationCardTitle {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.citationCardScore {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--color-success);
+}
+
+.chunkIdRow {
+  font-size: var(--text-xs);
+  color: var(--color-faded);
+}
+
+.citationSnippet {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-2);
+  border-left: 2px solid var(--color-border);
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.snippetEmpty {
+  font-size: var(--text-xs);
+  color: var(--color-faded);
+  font-style: italic;
+  margin: 0;
+}
+
+.emptyInspector {
+  padding: var(--space-6) var(--space-2);
+  text-align: center;
+}
+
+.inspectorHint {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  margin: 0;
+}
+
+/* ── Telemetry Grid ── */
+.telemetryGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+}
+
+.metricCard {
+  background: var(--color-surface);
+  border: var(--hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.metricLabel {
+  font-size: var(--text-xs);
+  color: var(--color-faded);
+}
+
+.metricValue {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--color-text);
+}
+
+.contextBar {
+  width: 100%;
+  height: var(--space-1);
+  background: var(--color-surface-3);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-top: var(--space-1);
+}
+
+.contextBarFill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: var(--radius-full);
+  transition: width var(--transition);
+}
+
+.contextSubText {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+.promptVersionText {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  word-break: break-all;
+}
+
+/* ── Playground Parameters ── */
+.sliderRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.sliderLabelRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  color: var(--color-text);
+}
+
+.sliderValue {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--color-accent-dark);
+}
+
+.selectInput {
+  padding: var(--space-2);
+  background: var(--color-surface);
+  border: var(--hairline);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: var(--text-xs);
+}
