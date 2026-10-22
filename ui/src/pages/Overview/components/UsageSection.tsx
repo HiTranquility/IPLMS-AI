@@ -44,6 +44,11 @@ export function UsageSection({ usage }: UsageSectionProps) {
           value={fmtPercent(ratio(usage.thumbs_up, rated))}
           hint={rated ? t.overview.helpfulHint(fmtInt(usage.thumbs_up), fmtInt(usage.thumbs_down)) : t.overview.noRatings}
         />
+        <Stat
+          label="Tốc độ sinh TB"
+          value={usage.avg_speed_tok_s ? `${usage.avg_speed_tok_s} tok/s` : DASH}
+          hint="Mô hình Qwen3.5 LLM"
+        />
       </dl>
       <h2 className={styles.sectionTitle}>{t.overview.byDay}</h2>
       <div className={table.wrap}>
@@ -55,6 +60,7 @@ export function UsageSection({ usage }: UsageSectionProps) {
               <th scope="col" className={table.num}>{t.overview.refusedShort}</th>
               <th scope="col" className={table.num}>{t.overview.errors}</th>
               <th scope="col" className={table.num}>{t.overview.avgLatency}</th>
+              <th scope="col" className={table.num}>Tốc độ</th>
             </tr>
           </thead>
           <tbody>
@@ -65,6 +71,7 @@ export function UsageSection({ usage }: UsageSectionProps) {
                 <td className={table.num}>{fmtInt(day.refused)}</td>
                 <td className={table.num}>{fmtInt(day.errors)}</td>
                 <td className={table.num}>{fmtMs(day.avg_latency_ms)}</td>
+                <td className={table.num}>{day.speed_tok_s ? `${day.speed_tok_s} tok/s` : DASH}</td>
               </tr>
             ))}
           </tbody>
