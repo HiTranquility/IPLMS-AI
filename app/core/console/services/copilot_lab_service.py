@@ -1,6 +1,6 @@
 """Copilot Lab của AI Console: số liệu, lượt chat đã che PII và chấm đúng/sai (ISSUE-126 P1c).
 
-Lượt chat nằm ở `ai-db` (ADR-0049); kết quả chấm nằm ở DB `ai_console` kèm audit.
+Lượt chat nằm ở `database-vector` (ADR-0049); kết quả chấm nằm ở DB `ai_console` kèm audit.
 Tỉ lệ đúng chỉ tính trên các lượt đã được người chấm, không suy ra từ 👍/👎.
 """
 from __future__ import annotations

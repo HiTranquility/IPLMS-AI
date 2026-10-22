@@ -16,7 +16,7 @@ có tốn tiền. Không in câu trả lời trừ khi ``--show``.
 Chạy:
   # Ollama trên máy dev
   AI_LLM_BASE_URL=http://localhost:11434/v1 AI_LLM_MODEL=qwen2.5:3b python -m app.script.redteam_copilot -n 20
-  # model production đang ACTIVE trong ai-db (cần AI_DATABASE_URL + khoá)
+  # model production đang ACTIVE trong database-vector (cần AI_DATABASE_URL + khoá)
   python -m app.script.redteam_copilot --active-profile
 """
 from __future__ import annotations
@@ -74,7 +74,7 @@ class _Retriever:
 
 
 class _EnvLlm:
-    """Không phải LlmFactory → pipeline dùng thẳng cấu hình env, không tra ai-db."""
+    """Không phải LlmFactory → pipeline dùng thẳng cấu hình env, không tra database-vector."""
 
     def __init__(self, factory: LlmFactory):
         self.generate_response = factory.generate_response
@@ -118,7 +118,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("-n", type=int, default=5, help="số lần chạy mỗi kịch bản (mặc định 5)")
     parser.add_argument("--active-profile", action="store_true",
-                        help="dùng hồ sơ model đang ACTIVE trong ai-db thay vì biến môi trường")
+                        help="dùng hồ sơ model đang ACTIVE trong database-vector thay vì biến môi trường")
     parser.add_argument("--show", action="store_true", help="in từng câu trả lời")
     args = parser.parse_args()
     report = asyncio.run(run(args.n, args.active_profile, args.show))

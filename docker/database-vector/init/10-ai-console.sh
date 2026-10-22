@@ -1,6 +1,6 @@
 #!/bin/sh
 # Tạo database + user RIÊNG cho AI Console (ADR-0048 §3) — không dùng chung tài
-# khoản với knowledge_*. Postgres chỉ chạy thư mục init khi volume ai-db còn trống;
+# khoản với knowledge_*. Postgres chỉ chạy thư mục init khi volume database-vector còn trống;
 # volume đã có dữ liệu thì chạy tay theo ai/DESIGN.md §AI Console.
 set -eu
 

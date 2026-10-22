@@ -89,6 +89,7 @@ export function MfaPage({ me }: MfaPageProps) {
           <form className={styles.form} onSubmit={submit}>
             <TextField
               label={t.mfa.otp}
+              hint="Nhập 6 số từ app Authenticator (Dev: có thể dùng 000000)"
               inputMode="numeric"
               autoComplete="one-time-code"
               pattern="[0-9]{6}"

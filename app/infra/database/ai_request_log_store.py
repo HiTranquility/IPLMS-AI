@@ -1,4 +1,4 @@
-"""Telemetry mỗi request AI trong `ai-db` (IPLMS ADR-0049, đề Final §4.2/§6.6).
+"""Telemetry mỗi request AI trong `database-vector` (IPLMS ADR-0049, đề Final §4.2/§6.6).
 
 Lưu câu hỏi/câu trả lời ĐÃ CHE PII và user dạng HMAC. Bản ghi quá
 `AI_TELEMETRY_RETENTION_DAYS` bị xoá (tối đa mỗi giờ một lần, khi có ghi mới).
@@ -29,7 +29,15 @@ class AiRequestLogStore:
         try:
             import psycopg2
 
-            connection = psycopg2.connect(self.db_url, connect_timeout=5)
+            try:
+                connection = psycopg2.connect(self.db_url, connect_timeout=3)
+            except Exception:
+                if "@database-vector:5432/" in self.db_url:
+                    fallback_url = self.db_url.replace("@database-vector:5432/", "@127.0.0.1:5435/")
+                    connection = psycopg2.connect(fallback_url, connect_timeout=3)
+                    self.db_url = fallback_url
+                else:
+                    raise
             try:
                 with connection:
                     with connection.cursor() as cursor:

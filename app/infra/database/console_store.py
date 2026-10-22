@@ -132,7 +132,7 @@ class ConsoleStore:
             "CREATE UNIQUE INDEX IF NOT EXISTS uq_console_member_google_sub "
             "ON console_member (google_sub) WHERE google_sub IS NOT NULL"
         )
-        # ── Chấm lượt trả lời Copilot (P1c) — lượt nằm ở ai-db, chỉ giữ turn_id + thời điểm ──
+        # ── Chấm lượt trả lời Copilot (P1c) — lượt nằm ở database-vector, chỉ giữ turn_id + thời điểm ──
         cur.execute(
             """CREATE TABLE IF NOT EXISTS copilot_turn_review (
                 turn_id UUID PRIMARY KEY,
@@ -259,7 +259,7 @@ class ConsoleStore:
         return await self._run(work)
 
     async def add_audit(self, actor_id: str, action: str, target_type: str, target_id: str, reason: str) -> None:
-        """Thao tác ghi ra ngoài DB console (vd. nạp tri thức vào ai-db) vẫn để dấu vết ở đây."""
+        """Thao tác ghi ra ngoài DB console (vd. nạp tri thức vào database-vector) vẫn để dấu vết ở đây."""
         await self._run(lambda cur: _audit(cur, actor_id, action, target_type, target_id, reason))
 
     async def list_members(self) -> list[dict[str, Any]]:

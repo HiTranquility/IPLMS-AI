@@ -21,9 +21,9 @@ docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.devel
 docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.production.yml up -d --no-build
 ```
 
-Cần network backend (`APP_NETWORK`) tồn tại; full stack dùng `deployment/script/run-stack.ps1`
+Cần mạng chung `iplms-shared-dev` (`SHARED_NETWORK`, do stack backend tạo) tồn tại; full stack dùng `deployment/script/run-stack.ps1`
 hoặc `.sh` ở umbrella. `.env.dev`/`.env.prod` giữ tên hợp đồng runtime, không commit.
-AI có database pgvector riêng `ai-db`. REST ở localhost:8000, gRPC localhost:50051;
+AI có database pgvector riêng `database-vector`. REST ở localhost:8000, gRPC localhost:50051;
 dashboard localhost:8080 chỉ bật ở develop. Base không thay thế cấu hình production.
 
 ## Kiểm nhanh

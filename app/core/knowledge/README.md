@@ -25,7 +25,7 @@ backend lưu bản gốc: Storage knowledge/{bãi|global}/{documentId}/v{n}
 
 Trạng thái trả về: `SUCCESS` · `NO_TEXT_LAYER` · `UNSUPPORTED_FORMAT` · `FILE_TOO_LARGE` · `EMBEDDING_FAILED`.
 
-## Dữ liệu (ai-db, schema tự tạo/nâng cấp trong `pgvector_client.ensure_schema`)
+## Dữ liệu (database-vector, schema tự tạo/nâng cấp trong `pgvector_client.ensure_schema`)
 
 `knowledge_documents` (1 dòng/tài liệu, `parking_lot_id` NULL = chung) → `knowledge_document_versions` (DRAFT → TESTED → PUBLISHED → ARCHIVED; tối đa 1 nháp + 1 PUBLISHED, ép bằng unique index) → `knowledge_chunks` (`version_id`, embedding `vector(1536)`, HNSW + GIN full-text).
 
