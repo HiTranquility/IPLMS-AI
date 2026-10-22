@@ -1,6 +1,6 @@
 """PostgreSQL store cho bộ test Knowledge Base (ISSUE-009): test case, lượt chạy, kết quả.
 
-Cùng database với `knowledge_chunks` (ai-db) để lượt chạy đọc "bản xem trước"
+Cùng database với `knowledge_chunks` (database-vector) để lượt chạy đọc "bản xem trước"
 không phải đi qua mạng. psycopg2 đồng bộ, bọc `asyncio.to_thread` như
 `pgvector_client`.
 """
