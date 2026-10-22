@@ -8,8 +8,8 @@
 | | |
 |---|---|
 | **Người giữ bảng** | Chủ đồ án |
-| **Cập nhật lần cuối** | 2026-10-19 |
-| **Người cập nhật** | Codex — điều chỉnh theo chủ dự án: HiTranquility phụ trách tổng thể/tích hợp |
+| **Cập nhật lần cuối** | 2026-10-22 |
+| **Người cập nhật** | HiTranquility — cập nhật siết quyền DB inference ADR-0051, proto order BUG-06, CI Postgres pgvector S3, review bug-003/004/007 |
 
 ## 📏 Luật dùng bảng
 
@@ -24,11 +24,8 @@
 
 | Việc | Hồ sơ | Ưu tiên | Ghi chú |
 |---|---|---|---|
-| Review trước tích hợp: Docker context và lọc dữ liệu build | [bug-003](bugs/bug-003-docker-context-khong-dong-bo/bug.md) | 🔴 | HiTranquility phụ trách review caller/build tổng thể; hiện trạng gốc là snapshot khoa-develop9a1aafd, cần đối chiếu revision nhận |
-| Review trước tích hợp: Launcher REST/gRPC và báo lỗi dependency | [bug-004](bugs/bug-004-launcher-dev-dung-grpc/bug.md) | 🔴 | HiTranquility phụ trách launcher/stack tổng thể; hiện trạng gốc là snapshot khoa-develop9a1aafd, cần đối chiếu revision nhận |
 | Review trước tích hợp: Hiệu chỉnh biển số mất ký tự | [bug-005](bugs/bug-005-plate-correction-mat-ky-tu/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
 | Review trước tích hợp: Prior loại xe không phải observation | [bug-006](bugs/bug-006-vehicle-prior-gia-lam-observation/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
-| Review trước tích hợp: Ingest mapping thời gian sai DTO | [bug-007](bugs/bug-007-ingest-response-sai-duration/bug.md) | 🔴 | HiTranquility đối chiếu hợp đồng AI↔backend; Dương hỗ trợ phần AI; snapshot khoa-develop9a1aafd cần kiểm lại |
 | Review trước tích hợp: Dashboard render dữ liệu bằng HTML | [bug-008](bugs/bug-008-dashboard-render-html-khong-escape/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
 | Đo weights ứng viên chưa nạp: nạp theo `artifact_key` trong process đo riêng (module M4) | IPLMS ISSUE-126 phase-6 6.12 | 🟢 | M4 chưa có người |
 
@@ -57,9 +54,7 @@ Thứ tự là gợi ý trong từng người, sau khi rà việc đang làm và
 | Dương | 3 | I-3: demo liên vai trên UI IPLMS-AI bằng `iplms-demo-loop` | IPLMS ISSUE-126; UI và quyền của AI Console | 🟢 | Có tài khoản test theo vai, dữ liệu test AI và môi trường console local; bước thiếu dữ liệu ghi chặn, không tự cấu hình A2/backend | Kịch bản data engineer, annotator, reviewer, ML engineer, lead và các vai liên quan theo quyền hiện có; kiểm UI, lưu/tải lại và từ chối sai quyền trong AI; cần sửa code ngoài IPLMS-AI thì báo chủ dự án |
 | Dương | 4 | Bổ sung test hồi quy quyền 7 vai Console trên UI/API | IPLMS ISSUE-126; `app/core/console/engines/access_policy.py` | 🟠 | Rà test đã có và lập ma trận vai/thao tác; dùng tài khoản hoặc fixture cô lập trong AI | Ma trận đủ 7 vai và quyền hiện có, có test allow/deny cho ca còn thiếu; nút ẩn không thay kiểm API; ghi bằng chứng test tự động, không chỉ checklist demo |
 | Dương | 5 | Bổ sung test hồi quy UI khi API lỗi, timeout hoặc phiên hết hạn | IPLMS ISSUE-126; `ui/README.md` và test UI hiện có | 🟠 | Đối chiếu test đã có; mô phỏng lỗi trong test local của `ai/ui`, không phá môi trường chung | Phủ ca còn thiếu cho 401/403/500/timeout tại màn hình liên quan; không báo lưu thành công giả, xử lý retry/đăng nhập theo luồng hiện có; chạy lại suite UI và ghi kết quả |
-| HiTranquility | 1 | Kiểm và sửa thứ tự chọn proto gốc↔AI của `compile_proto.py` nếu còn lệch | IPLMS ISSUE-126 review-6 BUG-06 | 🟢 | Tái hiện trên revision tích hợp; xác nhận nguồn proto chung; Khoa cung cấp fixture AI | Kiểm stub/RPC và caller NestJS cùng revision; ghi bằng chứng nếu đã được sửa |
 | HiTranquility | 2 | Restart container `ai` trên stack dev, xác nhận gRPC nạp đúng revision | IPLMS bug-006 | 🟠 | Có cửa sổ thao tác stack dùng chung; xác nhận tác động trước khi restart | Endpoint/version và kiểm gRPC/warmup; Khoa hỗ trợ đo ANPR; chuyển từ dòng Khoa hạn cũ 2026-10-14, chưa coi HiTranquility đã bắt đầu |
-| HiTranquility | 3 | Đưa Postgres 16 + pgvector vào job CI Python và nối kiểm tích hợp | IPLMS ISSUE-126 review-6 S3 | 🟠 | Dương cung cấp lệnh/fixture test DB local; rõ cấu hình job và quyền CI | Job có DB thật và báo test đúng; phần billing còn chặn phải ghi rõ; chuyển từ việc mới giao Dương ngày 2026-10-18 |
 | HiTranquility | 4 | Rà revision và tích hợp console/RAG giữa gốc, AI, backend, frontend | IPLMS ISSUE-126 review-7; IPLMS ISSUE-004 | 🟠 | Khoa/Dương bàn giao kết quả AI; kiểm `review-7.md`/`eval_copilot_e2e.py` lệch sau `e616fee`; CI và quyền môi trường sẵn sàng cho phần chạy thật | Bảng revision/gitlink, hợp đồng caller và kết quả E2E RAG; chưa merge/deploy hoặc đổi trạng thái chặn khi chưa có bằng chứng |
 | HiTranquility | 5 | I-2: tổ chức security review AI Console trước buổi bảo vệ | IPLMS ISSUE-126; IPLMS ADR-0048, ADR-0051 | 🟠 | Xác định revision; có tài khoản test và môi trường local cô lập | Checklist đăng nhập/phiên/quyền/PII và bằng chứng từ chối sai quyền; người review độc lập với người viết phần quyền |
 | HiTranquility | 6 | Chốt người phụ trách M3/M4 và thứ tự phối hợp console | IPLMS ISSUE-126 — bảng chia việc M0–M4 | 🟠 | Xác nhận lịch và năng lực của nhóm; có thể chốt sớm để gỡ phụ thuộc cho các việc trước | Người được xác nhận, phạm vi file/module và người duyệt; không mặc định Khoa/Dương nhận phần ngoài AI |
@@ -81,7 +76,6 @@ Kế hoạch mới nhất theo IPLMS REQ-006 F10 / ISSUE-125 review-4: 16 việc
 | Sửa vi phạm so với AI_CONVENTIONS (bổ sung luật lỗi & test doc) | IPLMS AUDIT-004 | Dương | 2026-10-19 | Đã có báo cáo AUDIT-004; cập nhật doc & gRPC mapping |
 | Hoàn thiện phần AI của `khoa-develop`: lọc thẻ `<think>`, rà `guardrail_manager`/`prompt_manager`/`ai_logger`/`llama_server_manager`, viết lại 3 test không gọi mạng | IPLMS ISSUE-126 review-6 BUG-05 · commit `ff479f9` | Khoa | — | Giữ sửa/test trong AI; HiTranquility phụ trách nối revision/caller và tích hợp tổng thể; giao gốc 2026-10-18 |
 | Xác nhận cột "đã kiểm/sửa" mục 3b `AI_USAGE.md` cho phần mình nhận (đề Final §5.3, thiếu là −10%) | IPLMS ISSUE-126 phase-6 6.6 | Chủ module M1–M4 | — | Mới giao 2026-10-18 |
-| Siết quyền user DB `ai_console` của process inference: chỉ bảng A2 + `accept_policy` | IPLMS ADR-0051 §Hệ quả | HiTranquility | — | Mới giao 2026-10-18 |
 
 ## ⏳ Chờ duyệt
 
@@ -103,6 +97,10 @@ Kế hoạch mới nhất theo IPLMS REQ-006 F10 / ISSUE-125 review-4: 16 việc
 
 | Việc | Hồ sơ | Người làm | Ngày |
 |---|---|---|---|
+| Siết quyền DB user `ai_console` cho process inference: chỉ bảng A2 + `accept_policy` + verify fail-closed | IPLMS ADR-0051 §Hệ quả | HiTranquility | 2026-10-22 |
+| Sửa thứ tự ưu tiên proto gốc (`REPO_ROOT / proto`) trong `compile_proto.py` | IPLMS ISSUE-126 review-6 BUG-06 | HiTranquility | 2026-10-22 |
+| Đưa Postgres 16 + pgvector (0.8.6-pg16) vào service job CI Python (`ci.yml`) | IPLMS ISSUE-126 review-6 S3 | HiTranquility | 2026-10-22 |
+| Rà soát và kiểm chứng 3 bug tích hợp (bug-003 Docker context, bug-004 launcher REST/gRPC, bug-007 ingest duration_ms) | [bug-003](bugs/bug-003-docker-context-khong-dong-bo/bug.md), [bug-004](bugs/bug-004-launcher-dev-dung-grpc/bug.md), [bug-007](bugs/bug-007-ingest-response-sai-duration/bug.md) | HiTranquility | 2026-10-22 |
 | Cổng từ chối Copilot (chunk vector tốt nhất < `AI_RAG_MIN_SIMILARITY` → NO_CONTEXT, không gọi LLM) + eval end-to-end + bộ held-out — **merge trước khi Khoa/Dương duyệt** theo quyết định chủ đồ án 2026-10-18; Khoa/Dương cần xem lại sau | IPLMS ISSUE-126 review-7 | Claude Code | 2026-10-18 |
 | Gộp `khoa-develop` (5f24a1f) vào nhánh console, giữ bản develop khi xung đột; bug-011 hết do ADR-0050 bỏ `/api/copilot/ask` | [bug-011](bugs/bug-011-copilot-ask-nhan-api-key-tu-client-va-tra-loi-gia-khi-llm-loi/bug.md) · IPLMS ISSUE-126 | Claude Code | 2026-10-17 |
 | Lỗi model không tồn tại bị nuốt thành "AI service unreachable" | IPLMS bug-014 | Dương | 2026-10-13 |
