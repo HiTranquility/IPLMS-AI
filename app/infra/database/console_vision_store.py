@@ -15,6 +15,7 @@ from datetime import datetime
 from typing import Any
 from uuid import uuid4
 
+from app.config import get_config
 from app.core.exceptions import ConsoleStoreError
 from app.infra.database.console_store import ConsoleStore, _audit
 
@@ -42,6 +43,12 @@ def _sample(row) -> dict[str, Any]:
 
 
 class ConsoleVisionStore(ConsoleStore):
+    def __init__(self, db_url: str | None = None) -> None:
+        cfg = get_config()
+        # IPLMS ADR-0051: nếu có URL riêng cho process inference (AI_CONSOLE_INFERENCE_DATABASE_URL),
+        # sử dụng URL đó cho kênh A2 và accept policy; nếu không có thì dùng AI_CONSOLE_DATABASE_URL.
+        super().__init__(db_url or cfg.console.inference_database_url or cfg.console.database_url)
+
     @staticmethod
     def _create_schema(cur) -> None:
         ConsoleStore._create_schema(cur)

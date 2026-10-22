@@ -192,7 +192,15 @@ class ConsoleStore:
         async with self._schema_lock:
             if self._schema_ready:
                 return
-            await asyncio.to_thread(self._tx, self._create_schema)
+            try:
+                await asyncio.to_thread(self._tx, self._create_schema)
+            except Exception as exc:
+                # IPLMS ADR-0051: Khi process inference dùng user bị siết quyền (ai_inference),
+                # bỏ qua lỗi permission denied nếu các bảng đã được console_main khởi tạo từ trước.
+                if "permission denied" in str(exc).lower():
+                    pass
+                else:
+                    raise
             self._schema_ready = True
 
     async def get_member(self, member_id: str) -> dict[str, Any] | None:

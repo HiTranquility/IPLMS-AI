@@ -11,6 +11,11 @@ class ConsoleConfig(BaseConfig):
     # knowledge_*, để quyền console và tri thức Copilot không dùng chung tài khoản.
     database_url: str = ""
 
+    # Database URL riêng cho process inference (ADR-0051): gRPC server dùng URL này
+    # với user bị siết quyền ai_inference (chỉ bảng A2 và đọc accept_policy).
+    # Nếu để trống, fallback về database_url.
+    inference_database_url: str = ""
+
     # Chỉ dùng nội bộ (ADR-0048 §2): chạy native thì nghe loopback; trong Docker
     # process nghe 0.0.0.0 nhưng compose chỉ publish ra 127.0.0.1.
     bind_host: str = "127.0.0.1"

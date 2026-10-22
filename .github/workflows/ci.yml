@@ -17,6 +17,27 @@ jobs:
   test:
     name: Run Python tests
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.6-pg16-bookworm
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: CaVN2004
+          POSTGRES_DB: iplms_knowledge
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      AI_DATABASE_URL: postgresql://postgres:CaVN2004@localhost:5432/iplms_knowledge
+      AI_TEST_DATABASE_URL: postgresql://postgres:CaVN2004@localhost:5432/iplms_knowledge
+      AI_CONSOLE_DATABASE_URL: postgresql://postgres:CaVN2004@localhost:5432/ai_console
+      AI_CONSOLE_INFERENCE_DATABASE_URL: postgresql://ai_inference:CaVN2004@localhost:5432/ai_console
+      AI_CONSOLE_DB_PASSWORD: CaVN2004
+      AI_INFERENCE_DB_PASSWORD: CaVN2004
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,6 +65,12 @@ jobs:
       - name: Compile protobuf stubs
         run: python app/script/compile_proto.py
 
+      - name: Initialize Postgres databases and vector extension
+        run: |
+          PGPASSWORD=CaVN2004 psql -h localhost -U postgres -d iplms_knowledge -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          PGPASSWORD=CaVN2004 psql -h localhost -U postgres -d postgres -c "CREATE DATABASE ai_console;"
+          python -m app.script.harden_console_db
+
       - name: Run unit tests
         run: python -m unittest discover -s test -v
 
@@ -66,7 +93,7 @@ jobs:
         with:
           package_json_file: ui/package.json
 
-      # undici (qua jsdom của vitest) cần zlib zstd — Node 22.15 trở lên.
+      # undici (qua jsdom của vitest) cần zlib zstd ở Node 22.15 trở lên.
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
