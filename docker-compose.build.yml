@@ -14,7 +14,7 @@
 name: iplms-ai-build
 
 services:
-  ai:
+  api:
     image: ${AI_IMAGE:-iplms-ai:latest}
     build:
       context: ..

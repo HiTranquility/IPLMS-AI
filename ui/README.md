@@ -8,7 +8,7 @@ Giao diện nội bộ của bộ phận AI (IPLMS ADR-0048). **Không phải UI
 # trong ai/
 pnpm --dir ui install
 pnpm --dir ui build                      # ra ui/dist, console_main phục vụ tại /console/
-python -m app.console_main               # hoặc: docker compose --profile console up ai-console
+python -m app.console_main               # hoặc: docker compose --profile console up console
 ```
 
 Mở `http://localhost:8090/console/`. Phát triển giao diện có hot reload: chạy `console_main` như trên rồi `pnpm --dir ui dev` (cổng 5190, proxy `/console/api` sang 8090).
