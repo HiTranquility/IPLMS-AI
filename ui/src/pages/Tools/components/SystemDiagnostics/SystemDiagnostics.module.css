@@ -1,0 +1,250 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  background: var(--color-surface);
+  border: var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+@media (min-width: 48rem) {
+  .header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+}
+
+.headerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.desc {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 45rem;
+}
+
+.refreshBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+  border: var(--hairline);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition);
+  align-self: flex-start;
+}
+
+.refreshBtn:hover {
+  background: var(--color-surface-3);
+  color: var(--color-text);
+}
+
+.spinning {
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.cardsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+@media (min-width: 48rem) {
+  .cardsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface-2);
+  border: var(--hairline);
+  border-radius: var(--radius-md);
+}
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.cardTitle {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.badgeSuccess {
+  color: var(--color-success);
+  background: var(--color-success-soft);
+  border: var(--hairline);
+}
+
+.badgeInfo {
+  color: var(--color-info);
+  background: var(--color-surface-3);
+  border: var(--hairline);
+}
+
+.badgeWarning {
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
+  border: var(--hairline);
+}
+
+.badgeDanger {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border: var(--hairline);
+}
+
+.cardMeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.metaLabel {
+  color: var(--color-muted);
+}
+
+.metaValue {
+  font-family: var(--font-mono);
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 12rem;
+}
+
+.metaHighlight {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.conventionsSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border-top: var(--hairline);
+  padding-top: var(--space-4);
+}
+
+.conventionsTitle {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.conventionsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
+@media (min-width: 48rem) {
+  .conventionsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.conventionItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  background: var(--color-surface-2);
+  border: var(--hairline);
+  border-radius: var(--radius-md);
+}
+
+.conventionHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-success);
+}
+
+.conventionDesc {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.codeBadge {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 0 var(--space-1);
+  background: var(--color-surface-3);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+}

@@ -4,7 +4,15 @@ import { ChatSidebar } from './ChatSidebar';
 import { ChatStream } from './ChatStream';
 import { ChatStudioHeader } from './ChatStudioHeader';
 import { InspectorDrawer } from './InspectorDrawer';
-import type { ChatMessage, PlaygroundParams, PromptPreset, RagSource } from './types';
+import type {
+  ChatMessage,
+  InspectorTab,
+  ModelProfilePreset,
+  PlaygroundParams,
+  PromptPreset,
+  RagSource,
+  SeedDocument,
+} from './types';
 import styles from './ChatStudio.module.css';
 
 const DEFAULT_PRESETS: PromptPreset[] = [
@@ -42,7 +50,8 @@ export function ChatStudio() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [inspectorOpen, setInspectorOpen] = useState(false);
-  const [inspectorTab, setInspectorTab] = useState<'citations' | 'telemetry' | 'params'>('citations');
+  const [inspectorTab, setInspectorTab] = useState<InspectorTab>('citations');
+  const [activeModelName, setActiveModelName] = useState('Copilot RAG v2.4 (Ollama / Local)');
   const [selectedCitation, setSelectedCitation] = useState<RagSource | null>(null);
 
   const [params, setParams] = useState<PlaygroundParams>({
@@ -286,6 +295,21 @@ export function ChatStudio() {
     setInspectorOpen(true);
   };
 
+  const handleAskAboutDocument = (doc: SeedDocument) => {
+    const prompt = `Cho tôi biết chi tiết về quy định: "${doc.title}". Văn bản này có những điều khoản then chốt nào và áp dụng ra sao?`;
+    setInputQuery(prompt);
+    inputRef.current?.focus();
+  };
+
+  const handleAskAboutDispute = (summary: string) => {
+    setInputQuery(summary);
+    inputRef.current?.focus();
+  };
+
+  const handleSelectModelProfile = (profile: ModelProfilePreset) => {
+    setActiveModelName(`${profile.name} (${profile.model})`);
+  };
+
   const handleFeedback = (messageId: string, feedbackVal: 1 | -1) => {
     setMessages((prev) =>
       prev.map((m) =>
@@ -311,9 +335,9 @@ export function ChatStudio() {
 
     messages.forEach((m) => {
       if (m.role === 'user') {
-        md += `### 👤 Người hỏi (${new Date(m.at).toLocaleTimeString('vi-VN')})\n\n${m.content}\n\n`;
+        md += `### [User] Người hỏi (${new Date(m.at).toLocaleTimeString('vi-VN')})\n\n${m.content}\n\n`;
       } else {
-        md += `### 🤖 Copilot Studio (${new Date(m.at).toLocaleTimeString('vi-VN')})\n\n${m.content}\n\n`;
+        md += `### [Copilot] Copilot Studio (${new Date(m.at).toLocaleTimeString('vi-VN')})\n\n${m.content}\n\n`;
         if (m.ragSources && m.ragSources.length > 0) {
           md += `**Trích dẫn RAG:**\n`;
           m.ragSources.forEach((s) => {
@@ -343,7 +367,7 @@ export function ChatStudio() {
     <div className={styles.studioWrapper}>
       {/* 1. Header */}
       <ChatStudioHeader
-        model="Copilot RAG v2.4 (Ollama / Local)"
+        model={activeModelName}
         isStreaming={isStreaming}
         sidebarOpen={sidebarOpen}
         inspectorOpen={inspectorOpen}
@@ -398,6 +422,9 @@ export function ChatStudio() {
           params={params}
           setParams={setParams}
           selectedCitation={selectedCitation}
+          onAskAboutDocument={handleAskAboutDocument}
+          onAskAboutDispute={handleAskAboutDispute}
+          onSelectModelProfile={handleSelectModelProfile}
         />
       </div>
     </div>
