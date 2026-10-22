@@ -61,4 +61,4 @@ tracing:
   sampleRate: 0.1
   otlp:
     http:
-      endpoint: http://tempo:4318/v1/traces
+      endpoint: http://ops-tempo:4318/v1/traces

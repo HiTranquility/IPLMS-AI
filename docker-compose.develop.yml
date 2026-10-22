@@ -8,7 +8,7 @@
 # ==============================================================================
 
 services:
-  ai:
+  api:
     # Dev image is built from this checkout; do not probe a private registry first.
     pull_policy: build
     build:
@@ -30,7 +30,7 @@ services:
       - ./docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh:ro
       - ./var/easyocr-cache:/app/var/easyocr-cache
 
-  ai-db:
+  database-vector:
     restart: "no"
 
   gateway:
@@ -45,3 +45,8 @@ services:
           "CMD-SHELL",
           "wget --spider -q 'http://127.0.0.1:8080/api/http/routers/ai-rest@docker'",
         ]
+
+  console:
+    volumes:
+      - ./app:/app/app:ro
+      - ./ui/dist:/app/ui/dist:ro

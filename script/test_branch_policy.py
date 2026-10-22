@@ -98,6 +98,31 @@ class BranchPolicyTests(unittest.TestCase):
         config = {**self.config, "namespace": "IPLMS"}
         self.assertTrue(validate(self.repo, config, "codex/PROB-013-2026-10-example", self.pr(owner="IPLMS", record="PROB-013", path=relative)).startswith("VERIFIED_LOCAL"))
 
+    def test_monthly_chore_record(self):
+        # ADR-0055: nhánh chore theo tháng trỏ về hồ sơ CHORE, chỉ với type chore/.
+        relative = "docs/projects/chores/10-2026/CHORE-001-monthly-maintenance/issue.md"
+        path = self.repo / relative
+        path.parent.mkdir(parents=True)
+        path.write_text("| **Ngày tạo** | 2026-10-01 |\n", encoding="utf-8")
+        branch = "chore/CHORE-001-2026-10-monthly-maintenance"
+        pr = self.pr(record="CHORE-001", path=relative, created="2026-10-01")
+        for event in (None, pr):
+            self.assertTrue(validate(self.repo, self.config, branch, event).startswith("VERIFIED_LOCAL"))
+        for other in ("feature/", "bugfix/", "hotfix/", "docs/", "codex/"):
+            with self.subTest(type=other), self.assertRaises(ValueError):
+                validate(self.repo, self.config, branch.replace("chore/", other), pr)
+        with self.assertRaises(ValueError):  # hồ sơ CHORE phải nằm trong docs/projects/chores
+            validate(self.repo, self.config, branch, self.pr(
+                record="CHORE-001", path="docs/projects/issues/10-2026/CHORE-001-monthly-maintenance/issue.md", created="2026-10-01"))
+        with self.assertRaises(ValueError):  # CHORE thuộc namespace của chính repo, không trỏ hồ sơ gốc
+            validate(self.repo, self.config, branch, self.pr(owner="IPLMS", record="CHORE-001", path=relative, created="2026-10-01"))
+        flat = "docs/projects/chores/10-2026/CHORE-001-monthly-maintenance.md"
+        (self.repo / flat).write_text("| **Ngày tạo** | 2026-10-01 |\n", encoding="utf-8")
+        with self.assertRaises(ValueError):  # CHORE chỉ có dạng thư mục .../issue.md
+            validate(self.repo, self.config, branch, self.pr(record="CHORE-001", path=flat, created="2026-10-01"))
+        with self.assertRaises(ValueError):
+            validate(self.repo, self.config, branch, self.pr(record="CHORE-001", path=relative, created="2026-09-30"))
+
     def test_reporter_then_creation_date_metadata(self):
         path = self.repo / self.path
         path.write_text("| **Người báo / Ngày** | Codex / 2026-10-15 |", encoding="utf-8")
