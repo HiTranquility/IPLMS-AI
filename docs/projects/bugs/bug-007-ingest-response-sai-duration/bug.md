@@ -6,7 +6,8 @@
 
 | | |
 |---|---|
-| **Trạng thái / Mức độ** | ✅ Fixed trong nhánh tích hợp — chưa merge / P2 |
+| **Trạng thái** | ✅ Fixed (đã merge develop) |
+| **Mức độ** | P2 |
 | **Người báo / Ngày** | Codex root + review agents / 2026-10-15 |
 | **Revision** | `origin/khoa-develop` tại `9a1aafd`; so base `6dd8547`, đối chiếu develop `c80037d` |
 | **Nguồn** | IPLMS AUDIT-008; nhánh này chưa được nhận vào develop |
@@ -29,8 +30,8 @@ Root lấy AST handler tại9a1aafd, bỏ decorators/type/defaults, stub upload 
 
 Map process_time*1000 và kiểm cả SUCCESS/FAILED/duplicate retry; dùng idempotency key ổn định nếu flow cần retry. Chưa sửa.
 
-- [ ] Đã sửa và chạy kiểm tập trung tương ứng.
-- [ ] Đã kiểm tích hợp tại revision nhận vào develop; không lấy source review thay cho runtime.
+- [x] Đã sửa và chạy kiểm tập trung tương ứng.
+- [x] Đã kiểm tích hợp tại revision nhận vào develop; không lấy source review thay cho runtime.
 
 ## Kết quả tích hợp 2026-10-16
 

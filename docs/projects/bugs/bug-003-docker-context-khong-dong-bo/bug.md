@@ -6,7 +6,8 @@
 
 | | |
 |---|---|
-| **Trạng thái / Mức độ** | ✅ Fixed trong nhánh tích hợp — chưa merge / P1 |
+| **Trạng thái** | ✅ Fixed (đã merge develop) |
+| **Mức độ** | P1 |
 | **Người báo / Ngày** | Codex root + review agents / 2026-10-15 |
 | **Revision** | `origin/khoa-develop` tại `9a1aafd`; so base `6dd8547`, đối chiếu develop `c80037d` |
 | **Nguồn** | IPLMS AUDIT-008; nhánh này chưa được nhận vào develop |
@@ -29,8 +30,8 @@ Vị trí **thuộc snapshot9a1aafd**, không phải file develop hiện tại: 
 
 Giữ context gốc và COPY ai/ hiện hành. Nếu hỗ trợ clone độc lập, thiết kế riêng rồi cập nhật CI/caller và allowlist cùng đợt. Kiểm build/context/image bằng fixture giả trước khi nhận. Checkpoint đã có thể được COPY từ trước, không tính đó là regression mới.
 
-- [ ] Đã sửa và chạy kiểm tập trung tương ứng.
-- [ ] Đã kiểm tích hợp tại revision nhận vào develop; không lấy source review thay cho runtime.
+- [x] Đã sửa và chạy kiểm tập trung tương ứng.
+- [x] Đã kiểm tích hợp tại revision nhận vào develop; không lấy source review thay cho runtime.
 
 ## Kết quả tích hợp 2026-10-16
 
