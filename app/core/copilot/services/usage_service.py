@@ -48,7 +48,8 @@ class CopilotUsageService:
     ) -> dict[str, Any]:
         result = result or {}
         usage = result.get("usage") or {}
-        tokens_in, tokens_out = usage.get("input_tokens"), usage.get("output_tokens")
+        tokens_in = result.get("input_tokens") or usage.get("input_tokens")
+        tokens_out = result.get("output_tokens") or usage.get("output_tokens")
         return {
             "turn_id": turn_id,
             "task": task,

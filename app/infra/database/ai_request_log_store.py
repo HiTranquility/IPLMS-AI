@@ -161,7 +161,8 @@ class AiRequestLogStore:
                 f"""SELECT (at AT TIME ZONE 'Asia/Ho_Chi_Minh')::date AS day, COUNT(*),
                            COUNT(*) FILTER (WHERE status = 'ERROR'),
                            COUNT(*) FILTER (WHERE status = 'REFUSED'),
-                           AVG(latency_ms)
+                           AVG(latency_ms),
+                           COALESCE(SUM(output_tokens), 0)
                     FROM ai_request_log WHERE {window}
                     GROUP BY day ORDER BY day""",
                 (days,),
@@ -170,6 +171,9 @@ class AiRequestLogStore:
             total = int(row[0])
             cost_known = total > 0 and int(row[9]) == 0
             total_cost = float(row[10]) if cost_known else 0.0
+            avg_lat = round(float(row[5]), 1)
+            total_out = int(row[8])
+            avg_speed = round(total_out / (avg_lat * total / 1000.0), 1) if (total > 0 and avg_lat > 0) else 0.0
             return {
                 "window_days": days,
                 "total_requests": total,
@@ -177,19 +181,26 @@ class AiRequestLogStore:
                 "refused_requests": int(row[2]),
                 "no_context_requests": int(row[3]),
                 "error_requests": int(row[4]),
-                "avg_latency_ms": round(float(row[5]), 1),
+                "avg_latency_ms": avg_lat,
                 "p95_latency_ms": round(float(row[6]), 1),
+                "avg_speed_tok_s": avg_speed,
                 "input_tokens": int(row[7]),
-                "output_tokens": int(row[8]),
+                "output_tokens": total_out,
                 "cost_known": cost_known,
                 "total_cost_usd": round(total_cost, 6),
                 "avg_cost_usd": round(total_cost / total, 6) if cost_known else 0.0,
                 "thumbs_up": int(row[11]),
                 "thumbs_down": int(row[12]),
                 "days": [
-                    {"date": d.isoformat(), "requests": int(n), "errors": int(e),
-                     "refused": int(r), "avg_latency_ms": round(float(lat or 0), 1)}
-                    for d, n, e, r, lat in series
+                    {
+                        "date": d.isoformat(),
+                        "requests": int(n),
+                        "errors": int(e),
+                        "refused": int(r),
+                        "avg_latency_ms": round(float(lat or 0), 1),
+                        "speed_tok_s": round(float(out_tok or 0) / (float(lat or 1) * int(n) / 1000.0), 1) if (int(n) > 0 and float(lat or 0) > 0) else 0.0,
+                    }
+                    for d, n, e, r, lat, out_tok in series
                 ],
             }
 
@@ -224,6 +235,7 @@ class AiRequestLogStore:
                     "turn_id": r[0], "at": r[1].isoformat(), "task": r[2], "status": r[3],
                     "model": r[4], "prompt_version": r[5], "input_tokens": r[6],
                     "output_tokens": r[7], "latency_ms": int(r[8]),
+                    "speed_tok_s": round(float(r[7]) / (float(r[8]) / 1000.0), 1) if (r[7] and r[8] and r[8] > 0) else None,
                     "cost_usd": float(r[9]) if r[9] is not None else None,
                     "user_role": r[10] or "", "parking_lot_id": r[11] or "",
                     "query": r[12], "answer": r[13] or "", "error_code": r[14] or "",
