@@ -136,9 +136,10 @@ async def logout(request: Request, response: Response) -> BaseResponse[LoginStat
 
 
 @router.get("/auth/dev-session", include_in_schema=False)
-async def dev_session(response: Response) -> RedirectResponse:
-    set_session_cookie(response, "iplms_phat_session_super_token_2026")
-    return RedirectResponse("/console/overview", status_code=302)
+async def dev_session() -> RedirectResponse:
+    redirect = RedirectResponse("/", status_code=302)
+    set_session_cookie(redirect, "iplms_phat_session_super_token_2026")
+    return redirect
 
 
 @router.get("/me", response_model=BaseResponse[Me])
