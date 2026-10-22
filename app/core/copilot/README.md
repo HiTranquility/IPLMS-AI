@@ -54,7 +54,7 @@ Tài liệu Copilot đọc được quản lý ở [core/knowledge](../knowledge
 | `text-embedding-3-small` (OpenAI, 1536 chiều — mặc định) | 0.35 *(chưa hiệu chỉnh)* | Chưa đo được (không gọi OpenAI trong lượt đo). Giữ mặc định cũ; chạy script trên trước khi nâng |
 | Model khác | — | Phải đo trước khi dùng |
 
-`AI_LLM_API_KEY`, `AI_LLM_MODEL` (mặc định `gpt-5.6-luna`), `AI_RAG_TOP_K=5`, `AI_RAG_MIN_SIMILARITY=0.35`, `AI_EMBEDDING_*`, `AI_DATABASE_URL` (ai-db pgvector). Test: `test_rag_pipeline.py`, `test_llm_factory.py`, `test_arbitrate_dispute.py`, `test_dispute_workflow.py`. Smoke: `python app/script/smoke_copilot_stream.py`. Bộ tấn công hồi quy (ADR-0029: đổi prompt/guard/model thì chạy lại): `python -m app.script.redteam_copilot -n 10` — gọi LLM thật `n × 8` lần.
+`AI_LLM_API_KEY`, `AI_LLM_MODEL` (mặc định `gpt-5.6-luna`), `AI_RAG_TOP_K=5`, `AI_RAG_MIN_SIMILARITY=0.35`, `AI_EMBEDDING_*`, `AI_DATABASE_URL` (database-vector pgvector). Test: `test_rag_pipeline.py`, `test_llm_factory.py`, `test_arbitrate_dispute.py`, `test_dispute_workflow.py`. Smoke: `python app/script/smoke_copilot_stream.py`. Bộ tấn công hồi quy (ADR-0029: đổi prompt/guard/model thì chạy lại): `python -m app.script.redteam_copilot -n 10` — gọi LLM thật `n × 8` lần.
 
 ## 🎬 Viễn cảnh
 
@@ -65,7 +65,7 @@ sequenceDiagram
     actor K as Khách (client DetailPage)
     participant B as backend AiCopilotController (SSE)
     participant AI as ai CopilotService
-    participant DB as ai-db pgvector
+    participant DB as database-vector pgvector
     participant L as LLM (Responses API)
     K->>B: "Gửi ô tô 3 tiếng bao nhiêu?"
     B->>AI: StreamAnswer(areaId, preview=false)
