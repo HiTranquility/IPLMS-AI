@@ -80,6 +80,11 @@ class Created(BaseModel):
     id: str
 
 
+class SeedResult(BaseModel):
+    seeded_samples: int
+    seeded_reviews: int
+
+
 class Snapshot(BaseModel):
     id: str
     kind: str
@@ -212,6 +217,12 @@ def _image_type(data: bytes) -> str:
 @router.get("/status", response_model=BaseResponse[Status])
 async def status(actor: ConsoleActor = Depends(require_permission("ai:metrics:read"))):
     return BaseResponse.ok([Status(**await console_vision_lab_service.status(actor))], "OK")
+
+
+@router.post("/seed-demo", response_model=BaseResponse[SeedResult])
+async def seed_demo(actor: ConsoleActor = Depends(require_permission("ai:task:label"))):
+    result = await console_vision_lab_service.seed_demo_samples(actor)
+    return BaseResponse.ok([SeedResult(**result)], f"Đã nạp {result['seeded_samples']} mẫu thực hành.")
 
 
 @router.get("/queue", response_model=BaseResponse[Sample])
