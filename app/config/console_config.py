@@ -39,3 +39,7 @@ class ConsoleConfig(BaseConfig):
 
     # Ảnh cắt nhận qua A2 mà chưa ai gán nhãn ở console sẽ bị xoá sau N ngày (PII).
     vision_retention_days: int = 90
+
+    # Nút "nạp mẫu thực hành" ở Vision Lab ghi mẫu `purpose='train'` vào DB;
+    # chỉ bật ở dev/sandbox (compose develop), production để mặc định tắt.
+    demo_seed_enabled: bool = False
