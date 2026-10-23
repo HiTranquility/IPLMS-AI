@@ -31,7 +31,11 @@ export const VISION_ENDPOINTS = {
   ACCURACY: '/vision/accuracy',
   POLICIES: '/vision/policies',
   POLICY_DECISION: (id: string) => `/vision/policies/${id}/decision`,
+  SEED_DEMO: '/vision/seed-demo',
 } as const;
+
+export const seedDemoBatch = (): Promise<{ seeded_samples: number; seeded_reviews: number }> =>
+  apiClient.postOne<{ seeded_samples: number; seeded_reviews: number }>(VISION_ENDPOINTS.SEED_DEMO, {});
 
 export const getVisionStatus = (): Promise<VisionStatus> =>
   apiClient.getOne<VisionStatus>(VISION_ENDPOINTS.STATUS);

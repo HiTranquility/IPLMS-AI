@@ -98,7 +98,8 @@ class ConsoleVisionLabService:
         await self.store.decide_label(label_id, actor.member_id, decision, note)
 
     async def seed_demo_samples(self, actor: ConsoleActor) -> dict[str, int]:
-        access_policy.require(actor, "ai:task:label")
+        if not (access_policy.can(actor, "ai:task:label") or access_policy.can(actor, "ai:label:approve") or access_policy.can(actor, "ai:member:manage")):
+            raise ConsoleAccessDenied("Bạn không có quyền thực hiện thao tác này.")
         enabled = self._demo_seed_enabled
         if enabled is None:
             enabled = get_config().console.demo_seed_enabled

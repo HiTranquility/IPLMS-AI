@@ -220,7 +220,7 @@ async def status(actor: ConsoleActor = Depends(require_permission("ai:metrics:re
 
 
 @router.post("/seed-demo", response_model=BaseResponse[SeedResult])
-async def seed_demo(actor: ConsoleActor = Depends(require_permission("ai:task:label"))):
+async def seed_demo(actor: ConsoleActor = Depends(require_any_permission("ai:task:label", "ai:label:approve", "ai:member:manage"))):
     result = await console_vision_lab_service.seed_demo_samples(actor)
     return BaseResponse.ok([SeedResult(**result)], f"Đã nạp {result['seeded_samples']} mẫu thực hành.")
 
