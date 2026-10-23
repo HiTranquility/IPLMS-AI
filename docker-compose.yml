@@ -107,6 +107,7 @@ services:
       - "127.0.0.1:8095:8090"
     # Giao diện build ở host (`pnpm --dir ui build`); image AI không chứa Node (ADR-0048 §5).
     volumes:
+      - ./app:/app/app:ro
       - ./ui/dist:/app/ui/dist:ro
     depends_on:
       database-vector:
@@ -116,6 +117,7 @@ services:
         required: true
     environment:
       - AI_CONSOLE_DATABASE_URL=postgresql://${AI_DB_USER:-postgres}:${AI_DB_PASSWORD:-***REMOVED***}@database-vector:5432/ai_console
+      - AI_CONSOLE_DEMO_SEED_ENABLED=true
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8090/console/api/health')\" || exit 1"]
       interval: 15s

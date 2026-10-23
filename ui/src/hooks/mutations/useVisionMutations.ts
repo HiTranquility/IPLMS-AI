@@ -10,6 +10,7 @@ import {
   proposeModel,
   proposePolicy,
   registerModel,
+  seedDemoBatch,
   startEval,
 } from '@/services/apiEndpoints/vision.endpoint';
 import type {
@@ -73,3 +74,6 @@ export const usePromoteModel = usePromoteModelMutation;
 export const useStartEval = useStartEvalMutation;
 export const useProposePolicy = useProposePolicyMutation;
 export const useDecidePolicy = useDecidePolicyMutation;
+export const useSeedDemoBatchMutation = () =>
+  useVisionMutation(() => seedDemoBatch());
+export const useSeedDemoBatch = useSeedDemoBatchMutation;
