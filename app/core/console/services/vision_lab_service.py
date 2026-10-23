@@ -10,8 +10,10 @@ import hashlib
 import re
 from typing import Optional
 
+from app.config import get_config
 from app.core.console.dtos import ConsoleActor
 from app.core.console.engines import access_policy
+from app.core.console.engines.demo_plate_generator import DEMO_SAMPLES, generate_plate_image
 from app.core.dataset.dtos import SnapshotSample
 from app.core.dataset.engines.plate_metrics import normalize_strict
 from app.core.dataset.services.snapshot_service import SnapshotService
@@ -52,8 +54,9 @@ def split_for(group_ref: str) -> str:
 
 
 class ConsoleVisionLabService:
-    def __init__(self, store=None) -> None:
+    def __init__(self, store=None, demo_seed_enabled: Optional[bool] = None) -> None:
         self.store = store or console_vision_store
+        self._demo_seed_enabled = demo_seed_enabled
 
     async def status(self, actor: ConsoleActor) -> dict:
         access_policy.require(actor, "ai:metrics:read")
@@ -93,6 +96,21 @@ class ConsoleVisionLabService:
         # Từ chối mà không nói vì sao thì người gán không sửa được cách gán.
         note = _reason(note, required=decision == "REJECTED")
         await self.store.decide_label(label_id, actor.member_id, decision, note)
+
+    async def seed_demo_samples(self, actor: ConsoleActor) -> dict[str, int]:
+        access_policy.require(actor, "ai:task:label")
+        enabled = self._demo_seed_enabled
+        if enabled is None:
+            enabled = get_config().console.demo_seed_enabled
+        # Mẫu demo có purpose='train': bật ở production là bơm dữ liệu giả vào snapshot train.
+        if not enabled:
+            raise ConsoleAccessDenied("Nạp mẫu thực hành chỉ bật ở môi trường dev/sandbox.")
+        samples = []
+        for item in DEMO_SAMPLES:
+            image = generate_plate_image(item["plate"], item["type"], item["two_line"])
+            samples.append({**item, "image": image, "image_sha256": hashlib.sha256(image).hexdigest()})
+        retention = get_config().console.vision_retention_days
+        return await self.store.seed_demo_samples(actor.member_id, samples, retention)
 
     async def list_snapshots(self, actor: ConsoleActor) -> list[dict]:
         # Người đo model cần chọn golden để chạy eval, dù không tự tạo snapshot.
