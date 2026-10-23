@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.api.rest.console_access import require_permission
+from app.api.rest.console_access import require_any_permission, require_permission
 from app.api.rest.schemas.base_response import BaseResponse
 from app.core.console.dtos import ConsoleActor
 from app.core.console.services.tools_service import console_tools_service
@@ -54,7 +54,7 @@ async def system(actor: ConsoleActor = Depends(require_permission("ai:metrics:re
 
 
 @router.post("/copilot/stream")
-async def try_copilot_stream(payload: AskIn, actor: ConsoleActor = Depends(require_permission("ai:prompt:edit"))):
+async def try_copilot_stream(payload: AskIn, actor: ConsoleActor = Depends(require_any_permission("ai:prompt:edit", "ai:chatlog:read"))):
     async def event_generator():
         async for chunk in console_tools_service.try_copilot_stream(actor, payload.query, payload.parking_lot_id):
             data = {
@@ -77,7 +77,7 @@ async def try_copilot_stream(payload: AskIn, actor: ConsoleActor = Depends(requi
 
 
 @router.post("/copilot", response_model=BaseResponse[CopilotAnswer])
-async def try_copilot(payload: AskIn, actor: ConsoleActor = Depends(require_permission("ai:prompt:edit"))):
+async def try_copilot(payload: AskIn, actor: ConsoleActor = Depends(require_any_permission("ai:prompt:edit", "ai:chatlog:read"))):
     answer = await console_tools_service.try_copilot(actor, payload.query, payload.parking_lot_id)
     return BaseResponse.ok([answer], "Trả lời từ pipeline RAG có guard (lượt thử, không tính vào số sản phẩm).")
 

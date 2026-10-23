@@ -6,7 +6,7 @@ Chạy native: `python -m app.console_main` (nghe AI_CONSOLE_BIND_HOST, mặc đ
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
 from app.api.rest.console_router import console_router
 from app.api.rest.middlewares.error_handler import ai_service_error_handler, generic_error_handler
@@ -67,26 +67,35 @@ async def _security_headers(request: Request, call_next):
 
 
 @app.get("/console/api/health", include_in_schema=False)
+@app.get("/api/health", include_in_schema=False)
 def health() -> dict:
     return {"status": "ok"}
 
 
 app.include_router(console_router, prefix="/console/api")
+app.include_router(console_router, prefix="/api")
 
 
 @app.get("/console/api/{_path:path}", include_in_schema=False)
+@app.get("/api/{_path:path}", include_in_schema=False)
 def api_not_found(_path: str) -> JSONResponse:
-    # Đường /console/api sai không được rơi xuống SPA và trả HTML 200.
+    # Đường API sai không được rơi xuống SPA và trả HTML 200.
     return _error(404, "Không có API này.", "NOT_FOUND")
 
 
+@app.get("/assets/{path:path}", include_in_schema=False)
+@app.get("/console/assets/{path:path}", include_in_schema=False)
+def assets(path: str):
+    candidate = (UI_DIST / "assets" / path).resolve()
+    if candidate.is_file() and candidate.is_relative_to(UI_DIST / "assets"):
+        return FileResponse(candidate)
+    return JSONResponse(status_code=404, content={"message": "Asset not found"})
+
+
 @app.get("/", include_in_schema=False)
-def root_redirect():
-    return RedirectResponse(url="/console/")
-
-
 @app.get("/console", include_in_schema=False)
 @app.get("/console/{path:path}", include_in_schema=False)
+@app.get("/{path:path}", include_in_schema=False)
 def ui(path: str = ""):
     """Phục vụ SPA: file tĩnh có thật thì trả file, còn lại trả index.html (route phía client)."""
     if not (UI_DIST / "index.html").is_file():
