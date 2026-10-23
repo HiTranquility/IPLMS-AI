@@ -103,7 +103,8 @@ services:
     logging: *default-logging
     entrypoint: ["uvicorn", "app.console_main:app", "--host", "0.0.0.0", "--port", "8090"]
     ports:
-      - "127.0.0.1:${AI_CONSOLE_HOST_PORT:-8090}:8090"
+      - "127.0.0.1:8090:8090"
+      - "127.0.0.1:8095:8090"
     # Giao diện build ở host (`pnpm --dir ui build`); image AI không chứa Node (ADR-0048 §5).
     volumes:
       - ./ui/dist:/app/ui/dist:ro

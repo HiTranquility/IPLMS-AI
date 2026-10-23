@@ -17,7 +17,7 @@ from app.util.logger import logger
 
 router = APIRouter(tags=["AI Console auth"])
 
-_UI_HOME = "/console/"
+_UI_HOME = "/"
 
 
 class PasswordLogin(BaseModel):
