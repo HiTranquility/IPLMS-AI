@@ -1,34 +1,37 @@
+import { useI18n } from '@/i18n/I18nProvider';
 import styles from './LabelStudio.module.css';
 
 export function LabelShortcutsBar() {
+  const { t } = useI18n();
+  const s = t.label.studio;
   return (
-    <footer className={styles.dockedShortcuts} role="toolbar" aria-label="Phím tắt thao tác nhanh">
+    <footer className={styles.dockedShortcuts} role="toolbar" aria-label={s.shortcutsLabel}>
       <span className={styles.dockItem}>
-        <kbd className={styles.kbd}>1</kbd> Xác nhận đúng
+        <kbd className={styles.kbd}>1</kbd> {s.keyCorrect}
       </span>
       <span>·</span>
       <span className={styles.dockItem}>
-        <kbd className={styles.kbd}>2</kbd> Sửa biển số
+        <kbd className={styles.kbd}>2</kbd> {s.keyFix}
       </span>
       <span>·</span>
       <span className={styles.dockItem}>
-        <kbd className={styles.kbd}>3</kbd> Ảnh hỏng
+        <kbd className={styles.kbd}>3</kbd> {s.keyUnusable}
       </span>
       <span>·</span>
       <span className={styles.dockItem}>
-        <kbd className={styles.kbd}>I</kbd> Đảo màu
+        <kbd className={styles.kbd}>I</kbd> {s.keyInvert}
       </span>
       <span>·</span>
       <span className={styles.dockItem}>
-        <kbd className={styles.kbd}>C</kbd> Tương phản
+        <kbd className={styles.kbd}>C</kbd> {s.keyContrast}
       </span>
       <span>·</span>
       <span className={styles.dockItem}>
-        <kbd className={styles.kbd}>+/-</kbd> Phóng to / Thu nhỏ
+        <kbd className={styles.kbd}>+/-</kbd> {s.keyZoom}
       </span>
       <span>·</span>
       <span className={styles.dockItem}>
-        <kbd className={styles.kbd}>0</kbd> Reset ảnh
+        <kbd className={styles.kbd}>0</kbd> {s.keyReset}
       </span>
     </footer>
   );
