@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **Ngày / Người báo** | 2026-10-23 / Claude Code, tìm thấy khi đọc code console trong [ISSUE-004](../../issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md) |
-| **Trạng thái** | 🆕 New / 🔴 bảo mật (lộ secret) |
+| **Trạng thái** | ✅ Fixed (chờ PR) / 🔴 bảo mật (lộ secret) |
 | **Môi trường** | `develop@5f8e753`, thêm ở commit `ae47ad2` |
 
 ## Hành vi thực tế
@@ -28,4 +28,14 @@ Thiếu `AI_CONSOLE_DB_PASSWORD` thì script dừng với lỗi rõ ràng, giố
 
 ## Sửa / kiểm chứng
 
-Chưa sửa. Cần: bỏ giá trị mặc định và fail-closed khi thiếu biến; đổi mật khẩu role `ai_console` ở mọi môi trường đã chạy script; thêm test đơn vị cho trường hợp thiếu biến môi trường.
+Đã sửa trên nhánh `bugfix/bug-015-2026-10-console-auth-hardening` (2026-10-24, gom chung với bug-015 theo chủ dự án duyệt).
+
+- `app/script/harden_console_db.py:30`: thêm `_require_env(...)`; thiếu biến thì `RuntimeError` nêu tên biến, không có giá trị dự phòng.
+- Cùng file có thêm 3 giá trị mặc định khác viết trong code (mật khẩu admin Postgres, URL admin có mật khẩu, mật khẩu `ai_inference` ở hai chỗ). Đây cùng loại lỗi nên bỏ luôn: dòng 45, 47, 52, 199. `AI_CONSOLE_DB_PASSWORD` giờ được kiểm **trước** khi kết nối DB (dòng 61), nên thiếu biến thì script không đụng tới DB.
+- Test mới `test/test_console_db_hardening.py:41` (thiếu `AI_CONSOLE_DB_PASSWORD` → lỗi, `psycopg2.connect` không được gọi) và `:49` (thiếu mật khẩu admin, mật khẩu `ai_inference` hoặc URL admin → lỗi).
+
+Kiểm chứng: `venv/bin/python -m unittest test.test_console_auth test.test_console_db_hardening test.test_console_http` (Postgres 16 cục bộ, `AI_TEST_DATABASE_URL`): 29 test: 27 PASS, 1 skip (kiểm live DB `ai_inference`, không có DB dev), 1 FAIL có sẵn từ trước và không thuộc bug này: `test_security_headers_and_no_docs` (`/docs` trả 503 thay vì 404, bug-014). UI: `pnpm typecheck` PASS; `npx vitest run --maxWorkers=1` 12 file / 48 test PASS.
+
+**Còn lại cho người:**
+- Đổi mật khẩu role `ai_console` và `ai_inference` trên mọi môi trường từng chạy script, vì các giá trị cũ đã nằm trong lịch sử git.
+- Mật khẩu dev giống giá trị cũ của admin vẫn xuất hiện ở `.github/workflows/ci.yml` (DB dịch vụ tạm của CI) và `docker-compose.yml:119`. Đây là cấu hình dev/CI ngoài phạm vi script này, cần người quyết có đổi sang biến/secret hay không.

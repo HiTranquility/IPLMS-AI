@@ -150,6 +150,7 @@ export const en: Messages = {
     keyOnce: 'The key is shown only once. If you leave before entering a code, a console admin must reset it.',
     pendingLead: 'Enter the code from the key added to your authenticator app when the account was created.',
     otp: '6-digit code',
+    otpHint: 'Enter the 6 digits from your authenticator app.',
     confirm: 'Confirm',
     otherAccount: 'Use another account',
   },
