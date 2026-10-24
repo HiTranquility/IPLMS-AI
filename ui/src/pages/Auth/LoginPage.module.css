@@ -82,7 +82,7 @@
 }
 
 .logoIcon {
-  color: var(--color-accent);
+  color: var(--color-accent-dark);
 }
 
 .scope {
@@ -226,7 +226,7 @@
 }
 
 .hintIcon {
-  color: var(--color-accent);
+  color: var(--color-accent-dark);
   flex-shrink: 0;
 }
 

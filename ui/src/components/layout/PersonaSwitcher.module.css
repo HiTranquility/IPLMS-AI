@@ -41,7 +41,7 @@
 }
 
 .currentIcon {
-  color: var(--color-accent);
+  color: var(--color-accent-dark);
   flex-shrink: 0;
 }
 
@@ -163,7 +163,7 @@
 }
 
 .menuItemActive .menuItemIcon {
-  color: var(--color-accent);
+  color: var(--color-accent-dark);
 }
 
 .menuItemContent {
@@ -199,7 +199,7 @@
 }
 
 .singleBadgeIcon {
-  color: var(--color-accent);
+  color: var(--color-accent-dark);
 }
 
 .focusToggle {

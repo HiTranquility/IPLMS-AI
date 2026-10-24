@@ -53,7 +53,9 @@ Cùng **tên** token với 3 app frontend (`--color-bg`, `--color-surface*`, `--
 | `--color-primary` | `#24272b` graphite | `#ecebe7` | CTA chính, segment đang chọn |
 | `--color-accent` | `#d97706` amber | `#f59e0b` | Viền mục đang chọn, nút "Lưu kết quả", nhãn phạm vi |
 | `--color-accent-ink` | `#1c1204` | `#1c1204` | Chữ trên nền accent |
-| `--color-accent-dark` | `#92400e` | `#fbbf24` | Chữ accent trên nền thường |
+| `--color-accent-dark` | `#92400e` | `#fbbf24` | Chữ accent trên nền thường. `--color-accent` sáng chỉ đạt 3.2:1 trên nền trắng nên **không dùng làm màu chữ** (bug-025) |
+| `--color-faded` | `#69665e` | `#9a978f` | Chữ phụ nhạt nhất; vẫn ≥ 4.5:1 trên bg, surface, surface-2, surface-3 (bug-025) |
+| `--color-success` / `--color-warning` | `#166534` / `#854d0e` | `#4ade80` / `#fbbf24` | Chữ trạng thái; ≥ 4.5:1 cả trên nền `*-soft` của chính nó (bug-025) |
 
 Font hệ thống (`system-ui`, `ui-monospace`) — không tải font. Theme sáng/tối theo hệ điều hành, đổi tay ở rail và nhớ trong `localStorage`.
 
