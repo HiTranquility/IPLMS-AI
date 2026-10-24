@@ -61,9 +61,21 @@ Thêm component dùng chung `ui/src/components/common/Ui/feedback/SimulatedBanne
 
 **Kiểm chứng (2026-10-24):** `pnpm typecheck` PASS. `npx vitest run --maxWorkers=1`: 13 file / 57 test PASS, trước là 48. Các ca "API 404 → không hiện kết quả bịa" và "API trả dữ liệu → hiện đúng dữ liệu đó" có cho từng chỗ: `ChatStudio.test.tsx` (Knowledge, Dispute), `AnprSandbox.test.tsx` (ANPR, Anti-Fraud), `SystemDiagnostics.test.tsx`, `ForecastSimulator.test.tsx`, `RegisterModelForm.test.tsx` (mới).
 
-**Còn lại, ngoài phạm vi UI:**
-- Route ANPR thật cho Sandbox trên console (qua engine, không qua route inference): việc của Khoa.
-- Endpoint mô phỏng tranh chấp thật từ LangGraph workflow: việc của Dương. Route `/dispute-workflow/simulate` ở process inference (`app/api/rest/routes/copilot_controller.py:248`) cũng trả bước viết sẵn (15.2 phút, "Điều 5"…), cần sửa cùng lúc.
-- Trường trạng thái engine (YOLO/EasyOCR/PyTorch) cho `/tools/system`.
-- Chữ tiếng Việt viết cứng sẵn có trong các file này để bug-023 xử lý. Chuỗi mới thêm đều qua i18n.
-- Chưa xem trên browser.
+**Nối API thật (2026-10-24, chủ dự án: "nối API thật vào"):** ba studio có service thật thì gọi thẳng service đó trong process console (ADR-0048 §1), bỏ banner MÔ PHỎNG:
+
+| Studio | Route console mới | Service thật | Quyền |
+|---|---|---|---|
+| ANPR Sandbox | `POST /tools/anpr/recognize` (multipart, ≤ 8 MB) | `AnprService.recognize_bytes(persist_files=False)`: engine đang nạp, không lưu ảnh (PII) | `ai:model:evaluate` |
+| Anti-Fraud | `POST /tools/vision/verify-match` (chỉ 2 loại xe, `extra="forbid"`) | `anti_fraud_service.verify_vehicle_match`. Service chưa so ảnh, nên `similarity_score` trả `null` thay vì hằng `0.0` | `ai:model:evaluate` |
+| Knowledge Explorer | `GET /tools/knowledge/documents` | `ingestion_service.list`: metadata thật (số đoạn, phiên bản mới nhất, bản khách đang thấy) | `ai:prompt:edit` |
+| Chẩn đoán | `/tools/system` thêm `engines` | Đường dẫn và dung lượng weights YOLO đọc từ đĩa, phiên bản, YOLO/EasyOCR đã nạp hay chưa (đọc bộ nhớ process, không nạp model), ngôn ngữ OCR, phiên bản torch (metadata gói), CUDA chỉ khi torch đã nạp sẵn. Không biết chắc thì `null` → "—" | `ai:metrics:read` |
+
+Code: `app/core/console/services/tools_service.py` (`_engine_status`, `try_anpr`, `verify_match`, `knowledge_documents`), `app/api/rest/routes/console_tools_controller.py`. UI: `studio.endpoint.ts`, kiểu trong `studio.item.ts`/`tool.response.ts`, `SystemDiagnostics.tsx`, `KnowledgeExplorer.tsx` (thẻ hiện metadata thật), `AnprSandbox.tsx`.
+
+Kiểm: `python -m unittest test.test_console_tools` (thêm `StudioRealApiTest`: engine được gọi với `persist_files=False`, quyền, ảnh rỗng, điểm chưa đo là `null`, map tài liệu, weights thiếu → `null`) + `test_console_copilot_lab test_rag_pipeline test_llm_factory`: PASS. UI typecheck PASS, vitest 59/59 PASS.
+
+**Còn lại:**
+- Mô phỏng tranh chấp vẫn MÔ PHỎNG. Workflow LangGraph (ai ISSUE-001) chưa có `EvidenceClient`/bộ nạp bằng chứng thật nên chưa có gì để nối (việc của Dương). Route `/dispute-workflow/simulate` ở process inference (`copilot_controller.py:248`) vẫn trả bước viết sẵn.
+- Forecast vẫn là "Kịch bản minh hoạ": server còn `FeatureNotImplementedError`.
+- Anti-Fraud so ảnh (ReID, SUGGESTION-007 B6) chưa có, nên độ tương đồng luôn "—".
+- Chưa chạy ANPR thật trên máy có weights; test dùng engine giả lập.
