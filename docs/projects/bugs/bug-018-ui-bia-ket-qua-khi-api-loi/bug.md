@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **Ngày / Người báo** | 2026-10-23 / Claude Code, rà UI trong [ISSUE-004](../../issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md) |
-| **Trạng thái** | 🆕 New / 🔴 sai im lặng ngay trên công cụ dùng để đánh giá AI |
+| **Trạng thái** | ✅ Fixed (chờ PR) — nhánh `bugfix/bug-017-2026-10-chat-studio-contract` (gom cùng bug-017, chủ dự án duyệt) |
 | **Môi trường** | `develop@5f8e753`; các phần này vào cùng [ISSUE-003](../../issues/10-2026/ISSUE-003-console-root-routing-copilot-studio/issue.md) |
 
 ## Hành vi thực tế
@@ -44,4 +44,26 @@ Xem bảng (`file:line`) và ảnh `evidence/04-tools.png`. Test UI hiện có �
 
 ## Sửa / kiểm chứng
 
-Chưa sửa. Mỗi mục sửa xong cần một test "API 404 hoặc 500 → không hiện kết quả".
+Chủ dự án chốt OPEN-03 ngày 2026-10-24: API lỗi thì báo lỗi thật, không bịa số; studio chưa có API thật vẫn giữ nhưng luôn gắn nhãn **MÔ PHỎNG**.
+
+Thêm component dùng chung `ui/src/components/common/Ui/feedback/SimulatedBanner.tsx`. Nhãn cố định, không tắt được, màu theo token, chữ qua i18n (`simulated.*`, VI+EN). Đường API của các studio gom vào `ui/src/services/apiEndpoints/studio.endpoint.ts` và gọi qua `apiClient` (kiểu ở `ui/src/types/tool/shares/studio.item.ts`). Tới nay console chưa gắn các route đó nên sẽ nhận 404 và UI báo lỗi. Khi backend thêm route thì UI dùng được ngay.
+
+| # | Chỗ | Sửa |
+|---|---|---|
+| 1 | ANPR Sandbox | `AnprSandbox.tsx:302`: gọi `recognizePlate` (`/console/api/anpr/recognize`). Lỗi → `ErrorBlock`, không dựng biển từ preset, bỏ 0.985/0.978. Trường thiếu (confidence, màu biển, event, thời gian) hiện "—". Bỏ badge "CNN NetV2 Active" (ghi "Máy chủ chưa báo"). Banner MÔ PHỎNG ở `:400` |
+| 2 | Anti-Fraud | `AnprSandbox.tsx:337`: gọi `verifyMatch`. Lỗi → `ErrorBlock`, không tự so hai ô chọn rồi gán 0.985/0.124. `similarity_score` thiếu → "—" |
+| 3 | Dispute Simulator | `DisputeSimulator.tsx:84`: chỉ hiện `steps` server trả, rỗng/lỗi → `ErrorBlock`. Bỏ 5 bước cố định, `wallet_tx_id`, `audit_log_hash`, câu "cần Giám sát duyệt hoàn tiền theo Điều 5" gài sẵn khi gửi sang chat. Số node lấy theo `steps.length` |
+| 4 | Knowledge Explorer | `KnowledgeExplorer.tsx:58`: danh sách chỉ từ `/knowledge/seeds`; lỗi → rỗng + `ErrorBlock`. Xoá `defaultSeeds.ts`, bỏ "pgvector: Sẵn sàng". Sửa thêm: nạp bản nháp gửi `document_id = doc_<timestamp>` nên server (đòi UUID) luôn trả 422; nay dùng `crypto.randomUUID()` và `ingestDraft` của `apiClient` (`:123`) |
+| 5 | Chẩn đoán | `SystemDiagnostics.tsx:24`: chỉ `vision_device` từ `/tools/system`. YOLO/EasyOCR/PyTorch/CUDA hiện "—", badge "Máy chủ chưa báo", kèm ghi chú. API lỗi → `ErrorBlock`. Gỡ 10 khoá i18n trạng thái không còn dùng |
+| 6 | Đăng ký model | `RegisterModelForm.tsx:24`: xoá 3 preset (s3 giả, sha256 bịa, "99.2%", "12ms") và CSS preset. "Kiểm tra kết nối" giả 350 ms → "Kiểm tra định dạng", nói rõ chỉ kiểm cục bộ |
+| 7 | Dự báo & giá động | `ForecastSimulator.tsx:124`: banner MÔ PHỎNG; đường lấp đầy đổi nhãn thành "Kịch bản minh hoạ" và mô tả nói rõ chưa có model. "Biến động doanh thu" (hệ số 2.28) → "—", "chưa có mô hình doanh thu" (`:278`) |
+| + | Chat Studio header | `ChatStudio.tsx:53`: tên model lấy từ `/tools/system` thay cho chuỗi "Copilot RAG v2.4"; chọn preset tham số không còn đổi tên model trên header |
+
+**Kiểm chứng (2026-10-24):** `pnpm typecheck` PASS. `npx vitest run --maxWorkers=1`: 13 file / 57 test PASS, trước là 48. Các ca "API 404 → không hiện kết quả bịa" và "API trả dữ liệu → hiện đúng dữ liệu đó" có cho từng chỗ: `ChatStudio.test.tsx` (Knowledge, Dispute), `AnprSandbox.test.tsx` (ANPR, Anti-Fraud), `SystemDiagnostics.test.tsx`, `ForecastSimulator.test.tsx`, `RegisterModelForm.test.tsx` (mới).
+
+**Còn lại, ngoài phạm vi UI:**
+- Route ANPR thật cho Sandbox trên console (qua engine, không qua route inference): việc của Khoa.
+- Endpoint mô phỏng tranh chấp thật từ LangGraph workflow: việc của Dương. Route `/dispute-workflow/simulate` ở process inference (`app/api/rest/routes/copilot_controller.py:248`) cũng trả bước viết sẵn (15.2 phút, "Điều 5"…), cần sửa cùng lúc.
+- Trường trạng thái engine (YOLO/EasyOCR/PyTorch) cho `/tools/system`.
+- Chữ tiếng Việt viết cứng sẵn có trong các file này để bug-023 xử lý. Chuỗi mới thêm đều qua i18n.
+- Chưa xem trên browser.

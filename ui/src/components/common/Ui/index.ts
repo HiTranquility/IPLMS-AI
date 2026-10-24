@@ -5,6 +5,7 @@ export * from './data-display/Stat';
 export * from './data-display/ThresholdCurve';
 export * from './feedback/EmptyState';
 export * from './feedback/LoadState';
+export * from './feedback/SimulatedBanner';
 export * from './feedback/Spinner';
 export * from './form/Field';
 export * from './form/ReasonAction';
