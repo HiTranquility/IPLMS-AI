@@ -107,7 +107,7 @@ export function ReviewPage() {
               </div>
               <div className={styles.statItem}>
                 <span className={styles.statLabel}>{t.review.statCorrected}</span>
-                <span className={styles.statValue} style={{ color: 'var(--color-accent)' }}>
+                <span className={styles.statValue} style={{ color: 'var(--color-accent-dark)' }}>
                   {t.review.samples(correctedItems.length)}
                 </span>
               </div>

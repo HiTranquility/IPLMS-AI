@@ -32,4 +32,8 @@ Sửa 2026-10-24 trên nhánh `bugfix/bug-021-2026-10-console-ui-polish` (HiTran
 
 - `ui/src/pages/Tools/components/SystemDiagnostics/SystemDiagnostics.module.css:83-87`: `.cardsGrid` đổi sang `repeat(auto-fit, minmax(min(100%, 14rem), 1fr))`, nên số cột theo bề rộng khối, không theo viewport. `:93`: `.card` có `min-width: 0` để giá trị monospace co lại theo ellipsis có sẵn.
 
-Kiểm: đo lại `scrollWidth` bằng Playwright ở 375/768/1280 × sáng/tối, kết quả ghi ở review-1 (lượt kiểm sau khi gộp các nhánh).
+Đo lại ở khổ 375 còn hai chỗ tràn ngang cùng loại, đã sửa luôn:
+- `/vision`: `.actions` của PageHeader không co lại (`components/layout/PageHeader.module.css`), thêm `flex-wrap`, `min-width: 0`, `max-width: 100%`.
+- `/members`: lưới `.layout` ≤ 1180px dùng `1fr` nên nở theo bảng, đổi sang `minmax(0, 1fr)` (`pages/Members/MembersPage.module.css:34-39`).
+
+Kiểm trên browser (2026-10-24, Playwright + Chromium, UI dev + API giả `evidence/mock_console_api.py`): 11 màn × {375, 768, 1280} × {sáng, tối} = 66 màn. Tràn ngang 0, chữ dưới ngưỡng AA 0, lỗi JS 0. Script đo: `scrollWidth` so với `innerWidth`, tỉ lệ tương phản WCAG giữa màu chữ đã tính và nền đục gần nhất.
