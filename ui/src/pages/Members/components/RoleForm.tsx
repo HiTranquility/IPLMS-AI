@@ -186,7 +186,7 @@ export function RoleForm({
             <div className={styles.sectionBlock}>
               <div className={styles.sectionHeader}>
                 <span className={styles.sectionTitle}>{t.members.grantMoreRoles}</span>
-                <span className={styles.countBadge}>{unassignedRoles.length} khả dụng</span>
+                <span className={styles.countBadge}>{t.members.availableCount(unassignedRoles.length)}</span>
               </div>
 
               {unassignedRoles.length > 0 ? (
@@ -232,7 +232,7 @@ export function RoleForm({
 
           {isSelf && (
             <p className={styles.selfNotice}>
-              ℹ Bạn đang đăng nhập tài khoản này — không thể tự sửa vai trò của chính mình.
+              {t.members.selfNotice}
             </p>
           )}
 
