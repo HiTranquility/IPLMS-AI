@@ -48,39 +48,13 @@ export type InspectorTab = 'citations' | 'knowledge' | 'dispute' | 'telemetry' |
 
 export type KnowledgeCategory = 'all' | 'regulation' | 'tariff' | 'fine_policy' | 'ev_charging';
 
-export interface SeedDocument {
-  id?: string;
-  category: 'regulation' | 'tariff' | 'fine_policy' | 'ev_charging' | string;
-  title: string;
-  content: string;
-  source: string;
-  parking_lot_id?: string | null;
-}
-
-export interface DisputeStep {
-  step: number;
-  node: string;
-  status: 'COMPLETED' | 'RUNNING' | 'AWAITING_STAFF_SIGN_OFF' | 'FAILED' | 'PENDING';
-  description: string;
-  data: Record<string, any>;
-}
-
-export interface DisputeSimulationResult {
-  success: boolean;
-  dispute_id: string;
-  workflow: string;
-  nodes_traversed: number;
-  steps: DisputeStep[];
-  final_status: string;
-}
-
-export interface DisputeSimulationPayload {
-  dispute_id: string;
-  claimed_amount: number;
-  claim_reason: string;
-  has_checkin_snapshot: boolean;
-  has_checkout_snapshot: boolean;
-}
+// Kiểu dữ liệu trao đổi với API studio nằm ở tầng types (dùng chung với services).
+export type {
+  DisputeSimulationPayload,
+  DisputeSimulationResult,
+  DisputeStep,
+  SeedDocument,
+} from '@/types/tool';
 
 export interface ModelProfilePreset {
   id: string;

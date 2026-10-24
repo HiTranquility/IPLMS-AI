@@ -74,6 +74,77 @@ class ConsoleToolsTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual("knowledge.ingest_draft:SUCCESS", store.add_audit.await_args.args[1])
 
 
+class ChatStudioContractTest(unittest.IsolatedAsyncioTestCase):
+    """ai bug-017: body Chat Studio gửi phải qua được AskIn và tham số phải tới pipeline."""
+
+    # Giữ khớp ui/src/pages/Copilot/components/ChatStudio/askContract.ts (ASK_BODY_FIELDS).
+    UI_FIELDS = ("query", "parking_lot_id", "min_similarity", "top_k", "temperature")
+    BODY = {"query": "phí gửi xe?", "parking_lot_id": "", "min_similarity": 0.72, "top_k": 4, "temperature": 0.1}
+
+    def test_askin_nhan_dung_body_cua_chat_studio(self):
+        from app.api.rest.routes.console_tools_controller import ASK_BODY_FIELDS, AskIn
+
+        self.assertEqual(set(self.UI_FIELDS), set(ASK_BODY_FIELDS))
+        self.assertEqual(set(ASK_BODY_FIELDS), set(AskIn.model_fields))
+        payload = AskIn.model_validate(self.BODY)
+        self.assertEqual({"top_k": 4, "min_similarity": 0.72, "temperature": 0.1}, payload.tuning())
+        # Thân cũ hai trường vẫn hợp lệ, tham số thử để None = cấu hình mặc định.
+        self.assertEqual({"top_k": None, "min_similarity": None, "temperature": None},
+                         AskIn.model_validate({"query": "x"}).tuning())
+
+    def test_askin_chan_gia_tri_ngoai_bien_va_truong_la(self):
+        from pydantic import ValidationError
+
+        from app.api.rest.routes.console_tools_controller import AskIn
+
+        for bad in ({"top_k": 0}, {"top_k": 11}, {"temperature": 1.5}, {"temperature": -0.1},
+                    {"min_similarity": 1.2}, {"max_tokens": 512}):
+            with self.subTest(bad=bad), self.assertRaises(ValidationError):
+                AskIn.model_validate({**self.BODY, **bad})
+
+    async def test_tham_so_thu_toi_copilot(self):
+        svc, copilot, *_ = service()
+        await svc.try_copilot(ML, "phí gửi xe?", None, top_k=4, min_similarity=0.72, temperature=0.1)
+        request = copilot.ask_question.await_args.args[0]
+        self.assertEqual((4, 0.72, 0.1), (request.top_k, request.min_similarity, request.temperature))
+
+    def test_http_stream_khong_con_422(self):
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+
+        from app.api.rest import console_access
+        from app.api.rest.routes import console_tools_controller as ctl
+
+        seen = {}
+
+        async def fake_stream(actor, query, parking_lot_id, **tuning):
+            seen.update(tuning)
+            yield SimpleNamespace(token="ok", is_finished=True, sources=[], confidence=None, refused=False,
+                                  guardrail_triggered=None, prompt_version="v2", turn_id="t", latency_ms=1.0)
+
+        app = FastAPI()
+        app.include_router(ctl.router)
+        with patch.object(ctl.console_tools_service, "try_copilot_stream", fake_stream), \
+                patch.object(console_access.console_auth_service, "authorize_any", AsyncMock(return_value=ML)):
+            response = TestClient(app).post("/tools/copilot/stream", json=self.BODY)
+        self.assertEqual(200, response.status_code, response.text)
+        self.assertIn('"token": "ok"', response.text)
+        self.assertEqual({"top_k": 4, "min_similarity": 0.72, "temperature": 0.1}, seen)
+
+
+class RagLimitsTest(unittest.TestCase):
+    """Tham số thử chỉ làm truy xuất chặt hơn, không nới cổng NO_CONTEXT (ADR-0029)."""
+
+    def test_min_similarity_khong_ha_duoi_cau_hinh(self):
+        from app.core.copilot.engines.rag_pipeline import RagPipelineEngine
+
+        engine = RagPipelineEngine(embedder=object(), vector_store=object(), llm=object())
+        engine.top_k, engine.min_similarity = 5, 0.35
+        self.assertEqual((5, 0.35), engine._limits(None, None))
+        self.assertEqual((4, 0.72), engine._limits(4, 0.72))
+        self.assertEqual((2, 0.35), engine._limits(2, 0.0))
+
+
 @unittest.skipUnless(os.getenv("AI_TEST_DATABASE_URL"), "requires AI_TEST_DATABASE_URL")
 class ConsoleTryNotCountedTest(unittest.TestCase):
     def test_luot_thu_trong_console_khong_vao_so_muc_dung_san_pham(self):
