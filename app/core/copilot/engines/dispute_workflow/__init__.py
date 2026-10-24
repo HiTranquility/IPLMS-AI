@@ -7,6 +7,14 @@ from app.core.copilot.engines.dispute_workflow.dependencies import (
     PolicyRetriever,
     RecommendationWriter,
 )
+from app.core.copilot.engines.dispute_workflow.fixtures import (
+    STANDARD_BACKEND_EVIDENCE_BUNDLE,
+    ContractEvidenceAnalyzer,
+    ContractEvidenceClient,
+    ContractPolicyRetriever,
+    ContractRecommendationWriter,
+    create_contract_dispute_dependencies,
+)
 from app.core.copilot.engines.dispute_workflow.graph import build_dispute_graph
 from app.core.copilot.engines.dispute_workflow.state import (
     DisputeWorkflowState,
@@ -14,12 +22,18 @@ from app.core.copilot.engines.dispute_workflow.state import (
 )
 
 __all__ = [
+    "ContractEvidenceAnalyzer",
+    "ContractEvidenceClient",
+    "ContractPolicyRetriever",
+    "ContractRecommendationWriter",
     "DisputeWorkflowDependencies",
     "DisputeWorkflowState",
     "EvidenceAnalyzer",
     "EvidenceClient",
     "PolicyRetriever",
     "RecommendationWriter",
+    "STANDARD_BACKEND_EVIDENCE_BUNDLE",
     "build_dispute_graph",
+    "create_contract_dispute_dependencies",
     "make_initial_state",
 ]
