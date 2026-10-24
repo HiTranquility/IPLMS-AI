@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 import { Badge, type BadgeTone } from '@/components/common/Ui/data-display/Badge';
 import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
-import { SimulatedBanner } from '@/components/common/Ui/feedback/SimulatedBanner';
 import { Spinner } from '@/components/common/Ui/feedback/Spinner';
 import { useI18n } from '@/i18n/I18nProvider';
 import type { Messages } from '@/i18n/vi';
@@ -316,8 +315,6 @@ export function AnprSandbox() {
       const res = await verifyMatch({
         expected_vehicle_type: fraudInType,
         current_vehicle_type: fraudOutType,
-        checkin_crop_url: cropImgUrl,
-        checkout_crop_url: cropImgUrl,
       });
       setFraudResult({
         isMatched: res.is_matched,
@@ -369,8 +366,6 @@ export function AnprSandbox() {
           </div>
         </div>
       </section>
-
-      <SimulatedBanner />
 
       {/* ── Main Studio Grid ── */}
       <div className={styles.studioGrid}>

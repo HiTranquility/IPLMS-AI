@@ -7,6 +7,21 @@ export interface SystemCheck {
   vision_device: string;
   telemetry_retention_days: number;
   vision_retention_days: number;
+  /** Trạng thái engine Vision thật; null = server không biết chắc (UI hiện "—"). */
+  engines?: EngineStatus;
+}
+
+export interface EngineStatus {
+  yolo_weights_path: string;
+  yolo_weights_bytes: number | null;
+  yolo_version: string;
+  yolo_loaded: boolean | null;
+  ocr_languages: string[];
+  ocr_cache_dir: string | null;
+  ocr_loaded: boolean | null;
+  onnx_enabled: boolean;
+  torch_version: string | null;
+  cuda_available: boolean | null;
 }
 
 export interface CopilotAnswer {

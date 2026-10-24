@@ -58,7 +58,7 @@ describe('ChatStudio Component', () => {
     expect(screen.getByText('Tham số thử nghiệm')).toBeTruthy();
   });
 
-  // ai bug-018: console chưa có /knowledge/seeds → báo lỗi, không hiện bộ văn bản mẫu.
+  // ai bug-018: danh sách lấy từ route thật /tools/knowledge/documents; lỗi thì báo lỗi, không hiện văn bản mẫu.
   it('Knowledge tab: API 404 thì báo lỗi, không hiện văn bản mẫu', async () => {
     mockApi(() => undefined);
     const user = userEvent.setup();
@@ -67,7 +67,6 @@ describe('ChatStudio Component', () => {
     await user.click(screen.getByText('Kho tri thức'));
 
     expect(screen.getByText('Kho Tri Thức Quy Chế')).toBeTruthy();
-    expect(screen.getByText('MÔ PHỎNG')).toBeTruthy();
     await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
     expect(screen.queryByText(/Biểu Phí Gửi Xe Ô Tô Bậc Thang/)).toBeNull();
     expect(screen.queryByText(/pgvector: Sẵn sàng/)).toBeNull();
@@ -76,10 +75,12 @@ describe('ChatStudio Component', () => {
 
   it('Knowledge tab: hiện đúng văn bản server trả và lọc theo nhóm', async () => {
     mockApi((url) =>
-      url.endsWith('/knowledge/seeds')
+      url.endsWith('/tools/knowledge/documents')
         ? ok(
-            { id: 'd1', category: 'tariff', title: 'Bảng giá thật', content: 'Giá 5.000đ', source: 'bang-gia.md' },
-            { id: 'd2', category: 'ev_charging', title: 'Trạm sạc thật', content: 'Sạc 3.000đ/kWh', source: 'ev.md' },
+            { id: 'd1', category: 'tariff', title: 'Bảng giá thật', source: 'bang-gia.md', chunk_count: 4,
+              latest_version_no: 2, latest_status: 'DRAFT', published_version_no: 1 },
+            { id: 'd2', category: 'ev_charging', title: 'Trạm sạc thật', source: 'ev.md', chunk_count: 1,
+              latest_version_no: 1, latest_status: 'PUBLISHED', published_version_no: 1 },
           )
         : undefined,
     );
@@ -89,6 +90,8 @@ describe('ChatStudio Component', () => {
     await user.click(screen.getByText('Kho tri thức'));
 
     await waitFor(() => expect(screen.getByText('Bảng giá thật')).toBeTruthy());
+    // Server chỉ trả metadata: thẻ hiện số đoạn/phiên bản thật, không có nội dung bịa.
+    expect(screen.getByText(/4 đoạn · bản mới nhất v2 \(DRAFT\) · khách đang thấy v1/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: /Trạm sạc EV/ }));
     expect(screen.getByText('Trạm sạc thật')).toBeTruthy();
     expect(screen.queryByText('Bảng giá thật')).toBeNull();

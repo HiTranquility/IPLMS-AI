@@ -1,11 +1,17 @@
 /** Kiểu của các studio thử trên console (ai bug-018); đường API ở services/apiEndpoints/studio.endpoint.ts. */
+/** Một tài liệu thật trong kho tri thức (`GET /tools/knowledge/documents`): metadata, không kèm nội dung. */
 export interface SeedDocument {
   id?: string;
   category: 'regulation' | 'tariff' | 'fine_policy' | 'ev_charging' | string;
   title: string;
-  content: string;
+  content?: string;
   source: string;
   parking_lot_id?: string | null;
+  chunk_count?: number;
+  latest_version_no?: number;
+  latest_status?: string;
+  published_version_no?: number;
+  updated_at?: string;
 }
 
 export interface DisputeStep {
@@ -34,11 +40,13 @@ export interface DisputeSimulationPayload {
 }
 
 export interface AnprRecognizeResult {
+  plate_number?: string;
   plate_text?: string;
   plate?: string;
-  confidence?: number;
-  vehicle_type?: string;
-  latency_ms?: number;
+  confidence?: number | null;
+  vehicle_type?: string | null;
+  plate_color?: string | null;
+  latency_ms?: number | null;
 }
 
 export interface VerifyMatchResult {
