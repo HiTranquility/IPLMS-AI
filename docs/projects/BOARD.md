@@ -92,6 +92,7 @@ Kế hoạch mới nhất theo IPLMS REQ-006 F10 / ISSUE-125 review-4: 16 việc
 | Mở rộng bộ held-out Copilot 32 câu (`HO-01`..`HO-32`) và test chống rò rỉ dữ liệu | `feature/ISSUE-007-2026-10-copilot-rag-heldout-dataset` | Dương (@23110012) | @HiTranquility |
 | Bổ sung test hồi quy ma trận 7 vai trò × 15 quyền Console & chốt chặn API | `feature/ISSUE-008-2026-10-console-access-policy-regression-tests` | Dương (@23110012) | @HiTranquility |
 | Bổ sung test hồi quy UI khi API lỗi, timeout hoặc phiên hết hạn | `feature/ISSUE-009-2026-10-console-ui-error-resilience-tests` | Dương (@23110012) | @HiTranquility |
+| I-3: Kịch bản & test tự động demo liên vai 5 vai trò trên UI AI Console | `feature/ISSUE-010-2026-10-console-cross-role-demo-loop` | Dương (@23110012) | @HiTranquility |
 
 ## ⛔ Bị chặn
 
