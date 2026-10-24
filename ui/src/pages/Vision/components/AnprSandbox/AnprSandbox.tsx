@@ -22,6 +22,7 @@ import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
 import { SimulatedBanner } from '@/components/common/Ui/feedback/SimulatedBanner';
 import { Spinner } from '@/components/common/Ui/feedback/Spinner';
 import { useI18n } from '@/i18n/I18nProvider';
+import type { Messages } from '@/i18n/vi';
 import { recognizePlate, verifyMatch } from '@/services/apiEndpoints/studio.endpoint';
 import type {
   AnprResult,
@@ -33,79 +34,32 @@ import type {
 } from './types';
 import styles from './AnprSandbox.module.css';
 
-const SAMPLE_PRESETS: SamplePlatePreset[] = [
-  {
-    id: 'car_white',
-    name: 'Mẫu Ô Tô (51A-888.88)',
-    plateNumber: '51A-888.88',
-    vehicleType: 'car_sedan',
-    plateColor: 'white',
-    isTwoTier: false,
-  },
-  {
-    id: 'moto_white',
-    name: 'Mẫu Xe Máy (29-B1 999.99)',
-    plateNumber: '29-B1 999.99',
-    vehicleType: 'motorbike',
-    plateColor: 'white',
-    isTwoTier: true,
-  },
-  {
-    id: 'car_yellow',
-    name: 'Mẫu Taxi Vàng (50E-123.45)',
-    plateNumber: '50E-123.45',
-    vehicleType: 'car_sedan',
-    plateColor: 'yellow',
-    isTwoTier: false,
-  },
-  {
-    id: 'gov_blue',
-    name: 'Mẫu Cơ Quan Xanh (80A-001.23)',
-    plateNumber: '80A-001.23',
-    vehicleType: 'car_suv',
-    plateColor: 'blue',
-    isTwoTier: false,
-  },
-];
+type SandboxText = Messages['vision']['sandbox'];
 
-const LANE_OPTIONS: LaneOption[] = [
-  { id: 'gate_in_01', name: 'gate_in_01 (Cổng vào 1)' },
-  { id: 'gate_in_02', name: 'gate_in_02 (Cổng vào 2)' },
-  { id: 'gate_out_01', name: 'gate_out_01 (Cổng ra 1)' },
-  { id: 'gate_out_02', name: 'gate_out_02 (Cổng ra 2)' },
-];
-
-const VEHICLE_OPTIONS: { value: VehicleType; label: string }[] = [
-  { value: 'car_sedan', label: 'Ô tô Sedan (car_sedan)' },
-  { value: 'car_suv', label: 'Ô tô SUV (car_suv)' },
-  { value: 'motorbike', label: 'Xe máy (motorbike)' },
-  { value: 'truck', label: 'Xe tải (truck)' },
-];
-
-function getPlateColorBadge(color: PlateColor): { label: string; tone: BadgeTone } {
+function getPlateColorBadge(color: PlateColor, x: SandboxText): { label: string; tone: BadgeTone } {
   switch (color) {
     case 'yellow':
-      return { label: 'Vàng (Kinh doanh)', tone: 'warning' };
+      return { label: x.colorYellow, tone: 'warning' };
     case 'blue':
-      return { label: 'Xanh (Cơ quan)', tone: 'accent' };
+      return { label: x.colorBlue, tone: 'accent' };
     case 'red':
-      return { label: 'Đỏ (Quân đội)', tone: 'danger' };
+      return { label: x.colorRed, tone: 'danger' };
     case 'white':
     default:
-      return { label: 'Trắng (Dân sự)', tone: 'neutral' };
+      return { label: x.colorWhite, tone: 'neutral' };
   }
 }
 
-function getVehicleTypeBadge(type: string): { label: string; tone: BadgeTone } {
+function getVehicleTypeBadge(type: string, x: SandboxText): { label: string; tone: BadgeTone } {
   switch (type) {
     case 'car_sedan':
       return { label: 'Sedan', tone: 'success' };
     case 'car_suv':
       return { label: 'SUV', tone: 'success' };
     case 'motorbike':
-      return { label: 'Xe máy', tone: 'accent' };
+      return { label: x.typeMoto, tone: 'accent' };
     case 'truck':
-      return { label: 'Xe tải', tone: 'warning' };
+      return { label: x.typeTruck, tone: 'warning' };
     default:
       return { label: type, tone: 'neutral' };
   }
@@ -117,6 +71,25 @@ const pct = (value: number | null | undefined) =>
 
 export function AnprSandbox() {
   const { t } = useI18n();
+  const x = t.vision.sandbox;
+  const samplePresets: SamplePlatePreset[] = [
+    { id: 'car_white', name: x.presetCar, plateNumber: '51A-888.88', vehicleType: 'car_sedan', plateColor: 'white', isTwoTier: false },
+    { id: 'moto_white', name: x.presetMoto, plateNumber: '29-B1 999.99', vehicleType: 'motorbike', plateColor: 'white', isTwoTier: true },
+    { id: 'car_yellow', name: x.presetTaxi, plateNumber: '50E-123.45', vehicleType: 'car_sedan', plateColor: 'yellow', isTwoTier: false },
+    { id: 'gov_blue', name: x.presetGov, plateNumber: '80A-001.23', vehicleType: 'car_suv', plateColor: 'blue', isTwoTier: false },
+  ];
+  const laneOptions: LaneOption[] = [
+    { id: 'gate_in_01', name: x.laneIn1 },
+    { id: 'gate_in_02', name: x.laneIn2 },
+    { id: 'gate_out_01', name: x.laneOut1 },
+    { id: 'gate_out_02', name: x.laneOut2 },
+  ];
+  const vehicleOptions: { value: VehicleType; label: string }[] = [
+    { value: 'car_sedan', label: x.vehSedan },
+    { value: 'car_suv', label: x.vehSuv },
+    { value: 'motorbike', label: x.vehMoto },
+    { value: 'truck', label: x.vehTruck },
+  ];
   const [currentBlob, setCurrentBlob] = useState<Blob | null>(null);
   const [originalImgUrl, setOriginalImgUrl] = useState<string>('');
   const [cropImgUrl, setCropImgUrl] = useState<string>('');
@@ -377,17 +350,17 @@ export function AnprSandbox() {
             <span className={styles.introCategory}>Computer Vision Studio · Pipeline 1</span>
             <h2 className={styles.introTitle}>Automatic Number Plate Recognition (ANPR) & Anti-Fraud Gatekeeper</h2>
             <p className={styles.introDesc}>
-              Quy trình nhận diện 2 tầng: <strong>YOLOv8</strong> phát hiện và cắt vùng biển số xe $\rightarrow$ <strong>EasyOCR</strong> đa tầng (full, crop, CLAHE) giải mã ký tự biển số $\rightarrow$ <strong>CNN</strong> phân loại phương tiện kết hợp chốt chặn chống tráo xe lúc Check-out.
+              {x.introDesc}
             </p>
           </div>
           <div className={styles.presetGroup}>
-            {SAMPLE_PRESETS.map((preset) => (
+            {samplePresets.map((preset) => (
               <button
                 key={preset.id}
                 type="button"
                 className={`${styles.presetBtn} ${activePresetId === preset.id ? styles.presetBtnActive : ''}`}
                 onClick={() => generatePlateCanvas(preset)}
-                title={`Nhấn để tạo biển số ${preset.plateNumber}`}
+                title={x.presetTitle(preset.plateNumber)}
               >
                 {preset.vehicleType === 'motorbike' ? <Bike size={14} /> : <Sparkles size={14} />}
                 <span>{preset.name}</span>
@@ -407,7 +380,7 @@ export function AnprSandbox() {
             <div className={styles.cardHeader}>
               <h3 className={styles.cardTitle}>
                 <UploadCloud size={16} />
-                <span>Tải ảnh xe vào bãi</span>
+                <span>{x.upload}</span>
               </h3>
               <span className={styles.cardSubtitle}>JPG, PNG, WEBP</span>
             </div>
@@ -426,7 +399,7 @@ export function AnprSandbox() {
                   fileInputRef.current?.click();
                 }
               }}
-              aria-label="Kéo thả ảnh hoặc bấm để chọn tệp"
+              aria-label={x.dropAria}
             >
               <input
                 ref={fileInputRef}
@@ -437,16 +410,16 @@ export function AnprSandbox() {
               />
               <ImagePlus size={36} className={styles.dropzoneIcon} />
               <p className={styles.dropzonePrompt}>
-                Kéo thả ảnh xe vào đây hoặc <span className={styles.dropzoneLink}>chọn từ máy</span>
+                {x.dropPrompt} <span className={styles.dropzoneLink}>{x.dropLink}</span>
               </p>
-              <p className={styles.dropzoneHint}>Tự động căn chỉnh ROI và cắt vùng biển số YOLOv8</p>
+              <p className={styles.dropzoneHint}>{x.dropHint}</p>
             </div>
 
             {/* Parameters */}
             <div className={styles.paramGrid}>
               <div className={styles.paramField}>
                 <label htmlFor="lane-select" className={styles.paramLabel}>
-                  Mã Làn (Lane ID)
+                  {x.laneId}
                 </label>
                 <select
                   id="lane-select"
@@ -454,7 +427,7 @@ export function AnprSandbox() {
                   value={selectedLane}
                   onChange={(e) => setSelectedLane(e.target.value)}
                 >
-                  {LANE_OPTIONS.map((lane) => (
+                  {laneOptions.map((lane) => (
                     <option key={lane.id} value={lane.id}>
                       {lane.name}
                     </option>
@@ -463,7 +436,7 @@ export function AnprSandbox() {
               </div>
 
               <div className={styles.paramField}>
-                <span className={styles.paramLabel}>Trạng thái phân loại xe</span>
+                <span className={styles.paramLabel}>{x.classifyStatus}</span>
                 <div className={styles.paramBadgeStatus}>
                   <span className={styles.statusIndicatorDot} />
                   <span>{t.simulated.notReported}</span>
@@ -481,12 +454,12 @@ export function AnprSandbox() {
               {isRecognizing ? (
                 <>
                   <Spinner size={16} />
-                  <span>Đang xử lý (YOLO + EasyOCR)...</span>
+                  <span>{x.processing}</span>
                 </>
               ) : (
                 <>
                   <Play size={16} />
-                  <span>Thực Hiện Nhận Diện (Run ANPR)</span>
+                  <span>{x.run}</span>
                 </>
               )}
             </button>
@@ -496,7 +469,7 @@ export function AnprSandbox() {
           <div className={styles.tipBox}>
             <Info size={16} className={styles.tipIcon} />
             <span>
-              Ảnh đã xử lý và ảnh crop biển số sẽ được hệ thống trích xuất đặc trưng hình ảnh tự động để đối chiếu chống tráo xe lúc check-out.
+              {x.tip}
             </span>
           </div>
         </div>
@@ -507,10 +480,10 @@ export function AnprSandbox() {
             <div className={styles.cardHeader}>
               <h3 className={styles.cardTitle}>
                 <CheckCircle2 size={16} />
-                <span>Kết Quả Nhận Diện Biển Số</span>
+                <span>{x.resultTitle}</span>
               </h3>
               <span className="num">
-                {recognitionResult?.latencyMs ? `${recognitionResult.latencyMs}ms` : 'Chờ xử lý...'}
+                {recognitionResult?.latencyMs ? `${recognitionResult.latencyMs}ms` : x.waiting}
               </span>
             </div>
 
@@ -519,9 +492,9 @@ export function AnprSandbox() {
             {!recognitionResult && !originalImgUrl ? (
               <div className={styles.emptyState}>
                 <Scan size={44} className={styles.emptyIcon} />
-                <p className={styles.emptyTitle}>Chưa có ảnh xe được nạp</p>
+                <p className={styles.emptyTitle}>{x.emptyTitle}</p>
                 <p className={styles.emptyDesc}>
-                  Hãy chọn một mẫu biển số Việt Nam ở trên hoặc tải ảnh chụp từ camera cổng bãi xe.
+                  {x.emptyDesc}
                 </p>
               </div>
             ) : (
@@ -529,34 +502,34 @@ export function AnprSandbox() {
                 {/* Large License Plate Display */}
                 <div className={styles.plateHighlightCard}>
                   <div className={styles.plateNumberBlock}>
-                    <span className={styles.plateLabel}>Biển số nhận diện được</span>
+                    <span className={styles.plateLabel}>{x.plateLabel}</span>
                     <div className={styles.vietnamPlatePlate}>
-                      <span>{recognitionResult ? recognitionResult.plateNumber : 'Chờ quét...'}</span>
+                      <span>{recognitionResult ? recognitionResult.plateNumber : x.scanning}</span>
                     </div>
                   </div>
 
                   {recognitionResult && (
                     <div className={styles.metaBadgeList}>
                       <div className={styles.metaItem}>
-                        <span>Độ tin cậy:</span>
+                        <span>{x.confidence}</span>
                         <span className={styles.metaValueStrong}>
                           {pct(recognitionResult.confidence)}
                         </span>
                       </div>
                       <div className={styles.metaItem}>
-                        <span>Màu biển:</span>
+                        <span>{x.plateColor}</span>
                         {recognitionResult.plateColor ? (
-                          <Badge tone={getPlateColorBadge(recognitionResult.plateColor).tone}>
-                            {getPlateColorBadge(recognitionResult.plateColor).label}
+                          <Badge tone={getPlateColorBadge(recognitionResult.plateColor, x).tone}>
+                            {getPlateColorBadge(recognitionResult.plateColor, x).label}
                           </Badge>
                         ) : (
                           <span>—</span>
                         )}
                       </div>
                       <div className={styles.metaItem}>
-                        <span>Phân loại:</span>
-                        <Badge tone={getVehicleTypeBadge(recognitionResult.vehicleType).tone}>
-                          {getVehicleTypeBadge(recognitionResult.vehicleType).label}
+                        <span>{x.classification}</span>
+                        <Badge tone={getVehicleTypeBadge(recognitionResult.vehicleType, x).tone}>
+                          {getVehicleTypeBadge(recognitionResult.vehicleType, x).label}
                         </Badge>
                       </div>
                     </div>
@@ -568,11 +541,11 @@ export function AnprSandbox() {
                   <div className={styles.visualCard}>
                     <span className={styles.visualTitle}>
                       <Camera size={14} />
-                      <span>Ảnh Gốc (Camera Cổng)</span>
+                      <span>{x.original}</span>
                     </span>
                     <div className={styles.visualMediaBox}>
                       {originalImgUrl ? (
-                        <img src={originalImgUrl} alt="Ảnh gốc camera" className={styles.visualImg} />
+                        <img src={originalImgUrl} alt={x.originalAlt} className={styles.visualImg} />
                       ) : (
                         <ImageIcon size={32} className={styles.emptyIcon} />
                       )}
@@ -582,11 +555,11 @@ export function AnprSandbox() {
                   <div className={styles.visualCard}>
                     <span className={styles.visualTitle}>
                       <Crop size={14} />
-                      <span>Vùng Biển Số Cắt (YOLO Crop)</span>
+                      <span>{x.crop}</span>
                     </span>
                     <div className={styles.visualMediaBox}>
                       {cropImgUrl ? (
-                        <img src={cropImgUrl} alt="Vùng biển số crop" className={styles.visualImg} />
+                        <img src={cropImgUrl} alt={x.cropAlt} className={styles.visualImg} />
                       ) : (
                         <Scan size={32} className={styles.emptyIcon} />
                       )}
@@ -596,8 +569,8 @@ export function AnprSandbox() {
 
                 {recognitionResult && (
                   <div className={styles.metaFooter}>
-                    <span>Sự kiện: {recognitionResult.eventId ?? '—'}</span>
-                    <span>Thời gian: {recognitionResult.timestamp ?? '—'}</span>
+                    <span>{x.event(recognitionResult.eventId ?? '—')}</span>
+                    <span>{x.time(recognitionResult.timestamp ?? '—')}</span>
                   </div>
                 )}
               </div>
@@ -612,10 +585,11 @@ export function AnprSandbox() {
           <div>
             <h3 id="antifraud-title" className={styles.antiFraudTitle}>
               <ShieldCheck size={18} />
-              <span>Đối Chiếu Loại Xe Check-in vs Check-out (Anti-Fraud Gatekeeper)</span>
+              <span>{x.fraudTitle}</span>
             </h3>
             <p className={styles.antiFraudDesc}>
-              Công cụ đối chiếu ngăn chặn <strong>tráo xe lúc check-out</strong>: Tự động so sánh đặc trưng và phân loại xe giữa lúc vào bãi và lúc ra cổng quẹt thẻ.
+              {x.fraudDescBefore} <strong>{x.fraudDescStrong}</strong>
+              {x.fraudDescAfter}
             </p>
           </div>
           <Badge tone="danger">Anti-Fraud</Badge>
@@ -629,7 +603,7 @@ export function AnprSandbox() {
             onClick={() => applyFraudScenario('car_sedan', 'motorbike')}
           >
             <ShieldAlert size={14} />
-            <span>Kịch bản 1: Tráo Sedan $\rightarrow$ Xe máy (Gian lận)</span>
+            <span>{x.scenario1}</span>
           </button>
           <button
             type="button"
@@ -637,7 +611,7 @@ export function AnprSandbox() {
             onClick={() => applyFraudScenario('car_suv', 'car_suv')}
           >
             <CheckCircle size={14} />
-            <span>Kịch bản 2: Hợp lệ SUV $\rightarrow$ SUV (Cho phép ra)</span>
+            <span>{x.scenario2}</span>
           </button>
           <button
             type="button"
@@ -645,7 +619,7 @@ export function AnprSandbox() {
             onClick={() => applyFraudScenario('car_sedan', 'truck')}
           >
             <AlertOctagon size={14} />
-            <span>Kịch bản 3: Tráo Sedan $\rightarrow$ Xe tải (Lệch loại xe)</span>
+            <span>{x.scenario3}</span>
           </button>
         </div>
 
@@ -653,7 +627,7 @@ export function AnprSandbox() {
         <div className={styles.fraudSelectGrid}>
           <div className={styles.fraudSelectBox}>
             <label htmlFor="fraud-in-select" className={styles.fraudSelectTitle}>
-              Loại xe Check-in (Lúc Vào Bãi)
+              {x.checkinType}
             </label>
             <select
               id="fraud-in-select"
@@ -661,7 +635,7 @@ export function AnprSandbox() {
               value={fraudInType}
               onChange={(e) => setFraudInType(e.target.value as VehicleType)}
             >
-              {VEHICLE_OPTIONS.map((opt) => (
+              {vehicleOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>
@@ -671,7 +645,7 @@ export function AnprSandbox() {
 
           <div className={styles.fraudSelectBox}>
             <label htmlFor="fraud-out-select" className={styles.fraudSelectTitle}>
-              Loại xe Check-out (Lúc Ra Cổng)
+              {x.checkoutType}
             </label>
             <select
               id="fraud-out-select"
@@ -679,7 +653,7 @@ export function AnprSandbox() {
               value={fraudOutType}
               onChange={(e) => setFraudOutType(e.target.value as VehicleType)}
             >
-              {VEHICLE_OPTIONS.map((opt) => (
+              {vehicleOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>
@@ -698,12 +672,12 @@ export function AnprSandbox() {
           {isVerifyingMatch ? (
             <>
               <Spinner size={16} />
-              <span>Đang đối chiếu dữ liệu thị giác...</span>
+              <span>{x.matching}</span>
             </>
           ) : (
             <>
               <SearchCheck size={16} />
-              <span>Thực Hiện Đối Chiếu Loại Xe</span>
+              <span>{x.runMatch}</span>
             </>
           )}
         </button>
@@ -727,32 +701,32 @@ export function AnprSandbox() {
               {fraudResult.isMatched ? (
                 <>
                   <CheckCircle size={18} />
-                  <span>HỢP LỆ — ĐỒNG NHẤT LOẠI XE</span>
+                  <span>{x.matchOk}</span>
                 </>
               ) : (
                 <>
                   <AlertOctagon size={18} />
-                  <span>CẢNH BÁO GIAN LẬN: LỆCH LOẠI PHƯƠNG TIỆN ({fraudResult.mismatchReason})</span>
+                  <span>{x.matchFraud(fraudResult.mismatchReason)}</span>
                 </>
               )}
             </div>
 
             <p>
               {fraudResult.isMatched
-                ? `Loại xe lúc vào và lúc ra trùng khớp (${fraudResult.expectedType}). Kiểm tra an toàn đạt yêu cầu — Barie tự động mở cho xe xuất bãi.`
-                : `Xe vào đăng ký là "${fraudResult.expectedType}" nhưng xe ra cổng được phát hiện là "${fraudResult.currentType}". Khóa barie và kích hoạt cảnh báo nhân viên giám sát!`}
+                ? x.matchOkText(fraudResult.expectedType)
+                : x.matchFraudText(fraudResult.expectedType, fraudResult.currentType)}
             </p>
 
             {!fraudResult.isMatched && (
               <p>
-                <strong>Hành động can thiệp:</strong> Barie cổng bị cưỡng chế đóng, tự động trích xuất chuỗi hình ảnh chụp cổng vào / cổng ra gửi về luồng kiểm duyệt khiếu nại LangGraph.
+                <strong>{x.interventionTitle}</strong> {x.intervention}
               </p>
             )}
 
             <div className={styles.fraudMetricsRow}>
-              <span>Độ tương đồng: {pct(fraudResult.similarityScore)}</span>
-              <span>Barie: {fraudResult.isMatched ? 'MỞ CHO QUA' : 'KHÓA CHẶT (LOCKDOWN)'}</span>
-              <span>Thời điểm kiểm tra: {fraudResult.verifiedAt}</span>
+              <span>{x.similarity(pct(fraudResult.similarityScore))}</span>
+              <span>{x.barrier(fraudResult.isMatched ? x.barrierOpen : x.barrierLocked)}</span>
+              <span>{x.verifiedAt(fraudResult.verifiedAt)}</span>
             </div>
           </div>
         )}

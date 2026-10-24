@@ -28,16 +28,16 @@ export interface KnowledgeExplorerProps {
   onInsertCitation?: (citationText: string) => void;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  all: 'Tất cả',
-  regulation: 'Quy định',
-  tariff: 'Biểu phí',
-  fine_policy: 'Xử phạt',
-  ev_charging: 'Trạm sạc EV',
-};
-
 export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: KnowledgeExplorerProps) {
   const { t } = useI18n();
+  const k = t.copilot.knowledge;
+  const categoryLabels: Record<string, string> = {
+    all: k.catAll,
+    regulation: k.catRegulation,
+    tariff: k.catTariff,
+    fine_policy: k.catFine,
+    ev_charging: k.catEv,
+  };
   // Chỉ hiện văn bản server trả; API lỗi thì danh sách rỗng + báo lỗi, không thay bằng bộ mẫu (ai bug-018).
   const [documents, setDocuments] = useState<SeedDocument[]>([]);
   const [loadError, setLoadError] = useState<unknown>(null);
@@ -91,7 +91,7 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
   };
 
   const handleCopyCitation = (doc: SeedDocument) => {
-    const text = `[Trích dẫn: ${doc.title} - Nguồn: ${doc.source}]\n${doc.content}`;
+    const text = `${k.citationText(doc.title, doc.source)}\n${doc.content}`;
     navigator.clipboard?.writeText(text);
     setCopiedId(doc.id || doc.title);
     setTimeout(() => setCopiedId(null), 2000);
@@ -109,7 +109,7 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
   const handleSubmitIngestion = async (e: FormEvent) => {
     e.preventDefault();
     if (!selectedFile) {
-      setIngestStatus({ ok: false, msg: 'Vui lòng chọn tệp PDF, DOCX hoặc TXT!' });
+      setIngestStatus({ ok: false, msg: k.pickFile });
       return;
     }
 
@@ -145,7 +145,7 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
             <Database size={16} />
           </div>
           <div>
-            <h4 className={styles.keTitle}>Kho Tri Thức Quy Chế</h4>
+            <h4 className={styles.keTitle}>{k.title}</h4>
             <span className={styles.keSub}>
               {t.studio.knowledgeCount(documents.length)}
             </span>
@@ -157,11 +157,11 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
             type="button"
             className={`${styles.keActionBtn} ${ingestOpen ? styles.keActionBtnActive : ''}`}
             onClick={() => setIngestOpen((v) => !v)}
-            title="Nạp tài liệu mới vào cơ sở tri thức"
-            aria-label="Nạp tài liệu"
+            title={k.ingestTitle}
+            aria-label={k.ingestAria}
           >
             <FileUp size={14} />
-            <span>Nạp văn bản</span>
+            <span>{k.ingestBtn}</span>
           </button>
 
           <button
@@ -169,8 +169,8 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
             className={styles.keActionBtn}
             onClick={loadDocuments}
             disabled={isLoading}
-            title="Làm mới danh sách"
-            aria-label="Làm mới"
+            title={k.refreshTitle}
+            aria-label={k.refreshAria}
           >
             <RefreshCw size={13} className={isLoading ? styles.spin : ''} />
           </button>
@@ -185,13 +185,13 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
         <form onSubmit={handleSubmitIngestion} className={styles.ingestCard}>
           <div className={styles.ingestHeader}>
             <span className={styles.ingestTitle}>
-              <Layers size={14} /> Nạp & Vector Hóa Văn Bản Quy Chế
+              <Layers size={14} /> {k.ingestHeader}
             </span>
             <button
               type="button"
               className={styles.keCloseBtn}
               onClick={() => setIngestOpen(false)}
-              aria-label="Đóng biểu mẫu nạp"
+              aria-label={k.closeIngest}
             >
               <X size={13} />
             </button>
@@ -206,15 +206,15 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
             />
             <FileText size={22} className={styles.dropzoneIcon} />
             <span className={styles.dropzoneLabel}>
-              {selectedFile ? selectedFile.name : 'Chọn tệp PDF, DOCX hoặc TXT để nạp'}
+              {selectedFile ? selectedFile.name : k.choosePrompt}
             </span>
-            <span className={styles.dropzoneHint}>Dung lượng tối đa 8MB • pgvector HNSW indexing</span>
+            <span className={styles.dropzoneHint}>{k.fileHint}</span>
           </label>
 
           <div className={styles.ingestInputsGrid}>
             <div className={styles.ingestField}>
               <label htmlFor="ingest-category" className={styles.ingestLabel}>
-                Phân loại
+                {k.category}
               </label>
               <select
                 id="ingest-category"
@@ -222,21 +222,21 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
                 value={ingestCategory}
                 onChange={(e) => setIngestCategory(e.target.value)}
               >
-                <option value="regulation">Quy định / Quy chế</option>
-                <option value="tariff">Biểu phí gửi xe</option>
-                <option value="fine_policy">Chính sách xử phạt</option>
-                <option value="ev_charging">Trạm sạc xe điện EV</option>
+                <option value="regulation">{k.optRegulation}</option>
+                <option value="tariff">{k.optTariff}</option>
+                <option value="fine_policy">{k.optFine}</option>
+                <option value="ev_charging">{k.optEv}</option>
               </select>
             </div>
 
             <div className={styles.ingestField}>
               <label htmlFor="ingest-scope" className={styles.ingestLabel}>
-                Phạm vi áp dụng
+                {k.scope}
               </label>
               <input
                 id="ingest-scope"
                 type="text"
-                placeholder="Trống = Toàn hệ thống"
+                placeholder={k.scopePlaceholder}
                 className={styles.textInput}
                 value={lotScope}
                 onChange={(e) => setLotScope(e.target.value)}
@@ -252,7 +252,7 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
             className={styles.ingestSubmitBtn}
           >
             <Sparkles size={13} />
-            <span>{isIngesting ? 'Đang trích xuất & vector hóa...' : 'Phân tích & Nạp vào pgvector'}</span>
+            <span>{isIngesting ? k.ingesting : k.ingestSubmit}</span>
           </Button>
 
           {ingestStatus && (
@@ -274,17 +274,17 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="Tìm kiếm quy chế, mức phí, điều khoản..."
+            placeholder={k.searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            aria-label="Tìm kiếm quy chế"
+            aria-label={k.searchAria}
           />
           {searchQuery && (
             <button
               type="button"
               className={styles.clearSearchBtn}
               onClick={() => setSearchQuery('')}
-              aria-label="Xóa từ khóa tìm kiếm"
+              aria-label={k.clearSearch}
             >
               <X size={13} />
             </button>
@@ -306,7 +306,7 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
                   className={`${styles.catPill} ${isActive ? styles.catPillActive : ''}`}
                   onClick={() => setSelectedCategory(cat)}
                 >
-                  <span>{CATEGORY_LABELS[cat]}</span>
+                  <span>{categoryLabels[cat]}</span>
                   <span className={`${styles.catPillCount} num`}>{count}</span>
                 </button>
               );
@@ -328,12 +328,12 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
                 <header className={styles.docCardHeader}>
                   <div className={styles.docHeaderTop}>
                     <span className={`${styles.docBadge} ${styles[`badge_${doc.category}`] || ''}`}>
-                      {CATEGORY_LABELS[doc.category] || doc.category}
+                      {categoryLabels[doc.category] || doc.category}
                     </span>
                     {doc.parking_lot_id ? (
                       <span className={styles.lotScopeBadge}>{doc.parking_lot_id}</span>
                     ) : (
-                      <span className={styles.systemScopeBadge}>Toàn hệ thống</span>
+                      <span className={styles.systemScopeBadge}>{k.systemWide}</span>
                     )}
                   </div>
                   <h5 className={styles.docTitle}>{doc.title}</h5>
@@ -354,7 +354,7 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
                     className={styles.expandTextBtn}
                     onClick={() => setExpandedDocId(isExpanded ? null : docId)}
                   >
-                    {isExpanded ? 'Thu gọn' : 'Xem toàn văn'}
+                    {isExpanded ? k.collapse : k.expand}
                   </button>
 
                   <div className={styles.docCardActions}>
@@ -362,11 +362,11 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
                       type="button"
                       className={styles.docActionBtn}
                       onClick={() => handleCopyCitation(doc)}
-                      title="Sao chép trích dẫn"
-                      aria-label="Sao chép trích dẫn"
+                      title={k.copyCitation}
+                      aria-label={k.copyCitation}
                     >
                       {isCopied ? <Check size={12} className={styles.successColor} /> : <Copy size={12} />}
-                      <span>{isCopied ? 'Đã chép' : 'Trích dẫn'}</span>
+                      <span>{isCopied ? k.copied : k.cite}</span>
                     </button>
 
                     {onAskAboutDocument && (
@@ -374,11 +374,11 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
                         type="button"
                         className={`${styles.docActionBtn} ${styles.docActionAskBtn}`}
                         onClick={() => onAskAboutDocument(doc)}
-                        title="Hỏi Copilot về điều khoản này"
-                        aria-label="Hỏi Copilot"
+                        title={k.askTitle}
+                        aria-label={k.ask}
                       >
                         <MessageSquare size={12} />
-                        <span>Hỏi Copilot</span>
+                        <span>{k.ask}</span>
                       </button>
                     )}
                   </div>
@@ -389,7 +389,7 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
         ) : (
           <div className={styles.emptyKnowledgeState}>
             <Filter size={24} className={styles.emptyIcon} />
-            <p className={styles.emptyText}>Không tìm thấy tài liệu quy chế phù hợp từ khóa.</p>
+            <p className={styles.emptyText}>{k.noMatch}</p>
             <Button
               type="button"
               variant="secondary"
@@ -399,7 +399,7 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
                 setSelectedCategory('all');
               }}
             >
-              Xóa bộ lọc
+              {k.clearFilters}
             </Button>
           </div>
         )}
