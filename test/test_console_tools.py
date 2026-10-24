@@ -74,6 +74,63 @@ class ConsoleToolsTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual("knowledge.ingest_draft:SUCCESS", store.add_audit.await_args.args[1])
 
 
+class StudioRealApiTest(unittest.IsolatedAsyncioTestCase):
+    """bug-018: các studio gọi service thật trong process console, không hằng số."""
+
+    async def test_anpr_thu_goi_engine_that_khong_luu_anh(self):
+        svc, *_ = service()
+        fake = SimpleNamespace(plate_number="51A12345", confidence=0.71, vehicle_type=None,
+                               plate_color="white", process_time=0.123)
+        with patch("app.core.vision.services.anpr_service.AnprService.recognize_bytes", return_value=fake) as run:
+            out = await svc.try_anpr(ML, b"jpeg-bytes")
+        self.assertFalse(run.call_args.args[1])  # persist_files=False
+        self.assertEqual({"plate_number": "51A12345", "confidence": 0.71, "vehicle_type": None,
+                          "plate_color": "white", "latency_ms": 123.0}, out)
+
+    async def test_anpr_thu_can_quyen_va_anh_hop_le(self):
+        svc, *_ = service()
+        with self.assertRaises(ConsoleAccessDenied):
+            await svc.try_anpr(ANALYST, b"x")
+        with self.assertRaises(ValueError):
+            await svc.try_anpr(ML, b"")
+
+    async def test_doi_chieu_xe_khong_tra_diem_chua_do(self):
+        svc, *_ = service()
+        same = await svc.verify_match(ML, "car_sedan", "car_sedan")
+        self.assertEqual({"is_matched": True, "similarity_score": None, "mismatch_reason": "OK"}, same)
+        diff = await svc.verify_match(ML, "car_sedan", "motorbike")
+        self.assertFalse(diff["is_matched"])
+        self.assertEqual("VEHICLE_TYPE_MISMATCH", diff["mismatch_reason"])
+        self.assertIsNone(diff["similarity_score"])
+
+    async def test_danh_sach_tai_lieu_tri_thuc_that(self):
+        svc, _, ingestion, _ = service()
+        ingestion.list.return_value = [SimpleNamespace(
+            document_id=DOC, file_name="bang-gia.pdf", category="tariff", chunk_count=4,
+            latest_version_no=2, latest_status="DRAFT", published_version_no=1, updated_at="2026-10-24T00:00:00",
+        )]
+        docs = await svc.knowledge_documents(ML, " lot-1 ")
+        ingestion.list.assert_awaited_once_with("lot-1")
+        self.assertEqual("bang-gia.pdf", docs[0]["title"])
+        self.assertEqual(4, docs[0]["chunk_count"])
+        with self.assertRaises(ConsoleAccessDenied):
+            await svc.knowledge_documents(ANALYST)
+
+    async def test_trang_thai_engine_khong_bia_khi_thieu_weights(self):
+        svc, *_ = service()
+        with patch.dict(os.environ, {"AI_YOLO_MODEL_PATH": "/khong/ton/tai.pt"}):
+            from app.config import get_config
+
+            get_config.cache_clear()
+            try:
+                engines = (await svc.system_check(ML))["engines"]
+            finally:
+                get_config.cache_clear()
+        self.assertEqual("/khong/ton/tai.pt", engines["yolo_weights_path"])
+        self.assertIsNone(engines["yolo_weights_bytes"])
+        self.assertIn(engines["yolo_loaded"], (None, False))
+
+
 class ChatStudioContractTest(unittest.IsolatedAsyncioTestCase):
     """ai bug-017: body Chat Studio gửi phải qua được AskIn và tham số phải tới pipeline."""
 

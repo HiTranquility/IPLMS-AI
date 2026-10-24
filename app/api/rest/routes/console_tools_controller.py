@@ -2,7 +2,7 @@ import json
 """Công cụ thử trong AI Console — thay trang dev `/dashboard` cũ (IPLMS ADR-0050)."""
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -22,6 +22,20 @@ class Check(BaseModel):
     ok: bool
 
 
+class EngineStatus(BaseModel):
+    # None = không biết chắc (UI hiện "—"), không có giá trị mặc định nào giả làm số đo.
+    yolo_weights_path: str
+    yolo_weights_bytes: Optional[int]
+    yolo_version: str
+    yolo_loaded: Optional[bool]
+    ocr_languages: List[str]
+    ocr_cache_dir: Optional[str]
+    ocr_loaded: Optional[bool]
+    onnx_enabled: bool
+    torch_version: Optional[str]
+    cuda_available: Optional[bool]
+
+
 class SystemCheck(BaseModel):
     checks: List[Check]
     llm_model: str
@@ -29,6 +43,39 @@ class SystemCheck(BaseModel):
     vision_device: str
     telemetry_retention_days: int
     vision_retention_days: int
+    engines: EngineStatus
+
+
+class AnprTryOut(BaseModel):
+    plate_number: str
+    confidence: Optional[float]
+    vehicle_type: Optional[str]
+    plate_color: Optional[str]
+    latency_ms: Optional[float]
+
+
+class VerifyMatchIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_vehicle_type: str = Field(min_length=1, max_length=64)
+    current_vehicle_type: str = Field(min_length=1, max_length=64)
+
+
+class VerifyMatchOut(BaseModel):
+    is_matched: bool
+    similarity_score: Optional[float]
+    mismatch_reason: str
+
+
+class KnowledgeDocOut(BaseModel):
+    id: str
+    title: str
+    category: str
+    source: str
+    chunk_count: int
+    latest_version_no: int
+    latest_status: str
+    published_version_no: int
+    updated_at: str
 
 
 # Hợp đồng body của Chat Studio (ai bug-017). Giữ khớp với
@@ -65,6 +112,34 @@ class IngestOut(BaseModel):
 @router.get("/system", response_model=BaseResponse[SystemCheck])
 async def system(actor: ConsoleActor = Depends(require_permission("ai:metrics:read"))):
     return BaseResponse.ok([SystemCheck(**await console_tools_service.system_check(actor))], "OK")
+
+
+@router.post("/anpr/recognize", response_model=BaseResponse[AnprTryOut])
+async def try_anpr(
+    file: UploadFile = File(...),
+    lane_id: Optional[str] = Form(None, max_length=128),
+    actor: ConsoleActor = Depends(require_permission("ai:model:evaluate")),
+):
+    image = await file.read(KNOWLEDGE_MAX_FILE_BYTES + 1)
+    result = await console_tools_service.try_anpr(actor, image, lane_id)
+    return BaseResponse.ok([AnprTryOut(**result)], "Kết quả từ engine ANPR đang nạp (ảnh không được lưu).")
+
+
+@router.post("/vision/verify-match", response_model=BaseResponse[VerifyMatchOut])
+async def verify_match(payload: VerifyMatchIn, actor: ConsoleActor = Depends(require_permission("ai:model:evaluate"))):
+    result = await console_tools_service.verify_match(
+        actor, payload.expected_vehicle_type, payload.current_vehicle_type
+    )
+    return BaseResponse.ok([VerifyMatchOut(**result)], "Đối chiếu theo loại xe; chưa so ảnh.")
+
+
+@router.get("/knowledge/documents", response_model=BaseResponse[KnowledgeDocOut])
+async def knowledge_documents(
+    parking_lot_id: Optional[str] = Query(None, max_length=128),
+    actor: ConsoleActor = Depends(require_permission("ai:prompt:edit")),
+):
+    docs = await console_tools_service.knowledge_documents(actor, parking_lot_id)
+    return BaseResponse.ok([KnowledgeDocOut(**d) for d in docs], "OK")
 
 
 @router.post("/copilot/stream")
