@@ -29,8 +29,8 @@
 | Review trước tích hợp: Dashboard render dữ liệu bằng HTML | [bug-008](bugs/bug-008-dashboard-render-html-khong-escape/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
 | Console trả SPA 200 cho `/docs`, test `test_console_http` đỏ sẵn | [bug-014](bugs/bug-014-console-docs-tra-spa-thay-vi-404/bug.md) | 🟢 | Chốt 404 cho /docs hay sửa test |
 | Đo weights ứng viên chưa nạp: nạp theo `artifact_key` trong process đo riêng (module M4) | IPLMS ISSUE-126 phase-6 6.12 | 🟢 | M4 chưa có người |
-| Gỡ cửa hậu `/auth/dev-session` + nút "Truy cập nhanh", đính chính AUDIT-005 | [bug-015](bugs/bug-015-dev-session-cua-hau-dang-nhap/bug.md) | 🔴 | Đề xuất HiTranquility (auth M1), chờ chủ dự án chốt (ISSUE-004 OPEN-04) |
-| Bỏ mật khẩu mặc định trong `harden_console_db.py`, đổi mật khẩu role `ai_console` | [bug-016](bugs/bug-016-mat-khau-db-console-mac-dinh-trong-code/bug.md) | 🔴 | Đề xuất HiTranquility |
+| Gỡ cửa hậu `/auth/dev-session` + nút "Truy cập nhanh", đính chính AUDIT-005 | [bug-015](bugs/bug-015-dev-session-cua-hau-dang-nhap/bug.md) | 🔴 | Đề xuất HiTranquility (auth M1), chờ chủ dự án chốt (ISSUE-004 OPEN-04); đã sửa trên nhánh `bugfix/bug-015-2026-10-console-auth-hardening`, còn xoá phiên cũ + đính chính AUDIT-005 |
+| Bỏ mật khẩu mặc định trong `harden_console_db.py`, đổi mật khẩu role `ai_console` | [bug-016](bugs/bug-016-mat-khau-db-console-mac-dinh-trong-code/bug.md) | 🔴 | Đề xuất HiTranquility; đã sửa trên nhánh `bugfix/bug-015-2026-10-console-auth-hardening`, còn đổi mật khẩu ở các môi trường |
 | UI: gỡ hoặc gắn nhãn MÔ PHỎNG cho 7 chỗ bịa kết quả, chuyển `fetch` thẳng sang `apiEndpoints` | [bug-018](bugs/bug-018-ui-bia-ket-qua-khi-api-loi/bug.md) | 🔴 | Đề xuất Phát; mục 1-2-6 cần Khoa, mục 3 cần Dương |
 | Chat Studio luôn 422: chốt nhận hay bỏ tham số Playground (Khoa), sửa UI (Phát), test hợp đồng (Dương) | [bug-017](bugs/bug-017-chat-studio-luon-422/bug.md) | 🔴 | ISSUE-004 OPEN-01 |
 | UI: escape CSV audit + từ điển mã hành động khớp server | [bug-019](bugs/bug-019-audit-xuat-csv-khong-escape/bug.md), [bug-020](bugs/bug-020-audit-tu-dien-hanh-dong-lech-server/bug.md) | 🟠 | Đề xuất Phát |
