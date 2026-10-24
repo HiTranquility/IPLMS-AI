@@ -101,6 +101,20 @@
   --control-height: 44px;
   --rail-width: 220px;
   --transition: 120ms ease;
+
+  /* Đổ bóng và lớp phủ (ISSUE-005): mọi file CSS dùng token, không viết rgba rải rác. */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 3px 8px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.24);
+  --color-scrim: rgba(0, 0, 0, 0.45);
+
+  /* Khung soi ảnh biển số luôn tối ở cả hai theme để ảnh camera dễ nhìn (LabelPage). */
+  --color-viewer-bg: #0d0e11;
+  --color-viewer-chrome: rgba(20, 22, 26, 0.85);
+  --color-viewer-border: rgba(255, 255, 255, 0.12);
+  --color-viewer-text: #d1d5db;
+  --color-viewer-hover: rgba(255, 255, 255, 0.15);
+  --color-viewer-strong: #ffffff;
 }
 
 * { box-sizing: border-box; }

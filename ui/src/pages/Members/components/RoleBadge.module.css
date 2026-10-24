@@ -10,7 +10,7 @@
   white-space: nowrap;
   line-height: 1.4;
   border: 1px solid transparent;
-  transition: all 0.15s ease-in-out;
+  transition: background-color var(--transition), color var(--transition), border-color var(--transition), opacity var(--transition);
 }
 
 .clickable {

@@ -18,6 +18,7 @@ export function CropImage({ captureId, size = 'md', src }: CropImageProps) {
     return (
       <span className={`${styles.frame} ${styles[size]} ${styles.failed}`} role="img" aria-label={t.crop.failed}>
         <ImageOff size={18} aria-hidden />
+        {size !== 'sm' && <span aria-hidden>{t.crop.failed}</span>}
       </span>
     );
   }

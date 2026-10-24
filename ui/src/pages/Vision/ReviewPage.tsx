@@ -115,7 +115,7 @@ export function ReviewPage() {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
               {/* Filter buttons */}
-              <div style={{ display: 'flex', gap: '4px', background: 'var(--color-surface-hover)', padding: '2px', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ display: 'flex', gap: '4px', background: 'var(--color-surface-2)', padding: '2px', borderRadius: 'var(--radius-md)' }}>
                 <Button
                   variant={filterMode === 'ALL' ? 'secondary' : 'ghost'}
                   size="sm"
