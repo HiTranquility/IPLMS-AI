@@ -76,7 +76,9 @@ Font hệ thống (`system-ui`, `ui-monospace`) — không tải font. Theme sá
 5. Danh sách dùng row + rail bất đối xứng (Copilot Lab: danh sách 2fr / chi tiết 3fr), không lưới card.
 6. Số dùng `tabular-nums`; control cao tối thiểu 44px trên màn cảm ứng (`pointer: coarse`); với chuột, nút `sm` và segmented thấp hơn (32–36px) cho mật độ bảng.
 7. Mọi màn hình dữ liệu có loading, empty, error (kèm mã lỗi và "Thử lại").
-8. Màu/font chỉ qua token; mỗi theme có `--color-accent-ink`.
+8. Màu/font chỉ qua token; mỗi theme có `--color-accent-ink`. Đổ bóng/lớp phủ dùng `--shadow-sm|md|lg`, `--color-scrim`; khung soi ảnh biển số luôn tối dùng `--color-viewer-*` (ISSUE-005). Ngoại lệ có chủ đích, chỉ ba chỗ:
+   - Nút và logo Google ở trang đăng nhập: màu theo hướng dẫn thương hiệu Google, giống nhau ở hai theme.
+   - Bảng màu định danh vai (`RoleBadge.module.css`) và nhóm hành động (`AuditActionBadge.module.css`): mỗi mục một màu riêng có biến thể sáng/tối, đã đo ≥ 4.5:1 (ai bug-025). Thêm vai/nhóm mới thì thêm màu ở đúng file đó và đo lại.
 
 ## Ngoại lệ và việc chưa làm
 

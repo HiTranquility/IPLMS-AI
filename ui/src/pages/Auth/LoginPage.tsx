@@ -8,7 +8,6 @@ import { usePasswordLogin } from '@/hooks/mutations/useAuthMutations';
 import { useI18n } from '@/i18n/I18nProvider';
 import { AUTH_ENDPOINTS } from '@/services/apiEndpoints/auth.endpoint';
 import { useThemeStore } from '@/stores/useThemeStore';
-import { EnterpriseBackground } from './components/EnterpriseBackground';
 import { loginErrorMessage } from './loginErrors';
 import styles from './LoginPage.module.css';
 
@@ -50,7 +49,6 @@ export function LoginPage() {
 
   return (
     <div className={styles.page}>
-      <EnterpriseBackground />
 
       <main className={styles.container}>
         <section className={styles.panel} aria-labelledby="login-title">

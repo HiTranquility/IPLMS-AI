@@ -42,7 +42,7 @@
 }
 
 .metricValue {
-  font-size: var(--text-base);
+  font-size: var(--text-md);
   font-weight: 700;
   color: var(--color-text);
   font-variant-numeric: tabular-nums;
@@ -71,7 +71,7 @@
   padding: var(--space-6);
   background: var(--color-surface);
   border: var(--hairline);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
 }
 
 .emptyHero {
@@ -92,7 +92,7 @@
   width: 56px;
   height: 56px;
   border-radius: var(--radius-full);
-  background: var(--color-surface-hover);
+  background: var(--color-surface-2);
   color: var(--color-primary);
   border: var(--hairline);
 }
@@ -116,7 +116,7 @@
   flex-direction: column;
   gap: var(--space-4);
   padding: var(--space-5);
-  background: var(--color-surface-hover);
+  background: var(--color-surface-2);
   border: var(--hairline);
   border-radius: var(--radius-lg);
 }
@@ -184,7 +184,7 @@
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-4);
-  background: var(--color-surface-hover);
+  background: var(--color-surface-2);
   border: var(--hairline);
   border-radius: var(--radius-lg);
 }
@@ -242,14 +242,15 @@
 /* ── Workspace 2-Column Grid (When Sample Active) ────────────────── */
 .workspaceGrid {
   display: grid;
-  grid-template-columns: 1fr 1.1fr;
+  /* minmax(0, …): ô ảnh 480px không đẩy lưới tràn ngang (ISSUE-005). */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
   gap: var(--space-5);
   align-items: start;
 }
 
 @media (max-width: 960px) {
   .workspaceGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -261,7 +262,7 @@
   padding: var(--space-4);
   background: var(--color-surface);
   border: var(--hairline);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
 }
 
 .viewerHeader {
@@ -281,7 +282,7 @@
   justify-content: center;
   min-height: 280px;
   position: relative;
-  background: var(--color-surface-hover);
+  background: var(--color-surface-2);
   border: var(--hairline);
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -307,7 +308,7 @@
   background: var(--color-surface);
   border: var(--hairline);
   border-radius: var(--radius-md);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
   z-index: 5;
 }
 
@@ -326,7 +327,7 @@
 }
 
 .toolButton:hover {
-  background: var(--color-surface-hover);
+  background: var(--color-surface-2);
 }
 
 .toolButtonActive {
@@ -343,7 +344,7 @@
   padding: var(--space-5);
   background: var(--color-surface);
   border: var(--hairline);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
 }
 
 .formHeader {
@@ -368,7 +369,7 @@
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
   padding: var(--space-3);
-  background: var(--color-surface-hover);
+  background: var(--color-surface-2);
   border: var(--hairline);
   border-radius: var(--radius-lg);
 }
@@ -429,7 +430,7 @@
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
-  background: var(--color-surface-hover);
+  background: var(--color-surface-2);
   border: var(--hairline);
   border-radius: var(--radius-md);
 }
@@ -460,7 +461,7 @@
   color: var(--color-text);
   cursor: pointer;
   user-select: none;
-  transition: all 0.12s ease;
+  transition: background-color var(--transition), color var(--transition), border-color var(--transition), opacity var(--transition);
 }
 
 .flagChipActive {
@@ -492,7 +493,7 @@
   font-size: var(--text-sm);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--transition), color var(--transition), border-color var(--transition), opacity var(--transition);
 }
 
 .correctionForm {
@@ -500,7 +501,7 @@
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-3);
-  background: var(--color-surface-hover);
+  background: var(--color-surface-2);
   border: var(--hairline);
   border-radius: var(--radius-md);
 }
@@ -518,7 +519,7 @@
   font-size: var(--text-xs);
   color: var(--color-muted);
   flex-wrap: wrap;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-md);
 }
 
 .dockItem {
@@ -552,7 +553,7 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-2) var(--space-3);
-  background: var(--color-surface-hover);
+  background: var(--color-surface-2);
   border: var(--hairline);
   border-radius: var(--radius-md);
   font-size: var(--text-xs);

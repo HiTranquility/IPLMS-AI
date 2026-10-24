@@ -99,7 +99,11 @@ export function ReviewRow({ item }: ReviewRowProps) {
           <span>·</span>
           <span>
             {t.review.gateConfirmed}{' '}
-            <span className={styles.plateDiffBox}>{item.confirmed_plate || DASH}</span>
+            {item.confirmed_plate ? (
+              <span className={styles.plateDiffBox}>{item.confirmed_plate}</span>
+            ) : (
+              <span title={t.review.gateEmptyHint}>{t.review.gateEmpty}</span>
+            )}
           </span>
         </div>
 

@@ -12,6 +12,9 @@
 
 ## Nhánh và thứ tự merge
 
+Đã merge vào `develop` ngày 2026-10-24 theo đúng thứ tự: ISSUE-004 #49 → #50 → #51 → #52 → #53, sau đó ISSUE-005. CI GitHub Actions của repo đang hỏng toàn bộ (job dừng sau khoảng 3 giây, không có log, kể cả PR #48 trước đó), nên mọi kiểm chứng chạy local như ghi dưới.
+
+
 | Nhánh | Bug | Ghi chú |
 |---|---|---|
 | `bugfix/bug-015-2026-10-console-auth-hardening` | 015, 016, 026 | Bảo mật, nên merge trước |

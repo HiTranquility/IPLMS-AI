@@ -12,7 +12,7 @@
   background: var(--color-surface);
   border: var(--hairline);
   border-radius: var(--radius-lg);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-sm);
   flex-wrap: wrap;
   gap: var(--space-3);
 }
@@ -59,7 +59,7 @@
   background: var(--color-surface);
   border: var(--hairline);
   border-radius: var(--radius-lg);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-sm);
   flex-wrap: wrap;
   align-items: center;
   transition: box-shadow 0.15s ease, border-color 0.15s ease;
@@ -67,7 +67,7 @@
 
 .reviewCard:hover {
   border-color: var(--color-border-strong);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-md);
 }
 
 .imageCol {

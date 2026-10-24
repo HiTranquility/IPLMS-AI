@@ -218,7 +218,7 @@ export function LabelWorkspace({ sample, remaining, onLabeled }: LabelWorkspaceP
       <section className={styles.formCard} aria-label={w.formRegion}>
         <div className={styles.formHeader}>
           <div className={styles.sampleMeta}>
-            <span>ID: {sample.capture_id.slice(0, 8)}...</span>
+            <span title={sample.capture_id}>ID: {sample.capture_id.slice(0, 8)}…</span>
             {sample.human_corrected && (
               <Badge tone="accent">{w.staffFixed}</Badge>
             )}

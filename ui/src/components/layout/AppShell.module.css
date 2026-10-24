@@ -40,8 +40,8 @@
 }
 :global([data-theme='dark']) .roles {
   color: var(--color-accent);
-  background: rgba(245, 158, 11, 0.08);
-  border-color: rgba(245, 158, 11, 0.18);
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
 }
 .accountActions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); margin-top: var(--space-2); }
 .main { padding: var(--space-6); min-width: 0; }

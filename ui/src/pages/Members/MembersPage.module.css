@@ -45,7 +45,7 @@
   background: var(--color-surface);
   border: var(--hairline);
   border-radius: var(--radius-lg);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 
@@ -133,7 +133,7 @@
   width: 36px;
   height: 36px;
   border-radius: var(--radius-full);
-  background: linear-gradient(135deg, var(--color-surface-3) 0%, var(--color-surface-2) 100%);
+  background: var(--color-surface-2);
   color: var(--color-text);
   font-weight: 700;
   font-size: 12px;
@@ -143,12 +143,12 @@
 }
 
 .avatarSelf {
-  background: linear-gradient(135deg, rgba(217, 119, 6, 0.2) 0%, rgba(217, 119, 6, 0.08) 100%);
+  background: var(--color-accent-soft);
   color: var(--color-accent-dark);
   border-color: var(--color-accent);
 }
 :global([data-theme='dark']) .avatarSelf {
-  color: #fbbf24;
+  color: var(--color-accent-dark);
 }
 
 .meta {
@@ -178,7 +178,7 @@
   color: var(--color-accent-dark);
 }
 :global([data-theme='dark']) .selfTag {
-  color: #fbbf24;
+  color: var(--color-accent-dark);
 }
 
 .memberEmail {
@@ -243,6 +243,7 @@
 /* Action button in table */
 .manageBtn {
   display: inline-flex;
+  white-space: nowrap;
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
@@ -253,7 +254,7 @@
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--transition), color var(--transition), border-color var(--transition), opacity var(--transition);
 }
 
 .manageBtn:hover {
@@ -277,7 +278,7 @@
   background: var(--color-surface);
   border: var(--hairline);
   border-radius: var(--radius-lg);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-sm);
 }
 
 .formTitle {
@@ -360,7 +361,7 @@
   color: var(--color-accent-dark);
 }
 :global([data-theme='dark']) .memberAvatar {
-  color: #fbbf24;
+  color: var(--color-accent-dark);
 }
 
 .memberMeta {
