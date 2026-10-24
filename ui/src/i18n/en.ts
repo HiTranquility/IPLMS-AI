@@ -85,6 +85,8 @@ export const en: Messages = {
     toDark: 'Switch to dark theme',
     logout: 'Sign out',
     rolesLeadAll: 'lead (full access)',
+    openMenu: 'Open menu',
+    closeMenu: 'Close menu',
   },
   nav: {
     copilot: 'Copilot',

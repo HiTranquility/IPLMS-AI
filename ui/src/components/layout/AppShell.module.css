@@ -5,7 +5,8 @@
   border-right: var(--hairline); background: var(--color-surface);
   position: sticky; top: 0; height: 100vh;
 }
-.brand { display: flex; flex-direction: column; padding: 0 var(--space-2); }
+.brand { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); padding: 0 var(--space-2); }
+.brandText { display: flex; flex-direction: column; }
 .brandName { font-weight: 700; font-size: var(--text-md); }
 .brandScope { font-size: var(--text-xs); color: var(--color-accent-dark); font-weight: 600; }
 .navWrap { display: flex; flex-direction: column; gap: var(--space-4); overflow-y: auto; }
@@ -46,8 +47,38 @@
 .accountActions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); margin-top: var(--space-2); }
 .main { padding: var(--space-6); min-width: 0; }
 
-@media (max-width: 760px) {
-  .shell { grid-template-columns: 1fr; }
-  .rail { position: static; height: auto; border-right: 0; border-bottom: var(--hairline); }
+/* Thanh trên + nút đóng chỉ dùng khi rail là ngăn kéo. */
+.topbar, .closeButton, .scrim { display: none; }
+.menuButton, .closeButton {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: var(--control-height); min-height: var(--control-height);
+  border: var(--hairline); border-radius: var(--radius-md);
+  background: var(--color-surface); color: var(--color-text); cursor: pointer;
+}
+
+/* < 768px: rail thành ngăn kéo trượt từ trái (SUGGESTION-003); khớp DRAWER_QUERY trong AppShell.tsx. */
+@media (max-width: 767px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .topbar {
+    display: flex; align-items: center; gap: var(--space-3);
+    position: sticky; top: 0; z-index: 20;
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-surface); border-bottom: var(--hairline);
+  }
+  .rail {
+    position: fixed; top: 0; left: 0; z-index: 40;
+    width: min(300px, 85vw); height: 100vh;
+    box-shadow: var(--shadow-lg);
+    transform: translateX(-100%); visibility: hidden;
+    /* Đóng: trượt xong mới ẩn. Mở: hiện ngay (visibility 0s), nếu không focus ở khung đầu bị bỏ qua. */
+    transition: transform var(--transition), visibility 0s linear var(--transition);
+  }
+  .railOpen { transform: translateX(0); visibility: visible; transition: transform var(--transition), visibility 0s; }
+  .closeButton { display: inline-flex; }
+  .scrim { display: block; position: fixed; inset: 0; z-index: 30; border: 0; background: var(--color-scrim); }
   .main { padding: var(--space-4); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail { transition: none; }
 }
