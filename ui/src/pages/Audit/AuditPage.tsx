@@ -11,8 +11,9 @@ import { useI18n } from '@/i18n/I18nProvider';
 import { MemberStatCard } from '@/pages/Members/components/MemberStatCard';
 import type { AuditEntry } from '@/types/audit';
 import type { Member } from '@/types/member';
+import { toCsv } from '@/utils/csv';
 import { fmtDateTime } from '@/utils/format';
-import { AuditActionBadge, getActionMeta } from './components/AuditActionBadge';
+import { actionLabel, AuditActionBadge, getActionMeta, type AuditCategory } from './components/AuditActionBadge';
 import { AuditDetailModal } from './components/AuditDetailModal';
 import styles from './AuditPage.module.css';
 
@@ -39,7 +40,7 @@ export function AuditPage() {
   const members = useMembers();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'rbac' | 'ml' | 'auth'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | Exclude<AuditCategory, 'other'>>('all');
   const [selectedEntry, setSelectedEntry] = useState<AuditEntry | null>(null);
 
   const rawList: AuditEntry[] = audit.data || [];
@@ -81,7 +82,7 @@ export function AuditPage() {
       const target = e.target_type === 'console_member' ? memberMap.get(e.target_id) : null;
 
       const matchReason = e.reason.toLowerCase().includes(q);
-      const matchAction = e.action.toLowerCase().includes(q) || meta.labelVi.toLowerCase().includes(q);
+      const matchAction = e.action.toLowerCase().includes(q) || actionLabel(e.action, t).toLowerCase().includes(q);
       const matchActor = actor
         ? actor.display_name.toLowerCase().includes(q) || actor.email.toLowerCase().includes(q)
         : e.actor_id.toLowerCase().includes(q);
@@ -91,29 +92,28 @@ export function AuditPage() {
 
       return matchReason || matchAction || matchActor || matchTarget;
     });
-  }, [rawList, categoryFilter, searchQuery, memberMap]);
+  }, [rawList, categoryFilter, searchQuery, memberMap, t]);
 
   // Xuất file CSV
   const handleExportCsv = () => {
     if (filteredEntries.length === 0) return;
-    const headers = ['Mã sự kiện', 'Thời gian', 'Hành động', 'Mã hành động', 'Người thực hiện', 'Email người làm', 'Loại đối tượng', 'ID đối tượng', 'Lý do'];
     const rows = filteredEntries.map((e) => {
       const actor = memberMap.get(e.actor_id);
-      const meta = getActionMeta(e.action);
       return [
         e.id,
         fmtDateTime(e.at),
-        meta.labelVi,
+        actionLabel(e.action, t),
         e.action,
-        actor ? actor.display_name : (e.actor_id || 'Hệ thống'),
+        actor ? actor.display_name : (e.actor_id || t.audit.system),
         actor ? actor.email : '',
         e.target_type,
         e.target_id,
-        `"${e.reason.replace(/"/g, '""')}"`,
-      ].join(',');
+        e.reason,
+      ];
     });
 
-    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+    // toCsv bọc nháy mọi ô và chặn công thức (bug-019).
+    const csvContent = '\uFEFF' + toCsv([t.audit.csvHeaders, ...rows]);
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -196,6 +196,7 @@ export function AuditPage() {
             <option value="rbac">{t.audit.filterCategoryRbac}</option>
             <option value="ml">{t.audit.filterCategoryMl}</option>
             <option value="auth">{t.audit.filterCategoryAuth}</option>
+            <option value="review">{t.audit.filterCategoryReview}</option>
           </select>
 
           <div className={styles.exportGroup}>
