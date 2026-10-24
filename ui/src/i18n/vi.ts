@@ -71,6 +71,8 @@ export const vi = {
     toDark: 'Chuyển giao diện tối',
     logout: 'Đăng xuất',
     rolesLeadAll: 'lead (toàn quyền)',
+    openMenu: 'Mở menu',
+    closeMenu: 'Đóng menu',
   },
   nav: {
     copilot: 'Copilot',

@@ -32,7 +32,7 @@ src/
       Shared/   Forbidden, NotFound
       System/   ScrollToTop
       Ui/{button,data-display,feedback,form,media}/   UI primitive thuần (không gọi API)
-    layout/     AppShell (rail trái + PageBoundary), PageHeader, navigation, LanguageSwitch
+    layout/     AppShell (rail trái + PageBoundary; < 768px rail thành ngăn kéo mở bằng nút menu ở thanh trên, có focus trap và Esc — SUGGESTION-003), PageHeader, navigation, LanguageSwitch
   i18n/         vi.ts (từ điển gốc, kiểu `Messages`), en.ts, I18nProvider (useI18n)
   pages/{Auth,Overview,Copilot,Tools,Members,Audit,Vision}/
     {Name}Page.tsx + {Name}Page.module.css + {Name}PageContext.tsx + components/ + index.ts

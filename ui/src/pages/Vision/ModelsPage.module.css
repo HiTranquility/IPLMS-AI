@@ -128,10 +128,13 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: var(--space-3);
-  align-items: end;
+  /* start: thẳng hàng theo nhãn. Với end, ô có dòng gợi ý (artifact_key) bị đẩy input lên 22px (ISSUE-006). */
+  align-items: start;
 }
 
 .testConnRow {
+  /* Hàng nút ra dòng riêng, không chen vào một ô 220px rồi xếp chồng hai nút. */
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: var(--space-3);
