@@ -9,7 +9,7 @@
 |---|---|
 | **Người giữ bảng** | Chủ đồ án |
 | **Cập nhật lần cuối** | 2026-10-23 |
-| **Người cập nhật** | Claude Code: thêm 11 dòng 🙋 từ lượt rà `ai/ui` ([ISSUE-004](issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md)), có gợi ý người nhận (UI/UX giao Phát), chưa ai nhận |
+| **Người cập nhật** | Claude Code: thêm 12 dòng 🙋 từ lượt rà `ai/ui` (dòng bug-024/025 thêm ở lượt bổ sung 24/10) ([ISSUE-004](issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md)), có gợi ý người nhận (UI/UX giao Phát), chưa ai nhận |
 
 ## 📏 Luật dùng bảng
 
@@ -34,6 +34,7 @@
 | UI: gỡ hoặc gắn nhãn MÔ PHỎNG cho 7 chỗ bịa kết quả, chuyển `fetch` thẳng sang `apiEndpoints` | [bug-018](bugs/bug-018-ui-bia-ket-qua-khi-api-loi/bug.md) | 🔴 | Đề xuất Phát; mục 1-2-6 cần Khoa, mục 3 cần Dương |
 | Chat Studio luôn 422: chốt nhận hay bỏ tham số Playground (Khoa), sửa UI (Phát), test hợp đồng (Dương) | [bug-017](bugs/bug-017-chat-studio-luon-422/bug.md) | 🔴 | ISSUE-004 OPEN-01 |
 | UI: escape CSV audit + từ điển mã hành động khớp server | [bug-019](bugs/bug-019-audit-xuat-csv-khong-escape/bug.md), [bug-020](bugs/bug-020-audit-tu-dien-hanh-dong-lech-server/bug.md) | 🟠 | Đề xuất Phát |
+| UI: sửa tràn ngang `/tools` ở 768px + contrast token `--color-faded`/accent hai theme | [bug-024](bugs/bug-024-trang-cong-cu-tran-ngang-o-768px/bug.md), [bug-025](bugs/bug-025-mau-chu-faded-va-accent-duoi-nguong-tuong-phan/bug.md) | 🟠 | Đề xuất Phát |
 | UI: bóc i18n còn sót (419 dòng / 47 file) + kiểm tự động | [bug-023](bugs/bug-023-che-do-en-tron-tieng-viet/bug.md) | 🟡 | Đề xuất Phát |
 | UI: trục ngày biểu đồ, cờ ảnh khi gán nhãn, hai chú giải ở Vision | [bug-021](bugs/bug-021-bieu-do-xu-huong-cat-nhan-ngay/bug.md), [bug-022](bugs/bug-022-thuoc-tinh-anh-gan-nhan-khong-luu/bug.md) | 🟡 | Đề xuất Phát; bug-022 chờ Khoa chốt OPEN-02 |
 | UI: sidebar trên màn hẹp + smoke test browser 7 vai × viewport × theme | [SUGGESTION-003](suggestions/10-2026/SUGGESTION-003-rail-thu-gon-tren-man-hep.md), [SUGGESTION-002](suggestions/10-2026/SUGGESTION-002-mock-api-va-ma-tran-browser-cho-ui.md) | 🟡 | Đề xuất Phát (phối hợp Dương); chờ techlead duyệt |

@@ -20,7 +20,8 @@ Nguyên văn yêu cầu của chủ dự án:
 ## Tiêu chí chấp nhận
 
 - [x] Chạy `ai/ui` và xem bằng REA (`inspect_web_page`, `capture_web_screenshot`) cùng browser: 11 màn hình, xem [review-1](review/review-1.md) §Đã kiểm thế nào.
-- [x] Mỗi bug có bằng chứng được ghi thành một hồ sơ: [bug-015](../../../bugs/bug-015-dev-session-cua-hau-dang-nhap/bug.md) … [bug-023](../../../bugs/bug-023-che-do-en-tron-tieng-viet/bug.md) (9 bug).
+- [x] Mỗi bug có bằng chứng được ghi thành một hồ sơ: [bug-015](../../../bugs/bug-015-dev-session-cua-hau-dang-nhap/bug.md) … [bug-023](../../../bugs/bug-023-che-do-en-tron-tieng-viet/bug.md) (9 bug), cùng 2 bug của lượt bổ sung: [bug-024](../../../bugs/bug-024-trang-cong-cu-tran-ngang-o-768px/bug.md), [bug-025](../../../bugs/bug-025-mau-chu-faded-va-accent-duoi-nguong-tuong-phan/bug.md).
+- [x] Lượt bổ sung 2026-10-24: chạy các mục còn NOT RUN (theme sáng, 768px, parse mermaid). Ảnh trong [evidence/v2/](evidence/v2/), kết quả trong [review-1](review/review-1.md) §Đã kiểm thế nào. Đăng nhập thật và DB thật vẫn BLOCKED.
 - [x] Có đánh giá UI/UX từng tính năng, độ khớp với AI_CONVENTIONS, `ui/DESIGN.md` và quality-gate L1–L8, cùng các mục nên thêm hoặc bớt: [review-1](review/review-1.md).
 - [x] Ý tưởng tính năng được ghi: [SUGGESTION-001](../../../suggestions/10-2026/SUGGESTION-001-dang-nhap-dev-cuc-bo-an-toan.md) … [SUGGESTION-005](../../../suggestions/10-2026/SUGGESTION-005-gom-luot-chat-vao-bo-eval.md).
 - [x] Có đề xuất giao việc cho Phát, Dương và Khoa (toàn bộ UI/UX giao Phát), ghi trong [BOARD](../../../BOARD.md) mục 🙋 và review-1 §Giao việc.
@@ -35,5 +36,5 @@ Nguyên văn yêu cầu của chủ dự án:
 
 ## Hồ sơ liên quan
 
-- Bug: bug-015 … bug-023 · Suggestion: SUGGESTION-001 … 005 · Báo cáo: [review-1](review/review-1.md) · Ảnh: [evidence/](evidence/)
+- Bug: bug-015 … bug-025 · Suggestion: SUGGESTION-001 … 005 · Báo cáo: [review-1](review/review-1.md) · Ảnh: [evidence/](evidence/)
 - [AUDIT-005](../../../audits/10-2026/AUDIT-005-ai-console-security-review.md): cần đính chính vì không nêu bug-015 và bug-016.
