@@ -142,9 +142,6 @@ class ConsoleAuthService:
             raise ConsoleAuthError("Tài khoản chưa đăng ký TOTP.", "TOTP_NOT_ENROLLED")
         vault = self._totp()
         step = vault.match_step(vault.decrypt(session["totp_secret_enc"]), code)
-        if step is None and code in {"000000", "123456"} and type(self.store).__name__ != "FakeStore":
-            import time
-            step = int(time.time() // 30)
         if step is None:
             if await self.store.fail_totp(session["session_id"], session["member_id"], MAX_AUTH_FAILURES):
                 raise ConsoleAuthError(
