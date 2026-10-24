@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **Ngày / Người báo** | 2026-10-23 / Claude Code, tìm thấy khi rà UI trong [ISSUE-004](../../issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md) |
-| **Trạng thái** | 🆕 New / 🔴 bảo mật |
+| **Trạng thái** | ✅ Fixed (chờ PR) / 🔴 bảo mật |
 | **Môi trường** | `develop@5f8e753`; endpoint có trong mọi bản build vì không có cờ môi trường nào chặn |
 
 ## Hành vi thực tế
@@ -33,4 +33,14 @@ Theo IPLMS ADR-0048 và AUDIT-005, console chỉ có hai cách đăng nhập: Go
 
 ## Sửa / kiểm chứng
 
-Chưa sửa (chủ dự án giao bên khác). Cần: gỡ route và nút, hoặc chuyển sang cơ chế ở SUGGESTION-001; xoá dòng phiên tương ứng trong DB console; thêm test `GET /auth/dev-session` → 404 khi không bật cờ; đính chính AUDIT-005.
+Đã sửa trên nhánh `bugfix/bug-015-2026-10-console-auth-hardening` (2026-10-24). Chọn cách gỡ hẳn; SUGGESTION-001 (đăng nhập dev an toàn) vẫn chờ techlead duyệt, chưa làm.
+
+- `app/api/rest/routes/console_auth_controller.py`: xoá route `GET /auth/dev-session` cùng token cố định. Trong code không còn chuỗi token nào (đã grep `*.py`, `*.ts`, `*.tsx`).
+- `ui/src/pages/Auth/LoginPage.tsx`: xoá nút "Truy cập nhanh" và import `Zap`. `ui/src/pages/Auth/LoginPage.module.css`: xoá `.devSessionContainer`, `.devSessionLink`. `ui/src/services/apiEndpoints/auth.endpoint.ts`: xoá `DEV_SESSION`.
+- Test mới `test/test_console_auth.py:424` (`NoDevSessionRouteTest`): `GET /console/api/auth/dev-session` và `/api/auth/dev-session` → 404, không có `set-cookie`.
+
+Kiểm chứng: `venv/bin/python -m unittest test.test_console_auth test.test_console_db_hardening test.test_console_http` (Postgres 16 cục bộ, `AI_TEST_DATABASE_URL`): 29 test: 27 PASS, 1 skip (kiểm live DB `ai_inference`, không có DB dev), 1 FAIL có sẵn từ trước và không thuộc bug này: `test_security_headers_and_no_docs` (`/docs` trả 503 thay vì 404, bug-014). UI: `pnpm typecheck` PASS; `npx vitest run --maxWorkers=1` 12 file / 48 test PASS.
+
+**Còn lại cho người (không làm được từ code):**
+- Xoá dòng phiên có `sha256` của token cũ trong bảng phiên của DB console ở mọi môi trường (token đã nằm trong lịch sử git nên phải coi là đã lộ).
+- Đính chính AUDIT-005 (kết luận "0 vi phạm" bỏ sót route này), ISSUE-004 OPEN-05. Nhánh này không sửa AUDIT-005.
