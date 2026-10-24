@@ -136,6 +136,7 @@ export const vi = {
     keyOnce: 'Khoá chỉ hiện lần này. Rời trang trước khi nhập mã thì phải nhờ quản trị console đặt lại.',
     pendingLead: 'Nhập mã từ khoá đã thêm vào ứng dụng xác thực khi tài khoản được tạo.',
     otp: 'Mã 6 số',
+    otpHint: 'Nhập 6 số từ app Authenticator.',
     confirm: 'Xác nhận',
     otherAccount: 'Dùng tài khoản khác',
   },
