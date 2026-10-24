@@ -82,6 +82,8 @@ erDiagram
 | BUG-07 → [bug-021](../../../../bugs/bug-021-bieu-do-xu-huong-cat-nhan-ngay/bug.md) | 🟡 | Trục ngày `slice(0,5)` → "Thứ 7", "CN, 1" | `TrendChart.tsx:196`; `evidence/02-overview.png` | 🆕 |
 | BUG-08 → [bug-022](../../../../bugs/bug-022-thuoc-tinh-anh-gan-nhan-khong-luu/bug.md) | 🟡 | Cờ thuộc tính ảnh khi gán nhãn không được gửi lên server | `LabelWorkspace.tsx:56-70` | 🆕 |
 | BUG-09 → [bug-023](../../../../bugs/bug-023-che-do-en-tron-tieng-viet/bug.md) | 🟡 | EN trộn tiếng Việt: 419 dòng viết cứng / 47 file | Đếm bằng script; kiểm browser `/vision/label` | 🆕 |
+| BUG-10 → [bug-024](../../../../bugs/bug-024-trang-cong-cu-tran-ngang-o-768px/bug.md) | 🟠 | `/tools` tràn ngang ở 768px (`scrollWidth` 1013), lưới chẩn đoán chuyển 3 cột theo viewport, không tính sidebar | `SystemDiagnostics.module.css:89-93`; `evidence/v2/light-768-tools.png` | 🆕 (lượt bổ sung 24/10) |
+| BUG-11 → [bug-025](../../../../bugs/bug-025-mau-chu-faded-va-accent-duoi-nguong-tuong-phan/bug.md) | 🟠 | `--color-faded` dưới 4.5:1 ở cả hai theme (3.84 / 3.74); accent sáng dùng làm màu chữ 2.77–3.19; success/warning trên nền soft 4.28–4.42 | `index.css:15,25,30,32,50`; `evidence/v2/` | 🆕 (lượt bổ sung 24/10) |
 
 ### Cần người quyết
 
@@ -95,7 +97,7 @@ erDiagram
 
 ## Đánh giá UI/UX từng tính năng
 
-Ảnh chụp bằng REA ở 1424×805, theme tối, VI, với API giả. Theme sáng chưa chụp.
+Ảnh chụp bằng REA ở 1424×805, theme tối, VI, với API giả. Lượt bổ sung ngày 24/10 chụp và đo thêm theme sáng 1280, theme tối 768 và theme sáng 768 cho cả 11 màn bằng Playwright. Repo giữ ảnh bằng chứng ở [`evidence/v2/`](../evidence/v2/), tên file `<theme>-<rộng>-<màn>.png`. Theme sáng không vỡ bố cục, nhưng có lỗi tương phản (bug-025). Ở 768px chỉ `/tools` tràn ngang (bug-024).
 
 | Màn hình | Ổn | Chưa ổn | Đánh giá |
 |---|---|---|---|
@@ -122,11 +124,13 @@ erDiagram
 | `ui/DESIGN.md` §Ngôn ngữ, quality-gate L6 | ❌ | bug-023 |
 | AI_CONVENTIONS §Console: mọi request ghi gửi `X-Console-Request`, gọi qua `apiClient` | ⚠️ | Có gửi header, nhưng 5 component `fetch` thẳng với `apiBase` tự đoán theo `location.pathname`, bỏ qua `ApiError`/i18n lỗi và hook React Query (ChatStudio, KnowledgeExplorer, DisputeSimulator, AnprSandbox ×2) |
 | IPLMS ADR-0048 (đăng nhập Google + TOTP, không lộ bề mặt) | ❌ | bug-015; `console_router` gắn ở cả `/console/api` lẫn `/api` (`console_main.py:75-76`), tức gấp đôi bề mặt API |
-| Quality-gate L5 (viewport × theme × role, console 0 lỗi) | ⚠️ | Desktop dark 11 màn: không lỗi console ngoài log của Vite. Theme sáng và 768px: **chưa chạy**. Role: chỉ admin, chưa thử annotator |
+| Quality-gate L5 (viewport × theme × role, console 0 lỗi) | ⚠️ | 11 màn × (tối 1424, sáng 1280, tối 768, sáng 768) + 375: chỉ `/tools` ở 768 tràn ngang (bug-024). Console: lỗi duy nhất là 401/404 của API giả (`/me` ở chế độ anon, `…/crop` cố ý trả 404), không có lỗi JS. Role: chỉ admin, chưa thử annotator |
+| Quality-gate L4/L6 contrast ≥ 4.5:1 mọi theme | ❌ | bug-025: token `--color-faded` hỏng ở cả hai theme; accent sáng không dùng được làm màu chữ |
 | L7 bảo mật | ❌ | bug-015, bug-016, bug-019 |
 | L8 quan sát và phục hồi | ❌ | Fallback im lặng thay vì báo lỗi (bug-018) |
 | Quy trình: test bắt lệch hợp đồng | ❌ | Test mock `fetch` không có test hợp đồng UI↔Pydantic (SUGGESTION-002) |
 | Quy trình: review độc lập | ❌ | AUDIT-005 đóng "0 vi phạm" sau commit dev-session; ISSUE-003 tự check tiêu chí "100% token" mà không có số đo |
+| Chuỗi cung ứng (`pnpm audit`) | ⚠️ | Gói chạy thật (`--prod`): 0 lỗ hổng. Gói dev: 7 (1 high, 5 moderate, 1 low), đều nằm ở `vite@8.0.16` (`launch-editor`, `server.fs.allow`) và `@vitest/mocker@5.0.2`. Chỉ ảnh hưởng máy dev đang chạy `vite`, nên gom vào lượt bump thư viện của CHORE tháng, không mở bug |
 | Test UI | ✅/⚠️ | `pnpm typecheck` pass; `vitest` 12 file / 48 test pass với `--maxWorkers=1`, còn chạy mặc định thì 11 lỗi timeout khởi động worker trên máy dev |
 
 ## Nên thêm / nên bớt
@@ -153,6 +157,7 @@ Theo chỉ đạo, **toàn bộ UI/UX giao Phát**. Khoa và Dương nhận ph�
 | **Phát** | Bóc i18n còn sót, kèm kiểm tự động cho chữ tiếng Việt viết cứng | bug-023 | 🟡 |
 | **Phát** | Trục ngày biểu đồ, hai chú giải ở Vision, các lỗi nhỏ ở trang gán nhãn | bug-021, bug-022 (phần UI) | 🟡 |
 | **Phát** | Sidebar trên màn hẹp; smoke test browser theo ma trận (phối hợp Dương) | SUGGESTION-003, SUGGESTION-002 | 🟡 |
+| **Phát** | Sửa tràn ngang `/tools` ở 768px; làm đậm `--color-faded`, đổi chữ dùng accent sang `--color-accent-dark`, đo lại contrast hai theme | bug-024, bug-025 | 🟠 |
 | **Phát** | Đưa màu viết cứng về token (161 chỗ), bỏ glow ở trang đăng nhập | review-1 §Độ khớp | 🟢 |
 | **Dương** | Test hợp đồng body UI ↔ Pydantic cho `/tools/copilot/stream` và các route console | bug-017, SUGGESTION-002 | 🔴 |
 | **Dương** | Chốt có mở endpoint mô phỏng tranh chấp thật trên console từ LangGraph workflow hay gỡ Dispute Simulator | bug-018 mục 3, ai ISSUE-001 | 🟠 |
@@ -173,5 +178,7 @@ Theo chỉ đạo, **toàn bộ UI/UX giao Phát**. Khoa và Dương nhận ph�
 | Browser pane | 375×812 trên `/vision/label`, `/audit`; đổi EN trên `/vision/label` | Đo `main.top`, `scrollWidth`; xác nhận EN trộn VI |
 | Hợp đồng API | `.venv` của `ai/`: `AskIn.model_validate({...5 trường})` | `extra_forbidden` × 3 (bug-017) |
 | Đọc code | grep và đọc `file:line` cho từng bug | Ghi trong từng hồ sơ |
-| Theme sáng, 768px, đăng nhập thật, DB thật | — | **NOT RUN**. Không có tài khoản test hay DB cục bộ được phép đọc (`.env` bị cấm), nên đăng nhập thật ghi BLOCKED |
-| Parse mermaid | `npx -y @mermaid-js/mermaid-cli …` | **NOT RUN**. Ổ C còn khoảng 200 MB, không đủ cho Chromium của mermaid-cli, và lệnh này sẽ tải package mới |
+| Theme sáng, 768px (lượt bổ sung 2026-10-24, cloud) | `pnpm install --frozen-lockfile` (được chủ dự án cho phép) → `npx vite` + `mock_console_api.py` (admin) → Playwright/Chromium 1243: 11 màn × {sáng 1280, tối 768, sáng 768}, đo `scrollWidth`, tỉ lệ tương phản chữ so với nền đục gần nhất, lỗi console | PASS bố cục trừ `/tools` @768 (bug-024); contrast FAIL (bug-025). Chụp 33 ảnh, chỉ đưa vào repo 14 ảnh làm bằng chứng (11 màn theme sáng 1280 + `light-768-tools`, `dark-768-tools`, `dark-768-overview`), 19 ảnh không có lỗi để lại ngoài repo cho nhẹ |
+| Đo lại sau khi cài | `pnpm typecheck`; `npx vitest run --maxWorkers=1`; `pnpm audit` | PASS; 12 file / 48 test PASS; prod 0, dev 7 lỗ hổng (xem §Độ khớp) |
+| Đăng nhập thật, DB thật | — | **BLOCKED**. Không có tài khoản test hay DB cục bộ được phép đọc (`.env` bị cấm) |
+| Parse mermaid (lượt bổ sung 2026-10-24) | `npx -y @mermaid-js/mermaid-cli@11.12.0 -p <cfg>.json -i review-1.md -o <scratchpad>/out.md`, cfg trỏ Chromium có sẵn + `--no-sandbox` | PASS: 3/3 sơ đồ, exit 0 |
