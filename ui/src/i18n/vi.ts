@@ -433,6 +433,14 @@ export const vi = {
     rightPlate: 'Biển đúng',
     saveFix: 'Lưu biển sửa',
     remaining: (count: number) => `Còn ${count} mẫu trong lượt tải này. Nhãn của bạn chờ một người khác duyệt mới vào dataset.`,
+    flagsTitle: 'Thuộc tính ảnh / biển số',
+    flags: {
+      blurry: 'Biển mờ / bụi bẩn',
+      glare: 'Chói sáng đèn pha',
+      skewed: 'Góc chụp nghiêng',
+      occluded: 'Che khuất một phần',
+      two_line: 'Biển 2 dòng',
+    },
   },
   review: {
     title: 'Duyệt nhãn',

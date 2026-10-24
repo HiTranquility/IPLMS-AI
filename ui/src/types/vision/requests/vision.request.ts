@@ -1,4 +1,4 @@
-import type { Decision, LabelVerdict } from '../shares/vision.item';
+import type { Decision, LabelVerdict, QualityFlag } from '../shares/vision.item';
 
 export interface ModelInput {
   name: string;
@@ -12,6 +12,7 @@ export type AddLabelRequest = {
   captureId: string;
   verdict: LabelVerdict;
   plateText: string;
+  qualityFlags: QualityFlag[];
 };
 
 export type DecideLabelRequest = {

@@ -82,19 +82,15 @@
 
 .cardsGrid {
   display: grid;
-  grid-template-columns: 1fr;
+  /* Số cột theo bề rộng khối, không theo viewport: rail đã chiếm một phần màn (bug-024). */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
   gap: var(--space-4);
-}
-
-@media (min-width: 48rem) {
-  .cardsGrid {
-    grid-template-columns: repeat(3, 1fr);
-  }
 }
 
 .card {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   gap: var(--space-3);
   padding: var(--space-4);
   background: var(--color-surface-2);

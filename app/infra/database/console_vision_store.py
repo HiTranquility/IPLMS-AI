@@ -122,6 +122,18 @@ class ConsoleVisionStore(ConsoleStore):
             "CREATE UNIQUE INDEX IF NOT EXISTS uq_vision_label_approved "
             "ON vision_label (capture_id) WHERE decision = 'APPROVED'"
         )
+        # Cờ điều kiện ảnh người gán chọn (bug-022): để đo ANPR theo từng điều kiện.
+        cur.execute(
+            "ALTER TABLE vision_label ADD COLUMN IF NOT EXISTS quality_flags TEXT[] NOT NULL DEFAULT '{}'"
+        )
+        cur.execute(
+            """DO $$ BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ck_vision_label_quality_flags') THEN
+                    ALTER TABLE vision_label ADD CONSTRAINT ck_vision_label_quality_flags
+                        CHECK (quality_flags <@ ARRAY['blurry', 'glare', 'skewed', 'occluded', 'two_line']::TEXT[]);
+                END IF;
+            END $$"""
+        )
         cur.execute(
             """CREATE TABLE IF NOT EXISTS vision_snapshot (
                 id UUID PRIMARY KEY,
@@ -324,7 +336,8 @@ class ConsoleVisionStore(ConsoleStore):
         return await self._run(work)
 
     async def add_label(
-        self, capture_id: str, labeler_id: str, verdict: str, plate_text: str | None
+        self, capture_id: str, labeler_id: str, verdict: str, plate_text: str | None,
+        quality_flags: list[str] | None = None,
     ) -> str:
         def work(cur):
             cur.execute("SELECT 1 FROM vision_sample WHERE capture_id = %s FOR UPDATE", (capture_id,))
@@ -343,9 +356,9 @@ class ConsoleVisionStore(ConsoleStore):
                 )
             label_id = str(uuid4())
             cur.execute(
-                """INSERT INTO vision_label (id, capture_id, labeler_id, verdict, plate_text)
-                   VALUES (%s, %s, %s, %s, %s)""",
-                (label_id, capture_id, labeler_id, verdict, plate_text),
+                """INSERT INTO vision_label (id, capture_id, labeler_id, verdict, plate_text, quality_flags)
+                   VALUES (%s, %s, %s, %s, %s, %s)""",
+                (label_id, capture_id, labeler_id, verdict, plate_text, list(quality_flags or [])),
             )
             _audit(cur, labeler_id, f"vision.label:{verdict}", "vision_sample", capture_id, "gán nhãn")
             return label_id
@@ -356,7 +369,8 @@ class ConsoleVisionStore(ConsoleStore):
         """Nhãn chờ duyệt của NGƯỜI KHÁC — người gán không thấy nhãn của mình ở đây."""
         def work(cur):
             cur.execute(
-                f"""SELECT {_SAMPLE_COLUMNS}, l.id::text, l.verdict, l.plate_text, m.display_name, l.created_at
+                f"""SELECT {_SAMPLE_COLUMNS}, l.id::text, l.verdict, l.plate_text, m.display_name, l.created_at,
+                           l.quality_flags
                     FROM vision_label l
                     JOIN vision_sample s ON s.capture_id = l.capture_id
                     JOIN console_member m ON m.id = l.labeler_id
@@ -366,7 +380,8 @@ class ConsoleVisionStore(ConsoleStore):
             )
             return [
                 {**_sample(r), "label": {"id": r[15], "verdict": r[16], "plate_text": r[17] or "",
-                                         "labeler": r[18], "created_at": r[19].isoformat()}}
+                                         "labeler": r[18], "created_at": r[19].isoformat(),
+                                         "quality_flags": list(r[20] or [])}}
                 for r in cur.fetchall()
             ]
 

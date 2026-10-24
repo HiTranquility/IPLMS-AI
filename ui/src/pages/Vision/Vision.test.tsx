@@ -30,7 +30,7 @@ describe('LabelPage', () => {
     expect(img.getAttribute('src')).toBe(`/console/api/vision/samples/${sample.capture_id}/crop`);
     await user.keyboard('1');
     await waitFor(() => expect(calls.some((c) => c.url.endsWith('/labels'))).toBe(true));
-    expect(bodyOf(calls, '/labels')).toEqual({ verdict: 'CORRECT', plate_text: '' });
+    expect(bodyOf(calls, '/labels')).toEqual({ verdict: 'CORRECT', plate_text: '', quality_flags: [] });
   });
 
   it('sửa biển gửi biển đã viết hoa', async () => {
@@ -44,7 +44,25 @@ describe('LabelPage', () => {
     await user.click(await screen.findByRole('button', { name: /Sửa biển/ }));
     await user.type(screen.getByLabelText('Biển đúng'), '51a-123.46');
     await user.click(screen.getByRole('button', { name: 'Lưu biển sửa' }));
-    await waitFor(() => expect(bodyOf(calls, '/labels')).toEqual({ verdict: 'CORRECTED', plate_text: '51A-123.46' }));
+    await waitFor(() =>
+      expect(bodyOf(calls, '/labels')).toEqual({ verdict: 'CORRECTED', plate_text: '51A-123.46', quality_flags: [] }),
+    );
+  });
+
+  it('cờ ảnh đã chọn được gửi cùng nhãn (bug-022)', async () => {
+    const calls = mockApi((url) => {
+      if (url.endsWith('/vision/queue?limit=20')) return ok(sample);
+      if (url.endsWith('/labels')) return ok({ id: 'l1' });
+      return undefined;
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<LabelPage />);
+    await user.click(await screen.findByRole('button', { name: /Biển 2 dòng/ }));
+    await user.click(screen.getByRole('button', { name: /Chói sáng đèn pha/ }));
+    await user.keyboard('1');
+    await waitFor(() =>
+      expect(bodyOf(calls, '/labels')).toEqual({ verdict: 'CORRECT', plate_text: '', quality_flags: ['two_line', 'glare'] }),
+    );
   });
 });
 
@@ -75,6 +93,22 @@ describe('DatasetsPage — khoá golden cần step-up tại chỗ', () => {
     await waitFor(() => expect(freezeCalls).toBe(2));
     expect(bodyOf(calls, '/auth/step-up')).toEqual({ code: '123456', reason: 'chốt bộ test' });
   });
+
+  it('cờ ảnh đã chọn được gửi cùng nhãn (bug-022)', async () => {
+    const calls = mockApi((url) => {
+      if (url.endsWith('/vision/queue?limit=20')) return ok(sample);
+      if (url.endsWith('/labels')) return ok({ id: 'l1' });
+      return undefined;
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<LabelPage />);
+    await user.click(await screen.findByRole('button', { name: /Biển 2 dòng/ }));
+    await user.click(screen.getByRole('button', { name: /Chói sáng đèn pha/ }));
+    await user.keyboard('1');
+    await waitFor(() =>
+      expect(bodyOf(calls, '/labels')).toEqual({ verdict: 'CORRECT', plate_text: '', quality_flags: ['two_line', 'glare'] }),
+    );
+  });
 });
 
 describe('ModelsPage', () => {
@@ -94,5 +128,21 @@ describe('ModelsPage', () => {
     const promote = await screen.findByRole('button', { name: 'Đưa lên production' });
     await waitFor(() => expect(promote).toHaveProperty('disabled', true));
     expect(screen.getByText('Bạn đề xuất model này — cần AI Lead khác.')).toBeTruthy();
+  });
+
+  it('cờ ảnh đã chọn được gửi cùng nhãn (bug-022)', async () => {
+    const calls = mockApi((url) => {
+      if (url.endsWith('/vision/queue?limit=20')) return ok(sample);
+      if (url.endsWith('/labels')) return ok({ id: 'l1' });
+      return undefined;
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<LabelPage />);
+    await user.click(await screen.findByRole('button', { name: /Biển 2 dòng/ }));
+    await user.click(screen.getByRole('button', { name: /Chói sáng đèn pha/ }));
+    await user.keyboard('1');
+    await waitFor(() =>
+      expect(bodyOf(calls, '/labels')).toEqual({ verdict: 'CORRECT', plate_text: '', quality_flags: ['two_line', 'glare'] }),
+    );
   });
 });

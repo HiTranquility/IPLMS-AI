@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useI18n } from '@/i18n/I18nProvider';
 import type { UsageDay } from '@/types/copilot';
-import { fmtDay, fmtInt, fmtMs } from '@/utils/format';
+import { fmtDay, fmtDayMonth, fmtInt, fmtMs } from '@/utils/format';
 import styles from './TrendChart.module.css';
 
 export interface TrendChartProps {
@@ -193,7 +193,7 @@ export function TrendChart({ days }: TrendChartProps) {
                 textAnchor="middle"
                 className={styles.axisText}
               >
-                {fmtDay(p.day.date).slice(0, 5)}
+                {fmtDayMonth(p.day.date)}
               </text>
             </g>
           ))}
@@ -219,15 +219,22 @@ export function TrendChart({ days }: TrendChartProps) {
       {activeDay && (
         <div className={styles.tooltip}>
           <span>
-            <strong>{fmtDay(activeDay.date)}:</strong> {fmtInt(activeDay.requests)} lượt hỏi (
+            <strong>{fmtDay(activeDay.date)}:</strong> {t.overview.turnCount(fmtInt(activeDay.requests))} (
             <span style={{ color: 'var(--color-success)' }}>
-              {fmtInt(Math.max(0, activeDay.requests - activeDay.refused - activeDay.errors))} đúng
+              {fmtInt(Math.max(0, activeDay.requests - activeDay.refused - activeDay.errors))}{' '}
+              {t.overview.chartRequestsLegend.toLowerCase()}
             </span>
             {activeDay.refused > 0 && (
-              <span style={{ color: 'var(--color-warning)' }}> · {fmtInt(activeDay.refused)} chặn</span>
+              <span style={{ color: 'var(--color-warning)' }}>
+                {' '}
+                · {fmtInt(activeDay.refused)} {t.overview.chartRefusedLegend.toLowerCase()}
+              </span>
             )}
             {activeDay.errors > 0 && (
-              <span style={{ color: 'var(--color-danger)' }}> · {fmtInt(activeDay.errors)} lỗi</span>
+              <span style={{ color: 'var(--color-danger)' }}>
+                {' '}
+                · {fmtInt(activeDay.errors)} {t.overview.chartErrorsLegend.toLowerCase()}
+              </span>
             )}
             )
           </span>
