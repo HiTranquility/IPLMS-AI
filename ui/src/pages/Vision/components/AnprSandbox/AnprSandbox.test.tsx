@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { renderWithProviders } from '@/test/utils';
+import { mockApi, ok, renderWithProviders } from '@/test/utils';
 import { AnprSandbox } from './AnprSandbox';
 
 describe('AnprSandbox Component', () => {
@@ -30,51 +30,56 @@ describe('AnprSandbox Component', () => {
     });
   });
 
-  it('clicking Run ANPR executes recognition and displays plate result details', async () => {
+  // ai bug-018: console chưa có route ANPR/verify-match → báo lỗi, không bịa biển số hay độ tin cậy.
+  it('Run ANPR: API 404 thì báo lỗi, không hiện biển của preset hay confidence 98.5%', async () => {
+    mockApi(() => undefined);
     const user = userEvent.setup();
     renderWithProviders(<AnprSandbox />);
+    expect(screen.getByText('MÔ PHỎNG')).toBeTruthy();
 
-    const carPresetBtn = screen.getByText('Mẫu Ô Tô (51A-888.88)');
-    await user.click(carPresetBtn);
+    await user.click(screen.getByText('Mẫu Ô Tô (51A-888.88)'));
+    await user.click(screen.getByRole('button', { name: /Thực Hiện Nhận Diện/ }));
 
-    const runBtn = screen.getByRole('button', { name: /Thực Hiện Nhận Diện/ });
-    await user.click(runBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText('51A-888.88')).toBeTruthy();
-      expect(screen.getByText('Độ tin cậy:')).toBeTruthy();
-      expect(screen.getByText('Trắng (Dân sự)')).toBeTruthy();
-      expect(screen.getByText('Sedan')).toBeTruthy();
-    });
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+    expect(screen.queryByText('Độ tin cậy:')).toBeNull();
+    expect(screen.queryByText(/98[.,]5%|97[.,]8%/)).toBeNull();
+    expect(screen.queryByText('Sedan')).toBeNull();
   });
 
-  it('detects vehicle mismatch and displays red fraud warning alert', async () => {
+  it('Run ANPR: hiện đúng kết quả server, trường thiếu thì "—"', async () => {
+    const calls = mockApi((url) => (url.endsWith('/anpr/recognize') ? ok({ plate_number: '30K-111.22' }) : undefined));
     const user = userEvent.setup();
     renderWithProviders(<AnprSandbox />);
+    await user.click(screen.getByText('Mẫu Ô Tô (51A-888.88)'));
+    await user.click(screen.getByRole('button', { name: /Thực Hiện Nhận Diện/ }));
 
-    const verifyBtn = screen.getByRole('button', { name: 'Thực Hiện Đối Chiếu Loại Xe' });
-    await user.click(verifyBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText(/CẢNH BÁO GIAN LẬN: LỆCH LOẠI PHƯƠNG TIỆN/)).toBeTruthy();
-      expect(screen.getByText(/KHÓA CHẶT/)).toBeTruthy();
-    });
+    await waitFor(() => expect(screen.getByText('30K-111.22')).toBeTruthy());
+    expect(calls.some((c) => c.url === '/console/api/anpr/recognize')).toBe(true);
+    expect(screen.getByText('Độ tin cậy:').nextElementSibling?.textContent).toBe('—');
   });
 
-  it('selecting matching vehicle types verifies valid checkout and allows barricade pass', async () => {
+  it('Đối chiếu loại xe: API 404 thì báo lỗi, không tự kết luận gian lận hay độ tương đồng', async () => {
+    mockApi(() => undefined);
     const user = userEvent.setup();
     renderWithProviders(<AnprSandbox />);
+    await user.click(screen.getByRole('button', { name: 'Thực Hiện Đối Chiếu Loại Xe' }));
 
-    const validScenarioBtn = screen.getByText(/Kịch bản 2: Hợp lệ SUV/);
-    await user.click(validScenarioBtn);
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+    expect(screen.queryByText(/CẢNH BÁO GIAN LẬN/)).toBeNull();
+    expect(screen.queryByText(/12[.,]4%|98[.,]5%/)).toBeNull();
+  });
 
-    const verifyBtn = screen.getByRole('button', { name: 'Thực Hiện Đối Chiếu Loại Xe' });
-    await user.click(verifyBtn);
+  it('Đối chiếu loại xe: hiện kết luận server trả', async () => {
+    mockApi((url) =>
+      url.endsWith('/vision/verify-match')
+        ? ok({ is_matched: false, similarity_score: 0.31, mismatch_reason: 'TYPE_MISMATCH' })
+        : undefined,
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<AnprSandbox />);
+    await user.click(screen.getByRole('button', { name: 'Thực Hiện Đối Chiếu Loại Xe' }));
 
-    await waitFor(() => {
-      expect(screen.getByText(/HỢP LỆ — ĐỒNG NHẤT LOẠI XE/)).toBeTruthy();
-      expect(screen.getByText(/Barie tự động mở/)).toBeTruthy();
-      expect(screen.getByText(/MỞ CHO QUA/)).toBeTruthy();
-    });
+    await waitFor(() => expect(screen.getByText(/CẢNH BÁO GIAN LẬN: LỆCH LOẠI PHƯƠNG TIỆN \(TYPE_MISMATCH\)/)).toBeTruthy());
+    expect(screen.getByText(/Độ tương đồng: 31[.,]0%/)).toBeTruthy();
   });
 });
