@@ -13,7 +13,7 @@
 
 Hai mục còn lại của [ISSUE-005](../ISSUE-005-console-ui-polish/issue.md), chủ dự án yêu cầu "làm luôn" ngày 2026-10-24:
 
-1. Làm [SUGGESTION-003](../../../suggestions/10-2026/SUGGESTION-003-rail-thu-gon-tren-man-hep.md): dưới 768px, sidebar thành ngăn kéo. Techlead @HiTranquility duyệt trong chat cùng ngày, theo IPLMS ADR-0056.
+1. Làm [SUGGESTION-003](../../../suggestions/10-2026/SUGGESTION-003-rail-thu-gon-tren-man-hep.md): dưới 768px, sidebar thành ngăn kéo. Techlead @HiTranquility duyệt trong chat cùng ngày, theo IPLMS ADR-0059.
 2. Sửa ô `artifact_key` lệch hàng ở form đăng ký model (ISSUE-004 review-1).
 
 ## Tiêu chí chấp nhận
