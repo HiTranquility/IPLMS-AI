@@ -4,7 +4,6 @@ import type { AuthMfaResponse, EnrollTotpResponse, Me } from '@/types/auth';
 export const AUTH_ENDPOINTS = {
   ME: '/me',
   GOOGLE_START: `${API_BASE}/auth/google/start`,
-  DEV_SESSION: `${API_BASE}/auth/dev-session`,
   PASSWORD_LOGIN: '/auth/password',
   TOTP_ENROLL: '/auth/totp/enroll',
   TOTP_VERIFY: '/auth/totp',

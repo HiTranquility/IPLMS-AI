@@ -1,4 +1,4 @@
-import { AlertTriangle, KeyRound, LockKeyhole, Moon, ShieldCheck, Sun, Zap } from 'lucide-react';
+import { AlertTriangle, KeyRound, LockKeyhole, Moon, ShieldCheck, Sun } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Button } from '@/components/common/Ui/button/Button';
 import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
@@ -104,12 +104,6 @@ export function LoginPage() {
             <div className={styles.securityHint}>
               <LockKeyhole size={13} className={styles.hintIcon} aria-hidden />
               <span>Xác thực an toàn qua OAuth 2.0 PKCE · Phiên làm việc RBAC 7 vai trò</span>
-            </div>
-            <div className={styles.devSessionContainer}>
-              <a href={AUTH_ENDPOINTS.DEV_SESSION} className={styles.devSessionLink}>
-                <Zap size={14} aria-hidden />
-                <span>Truy cập nhanh (Trưởng dự án Nguyễn Tấn Phát - Full 7 Roles)</span>
-              </a>
             </div>
           </div>
 

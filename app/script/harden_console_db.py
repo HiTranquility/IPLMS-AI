@@ -27,27 +27,38 @@ for _stream in (sys.stdout, sys.stderr):
         _stream.reconfigure(encoding="utf-8", errors="replace")
 
 
+def _require_env(*names: str) -> str:
+    """Lấy biến môi trường bắt buộc; thiếu thì dừng, không bao giờ rơi về mật khẩu viết trong code (bug-016)."""
+    for name in names:
+        value = os.environ.get(name)
+        if value:
+            return value
+    raise RuntimeError(
+        f"Thiếu biến môi trường {' hoặc '.join(names)}. "
+        "Đặt giá trị trong môi trường chạy script, không có giá trị mặc định."
+    )
+
+
 def get_db_urls() -> tuple[str, str]:
     """Lấy admin URL (để cấp quyền) và inference URL (để kiểm tra)."""
     # URL quản trị: ưu tiên quyền superuser postgres
-    admin_pw = os.environ.get("POSTGRES_PASSWORD") or os.environ.get("AI_DB_PASSWORD") or "CaVN2004"
+    admin_pw = _require_env("POSTGRES_PASSWORD", "AI_DB_PASSWORD")
     admin_user = os.environ.get("POSTGRES_USER", "postgres")
-    base_url = (
-        os.environ.get("AI_CONSOLE_ADMIN_DATABASE_URL")
-        or os.environ.get("AI_DATABASE_URL")
-        or "postgresql://postgres:CaVN2004@127.0.0.1:5435/ai_console"
-    )
+    base_url = _require_env("AI_CONSOLE_ADMIN_DATABASE_URL", "AI_DATABASE_URL")
     # Chuẩn hóa về user postgres và db ai_console
     admin_url = re.sub(r"://([^:]+):([^@]+)@", f"://{admin_user}:{admin_pw}@", base_url)
     admin_url = re.sub(r"/[^/?]+(\?.*)?$", r"/ai_console\1", admin_url)
 
-    inference_password = os.environ.get("AI_INFERENCE_DB_PASSWORD", "CaVN2004")
+    inference_password = _require_env("AI_INFERENCE_DB_PASSWORD")
     inf_url = re.sub(r"://([^:]+):([^@]+)@", f"://ai_inference:{inference_password}@", admin_url)
     return admin_url, inf_url
 
 
 def harden_database(admin_url: str, inference_pw: str) -> None:
     import psycopg2
+
+    # Kiểm trước khi kết nối: thiếu mật khẩu thì không đụng tới DB.
+    console_pw = _require_env("AI_CONSOLE_DB_PASSWORD")
 
     print(f"🔒 Đang kết nối tới DB console với quyền admin: {admin_url.split('@')[-1]}")
     try:
@@ -69,7 +80,6 @@ def harden_database(admin_url: str, inference_pw: str) -> None:
     conn.autocommit = True
     cur = conn.cursor()
 
-    console_pw = os.environ.get("AI_CONSOLE_DB_PASSWORD", "CaVN2004")
     print("1. Tạo/cập nhật role 'ai_console' và 'ai_inference'...")
     cur.execute("SELECT 1 FROM pg_roles WHERE rolname = 'ai_console'")
     if not cur.fetchone():
@@ -186,7 +196,7 @@ def main() -> None:
     args = parser.parse_args()
 
     admin_url, inf_url = get_db_urls()
-    inf_pw = os.environ.get("AI_INFERENCE_DB_PASSWORD", "CaVN2004")
+    inf_pw = _require_env("AI_INFERENCE_DB_PASSWORD")
 
     if not args.verify_only:
         harden_database(admin_url, inf_pw)

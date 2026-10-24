@@ -420,5 +420,22 @@ class ConsoleAuthServiceTest(unittest.TestCase):
         self.assertEqual("SESSION_REVOKED", self.code(err))
 
 
+
+class NoDevSessionRouteTest(unittest.TestCase):
+    """bug-015: không còn đường đăng nhập bỏ qua Google/TOTP bằng token cố định."""
+
+    def test_dev_session_returns_404_without_cookie(self):
+        from fastapi.testclient import TestClient
+
+        from app.console_main import app
+
+        client = TestClient(app)
+        for path in ("/console/api/auth/dev-session", "/api/auth/dev-session"):
+            with self.subTest(path=path):
+                r = client.get(path, follow_redirects=False)
+                self.assertEqual(404, r.status_code)
+                self.assertNotIn("set-cookie", r.headers)
+
+
 if __name__ == "__main__":
     unittest.main()
