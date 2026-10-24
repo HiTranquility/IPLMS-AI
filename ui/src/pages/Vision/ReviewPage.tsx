@@ -42,6 +42,7 @@ export function ReviewPage() {
     setIsBatchApproving(true);
     try {
       for (const item of exactMatches) {
+        // Lý do ghi vào nhật ký kiểm toán phía server (tiếng Việt như mọi lý do khác), không phải chữ hiển thị.
         await decideLabel(item.label.id, 'APPROVED', 'Duyệt nhanh theo lô: Khớp 100%');
       }
       void queryClient.invalidateQueries({ queryKey: queryKeys.vision.reviewQueue() });
@@ -74,17 +75,17 @@ export function ReviewPage() {
           <EmptyState
             icon={<ClipboardCheck size={28} />}
             title={t.review.empty}
-            description="Không còn nhãn nào đang chờ duyệt bốn mắt trong hàng đợi. Bạn có thể nạp thêm mẫu kiểm toán thực hành để kiểm thử thao tác duyệt và từ chối."
+            description={t.review.emptyDesc}
           />
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <Button
               variant="accent"
               loading={seedMutation.isPending}
               onClick={handleSeed}
-              title="Nạp mẫu kiểm toán thực hành gồm các trường hợp gán đúng và đã sửa"
+              title={t.review.seedTitle}
             >
               <Sparkles size={14} aria-hidden />
-              Nạp mẫu kiểm toán thực hành (Seed Demo Batch)
+              {t.review.seed}
             </Button>
           </div>
         </div>
@@ -95,19 +96,19 @@ export function ReviewPage() {
           <div className={styles.toolbarCard}>
             <div className={styles.queueStats}>
               <div className={styles.statItem}>
-                <span className={styles.statLabel}>Hàng đợi chờ duyệt</span>
-                <span className={styles.statValue}>{items.length} mẫu</span>
+                <span className={styles.statLabel}>{t.review.statPending}</span>
+                <span className={styles.statValue}>{t.review.samples(items.length)}</span>
               </div>
               <div className={styles.statItem}>
-                <span className={styles.statLabel}>Khớp 100% máy & cổng</span>
+                <span className={styles.statLabel}>{t.review.statExact}</span>
                 <span className={styles.statValue} style={{ color: 'var(--color-success)' }}>
-                  {exactMatches.length} mẫu
+                  {t.review.samples(exactMatches.length)}
                 </span>
               </div>
               <div className={styles.statItem}>
-                <span className={styles.statLabel}>Đã sửa biển số</span>
+                <span className={styles.statLabel}>{t.review.statCorrected}</span>
                 <span className={styles.statValue} style={{ color: 'var(--color-accent)' }}>
-                  {correctedItems.length} mẫu
+                  {t.review.samples(correctedItems.length)}
                 </span>
               </div>
             </div>
@@ -120,21 +121,21 @@ export function ReviewPage() {
                   size="sm"
                   onClick={() => setFilterMode('ALL')}
                 >
-                  Tất cả ({items.length})
+                  {t.review.filterAll(items.length)}
                 </Button>
                 <Button
                   variant={filterMode === 'EXACT' ? 'secondary' : 'ghost'}
                   size="sm"
                   onClick={() => setFilterMode('EXACT')}
                 >
-                  Khớp 100% ({exactMatches.length})
+                  {t.review.filterExact(exactMatches.length)}
                 </Button>
                 <Button
                   variant={filterMode === 'CORRECTED' ? 'secondary' : 'ghost'}
                   size="sm"
                   onClick={() => setFilterMode('CORRECTED')}
                 >
-                  Đã sửa ({correctedItems.length})
+                  {t.review.filterCorrected(correctedItems.length)}
                 </Button>
               </div>
 
@@ -144,10 +145,10 @@ export function ReviewPage() {
                   size="sm"
                   loading={isBatchApproving}
                   onClick={handleApproveAllExact}
-                  title={`Duyệt nhanh ${exactMatches.length} mẫu khớp 100%`}
+                  title={t.review.approveExact(exactMatches.length)}
                 >
                   <CheckCheck size={14} aria-hidden />
-                  Duyệt nhanh {exactMatches.length} mẫu khớp 100%
+                  {t.review.approveExact(exactMatches.length)}
                 </Button>
               )}
 
@@ -156,7 +157,8 @@ export function ReviewPage() {
                 size="sm"
                 onClick={handleSeed}
                 loading={seedMutation.isPending}
-                title="Nạp thêm mẫu kiểm toán"
+                title={t.review.seedMore}
+                aria-label={t.review.seedMore}
               >
                 <Sparkles size={14} aria-hidden />
               </Button>
@@ -166,7 +168,8 @@ export function ReviewPage() {
                 size="sm"
                 onClick={() => void queue.refetch()}
                 loading={queue.isFetching}
-                title="Làm mới hàng đợi"
+                title={t.review.refresh}
+                aria-label={t.review.refresh}
               >
                 <RefreshCw size={14} aria-hidden />
               </Button>

@@ -29,11 +29,11 @@ function VisionOverviewPageContent() {
         description={t.visionOverview.desc}
         actions={
           <Segmented
-            label="Chế độ xem Vision"
+            label={t.visionOverview.viewMode}
             value={viewMode}
             options={[
-              { value: 'metrics', label: 'Chỉ số & Ngưỡng duyệt' },
-              { value: 'sandbox', label: 'ANPR Sandbox & Anti-Fraud' },
+              { value: 'metrics', label: t.visionOverview.viewMetrics },
+              { value: 'sandbox', label: t.visionOverview.viewSandbox },
             ]}
             onChange={setViewMode}
           />
