@@ -82,7 +82,7 @@
 }
 
 .logoIcon {
-  color: var(--color-accent);
+  color: var(--color-accent-dark);
 }
 
 .scope {
@@ -93,36 +93,13 @@
   color: var(--color-accent-dark);
 }
 
-.statusPill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 8px;
-  border-radius: var(--radius-full);
-  background: var(--color-success-soft);
-  border: 1px solid rgba(74, 222, 128, 0.25);
-}
 
-.statusDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: var(--color-success);
-  box-shadow: 0 0 6px var(--color-success);
-  animation: pulse 2s infinite ease-in-out;
-}
 
 @keyframes pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.45; transform: scale(0.85); }
 }
 
-.statusText {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--color-success);
-  letter-spacing: 0.02em;
-}
 
 .controls {
   display: flex;
@@ -249,7 +226,7 @@
 }
 
 .hintIcon {
-  color: var(--color-accent);
+  color: var(--color-accent-dark);
   flex-shrink: 0;
 }
 

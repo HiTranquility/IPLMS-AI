@@ -1,5 +1,6 @@
 import { Clock, History } from 'lucide-react';
 import { Badge } from '@/components/common/Ui/data-display/Badge';
+import { useI18n } from '@/i18n/I18nProvider';
 import styles from './LabelStudio.module.css';
 
 export interface HistoryItem {
@@ -14,15 +15,17 @@ interface LabelHistoryDrawerProps {
 }
 
 export function LabelHistoryDrawer({ items }: LabelHistoryDrawerProps) {
+  const { t } = useI18n();
+  const s = t.label.studio;
   if (items.length === 0) {
     return (
       <div className={styles.historyDrawer}>
         <div className={styles.infoCardTitle}>
           <History size={16} aria-hidden />
-          Lịch sử gán nhãn trong phiên
+          {s.historyTitle}
         </div>
         <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--color-muted)' }}>
-          Chưa có mẫu nào được gán nhãn trong phiên làm việc này.
+          {s.historyEmpty}
         </p>
       </div>
     );
@@ -42,10 +45,10 @@ export function LabelHistoryDrawer({ items }: LabelHistoryDrawerProps) {
   };
 
   return (
-    <div className={styles.historyDrawer} role="region" aria-label="Lịch sử các mẫu đã gán">
+    <div className={styles.historyDrawer} role="region" aria-label={s.historyRegion}>
       <div className={styles.infoCardTitle}>
         <History size={16} aria-hidden />
-        Lịch sử gán nhãn trong phiên ({items.length} mẫu)
+        {s.historyCount(items.length)}
       </div>
 
       <ul className={styles.historyList}>
@@ -57,10 +60,10 @@ export function LabelHistoryDrawer({ items }: LabelHistoryDrawerProps) {
               </span>
               <Badge tone={getTone(item.verdict)}>
                 {item.verdict === 'CORRECT'
-                  ? 'Đúng 100%'
+                  ? s.verdictCorrect
                   : item.verdict === 'CORRECTED'
-                  ? 'Đã sửa'
-                  : 'Ảnh hỏng'}
+                  ? s.verdictCorrected
+                  : s.verdictUnusable}
               </Badge>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', color: 'var(--color-muted)' }}>

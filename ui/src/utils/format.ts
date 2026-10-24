@@ -11,6 +11,7 @@ function build(locale: string) {
     percent: new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 1 }),
     dateTime: new Intl.DateTimeFormat(locale, { timeZone: TZ, dateStyle: 'short', timeStyle: 'medium' }),
     day: new Intl.DateTimeFormat(locale, { timeZone: 'UTC', weekday: 'short', day: '2-digit', month: '2-digit' }),
+    dayMonth: new Intl.DateTimeFormat(locale, { timeZone: 'UTC', day: '2-digit', month: '2-digit' }),
   };
 }
 
@@ -26,6 +27,13 @@ export const fmtUsd = (n: number | null | undefined) => (n == null ? DASH : usd.
 export const fmtDateTime = (iso: string) => f().dateTime.format(new Date(iso));
 // `date` của chuỗi ngày đã là ngày theo giờ Việt Nam (server gom theo Asia/Ho_Chi_Minh).
 export const fmtDay = (isoDate: string) => f().day.format(new Date(`${isoDate}T00:00:00Z`));
+/** Nhãn trục ngày: chỉ ngày/tháng, không cắt chuỗi Intl (độ dài đổi theo locale). */
+export const fmtDayMonth = (isoDate: string) =>
+  f()
+    .dayMonth.formatToParts(new Date(`${isoDate}T00:00:00Z`))
+    .filter((part) => part.type === 'day' || part.type === 'month')
+    .map((part) => part.value)
+    .join('/'); // ICU của vi-VN có bản dùng '-' (Node) có bản dùng '/' (Chrome): tự nối cho đồng nhất
 
 /** Tỉ lệ an toàn: mẫu số 0 thì không có tỉ lệ. */
 export const ratio = (part: number, total: number) => (total > 0 ? part / total : null);

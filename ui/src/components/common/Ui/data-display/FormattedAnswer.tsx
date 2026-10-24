@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useI18n } from '@/i18n/I18nProvider';
 import styles from './FormattedAnswer.module.css';
 
 interface FormattedAnswerProps {
@@ -8,7 +9,7 @@ interface FormattedAnswerProps {
 
 const INLINE_REGEX = /(\*\*.*?\*\*|`.*?`|\[(?:Nguồn|Source):?\s*[^\]]+\]|\[[^\]]+\.(?:pdf|docx|txt|md|json)\])/g;
 
-function renderInlineTokens(text: string): ReactNode[] {
+function renderInlineTokens(text: string, citationTitle: (name: string) => string): ReactNode[] {
   if (!text) return [];
 
   const pieces = text.split(INLINE_REGEX);
@@ -46,7 +47,7 @@ function renderInlineTokens(text: string): ReactNode[] {
         <span
           key={idx}
           className={styles.citation}
-          title={`Trích dẫn từ tài liệu: ${cleanName}`}
+          title={citationTitle(cleanName)}
         >
           📄 {cleanName}
         </span>
@@ -59,6 +60,7 @@ function renderInlineTokens(text: string): ReactNode[] {
 }
 
 export function FormattedAnswer({ content, isStreaming = false }: FormattedAnswerProps) {
+  const { t } = useI18n();
   if (!content) return null;
 
   const lines = content.split('\n');
@@ -104,7 +106,7 @@ export function FormattedAnswer({ content, isStreaming = false }: FormattedAnswe
       const isLast = isStreaming && idx === lines.length - 1;
       currentListItems.push(
         <li key={`li-${idx}`} className={styles.listItem}>
-          {renderInlineTokens(bulletMatch[1])}
+          {renderInlineTokens(bulletMatch[1], t.copilot.citationFrom)}
           {isLast && <span className={styles.cursor}> ▋</span>}
         </li>
       );
@@ -116,7 +118,7 @@ export function FormattedAnswer({ content, isStreaming = false }: FormattedAnswe
       const isLast = isStreaming && idx === lines.length - 1;
       currentListItems.push(
         <li key={`li-${idx}`} className={styles.listItem}>
-          {renderInlineTokens(numberedMatch[1])}
+          {renderInlineTokens(numberedMatch[1], t.copilot.citationFrom)}
           {isLast && <span className={styles.cursor}> ▋</span>}
         </li>
       );
@@ -125,7 +127,7 @@ export function FormattedAnswer({ content, isStreaming = false }: FormattedAnswe
       const isLast = isStreaming && idx === lines.length - 1;
       blocks.push(
         <p key={`p-${idx}`} className={styles.paragraph}>
-          {renderInlineTokens(trimmed)}
+          {renderInlineTokens(trimmed, t.copilot.citationFrom)}
           {isLast && <span className={styles.cursor}> ▋</span>}
         </p>
       );

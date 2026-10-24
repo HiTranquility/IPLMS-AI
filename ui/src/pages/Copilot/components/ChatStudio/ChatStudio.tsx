@@ -3,6 +3,7 @@ import { useSystemCheck } from '@/hooks/queries/useToolQueries';
 import { useI18n } from '@/i18n/I18nProvider';
 import { API_BASE, ApiError } from '@/services/apiClient';
 import { TOOL_ENDPOINTS } from '@/services/apiEndpoints/tool.endpoint';
+import { fmtDateTime } from '@/utils/format';
 import { buildAskBody } from './askContract';
 import { ChatInput } from './ChatInput';
 import { ChatSidebar } from './ChatSidebar';
@@ -19,35 +20,15 @@ import type {
 } from './types';
 import styles from './ChatStudio.module.css';
 
-const DEFAULT_PRESETS: PromptPreset[] = [
-  {
-    id: 'p1',
-    category: 'Biểu phí & Vé',
-    title: 'Biểu phí giữ xe máy qua đêm và ngày lễ',
-    query: 'Biểu phí gửi xe máy theo lượt ban ngày, ban đêm và phụ thu ngày lễ tại bãi đỗ xe trung tâm được quy định như thế nào?',
-  },
-  {
-    id: 'p2',
-    category: 'Tranh chấp & Sự cố',
-    title: 'Quy trình xử lý mất thẻ giữ xe',
-    query: 'Khách hàng làm mất thẻ xe thì thủ tục xác minh phương tiện và mức bồi thường chi phí phát hành thẻ mới là bao nhiêu?',
-  },
-  {
-    id: 'p3',
-    category: 'Quy chế bãi đỗ',
-    title: 'Thời hạn lưu đỗ tối đa và xử lý xe vô chủ',
-    query: 'Thời gian lưu bãi tối đa cho xe gửi vé lượt là bao lâu? Sau bao lâu xe không có người nhận sẽ lập biên bản xử lý vi phạm?',
-  },
-  {
-    id: 'p4',
-    category: 'Phương tiện ưu tiên',
-    title: 'Quy định xe cứu hỏa, cấp cứu và công vụ',
-    query: 'Các loại xe ưu tiên nào được miễn phí vé gửi xe khi vào bãi đỗ theo quy chế hiện hành của tòa nhà?',
-  },
-];
-
 export function ChatStudio() {
   const { t } = useI18n();
+  const c = t.copilot;
+  const presets: PromptPreset[] = [
+    { id: 'p1', category: c.p1Category, title: c.p1Title, query: c.p1Query },
+    { id: 'p2', category: c.p2Category, title: c.p2Title, query: c.p2Query },
+    { id: 'p3', category: c.p3Category, title: c.p3Title, query: c.p3Query },
+    { id: 'p4', category: c.p4Category, title: c.p4Title, query: c.p4Query },
+  ];
   // Tên model lấy từ /tools/system; chưa có thì "—", không tự đặt tên (ai bug-018).
   const systemQuery = useSystemCheck();
   const activeModelName = systemQuery.data?.llm_model || '—';
@@ -300,7 +281,7 @@ export function ChatStudio() {
   };
 
   const handleAskAboutDocument = (doc: SeedDocument) => {
-    const prompt = `Cho tôi biết chi tiết về quy định: "${doc.title}". Văn bản này có những điều khoản then chốt nào và áp dụng ra sao?`;
+    const prompt = c.askAboutDoc(doc.title);
     setInputQuery(prompt);
     inputRef.current?.focus();
   };
@@ -331,22 +312,23 @@ export function ChatStudio() {
   const handleExportMarkdown = () => {
     if (messages.length === 0) return;
     const dateStr = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    let md = `# IPLMS Copilot Chat Transcript\n*Ngày xuất: ${new Date().toLocaleString('vi-VN')}*\n\n---\n\n`;
+    const at = (value: string | Date) => fmtDateTime(new Date(value).toISOString());
+    let md = `${c.mdTitle}\n${c.mdExportedAt(at(new Date()))}\n\n---\n\n`;
 
     messages.forEach((m) => {
       if (m.role === 'user') {
-        md += `### [User] Người hỏi (${new Date(m.at).toLocaleTimeString('vi-VN')})\n\n${m.content}\n\n`;
+        md += `${c.mdUser(at(m.at))}\n\n${m.content}\n\n`;
       } else {
-        md += `### [Copilot] Copilot Studio (${new Date(m.at).toLocaleTimeString('vi-VN')})\n\n${m.content}\n\n`;
+        md += `${c.mdCopilot(at(m.at))}\n\n${m.content}\n\n`;
         if (m.ragSources && m.ragSources.length > 0) {
-          md += `**Trích dẫn RAG:**\n`;
+          md += `${c.mdSources}\n`;
           m.ragSources.forEach((s) => {
-            md += `- ${s.title}${s.score ? ` (Độ tương đồng: ${(s.score * 100).toFixed(0)}%)` : ''}\n`;
+            md += `- ${s.title}${s.score ? c.mdSimilarity((s.score * 100).toFixed(0)) : ''}\n`;
           });
           md += `\n`;
         }
         if (m.latencyMs || m.speedTokPerSec) {
-          md += `*Chỉ số: ${m.latencyMs ? `${m.latencyMs}ms` : ''} ${m.speedTokPerSec ? `| ${m.speedTokPerSec} t/s` : ''}*\n\n`;
+          md += `${c.mdMetrics(`${m.latencyMs ? `${m.latencyMs}ms` : ''} ${m.speedTokPerSec ? `| ${m.speedTokPerSec} t/s` : ''}`)}\n\n`;
         }
       }
       md += `---\n\n`;
@@ -383,7 +365,7 @@ export function ChatStudio() {
         {/* Cột trái: Presets & History */}
         <ChatSidebar
           isOpen={sidebarOpen}
-          presets={DEFAULT_PRESETS}
+          presets={presets}
           onSelectPreset={handleSelectPreset}
           onNewChat={handleNewChat}
           onClearChat={handleNewChat}
@@ -395,7 +377,7 @@ export function ChatStudio() {
         <main className={styles.chatCenter}>
           <ChatStream
             messages={messages}
-            presets={DEFAULT_PRESETS}
+            presets={presets}
             onSelectPreset={handleSelectPreset}
             onSelectCitation={handleSelectCitation}
             onFeedback={handleFeedback}

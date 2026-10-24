@@ -1,4 +1,4 @@
 .header { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; padding-bottom: var(--space-4); margin-bottom: var(--space-5); border-bottom: var(--hairline); }
 .title { font-size: var(--text-xl); font-weight: 700; }
 .desc { color: var(--color-muted); max-width: 680px; margin-top: var(--space-1); }
-.actions { display: flex; gap: var(--space-2); align-items: flex-end; }
+.actions { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: flex-end; min-width: 0; max-width: 100%; } /* bug-024: không đẩy trang tràn ngang ở 375px */

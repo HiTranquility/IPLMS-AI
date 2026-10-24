@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **Ngày / Người báo** | 2026-10-23 / Claude Code, rà UI trong [ISSUE-004](../../issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md) |
-| **Trạng thái** | 🆕 New / 🟡 (cổng chất lượng L6 không đạt) |
+| **Trạng thái** | ✅ Fixed (chờ PR) / 🟡 |
 | **Môi trường** | `develop@5f8e753` |
 
 ## Hành vi thực tế
@@ -41,4 +41,12 @@ Có thể có vài dòng là chuỗi trong log hoặc thông báo lỗi; con s�
 
 ## Sửa / kiểm chứng
 
-Chưa sửa.
+Sửa 2026-10-24 trên nhánh `bugfix/bug-021-2026-10-console-ui-polish` (HiTranquility), ba commit `fix(bug-023)`:
+
+- Bóc chữ viết cứng của 38 file `.tsx` sang `ui/src/i18n/vi.ts` / `en.ts`. Thêm khoảng 300 khoá, gồm sub-object `label.studio`, `label.empty`, `label.workspace`, `members.roleNames`, `copilot.dispute`, `copilot.knowledge`, `vision.sandbox`. Tên vai lấy từ i18n (`getRoleMeta(role, names)`), bỏ `labelVi`.
+- Bỏ chi tiết bịa đi kèm: gợi ý "Mô hình Qwen3.5 LLM", "/ 4,096" ở TurnDetail, badge "Gateway Online" luôn xanh ở trang đăng nhập, câu "Barie bị cưỡng chế đóng…" ở Anti-Fraud (console không điều khiển barie), chú giải tô ngược màu ở AccuracySection.
+- Kiểm tự động: `ui/src/i18n/noHardcodedVi.test.ts` quét mọi `.tsx` (trừ `i18n/`, test), FAIL kèm `file:line` khi thấy chữ tiếng Việt có dấu ngoài allowlist có ghi lý do. Đã kiểm ngược bằng file thử.
+
+Còn lại cố ý (13 dòng / 5 file): nhãn song ngữ ở LanguageSwitch, regex "Nguồn" ở FormattedAnswer, lý do audit gửi server ở ReviewPage, `LabelForm.tsx` (code chết), fixture test.
+
+Kiểm: `pnpm typecheck` PASS; `npx vitest run --maxWorkers=1` 17 file / 72 test PASS. Browser ở chế độ EN, 10 trang: chữ giao diện không còn tiếng Việt. Chữ tiếng Việt còn thấy là dữ liệu của API giả (câu hỏi người dùng, lý do trong nhật ký).

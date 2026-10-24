@@ -33,7 +33,8 @@
 
 @media (max-width: 1180px) {
   .layout {
-    grid-template-columns: 1fr;
+    /* minmax(0, …): cột không nở theo bề rộng nội dung bảng, tránh tràn ngang ở 375px (bug-024). */
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -290,7 +291,7 @@
 }
 
 .titleIcon {
-  color: var(--color-accent);
+  color: var(--color-accent-dark);
 }
 
 .fieldBlock {
@@ -456,7 +457,7 @@
 
 .statusProgress {
   font-size: 11px;
-  color: var(--color-accent);
+  color: var(--color-accent-dark);
   font-style: italic;
   margin: 0;
 }

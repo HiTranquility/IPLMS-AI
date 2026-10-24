@@ -66,7 +66,7 @@ export function InspectorDrawer({
           type="button"
           className={`${styles.inspectorTab} ${activeTab === 'citations' ? styles.inspectorTabActive : ''}`}
           onClick={() => setActiveTab('citations')}
-          title="Trích dẫn tài liệu quy chế (RAG)"
+          title={t.copilot.tabCitationsTitle}
         >
           <BookOpen size={13} />
           <span>{t.copilot.citationsTitle}</span>
@@ -76,27 +76,27 @@ export function InspectorDrawer({
           type="button"
           className={`${styles.inspectorTab} ${activeTab === 'knowledge' ? styles.inspectorTabActive : ''}`}
           onClick={() => setActiveTab('knowledge')}
-          title="Kho tri thức & quy chế bãi xe"
+          title={t.copilot.tabKnowledgeTitle}
         >
           <Database size={13} />
-          <span>{t.copilot.knowledgeTitle || 'Kho tri thức'}</span>
+          <span>{t.copilot.knowledgeTitle}</span>
         </button>
 
         <button
           type="button"
           className={`${styles.inspectorTab} ${activeTab === 'dispute' ? styles.inspectorTabActive : ''}`}
           onClick={() => setActiveTab('dispute')}
-          title="Mô phỏng máy trạng thái phân xử tranh chấp (LangGraph)"
+          title={t.copilot.tabDisputeTitle}
         >
           <GitBranch size={13} />
-          <span>{t.copilot.disputeTitle || 'Mô phỏng phân xử'}</span>
+          <span>{t.copilot.disputeTitle}</span>
         </button>
 
         <button
           type="button"
           className={`${styles.inspectorTab} ${activeTab === 'telemetry' ? styles.inspectorTabActive : ''}`}
           onClick={() => setActiveTab('telemetry')}
-          title="Chỉ số hiệu năng & thời gian xử lý"
+          title={t.copilot.tabTelemetryTitle}
         >
           <Activity size={13} />
           <span>{t.copilot.telemetryTitle}</span>
@@ -106,7 +106,7 @@ export function InspectorDrawer({
           type="button"
           className={`${styles.inspectorTab} ${activeTab === 'params' ? styles.inspectorTabActive : ''}`}
           onClick={() => setActiveTab('params')}
-          title="Cấu hình tham số & gợi ý Model"
+          title={t.copilot.tabParamsTitle}
         >
           <Sliders size={13} />
           <span>{t.copilot.paramsTitle}</span>
@@ -116,7 +116,7 @@ export function InspectorDrawer({
           type="button"
           className={styles.inspectorCloseBtn}
           onClick={onClose}
-          aria-label="Đóng bảng kiểm định"
+          aria-label={t.copilot.closeInspector}
         >
           <X size={14} />
         </button>
@@ -155,7 +155,7 @@ export function InspectorDrawer({
                       {source.snippet ? (
                         <blockquote className={styles.citationSnippet}>{source.snippet}</blockquote>
                       ) : (
-                        <p className={styles.snippetEmpty}>Nội dung đoạn trích đã nạp vào prompt ngữ cảnh.</p>
+                        <p className={styles.snippetEmpty}>{t.copilot.snippetInPrompt}</p>
                       )}
                     </article>
                   );
@@ -193,14 +193,14 @@ export function InspectorDrawer({
                 </div>
 
                 <div className={styles.metricCard}>
-                  <span className={styles.metricLabel}>Tốc độ sinh token</span>
+                  <span className={styles.metricLabel}>{t.copilot.tokenSpeed}</span>
                   <span className={`${styles.metricValue} num`}>
                     {activeMessage.speedTokPerSec != null ? `${activeMessage.speedTokPerSec} t/s` : '—'}
                   </span>
                 </div>
 
                 <div className={styles.metricCard}>
-                  <span className={styles.metricLabel}>Token đầu vào / ra</span>
+                  <span className={styles.metricLabel}>{t.copilot.tokensInOut}</span>
                   <span className={`${styles.metricValue} num`}>
                     {activeMessage.inputTokens != null && activeMessage.outputTokens != null
                       ? `${fmtInt(activeMessage.inputTokens)} / ${fmtInt(activeMessage.outputTokens)}`
@@ -241,7 +241,7 @@ export function InspectorDrawer({
             ) : (
               <div className={styles.emptyInspector}>
                 <Activity size={24} className={styles.emptyIcon} />
-                <p className={styles.inspectorHint}>Gửi câu hỏi để xem chỉ số viễn trắc chi tiết.</p>
+                <p className={styles.inspectorHint}>{t.copilot.telemetryHint}</p>
               </div>
             )}
           </div>
@@ -255,7 +255,7 @@ export function InspectorDrawer({
               <div className={styles.profileSectionHeader}>
                 <span className={styles.profileSectionTitle}>
                   <Sparkles size={13} className={styles.accentColor} />{' '}
-                  {t.copilot.modelProfilesTitle || 'Gợi ý cấu hình Model'}
+                  {t.copilot.modelProfilesTitle}
                 </span>
                 <span className={styles.profileSectionHint}>1-click apply</span>
               </div>
@@ -365,9 +365,9 @@ export function InspectorDrawer({
               >
                 <option value="">{t.copilot.allLots}</option>
                 <option value="lot_landmark_81">Vincom Landmark 81</option>
-                <option value="lot_vincom_center">Vincom Đồng Khởi</option>
-                <option value="lot_central_01">Bãi đỗ Trung tâm (Central Lot 01)</option>
-                <option value="lot_west_gate">Bãi đỗ Cổng Tây (West Gate)</option>
+                <option value="lot_vincom_center">{t.copilot.lotVincomDongKhoi}</option>
+                <option value="lot_central_01">{t.copilot.lotCentral}</option>
+                <option value="lot_west_gate">{t.copilot.lotWestGate}</option>
               </select>
             </div>
           </div>
