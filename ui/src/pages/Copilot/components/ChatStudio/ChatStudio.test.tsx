@@ -1,8 +1,26 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/utils';
+import { ASK_BODY_FIELDS } from './askContract';
 import { ChatStudio } from './ChatStudio';
+
+/** Giả fetch: /tools/copilot/stream trả `stream` (SSE thô) hoặc lỗi; route khác 404. */
+function mockStream(stream: { status: number; body: string }) {
+  const calls: { url: string; init?: RequestInit }[] = [];
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+    const url = String(input);
+    calls.push({ url, init });
+    if (url.endsWith('/tools/copilot/stream')) return new Response(stream.body, { status: stream.status });
+    return new Response(JSON.stringify({ success: false, message: 'no mock', data: [] }), { status: 404 });
+  });
+  return calls;
+}
+
+async function ask(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getAllByText('Biểu phí giữ xe máy qua đêm và ngày lễ')[0]);
+  await user.click(screen.getByRole('button', { name: 'Gửi' }));
+}
 
 describe('ChatStudio Component', () => {
   it('renders welcome hero and preset questions on initial load', () => {
@@ -120,7 +138,37 @@ describe('ChatStudio Component', () => {
 
     // Temperature slider updates to 0.20
     expect(screen.getByText('0.20')).toBeTruthy();
-    // Header model badge updates
-    expect(screen.getByText(/Llama 3 8B \(llama3:8b\)/)).toBeTruthy();
+    // Preset chỉ đổi tham số; tên model ở header vẫn là model server báo, không tự đổi (ai bug-018).
+    expect(screen.queryByText(/Llama 3 8B \(llama3:8b\)/)).toBeNull();
+  });
+
+  // ai bug-017: body phải khớp AskIn (extra="forbid"); test Python cùng tên đối chiếu phía server.
+  it('gửi đúng các trường của hợp đồng AskIn và hiện token SSE thật', async () => {
+    const sse =
+      'data: {"token": "Phí qua đêm ", "is_finished": false, "sources": []}\n\n' +
+      'data: {"token": "30.000đ.", "is_finished": false, "sources": []}\n\n' +
+      'data: {"token": "", "is_finished": true, "sources": ["bang-gia.md"], "confidence": 0.8, "refused": false, "prompt_version": "v2", "turn_id": "t-1", "latency_ms": 120}\n\n';
+    const calls = mockStream({ status: 200, body: sse });
+    const user = userEvent.setup();
+    renderWithProviders(<ChatStudio />);
+    await ask(user);
+
+    await waitFor(() => expect(screen.getByText(/Phí qua đêm 30\.000đ\./)).toBeTruthy());
+    const call = calls.find((c) => c.url.endsWith('/tools/copilot/stream'))!;
+    expect(call.url).toBe('/console/api/tools/copilot/stream');
+    const body = JSON.parse(String(call.init?.body));
+    expect(Object.keys(body).sort()).toEqual([...ASK_BODY_FIELDS].sort());
+    expect(body.parking_lot_id).toBeNull();
+    expect((call.init?.headers as Record<string, string>)['X-Console-Request']).toBe('1');
+  });
+
+  it('server trả 422 thì hiện lỗi thật, không có câu trả lời giả', async () => {
+    mockStream({ status: 422, body: JSON.stringify({ detail: [{ type: 'extra_forbidden' }] }) });
+    const user = userEvent.setup();
+    renderWithProviders(<ChatStudio />);
+    await ask(user);
+
+    await waitFor(() => expect(screen.getByText(/Không nhận được câu trả lời: Dữ liệu gửi lên chưa hợp lệ\./)).toBeTruthy());
+    expect(screen.queryByText('Đã xử lý yêu cầu thành công.')).toBeNull();
   });
 });

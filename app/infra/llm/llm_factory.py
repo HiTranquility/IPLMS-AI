@@ -121,7 +121,9 @@ class LlmFactory:
         """True khi gọi thẳng OpenAI; endpoint tương thích (Ollama…) thiếu vài tính năng."""
         return not self.base_url or "api.openai.com" in self.base_url
 
-    def _request(self, system_prompt: str, user_query: str, context: str) -> dict[str, Any]:
+    def _request(
+        self, system_prompt: str, user_query: str, context: str, temperature: float | None = None
+    ) -> dict[str, Any]:
         request = {
             "model": self.model,
             "instructions": system_prompt,
@@ -138,10 +140,14 @@ class LlmFactory:
         }
         if self.reasoning_effort != "none" and self.uses_openai:
             request["reasoning"] = {"effort": self.reasoning_effort}
+        elif temperature is not None:
+            # Model reasoning của OpenAI không nhận temperature; chỉ gửi khi không bật reasoning.
+            request["temperature"] = temperature
         return request
 
     async def generate_response(
-        self, system_prompt: str, user_query: str, context: str, usage: dict | None = None
+        self, system_prompt: str, user_query: str, context: str, usage: dict | None = None,
+        temperature: float | None = None,
     ) -> str:
         """Generate one grounded answer; never logs prompt or retrieved content.
 
@@ -154,7 +160,7 @@ class LlmFactory:
         if _should_use_responses_api(client, provider, bool(self.api_key)):
             try:
                 response = await client.responses.create(
-                    **self._request(system_prompt, user_query, context)
+                    **self._request(system_prompt, user_query, context, temperature)
                 )
                 _copy_usage(getattr(response, "usage", None), usage)
                 answer = (response.output_text or "").strip()
@@ -186,7 +192,7 @@ class LlmFactory:
                     },
                 ],
                 max_tokens=self.max_output_tokens,
-                temperature=0.2,
+                temperature=0.2 if temperature is None else temperature,
             )
             raw_answer = (resp.choices[0].message.content or "").strip()
             answer = _strip_thinking_tags(raw_answer)
@@ -299,7 +305,8 @@ class LlmFactory:
         return payload
 
     async def stream_response(
-        self, system_prompt: str, user_query: str, context: str, usage: dict | None = None
+        self, system_prompt: str, user_query: str, context: str, usage: dict | None = None,
+        temperature: float | None = None,
     ) -> AsyncGenerator[str, None]:
         """Yield only semantic text deltas from a Responses API stream."""
         config = get_config().llm
@@ -308,7 +315,7 @@ class LlmFactory:
         if _should_use_responses_api(client, provider, bool(self.api_key)):
             try:
                 stream = await client.responses.create(
-                    **self._request(system_prompt, user_query, context),
+                    **self._request(system_prompt, user_query, context, temperature),
                     stream=True,
                 )
                 completed = False
@@ -353,7 +360,7 @@ class LlmFactory:
                     },
                 ],
                 max_tokens=self.max_output_tokens,
-                temperature=0.2,
+                temperature=0.2 if temperature is None else temperature,
                 stream=True,
             )
             in_think = False

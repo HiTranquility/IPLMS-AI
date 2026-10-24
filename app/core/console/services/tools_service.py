@@ -68,8 +68,11 @@ class ConsoleToolsService:
         }
 
     async def try_copilot_stream(
-        self, actor: ConsoleActor, query: str, parking_lot_id: Optional[str] = None
+        self, actor: ConsoleActor, query: str, parking_lot_id: Optional[str] = None,
+        top_k: Optional[int] = None, min_similarity: Optional[float] = None,
+        temperature: Optional[float] = None,
     ):
+        # Tham số thử chỉ dùng được với quyền sửa prompt, cùng quyền của cả lượt thử.
         access_policy.require(actor, "ai:prompt:edit")
         query = (query or "").strip()
         if not 1 <= len(query) <= 2000:
@@ -77,12 +80,15 @@ class ConsoleToolsService:
         request = AskQuestionRequest(
             query=query, user_id=actor.member_id, user_role="console",
             parking_lot_id=_lot(parking_lot_id), preview=False,
+            top_k=top_k, min_similarity=min_similarity, temperature=temperature,
         )
         async for chunk in self.copilot.stream_answer(request):
             yield chunk
 
     async def try_copilot(
-        self, actor: ConsoleActor, query: str, parking_lot_id: Optional[str] = None
+        self, actor: ConsoleActor, query: str, parking_lot_id: Optional[str] = None,
+        top_k: Optional[int] = None, min_similarity: Optional[float] = None,
+        temperature: Optional[float] = None,
     ) -> CopilotAnswer:
         access_policy.require(actor, "ai:prompt:edit")
         query = (query or "").strip()
@@ -91,6 +97,7 @@ class ConsoleToolsService:
         request = AskQuestionRequest(
             query=query, user_id=actor.member_id, user_role="console",
             parking_lot_id=_lot(parking_lot_id), preview=False,
+            top_k=top_k, min_similarity=min_similarity, temperature=temperature,
         )
         return await self.copilot.ask_question(request, task=CONSOLE_TRY_TASK)
 

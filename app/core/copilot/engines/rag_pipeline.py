@@ -100,9 +100,14 @@ def _confidence(chunks: list[dict[str, Any]]) -> float:
     return round(value, 4)
 
 
-def _usage_kw(llm: Any, usage: dict) -> dict:
-    """Chỉ LlmFactory thật nhận `usage`; LLM giả trong test/script giữ chữ ký cũ."""
-    return {"usage": usage} if isinstance(llm, LlmFactory) else {}
+def _usage_kw(llm: Any, usage: dict, temperature: float | None = None) -> dict:
+    """Chỉ LlmFactory thật nhận `usage`/`temperature`; LLM giả trong test/script giữ chữ ký cũ."""
+    if not isinstance(llm, LlmFactory):
+        return {}
+    kw: dict = {"usage": usage}
+    if temperature is not None:
+        kw["temperature"] = temperature
+    return kw
 
 
 def _log_guard(rule: str) -> None:
@@ -119,7 +124,22 @@ class RagPipelineEngine:
         self.top_k = config.rag_top_k
         self.min_similarity = config.rag_min_similarity
 
-    def _retrieve_from_seed(self, query: str, parking_lot_id: str | None) -> list[dict[str, Any]]:
+    def _limits(self, top_k: int | None, min_similarity: float | None) -> tuple[int, float]:
+        """Tham số thử của console (ai bug-017) chỉ được làm truy xuất CHẶT hơn cấu hình.
+
+        Hạ `min_similarity` dưới mức cấu hình sẽ nới cổng NO_CONTEXT, tức để LLM trả
+        lời trên ngữ cảnh yếu, trái ADR-0029; nên ngưỡng hiệu lực là max(cấu hình, yêu cầu).
+        Không sửa `self.*` vì engine dùng chung giữa các request song song.
+        """
+        k = self.top_k if top_k is None else max(1, int(top_k))
+        floor = self.min_similarity if min_similarity is None else max(self.min_similarity, float(min_similarity))
+        return k, floor
+
+    def _retrieve_from_seed(
+        self, query: str, parking_lot_id: str | None,
+        top_k: int | None = None, min_similarity: float | None = None,
+    ) -> list[dict[str, Any]]:
+        top_k, min_similarity = self._limits(top_k, min_similarity)
         import json
         import os
         import re
@@ -183,7 +203,7 @@ class RagPipelineEngine:
 
             match_ratio = matched_kw_count / len(keywords)
             similarity = round(match_ratio * 0.70 + min(1.0, score / (len(keywords) * 2.5)) * 0.30, 4)
-            if similarity >= self.min_similarity:
+            if similarity >= min_similarity:
                 scored.append({
                     "content": content,
                     "source": item.get("source", "regulations_seed.json"),
@@ -193,11 +213,13 @@ class RagPipelineEngine:
                 })
 
         scored.sort(key=lambda x: x["_score"], reverse=True)
-        return scored[:self.top_k]
+        return scored[:top_k]
 
     async def _retrieve(
-        self, query_text: str, parking_lot_id: str | None, preview: bool = False
+        self, query_text: str, parking_lot_id: str | None, preview: bool = False,
+        top_k: int | None = None, min_similarity: float | None = None,
     ) -> list[dict[str, Any]]:
+        k, floor = self._limits(top_k, min_similarity)
         query = query_text.strip()
         if not query:
             raise ValueError("Câu hỏi không được để trống.")
@@ -207,23 +229,24 @@ class RagPipelineEngine:
                 vector,
                 query_text=query,
                 parking_lot_id=parking_lot_id,
-                top_k=self.top_k,
-                min_similarity=self.min_similarity,
+                top_k=k,
+                min_similarity=floor,
                 preview=preview,
             )
         except (RagPipelineError, ModelNotLoadedError, EmbeddingError) as exc:
             if not isinstance(self.vector_store, pgvector_client.__class__):
                 raise
             logger.warning("Kho tri thức pgvector/embedding không khả dụng (%s), fallback sang local knowledge seed.", exc)
-            return self._retrieve_from_seed(query, parking_lot_id)
+            return self._retrieve_from_seed(query, parking_lot_id, k, floor)
         except Exception as exc:
             if not isinstance(self.vector_store, pgvector_client.__class__):
                 raise RagPipelineError("Không truy xuất được kho tri thức.") from exc
             logger.warning("Lỗi truy xuất kho tri thức (%s), fallback sang local seed.", exc)
-            return self._retrieve_from_seed(query, parking_lot_id)
+            return self._retrieve_from_seed(query, parking_lot_id, k, floor)
 
     async def _grounded_chunks(
-        self, query_text: str, parking_lot_id: str | None, preview: bool
+        self, query_text: str, parking_lot_id: str | None, preview: bool,
+        top_k: int | None = None, min_similarity: float | None = None,
     ) -> list[dict[str, Any]]:
         """Rỗng khi không có đoạn nào khớp NGHĨA → NO_CONTEXT, không gọi LLM.
 
@@ -232,20 +255,21 @@ class RagPipelineEngine:
         có đoạn vector nào đạt ngưỡng thì từ chối thay vì để LLM tự đoán
         (IPLMS ISSUE-126 review-6 S1).
         """
-        chunks = await self._retrieve(query_text, parking_lot_id, preview)
-        gate = guardrail_manager.check_scope_and_chunks(query_text, chunks, self.min_similarity)
+        chunks = await self._retrieve(query_text, parking_lot_id, preview, top_k, min_similarity)
+        gate = guardrail_manager.check_scope_and_chunks(query_text, chunks, self._limits(top_k, min_similarity)[1])
         return chunks if gate.is_safe else []
 
     async def query(
         self, query_text: str, parking_lot_id: str | None = None, preview: bool = False,
-        llm_override=None,
+        llm_override=None, top_k: int | None = None, min_similarity: float | None = None,
+        temperature: float | None = None,
     ) -> Dict[str, Any]:
         logger.info(
             "Executing RAG query query_chars=%d lot_scoped=%s",
             len(query_text),
             bool(parking_lot_id),
         )
-        chunks = await self._grounded_chunks(query_text, parking_lot_id, preview)
+        chunks = await self._grounded_chunks(query_text, parking_lot_id, preview, top_k, min_similarity)
         if not chunks:
             return {"answer": NO_CONTEXT_ANSWER, "sources": [], "confidence": 0.0,
                     "status": "NO_CONTEXT", "usage": {}, "model": ""}
@@ -255,7 +279,7 @@ class RagPipelineEngine:
         )
         context = _context(chunks)
         usage: dict = {}
-        answer = await llm.generate_response(SYSTEM_PROMPT, query_text.strip(), context, **_usage_kw(llm, usage))
+        answer = await llm.generate_response(SYSTEM_PROMPT, query_text.strip(), context, **_usage_kw(llm, usage, temperature))
         meta = {"usage": usage, "model": str(getattr(llm, "model", "")),
                 "model_revision": getattr(llm, "profile_revision", "")}
         rule = output_guard.violation(answer, context)
@@ -272,7 +296,9 @@ class RagPipelineEngine:
         }
 
     async def stream_query(
-        self, query_text: str, parking_lot_id: str | None = None, preview: bool = False
+        self, query_text: str, parking_lot_id: str | None = None, preview: bool = False,
+        top_k: int | None = None, min_similarity: float | None = None,
+        temperature: float | None = None,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         start_time = time.perf_counter()
         logger.info(
@@ -326,7 +352,7 @@ class RagPipelineEngine:
             }
             return
 
-        chunks = await self._grounded_chunks(query_text, parking_lot_id, preview)
+        chunks = await self._grounded_chunks(query_text, parking_lot_id, preview, top_k, min_similarity)
         if not chunks:
             lat = round((time.perf_counter() - start_time) * 1000.0, 2)
             yield {"token": NO_CONTEXT_ANSWER, "is_finished": False, "sources": []}
@@ -348,7 +374,9 @@ class RagPipelineEngine:
         sources = _sources(chunks)
 
         # 2. Rào chắn phạm vi & độ tương đồng (Mục 4.2: Scope Filter & ADR-0008)
-        guard_scope = guardrail_manager.check_scope_and_chunks(query_text, chunks, self.min_similarity)
+        guard_scope = guardrail_manager.check_scope_and_chunks(
+            query_text, chunks, self._limits(top_k, min_similarity)[1]
+        )
         if not guard_scope.is_safe:
             refusal = guard_scope.refusal_message or NO_CONTEXT_ANSWER
             lat = round((time.perf_counter() - start_time) * 1000.0, 2)
@@ -400,7 +428,7 @@ class RagPipelineEngine:
         answer_parts: list[str] = []
         usage: dict = {}
         async for token in output_guard.guard_stream(
-            llm.stream_response(SYSTEM_PROMPT, query_text.strip(), context, **_usage_kw(llm, usage)),
+            llm.stream_response(SYSTEM_PROMPT, query_text.strip(), context, **_usage_kw(llm, usage, temperature)),
             context,
             lambda rule: (tripped.append(rule), _log_guard(rule)),
         ):
