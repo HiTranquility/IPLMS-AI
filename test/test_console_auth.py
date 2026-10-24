@@ -383,6 +383,21 @@ class ConsoleAuthServiceTest(unittest.TestCase):
             run(self.service.resolve(raw))
         self.assertEqual("MFA_REQUIRED", self.code(err))
 
+    def test_no_fixed_dev_totp_code_with_real_store_class(self):
+        """bug-026: mã cố định 000000/123456 từng được nhận khi store không tên FakeStore."""
+        class ConsoleStore(FakeStore):  # cùng tên lớp store thật
+            pass
+
+        self.store = ConsoleStore(self.clock)
+        self.service = ConsoleAuthService(self.store, self.google, self.vault, self.service._config, self.clock)
+        self.store.add_member("lead@x.vn")
+        raw = self.login_google()
+        run(self.service.totp_enrollment_uri(raw))
+        for code in ("000000", "123456"):
+            with self.assertRaises(ConsoleAuthError) as err:
+                run(self.service.verify_totp(raw, code))
+            self.assertEqual("TOTP_INVALID", self.code(err))
+
     def test_wrong_totp_five_times_revokes_session(self):
         self.store.add_member("lead@x.vn")
         raw = self.login_google()
@@ -418,6 +433,23 @@ class ConsoleAuthServiceTest(unittest.TestCase):
         with self.assertRaises(ConsoleAuthError) as err:
             run(self.service.resolve(raw))
         self.assertEqual("SESSION_REVOKED", self.code(err))
+
+
+
+class NoDevSessionRouteTest(unittest.TestCase):
+    """bug-015: không còn đường đăng nhập bỏ qua Google/TOTP bằng token cố định."""
+
+    def test_dev_session_returns_404_without_cookie(self):
+        from fastapi.testclient import TestClient
+
+        from app.console_main import app
+
+        client = TestClient(app)
+        for path in ("/console/api/auth/dev-session", "/api/auth/dev-session"):
+            with self.subTest(path=path):
+                r = client.get(path, follow_redirects=False)
+                self.assertEqual(404, r.status_code)
+                self.assertNotIn("set-cookie", r.headers)
 
 
 if __name__ == "__main__":

@@ -2,6 +2,8 @@
 
 - `vision_sample` + `vision_crop`: bản sao CHỈ ĐỌC từ backend qua kênh A2
   (`DatasetService.ExportForConsole`); không có session/user/area dạng rõ.
+  Ngoại lệ dev/sandbox: `seed_demo_samples` ghi mẫu thực hành (capture id
+  `a0000000-…`) khi bật `AI_CONSOLE_DEMO_SEED_ENABLED`; production để tắt.
 - `vision_label`: nhãn train chuyên sâu của console, provenance = console, duyệt
   bốn mắt ngay trên dòng nhãn.
 - `vision_snapshot`, `model_version`, `eval_run`, `accept_policy`: P3–P5.
@@ -15,6 +17,7 @@ from datetime import datetime
 from typing import Any
 from uuid import uuid4
 
+from app.config import get_config
 from app.core.exceptions import ConsoleStoreError
 from app.infra.database.console_store import ConsoleStore, _audit
 
@@ -42,6 +45,12 @@ def _sample(row) -> dict[str, Any]:
 
 
 class ConsoleVisionStore(ConsoleStore):
+    def __init__(self, db_url: str | None = None) -> None:
+        cfg = get_config()
+        # IPLMS ADR-0051: nếu có URL riêng cho process inference (AI_CONSOLE_INFERENCE_DATABASE_URL),
+        # sử dụng URL đó cho kênh A2 và accept policy; nếu không có thì dùng AI_CONSOLE_DATABASE_URL.
+        super().__init__(db_url or cfg.console.inference_database_url or cfg.console.database_url)
+
     @staticmethod
     def _create_schema(cur) -> None:
         ConsoleStore._create_schema(cur)
@@ -112,6 +121,18 @@ class ConsoleVisionStore(ConsoleStore):
         cur.execute(
             "CREATE UNIQUE INDEX IF NOT EXISTS uq_vision_label_approved "
             "ON vision_label (capture_id) WHERE decision = 'APPROVED'"
+        )
+        # Cờ điều kiện ảnh người gán chọn (bug-022): để đo ANPR theo từng điều kiện.
+        cur.execute(
+            "ALTER TABLE vision_label ADD COLUMN IF NOT EXISTS quality_flags TEXT[] NOT NULL DEFAULT '{}'"
+        )
+        cur.execute(
+            """DO $$ BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ck_vision_label_quality_flags') THEN
+                    ALTER TABLE vision_label ADD CONSTRAINT ck_vision_label_quality_flags
+                        CHECK (quality_flags <@ ARRAY['blurry', 'glare', 'skewed', 'occluded', 'two_line']::TEXT[]);
+                END IF;
+            END $$"""
         )
         cur.execute(
             """CREATE TABLE IF NOT EXISTS vision_snapshot (
@@ -315,7 +336,8 @@ class ConsoleVisionStore(ConsoleStore):
         return await self._run(work)
 
     async def add_label(
-        self, capture_id: str, labeler_id: str, verdict: str, plate_text: str | None
+        self, capture_id: str, labeler_id: str, verdict: str, plate_text: str | None,
+        quality_flags: list[str] | None = None,
     ) -> str:
         def work(cur):
             cur.execute("SELECT 1 FROM vision_sample WHERE capture_id = %s FOR UPDATE", (capture_id,))
@@ -334,9 +356,9 @@ class ConsoleVisionStore(ConsoleStore):
                 )
             label_id = str(uuid4())
             cur.execute(
-                """INSERT INTO vision_label (id, capture_id, labeler_id, verdict, plate_text)
-                   VALUES (%s, %s, %s, %s, %s)""",
-                (label_id, capture_id, labeler_id, verdict, plate_text),
+                """INSERT INTO vision_label (id, capture_id, labeler_id, verdict, plate_text, quality_flags)
+                   VALUES (%s, %s, %s, %s, %s, %s)""",
+                (label_id, capture_id, labeler_id, verdict, plate_text, list(quality_flags or [])),
             )
             _audit(cur, labeler_id, f"vision.label:{verdict}", "vision_sample", capture_id, "gán nhãn")
             return label_id
@@ -347,7 +369,8 @@ class ConsoleVisionStore(ConsoleStore):
         """Nhãn chờ duyệt của NGƯỜI KHÁC — người gán không thấy nhãn của mình ở đây."""
         def work(cur):
             cur.execute(
-                f"""SELECT {_SAMPLE_COLUMNS}, l.id::text, l.verdict, l.plate_text, m.display_name, l.created_at
+                f"""SELECT {_SAMPLE_COLUMNS}, l.id::text, l.verdict, l.plate_text, m.display_name, l.created_at,
+                           l.quality_flags
                     FROM vision_label l
                     JOIN vision_sample s ON s.capture_id = l.capture_id
                     JOIN console_member m ON m.id = l.labeler_id
@@ -357,9 +380,75 @@ class ConsoleVisionStore(ConsoleStore):
             )
             return [
                 {**_sample(r), "label": {"id": r[15], "verdict": r[16], "plate_text": r[17] or "",
-                                         "labeler": r[18], "created_at": r[19].isoformat()}}
+                                         "labeler": r[18], "created_at": r[19].isoformat(),
+                                         "quality_flags": list(r[20] or [])}}
                 for r in cur.fetchall()
             ]
+
+        return await self._run(work)
+
+    async def seed_demo_samples(
+        self, actor_id: str, samples: list[dict[str, Any]], retention_days: int
+    ) -> dict[str, int]:
+        """Ghi mẫu thực hành (dev/sandbox) do service dựng sẵn ảnh; nạp lại không nhân bản."""
+        def work(cur):
+            # Nhãn mẫu phải của người KHÁC người bấm, nếu không luật bốn mắt khoá nó mãi ở "chờ duyệt".
+            cur.execute(
+                """SELECT id::text FROM console_member WHERE status <> 'DISABLED' AND id <> %s
+                   ORDER BY created_at LIMIT 1""",
+                (actor_id,),
+            )
+            row = cur.fetchone()
+            labeler_id = row[0] if row else None
+            seeded_samples = seeded_labels = 0
+            for item in samples:
+                capture_id = item["capture_id"]
+                ref = capture_id.replace("-", "")
+                cur.execute(
+                    """INSERT INTO vision_sample
+                       (capture_id, image_sha256, machine_plate, machine_confidence, confirmed_plate,
+                        human_corrected, selection_reasons, source_status, purpose, source_final_plate,
+                        group_ref, area_ref, captured_at, source_updated_at, expires_at)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, 'CONFIRMED', 'train', %s, %s, %s,
+                               NOW(), NOW(), NOW() + make_interval(days => %s))
+                       ON CONFLICT (capture_id) DO UPDATE SET
+                           image_sha256 = EXCLUDED.image_sha256,
+                           machine_plate = EXCLUDED.machine_plate,
+                           machine_confidence = EXCLUDED.machine_confidence,
+                           confirmed_plate = EXCLUDED.confirmed_plate,
+                           human_corrected = EXCLUDED.human_corrected,
+                           selection_reasons = EXCLUDED.selection_reasons,
+                           imported_at = NOW()""",
+                    (capture_id, item["image_sha256"], item["machine_plate"], item["machine_confidence"],
+                     item["plate"], item["human_corrected"], item["selection_reasons"], item["plate"],
+                     ("g" + ref).ljust(64, "0"), ("a" + ref).ljust(64, "0"), retention_days),
+                )
+                cur.execute(
+                    """INSERT INTO vision_crop (capture_id, image) VALUES (%s, %s)
+                       ON CONFLICT (capture_id) DO UPDATE SET image = EXCLUDED.image""",
+                    (capture_id, item["image"]),
+                )
+                seeded_samples += 1
+                label = item.get("seed_label")
+                if not (label and labeler_id):
+                    continue
+                # Mẫu đã có nhãn (đang chờ / đã duyệt, hoặc người này đã gán) thì để nguyên —
+                # chèn thêm sẽ vướng uq_vision_label_pending / uq_vision_label_capture_labeler.
+                cur.execute(
+                    """INSERT INTO vision_label (id, capture_id, labeler_id, verdict, plate_text)
+                       SELECT %s, %s, %s, %s, %s
+                       WHERE NOT EXISTS (
+                           SELECT 1 FROM vision_label WHERE capture_id = %s
+                             AND (decision IS NULL OR decision = 'APPROVED' OR labeler_id = %s))
+                       ON CONFLICT DO NOTHING""",
+                    (label["label_id"], capture_id, labeler_id, label["verdict"], label["plate_text"],
+                     capture_id, labeler_id),
+                )
+                seeded_labels += cur.rowcount
+            _audit(cur, actor_id, "vision.demo_seed", "vision_sample", "demo",
+                   f"nạp {seeded_samples} mẫu thực hành, {seeded_labels} nhãn chờ duyệt"
+                   + (f" đứng tên {labeler_id} (nhãn mẫu, người này không tự gán)" if seeded_labels else ""))
+            return {"seeded_samples": seeded_samples, "seeded_reviews": seeded_labels}
 
         return await self._run(work)
 

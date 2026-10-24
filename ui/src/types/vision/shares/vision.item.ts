@@ -16,11 +16,22 @@ export interface VisionSample {
   imported_at: string | null;
 }
 
+/** Khớp CHECK ck_vision_label_quality_flags ở server (bug-022). */
+export const QUALITY_FLAGS = ['blurry', 'glare', 'skewed', 'occluded', 'two_line'] as const;
+export type QualityFlag = (typeof QUALITY_FLAGS)[number];
+
 export type LabelVerdict = 'CORRECT' | 'CORRECTED' | 'UNUSABLE';
 export type Decision = 'APPROVED' | 'REJECTED';
 
 export interface ReviewItem extends VisionSample {
-  label: { id: string; verdict: LabelVerdict; plate_text: string; labeler: string; created_at: string };
+  label: {
+    id: string;
+    verdict: LabelVerdict;
+    plate_text: string;
+    labeler: string;
+    created_at: string;
+    quality_flags?: QualityFlag[];
+  };
 }
 
 export interface VisionSnapshot {

@@ -67,7 +67,7 @@ export function AccuracySection({ report }: AccuracySectionProps) {
           label={t.visionOverview.autoAccepted}
           value={suggestedPoint ? fmtPercent(suggestedPoint.coverage) : DASH}
           tone="warning"
-          subtext={suggestedPoint ? `Chính xác ${fmtPercent(suggestedPoint.accuracy)} tại ngưỡng này` : 'Chưa xác định'}
+          subtext={suggestedPoint ? t.visionOverview.autoAcceptedSub(fmtPercent(suggestedPoint.accuracy)) : t.visionOverview.undetermined}
         />
       </div>
 
@@ -76,24 +76,10 @@ export function AccuracySection({ report }: AccuracySectionProps) {
         <div className={styles.chartCard}>
           <div className={styles.chartCardHeader}>
             <div>
-              <h3 className={styles.chartCardTitle}>Đường cong đánh đổi Ngưỡng tự nhận (Accept Threshold Curve)</h3>
+              <h3 className={styles.chartCardTitle}>{t.visionOverview.curveTitle}</h3>
               <p className={styles.chartCardSubtitle}>
-                Trực quan hóa mức độ chính xác khi tăng ngưỡng nhận diện so với tỷ lệ xe được tự động mở barie.
+                {t.visionOverview.curveSubtitle}
               </p>
-            </div>
-            <div className={styles.curveLegend}>
-              <span className={styles.legendItem}>
-                <span className={styles.legendLine} style={{ background: 'var(--color-success)' }} />
-                Độ chính xác (≥ Ngưỡng)
-              </span>
-              <span className={styles.legendItem}>
-                <span className={styles.legendLine} style={{ background: 'var(--color-warning)' }} />
-                Tỷ lệ tự nhận diện
-              </span>
-              <span className={styles.legendItem}>
-                <span className={styles.legendDot} style={{ background: 'var(--color-accent)' }} />
-                Điểm đề xuất
-              </span>
             </div>
           </div>
 
@@ -105,7 +91,7 @@ export function AccuracySection({ report }: AccuracySectionProps) {
       {report.total > 0 && (
         <div className={styles.tableCard}>
           <div className={styles.tableCardHeader}>
-            <h4 className={styles.tableCardTitle}>Bảng số liệu các điểm ngưỡng (Confidence Points)</h4>
+            <h4 className={styles.tableCardTitle}>{t.visionOverview.pointsTitle}</h4>
           </div>
           <div className={table.wrap}>
             <table className={table.table}>

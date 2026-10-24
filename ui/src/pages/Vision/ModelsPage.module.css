@@ -47,7 +47,7 @@
   background: var(--color-surface);
   border: 1px solid var(--color-success);
   border-radius: var(--radius-lg);
-  box-shadow: 0 0 0 1px rgba(21, 128, 61, 0.15), 0 2px 6px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-sm);
   flex-wrap: wrap;
   gap: var(--space-3);
 }
@@ -64,14 +64,8 @@
   border-radius: var(--radius-full);
   background: var(--color-success);
   box-shadow: 0 0 0 3px var(--color-success-soft);
-  animation: pulse 2s infinite;
 }
 
-@keyframes pulse {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(21, 128, 61, 0.4); }
-  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(21, 128, 61, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(21, 128, 61, 0); }
-}
 
 .prodName {
   font-size: var(--text-md);
@@ -91,7 +85,7 @@
   background: var(--color-surface);
   border: var(--hairline);
   border-radius: var(--radius-lg);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 
@@ -119,7 +113,7 @@
   background: var(--color-surface);
   border: var(--hairline);
   border-radius: var(--radius-lg);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-sm);
 }
 
 .formHeader {
@@ -130,38 +124,17 @@
   gap: var(--space-2);
 }
 
-.presetBar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-}
-
-.presetLabel {
-  font-size: var(--text-xs);
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.presetSelect {
-  height: 34px;
-  padding: 0 var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-2);
-  color: var(--color-text);
-  font-size: var(--text-xs);
-  cursor: pointer;
-}
-
 .formGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: var(--space-3);
-  align-items: end;
+  /* start: thẳng hàng theo nhãn. Với end, ô có dòng gợi ý (artifact_key) bị đẩy input lên 22px (ISSUE-006). */
+  align-items: start;
 }
 
 .testConnRow {
+  /* Hàng nút ra dòng riêng, không chen vào một ô 220px rồi xếp chồng hai nút. */
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: var(--space-3);

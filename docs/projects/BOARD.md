@@ -8,8 +8,8 @@
 | | |
 |---|---|
 | **Người giữ bảng** | Chủ đồ án |
-| **Cập nhật lần cuối** | 2026-10-19 |
-| **Người cập nhật** | Codex — điều chỉnh theo chủ dự án: HiTranquility phụ trách tổng thể/tích hợp |
+| **Cập nhật lần cuối** | 2026-10-23 |
+| **Người cập nhật** | Claude Code: thêm 12 dòng 🙋 từ lượt rà `ai/ui` (dòng bug-024/025 thêm ở lượt bổ sung 24/10) ([ISSUE-004](issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md)), có gợi ý người nhận (UI/UX giao Phát), chưa ai nhận |
 
 ## 📏 Luật dùng bảng
 
@@ -24,13 +24,24 @@
 
 | Việc | Hồ sơ | Ưu tiên | Ghi chú |
 |---|---|---|---|
-| Review trước tích hợp: Docker context và lọc dữ liệu build | [bug-003](bugs/bug-003-docker-context-khong-dong-bo/bug.md) | 🔴 | HiTranquility phụ trách review caller/build tổng thể; hiện trạng gốc là snapshot khoa-develop9a1aafd, cần đối chiếu revision nhận |
-| Review trước tích hợp: Launcher REST/gRPC và báo lỗi dependency | [bug-004](bugs/bug-004-launcher-dev-dung-grpc/bug.md) | 🔴 | HiTranquility phụ trách launcher/stack tổng thể; hiện trạng gốc là snapshot khoa-develop9a1aafd, cần đối chiếu revision nhận |
 | Review trước tích hợp: Hiệu chỉnh biển số mất ký tự | [bug-005](bugs/bug-005-plate-correction-mat-ky-tu/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
 | Review trước tích hợp: Prior loại xe không phải observation | [bug-006](bugs/bug-006-vehicle-prior-gia-lam-observation/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
-| Review trước tích hợp: Ingest mapping thời gian sai DTO | [bug-007](bugs/bug-007-ingest-response-sai-duration/bug.md) | 🔴 | HiTranquility đối chiếu hợp đồng AI↔backend; Dương hỗ trợ phần AI; snapshot khoa-develop9a1aafd cần kiểm lại |
 | Review trước tích hợp: Dashboard render dữ liệu bằng HTML | [bug-008](bugs/bug-008-dashboard-render-html-khong-escape/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
+| Console trả SPA 200 cho `/docs`, test `test_console_http` đỏ sẵn | [bug-014](bugs/bug-014-console-docs-tra-spa-thay-vi-404/bug.md) | 🟢 | Chốt 404 cho /docs hay sửa test |
 | Đo weights ứng viên chưa nạp: nạp theo `artifact_key` trong process đo riêng (module M4) | IPLMS ISSUE-126 phase-6 6.12 | 🟢 | M4 chưa có người |
+| Gỡ cửa hậu `/auth/dev-session` + nút "Truy cập nhanh", đính chính AUDIT-005 | [bug-015](bugs/bug-015-dev-session-cua-hau-dang-nhap/bug.md) | 🔴 | Đề xuất HiTranquility (auth M1), chờ chủ dự án chốt (ISSUE-004 OPEN-04); đã sửa trên nhánh `bugfix/bug-015-2026-10-console-auth-hardening`, còn xoá phiên cũ + đính chính AUDIT-005 |
+| Bỏ mật khẩu mặc định trong `harden_console_db.py`, đổi mật khẩu role `ai_console` | [bug-016](bugs/bug-016-mat-khau-db-console-mac-dinh-trong-code/bug.md) | 🔴 | Đề xuất HiTranquility; đã sửa trên nhánh `bugfix/bug-015-2026-10-console-auth-hardening`, còn đổi mật khẩu ở các môi trường |
+| Gỡ mã TOTP cố định `000000`/`123456` vượt MFA và step-up | [bug-026](bugs/bug-026-ma-totp-co-dinh-vuot-xac-thuc/bug.md) | 🔴 | Đã sửa trên nhánh `bugfix/bug-015-2026-10-console-auth-hardening`; còn rà nhật ký phiên từ 2026-10-21 |
+| UI: gỡ hoặc gắn nhãn MÔ PHỎNG cho 7 chỗ bịa kết quả, chuyển `fetch` thẳng sang `apiEndpoints` | [bug-018](bugs/bug-018-ui-bia-ket-qua-khi-api-loi/bug.md) | 🔴 | Đã sửa + nối API thật (ANPR, Anti-Fraud, tri thức, chẩn đoán) trên `bugfix/bug-017-2026-10-chat-studio-contract`; còn Dispute thật (Dương, ai ISSUE-001) và Forecast (chưa có model) |
+| Chat Studio luôn 422: chốt nhận hay bỏ tham số Playground (Khoa), sửa UI (Phát), test hợp đồng (Dương) | [bug-017](bugs/bug-017-chat-studio-luon-422/bug.md) | 🔴 | OPEN-01 chốt (a) backend nhận tham số; đã sửa trên `bugfix/bug-017-2026-10-chat-studio-contract` |
+| UI: escape CSV audit + từ điển mã hành động khớp server | [bug-019](bugs/bug-019-audit-xuat-csv-khong-escape/bug.md), [bug-020](bugs/bug-020-audit-tu-dien-hanh-dong-lech-server/bug.md) | 🟠 | Đã sửa trên `bugfix/bug-019-2026-10-audit-export-and-actions` |
+| UI: sửa tràn ngang `/tools` ở 768px + contrast token `--color-faded`/accent hai theme | [bug-024](bugs/bug-024-trang-cong-cu-tran-ngang-o-768px/bug.md), [bug-025](bugs/bug-025-mau-chu-faded-va-accent-duoi-nguong-tuong-phan/bug.md) | 🟠 | Đã sửa trên `bugfix/bug-021-2026-10-console-ui-polish` (66 màn: 0 tràn, 0 dưới AA) |
+| UI: bóc i18n còn sót (419 dòng / 47 file) + kiểm tự động | [bug-023](bugs/bug-023-che-do-en-tron-tieng-viet/bug.md) | 🟡 | Đã sửa trên `bugfix/bug-021-2026-10-console-ui-polish` + test chặn chữ viết cứng |
+| UI: trục ngày biểu đồ, cờ ảnh khi gán nhãn, hai chú giải ở Vision | [bug-021](bugs/bug-021-bieu-do-xu-huong-cat-nhan-ngay/bug.md), [bug-022](bugs/bug-022-thuoc-tinh-anh-gan-nhan-khong-luu/bug.md) | 🟡 | Đã sửa trên `bugfix/bug-021-2026-10-console-ui-polish`; OPEN-02 chốt lưu cờ vào DB |
+| UI: sidebar trên màn hẹp + smoke test browser 7 vai × viewport × theme | [SUGGESTION-003](suggestions/10-2026/SUGGESTION-003-rail-thu-gon-tren-man-hep.md), [SUGGESTION-002](suggestions/10-2026/SUGGESTION-002-mock-api-va-ma-tran-browser-cho-ui.md) | 🟡 | SUGGESTION-003 🟢 ACCEPTED và đã làm ở ISSUE-006; SUGGESTION-002 (smoke test ma trận browser) vẫn chờ techlead |
+| Đăng nhập dev theo vai an toàn (gỡ chặn demo I-3) | [SUGGESTION-001](suggestions/10-2026/SUGGESTION-001-dang-nhap-dev-cuc-bo-an-toan.md) | 🟠 | Chờ techlead duyệt; Dương dùng cho demo |
+| Lưu cờ ảnh khi gán nhãn để đo ANPR theo điều kiện | [SUGGESTION-004](suggestions/10-2026/SUGGESTION-004-luu-thuoc-tinh-anh-khi-gan-nhan.md) | 🟢 | Đề xuất Khoa xác nhận, UI Phát |
+| Ca hồi quy và so A/B prompt trong Copilot Lab | [SUGGESTION-005](suggestions/10-2026/SUGGESTION-005-gom-luot-chat-vao-bo-eval.md) | 🟢 | Đề xuất Khoa + Dương (định dạng ca), UI Phát |
 
 ## 🗓️ Dự kiến theo thành viên — chưa nhận việc
 
@@ -57,9 +68,7 @@ Thứ tự là gợi ý trong từng người, sau khi rà việc đang làm và
 | Dương | 3 | I-3: demo liên vai trên UI IPLMS-AI bằng `iplms-demo-loop` | IPLMS ISSUE-126; UI và quyền của AI Console | 🟢 | Có tài khoản test theo vai, dữ liệu test AI và môi trường console local; bước thiếu dữ liệu ghi chặn, không tự cấu hình A2/backend | Kịch bản data engineer, annotator, reviewer, ML engineer, lead và các vai liên quan theo quyền hiện có; kiểm UI, lưu/tải lại và từ chối sai quyền trong AI; cần sửa code ngoài IPLMS-AI thì báo chủ dự án |
 | Dương | 4 | Bổ sung test hồi quy quyền 7 vai Console trên UI/API | IPLMS ISSUE-126; `app/core/console/engines/access_policy.py` | 🟠 | Rà test đã có và lập ma trận vai/thao tác; dùng tài khoản hoặc fixture cô lập trong AI | Ma trận đủ 7 vai và quyền hiện có, có test allow/deny cho ca còn thiếu; nút ẩn không thay kiểm API; ghi bằng chứng test tự động, không chỉ checklist demo |
 | Dương | 5 | Bổ sung test hồi quy UI khi API lỗi, timeout hoặc phiên hết hạn | IPLMS ISSUE-126; `ui/README.md` và test UI hiện có | 🟠 | Đối chiếu test đã có; mô phỏng lỗi trong test local của `ai/ui`, không phá môi trường chung | Phủ ca còn thiếu cho 401/403/500/timeout tại màn hình liên quan; không báo lưu thành công giả, xử lý retry/đăng nhập theo luồng hiện có; chạy lại suite UI và ghi kết quả |
-| HiTranquility | 1 | Kiểm và sửa thứ tự chọn proto gốc↔AI của `compile_proto.py` nếu còn lệch | IPLMS ISSUE-126 review-6 BUG-06 | 🟢 | Tái hiện trên revision tích hợp; xác nhận nguồn proto chung; Khoa cung cấp fixture AI | Kiểm stub/RPC và caller NestJS cùng revision; ghi bằng chứng nếu đã được sửa |
 | HiTranquility | 2 | Restart container `ai` trên stack dev, xác nhận gRPC nạp đúng revision | IPLMS bug-006 | 🟠 | Có cửa sổ thao tác stack dùng chung; xác nhận tác động trước khi restart | Endpoint/version và kiểm gRPC/warmup; Khoa hỗ trợ đo ANPR; chuyển từ dòng Khoa hạn cũ 2026-10-14, chưa coi HiTranquility đã bắt đầu |
-| HiTranquility | 3 | Đưa Postgres 16 + pgvector vào job CI Python và nối kiểm tích hợp | IPLMS ISSUE-126 review-6 S3 | 🟠 | Dương cung cấp lệnh/fixture test DB local; rõ cấu hình job và quyền CI | Job có DB thật và báo test đúng; phần billing còn chặn phải ghi rõ; chuyển từ việc mới giao Dương ngày 2026-10-18 |
 | HiTranquility | 4 | Rà revision và tích hợp console/RAG giữa gốc, AI, backend, frontend | IPLMS ISSUE-126 review-7; IPLMS ISSUE-004 | 🟠 | Khoa/Dương bàn giao kết quả AI; kiểm `review-7.md`/`eval_copilot_e2e.py` lệch sau `e616fee`; CI và quyền môi trường sẵn sàng cho phần chạy thật | Bảng revision/gitlink, hợp đồng caller và kết quả E2E RAG; chưa merge/deploy hoặc đổi trạng thái chặn khi chưa có bằng chứng |
 | HiTranquility | 5 | I-2: tổ chức security review AI Console trước buổi bảo vệ | IPLMS ISSUE-126; IPLMS ADR-0048, ADR-0051 | 🟠 | Xác định revision; có tài khoản test và môi trường local cô lập | Checklist đăng nhập/phiên/quyền/PII và bằng chứng từ chối sai quyền; người review độc lập với người viết phần quyền |
 | HiTranquility | 6 | Chốt người phụ trách M3/M4 và thứ tự phối hợp console | IPLMS ISSUE-126 — bảng chia việc M0–M4 | 🟠 | Xác nhận lịch và năng lực của nhóm; có thể chốt sớm để gỡ phụ thuộc cho các việc trước | Người được xác nhận, phạm vi file/module và người duyệt; không mặc định Khoa/Dương nhận phần ngoài AI |
@@ -72,6 +81,8 @@ Kế hoạch mới nhất theo IPLMS REQ-006 F10 / ISSUE-125 review-4: 16 việc
 | Việc | Hồ sơ | Người nhận | Hạn | Tới đâu |
 |---|---|---|---|---|
 | Việc vặt tháng 10 — luật ý tưởng giữa chừng + techlead duyệt (IPLMS ADR-0056) | [CHORE-001](chores/10-2026/CHORE-001-monthly-maintenance/issue.md) | @HiTranquility | 2026-10-31 | 🚧 PR chore tháng mở |
+| Chặn nạp mẫu demo Vision Lab ở production, sửa nạp lại lỗi 500 / nhãn kẹt bốn mắt | [bug-013](bugs/bug-013-vision-demo-seed-khong-chan-production/bug.md) | @HiTranquility | 2026-10-31 | 🚧 Đã sửa, chờ audit vòng 2 + PR vào develop |
+| Định tuyến Root URL và Nâng cấp Copilot Chat Studio 3-Panel | [ISSUE-003](issues/10-2026/ISSUE-003-console-root-routing-copilot-studio/issue.md) | AI Team | 2026-10-31 | 🚧 Đang hoàn thiện UX & sub-components |
 | Làm nốt 1.3 `materialize_dataset` (tải theo manifest + sha256) | IPLMS ISSUE-013 | Khoa | 2026-10-16 | Đang viết CLI & loader từ private storage |
 | Đo ANPR trên test-golden snapshot — phần AI | IPLMS ISSUE-010 | Khoa | 2026-10-17 | Chuẩn bị test suite & dữ liệu snapshot; phần nối backend/operator và đối chiếu chống tráo do HiTranquility tích hợp |
 | AI Console nội bộ: DB riêng, 7 vai trò, đăng nhập Google + TOTP, `ai/ui` | IPLMS ISSUE-126 | Claude Code | — | P1a–P6 + EN (`98c2a88`) + cổng từ chối RAG (`e616fee`) đã code; PR #22, #23 + nhánh xếp chồng chờ CI. Việc còn lại đã tách thành dòng riêng ngày 2026-10-18 |
@@ -81,7 +92,6 @@ Kế hoạch mới nhất theo IPLMS REQ-006 F10 / ISSUE-125 review-4: 16 việc
 | Sửa vi phạm so với AI_CONVENTIONS (bổ sung luật lỗi & test doc) | IPLMS AUDIT-004 | Dương | 2026-10-19 | Đã có báo cáo AUDIT-004; cập nhật doc & gRPC mapping |
 | Hoàn thiện phần AI của `khoa-develop`: lọc thẻ `<think>`, rà `guardrail_manager`/`prompt_manager`/`ai_logger`/`llama_server_manager`, viết lại 3 test không gọi mạng | IPLMS ISSUE-126 review-6 BUG-05 · commit `ff479f9` | Khoa | — | Giữ sửa/test trong AI; HiTranquility phụ trách nối revision/caller và tích hợp tổng thể; giao gốc 2026-10-18 |
 | Xác nhận cột "đã kiểm/sửa" mục 3b `AI_USAGE.md` cho phần mình nhận (đề Final §5.3, thiếu là −10%) | IPLMS ISSUE-126 phase-6 6.6 | Chủ module M1–M4 | — | Mới giao 2026-10-18 |
-| Siết quyền user DB `ai_console` của process inference: chỉ bảng A2 + `accept_policy` | IPLMS ADR-0051 §Hệ quả | HiTranquility | — | Mới giao 2026-10-18 |
 
 ## ⏳ Chờ duyệt
 
@@ -103,6 +113,11 @@ Kế hoạch mới nhất theo IPLMS REQ-006 F10 / ISSUE-125 review-4: 16 việc
 
 | Việc | Hồ sơ | Người làm | Ngày |
 |---|---|---|---|
+| Rà `ai/ui` bằng REA: 9 bug, 5 suggestion, báo cáo UI/UX + quy chuẩn, gợi ý giao việc | [ISSUE-004](issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md) | Claude Code | 2026-10-23 |
+| Siết quyền DB user `ai_console` cho process inference: chỉ bảng A2 + `accept_policy` + verify fail-closed | IPLMS ADR-0051 §Hệ quả | HiTranquility | 2026-10-22 |
+| Sửa thứ tự ưu tiên proto gốc (`REPO_ROOT / proto`) trong `compile_proto.py` | IPLMS ISSUE-126 review-6 BUG-06 | HiTranquility | 2026-10-22 |
+| Đưa Postgres 16 + pgvector (0.8.6-pg16) vào service job CI Python (`ci.yml`) | IPLMS ISSUE-126 review-6 S3 | HiTranquility | 2026-10-22 |
+| Rà soát và kiểm chứng 3 bug tích hợp (bug-003 Docker context, bug-004 launcher REST/gRPC, bug-007 ingest duration_ms) | [bug-003](bugs/bug-003-docker-context-khong-dong-bo/bug.md), [bug-004](bugs/bug-004-launcher-dev-dung-grpc/bug.md), [bug-007](bugs/bug-007-ingest-response-sai-duration/bug.md) | HiTranquility | 2026-10-22 |
 | Cổng từ chối Copilot (chunk vector tốt nhất < `AI_RAG_MIN_SIMILARITY` → NO_CONTEXT, không gọi LLM) + eval end-to-end + bộ held-out — **merge trước khi Khoa/Dương duyệt** theo quyết định chủ đồ án 2026-10-18; Khoa/Dương cần xem lại sau | IPLMS ISSUE-126 review-7 | Claude Code | 2026-10-18 |
 | Gộp `khoa-develop` (5f24a1f) vào nhánh console, giữ bản develop khi xung đột; bug-011 hết do ADR-0050 bỏ `/api/copilot/ask` | [bug-011](bugs/bug-011-copilot-ask-nhan-api-key-tu-client-va-tra-loi-gia-khi-llm-loi/bug.md) · IPLMS ISSUE-126 | Claude Code | 2026-10-17 |
 | Lỗi model không tồn tại bị nuốt thành "AI service unreachable" | IPLMS bug-014 | Dương | 2026-10-13 |

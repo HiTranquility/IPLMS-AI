@@ -17,7 +17,7 @@ from app.util.logger import logger
 
 router = APIRouter(tags=["AI Console auth"])
 
-_UI_HOME = "/console/"
+_UI_HOME = "/"
 
 
 class PasswordLogin(BaseModel):
@@ -133,12 +133,6 @@ async def logout(request: Request, response: Response) -> BaseResponse[LoginStat
     await console_auth_service.logout(session_token(request))
     clear_session_cookie(response)
     return BaseResponse.ok([], "Đã đăng xuất.")
-
-
-@router.get("/auth/dev-session", include_in_schema=False)
-async def dev_session(response: Response) -> RedirectResponse:
-    set_session_cookie(response, "iplms_phat_session_super_token_2026")
-    return RedirectResponse("/console/overview", status_code=302)
 
 
 @router.get("/me", response_model=BaseResponse[Me])

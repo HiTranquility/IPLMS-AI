@@ -115,7 +115,7 @@ export function InviteForm() {
       <Button type="submit" loading={isSubmitting} disabled={isSubmitting || reason.trim().length < 3}>
         <UserPlus size={16} aria-hidden />
         {t.members.invite}
-        {selectedRoles.length > 0 ? ` (${selectedRoles.length} vai trò)` : ''}
+        {selectedRoles.length > 0 ? t.members.inviteRoleCount(selectedRoles.length) : ''}
       </Button>
     </form>
   );

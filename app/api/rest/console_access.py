@@ -51,22 +51,24 @@ def require_any_permission(*permissions: str):
 def set_session_cookie(response: Response, raw: str) -> None:
     cfg = get_config().console
     response.set_cookie(
-        SESSION_COOKIE, raw, max_age=cfg.session_ttl_hours * 3600, path="/console",
+        SESSION_COOKIE, raw, max_age=cfg.session_ttl_hours * 3600, path="/",
         httponly=True, samesite="strict", secure=cfg.cookie_secure,
     )
 
 
 def clear_session_cookie(response: Response) -> None:
+    response.delete_cookie(SESSION_COOKIE, path="/")
     response.delete_cookie(SESSION_COOKIE, path="/console")
 
 
 def set_flow_cookie(response: Response, browser: str) -> None:
     # Lax: phải đi kèm lần Google chuyển về callback (điều hướng cấp cao nhất, GET).
     response.set_cookie(
-        FLOW_COOKIE, browser, max_age=600, path="/console",
+        FLOW_COOKIE, browser, max_age=600, path="/",
         httponly=True, samesite="lax", secure=get_config().console.cookie_secure,
     )
 
 
 def clear_flow_cookie(response: Response) -> None:
+    response.delete_cookie(FLOW_COOKIE, path="/")
     response.delete_cookie(FLOW_COOKIE, path="/console")

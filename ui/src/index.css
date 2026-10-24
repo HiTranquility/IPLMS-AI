@@ -12,7 +12,7 @@
   --color-surface-3: #e6e4de;
   --color-text: #1c1b19;
   --color-muted: #5c5a54;
-  --color-faded: #85827a;
+  --color-faded: #69665e; /* ≥ 4.5:1 trên bg/surface/surface-2/surface-3 (bug-025) */
   --color-border: #dddad2;
   --color-border-strong: #c3bfb5;
   --color-border-subtle: #ebe9e3;
@@ -27,9 +27,9 @@
   --color-accent-dark: #92400e;
   --color-accent-soft: #fbf0dc;
 
-  --color-success: #15803d;
+  --color-success: #166534;
   --color-success-soft: #e6f4ea;
-  --color-warning: #a16207;
+  --color-warning: #854d0e;
   --color-warning-soft: #fbf0dc;
   --color-danger: #b91c1c;
   --color-danger-hover: #991b1b;
@@ -47,7 +47,7 @@
   --color-surface-3: #2c2c29;
   --color-text: #ecebe7;
   --color-muted: #a6a39b;
-  --color-faded: #77746d;
+  --color-faded: #9a978f;
   --color-border: #34332f;
   --color-border-strong: #4a4943;
   --color-border-subtle: #242422;
@@ -101,6 +101,20 @@
   --control-height: 44px;
   --rail-width: 220px;
   --transition: 120ms ease;
+
+  /* Đổ bóng và lớp phủ (ISSUE-005): mọi file CSS dùng token, không viết rgba rải rác. */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 3px 8px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.24);
+  --color-scrim: rgba(0, 0, 0, 0.45);
+
+  /* Khung soi ảnh biển số luôn tối ở cả hai theme để ảnh camera dễ nhìn (LabelPage). */
+  --color-viewer-bg: #0d0e11;
+  --color-viewer-chrome: rgba(20, 22, 26, 0.85);
+  --color-viewer-border: rgba(255, 255, 255, 0.12);
+  --color-viewer-text: #d1d5db;
+  --color-viewer-hover: rgba(255, 255, 255, 0.15);
+  --color-viewer-strong: #ffffff;
 }
 
 * { box-sizing: border-box; }

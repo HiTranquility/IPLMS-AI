@@ -7,53 +7,11 @@ import { useRegisterModel } from '@/hooks/mutations/useVisionMutations';
 import { useI18n } from '@/i18n/I18nProvider';
 import styles from '../ModelsPage.module.css';
 
-interface ModelPreset {
-  id: string;
-  label: string;
-  name: string;
-  version: string;
-  artifact_key: string;
-  sha256: string;
-  note: string;
-}
-
-const PRESETS: ModelPreset[] = [
-  {
-    id: 'resnet18',
-    label: 'Fast-ANPR v1.2 (ResNet-18 + CTC) — Siêu nhẹ, độ trễ 12ms',
-    name: 'anpr-fast-resnet18',
-    version: 'v1.2.0',
-    artifact_key: 's3://iplms-models/anpr/resnet18-ctc-v1.2.0.pt',
-    sha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-    note: 'Kiến trúc ResNet-18 kết hợp CTC Loss, tối ưu CPU/Edge Gateway, độ trễ ~12ms',
-  },
-  {
-    id: 'convnext',
-    label: 'Accurate-ANPR v2.0 (ConvNeXt + Transformer) — Độ chính xác cao 99.2%',
-    name: 'anpr-accurate-convnext',
-    version: 'v2.0.0',
-    artifact_key: 's3://iplms-models/anpr/convnext-transformer-v2.0.0.onnx',
-    sha256: 'a1b2c3d4e5f60718293a4b5c6d7e8f901234567890abcdef1234567890abcdef',
-    note: 'Kiến trúc ConvNeXt Tiny + Transformer Decoder, nhận diện tốt góc nghiêng & ban đêm',
-  },
-  {
-    id: 'mobilenet',
-    label: 'Mobile-ANPR Edge v0.9 (MobileNetV3) — Tối ưu Camera IP nhúng',
-    name: 'anpr-mobile-edge',
-    version: 'v0.9.4',
-    artifact_key: 's3://iplms-models/anpr/mobilenetv3-edge-v0.9.4.tflite',
-    sha256: '9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba',
-    note: 'Format TFLite quantize INT8 chạy trực tiếp trên Camera AI nhúng tại trụ barie',
-  },
-];
-
 export function RegisterModelForm() {
   const { t } = useI18n();
   const register = useRegisterModel();
   const empty = { name: 'anpr-yolo', version: '', artifact_key: '', sha256: '', note: '' };
   const [form, setForm] = useState(empty);
-  const [selectedPreset, setSelectedPreset] = useState<string>('custom');
-  const [isTesting, setIsTesting] = useState(false);
   const [connStatus, setConnStatus] = useState<{ ok: boolean; msg: string } | null>(null);
 
   const set = (key: keyof typeof empty) => (e: { target: { value: string } }) => {
@@ -61,48 +19,16 @@ export function RegisterModelForm() {
     setConnStatus(null);
   };
 
-  const handleSelectPreset = (presetId: string) => {
-    setSelectedPreset(presetId);
-    setConnStatus(null);
-    if (presetId === 'custom') {
-      setForm(empty);
-      return;
-    }
-    const found = PRESETS.find((p) => p.id === presetId);
-    if (found) {
-      setForm({
-        name: found.name,
-        version: found.version,
-        artifact_key: found.artifact_key,
-        sha256: found.sha256,
-        note: found.note,
-      });
-    }
-  };
-
-  // Kiểm tra kết nối tới Model endpoint / Artifact
-  const handleTestConnection = async () => {
-    setIsTesting(true);
-    setConnStatus(null);
-    await new Promise((resolve) => setTimeout(resolve, 350));
-
-    const hexRegex = /^[0-9a-fA-F]{64}$/;
+  // Chỉ kiểm định dạng ở máy người dùng; console chưa có API kiểm artifact có thật hay không,
+  // nên không báo "kết nối sẵn sàng" hay độ trễ (ai bug-018).
+  const handleCheckFormat = () => {
     if (!form.artifact_key.trim()) {
-      setConnStatus({ ok: false, msg: 'Đường dẫn artifact_key không được để trống.' });
-      setIsTesting(false);
-      return;
+      setConnStatus({ ok: false, msg: t.studio.formatArtifactEmpty });
+    } else if (!/^[0-9a-fA-F]{64}$/.test(form.sha256.trim())) {
+      setConnStatus({ ok: false, msg: t.studio.formatShaInvalid });
+    } else {
+      setConnStatus({ ok: true, msg: t.studio.formatOk });
     }
-    if (!hexRegex.test(form.sha256.trim())) {
-      setConnStatus({ ok: false, msg: 'Mã SHA-256 không hợp lệ (phải đủ 64 ký tự hex).' });
-      setIsTesting(false);
-      return;
-    }
-
-    setConnStatus({
-      ok: true,
-      msg: 'Kết nối sẵn sàng: Endpoint phản hồi 16ms, checksum SHA-256 hợp lệ.',
-    });
-    setIsTesting(false);
   };
 
   const submit = (event: FormEvent) => {
@@ -110,7 +36,6 @@ export function RegisterModelForm() {
     register.mutate(form, {
       onSuccess: () => {
         setForm(empty);
-        setSelectedPreset('custom');
         setConnStatus(null);
       },
     });
@@ -120,26 +45,6 @@ export function RegisterModelForm() {
     <form className={styles.panel} onSubmit={submit} aria-labelledby="register-title">
       <div className={styles.formHeader}>
         <h2 id="register-title" className={styles.sectionTitle}>{t.models.registerTitle}</h2>
-
-        {/* Bộ chọn Model có sẵn (Presets) */}
-        <div className={styles.presetBar}>
-          <label htmlFor="preset-select" className={styles.presetLabel}>
-            Mẫu có sẵn (Preset):
-          </label>
-          <select
-            id="preset-select"
-            className={styles.presetSelect}
-            value={selectedPreset}
-            onChange={(e) => handleSelectPreset(e.target.value)}
-          >
-            <option value="custom">Nhập thủ công / Tuỳ chỉnh...</option>
-            {PRESETS.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
 
       <div className={styles.formGrid}>
@@ -150,15 +55,9 @@ export function RegisterModelForm() {
         <TextField label={t.models.note} maxLength={500} value={form.note} onChange={set('note')} />
 
         <div className={styles.testConnRow}>
-          <Button
-            type="button"
-            variant="secondary"
-            loading={isTesting}
-            onClick={handleTestConnection}
-            title="Kiểm tra endpoint artifact và checksum"
-          >
+          <Button type="button" variant="secondary" onClick={handleCheckFormat}>
             <Network size={14} aria-hidden />
-            Kiểm tra kết nối
+            {t.studio.formatCheck}
           </Button>
 
           <Button type="submit" loading={register.isPending}>

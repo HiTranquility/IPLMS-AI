@@ -112,6 +112,20 @@ class VisionLabFlowTest(unittest.TestCase):
         item = next(i for i in asyncio.run(self.lab.review_queue(self.reviewer)) if i["capture_id"] == capture_id)
         asyncio.run(self.lab.decide(self.reviewer, item["label"]["id"], "APPROVED"))
 
+    def test_co_anh_duoc_luu_va_tra_ve_cho_nguoi_duyet(self):
+        """bug-022: cờ điều kiện ảnh đi cùng nhãn, bỏ trùng, giữ thứ tự cố định."""
+        [capture_id] = self._import(1)
+        asyncio.run(self.lab.add_label(self.annotator, capture_id, "CORRECT", "", ["two_line", "glare", "glare"]))
+        item = next(i for i in asyncio.run(self.lab.review_queue(self.reviewer)) if i["capture_id"] == capture_id)
+        self.assertEqual(["glare", "two_line"], item["label"]["quality_flags"])
+
+    def test_co_anh_la_bi_tu_choi(self):
+        [capture_id] = self._import(1)
+        with self.assertRaises(ValueError):
+            asyncio.run(self.lab.add_label(self.annotator, capture_id, "CORRECT", "", ["rain"]))
+        # Không ghi gì khi cờ sai: mẫu vẫn còn trong hàng gán.
+        self.assertIn(capture_id, [s["capture_id"] for s in asyncio.run(self.lab.label_queue(self.annotator))])
+
     def test_bon_mat_nguoi_gan_khong_duyet_duoc_nhan_cua_minh(self):
         [capture_id] = self._import(1)
         self.assertEqual([capture_id], [s["capture_id"] for s in asyncio.run(self.lab.label_queue(self.annotator))])
@@ -131,6 +145,36 @@ class VisionLabFlowTest(unittest.TestCase):
         self.assertEqual(1, len(asyncio.run(self.lab.label_queue(self.annotator))))
         actions = [e["action"] for e in asyncio.run(self.store.list_audit(20))]
         self.assertIn("vision.review:REJECTED", actions)
+
+    def test_nap_mau_demo_lap_lai_khong_loi_va_giu_bon_mat(self):
+        from app.core.console.engines.demo_plate_generator import DEMO_SAMPLES
+        from app.core.console.services.vision_lab_service import ConsoleVisionLabService
+
+        lab = ConsoleVisionLabService(store=self.store, demo_seed_enabled=True)
+        first = asyncio.run(lab.seed_demo_samples(self.reviewer))
+        self.assertEqual({"seeded_samples": len(DEMO_SAMPLES), "seeded_reviews": 2}, first)
+        # Nạp lại khi nhãn mẫu vẫn chờ duyệt: không vướng unique index, không đếm nhãn đã có.
+        self.assertEqual({"seeded_samples": len(DEMO_SAMPLES), "seeded_reviews": 0},
+                         asyncio.run(lab.seed_demo_samples(self.reviewer)))
+        # Nhãn mẫu thuộc người khác người bấm nạp, nên chính người bấm duyệt được.
+        queue = asyncio.run(lab.review_queue(self.reviewer))
+        self.assertEqual(2, len(queue))
+        asyncio.run(lab.decide(self.reviewer, queue[0]["label"]["id"], "APPROVED"))
+        self.assertIn("vision.demo_seed", [e["action"] for e in asyncio.run(self.store.list_audit(50))])
+        # Nạp lại sau khi một nhãn mẫu đã APPROVED: không chèn nhãn thứ hai cho mẫu đó.
+        self.assertEqual(0, asyncio.run(lab.seed_demo_samples(self.reviewer))["seeded_reviews"])
+
+    def test_nap_mau_demo_khi_khong_co_nguoi_khac_thi_bo_nhan(self):
+        from psycopg2 import sql
+
+        from app.core.console.services.vision_lab_service import ConsoleVisionLabService
+
+        with self.admin_conn, self.admin_conn.cursor() as cur:
+            cur.execute(sql.SQL("UPDATE {}.console_member SET status = 'DISABLED' WHERE id <> %s")
+                        .format(sql.Identifier(self.schema)), (self.reviewer.member_id,))
+        lab = ConsoleVisionLabService(store=self.store, demo_seed_enabled=True)
+        self.assertEqual(0, asyncio.run(lab.seed_demo_samples(self.reviewer))["seeded_reviews"])
+        self.assertEqual([], asyncio.run(lab.review_queue(self.reviewer)))
 
     def test_snapshot_train_loai_nhom_da_vao_golden_da_khoa(self):
         golden_ids = self._import(2, group="phien-1")

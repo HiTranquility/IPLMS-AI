@@ -6,12 +6,12 @@
   background: var(--color-surface);
   border: var(--hairline);
   border-radius: var(--radius-lg);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-sm);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .card:hover {
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
 
@@ -64,7 +64,7 @@
 }
 
 .value {
-  font-size: var(--text-2xl);
+  font-size: var(--text-xl);
   font-weight: 700;
   color: var(--color-text);
   font-variant-numeric: tabular-nums;

@@ -79,28 +79,28 @@ export function MembersPage() {
           label={t.members.statsTotal}
           value={stats.total}
           tone="primary"
-          subtext="Tài khoản trong DB Console"
+          subtext={t.members.statsTotalSub}
         />
         <MemberStatCard
           icon={<UserCheck size={22} />}
           label={t.members.statsActive}
           value={stats.active}
           tone="success"
-          subtext="Đã kích hoạt & có phiên"
+          subtext={t.members.statsActiveSub}
         />
         <MemberStatCard
           icon={<Mail size={22} />}
           label={t.members.statsInvited}
           value={stats.invited}
           tone="warning"
-          subtext="Chờ đăng nhập Google"
+          subtext={t.members.statsInvitedSub}
         />
         <MemberStatCard
           icon={<ShieldCheck size={22} />}
           label={t.members.statsRoles}
           value={stats.totalRoles}
           tone="accent"
-          subtext="Lượt phân quyền RBAC"
+          subtext={t.members.statsRolesSub}
         />
       </div>
 
@@ -124,7 +124,7 @@ export function MembersPage() {
               className={styles.filterSelect}
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              aria-label="Lọc theo vai trò"
+              aria-label={t.members.filterRoleLabel}
             >
               <option value="all">{t.members.filterRoleAll}</option>
               {ROLES.map((r) => (
@@ -135,7 +135,7 @@ export function MembersPage() {
             </select>
 
             <span className={styles.tableCount}>
-              Hiển thị {filteredMembers.length} / {memberList.length} thành viên
+              {t.members.showing(filteredMembers.length, memberList.length)}
             </span>
           </div>
 
@@ -172,7 +172,7 @@ export function MembersPage() {
                             <div className={styles.meta}>
                               <div className={styles.nameRow}>
                                 <span className={styles.memberName}>{m.display_name}</span>
-                                {isSelf && <span className={styles.selfTag}>Bạn</span>}
+                                {isSelf && <span className={styles.selfTag}>{t.members.selfTag}</span>}
                               </div>
                               <div className={styles.memberEmail}>{m.email}</div>
                             </div>
@@ -190,7 +190,7 @@ export function MembersPage() {
                                   className={styles.moreRolesTag}
                                   title={cleanRoles.slice(maxDisplayRoles).join(', ')}
                                 >
-                                  +{remainingCount} khác
+                                  {t.members.moreRoles(remainingCount)}
                                 </span>
                               )}
                             </div>

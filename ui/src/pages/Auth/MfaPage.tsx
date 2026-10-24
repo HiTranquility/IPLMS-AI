@@ -7,7 +7,6 @@ import { LanguageSwitch } from '@/components/layout/LanguageSwitch';
 import { useEnrollTotp, useLogout, useVerifyTotp } from '@/hooks/mutations/useAuthMutations';
 import { useI18n } from '@/i18n/I18nProvider';
 import type { Me } from '@/types/auth';
-import { EnterpriseBackground } from './components/EnterpriseBackground';
 import styles from './MfaPage.module.css';
 
 /** Lấy secret từ otpauth URI để nhập tay (console không thêm lib QR — ít phụ thuộc, 0 CDN). */
@@ -52,7 +51,6 @@ export function MfaPage({ me }: MfaPageProps) {
 
   return (
     <div className={styles.page}>
-      <EnterpriseBackground />
       <section className={styles.panel} aria-labelledby="mfa-title">
         <div className={styles.top}>
           <p className={styles.scope}>{t.mfa.step(me.email)}</p>
@@ -89,7 +87,7 @@ export function MfaPage({ me }: MfaPageProps) {
           <form className={styles.form} onSubmit={submit}>
             <TextField
               label={t.mfa.otp}
-              hint="Nhập 6 số từ app Authenticator (Dev: có thể dùng 000000)"
+              hint={t.mfa.otpHint}
               inputMode="numeric"
               autoComplete="one-time-code"
               pattern="[0-9]{6}"

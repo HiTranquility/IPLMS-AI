@@ -1,4 +1,5 @@
 import { MessagesSquare } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/common/Ui/button/Button';
 import { Segmented } from '@/components/common/Ui/button/Segmented';
 import { Badge } from '@/components/common/Ui/data-display/Badge';
@@ -10,6 +11,7 @@ import type { Messages } from '@/i18n/vi';
 import { fmtDateTime } from '@/utils/format';
 import { FeedbackMark } from './components/FeedbackMark';
 import { TurnDetail } from './components/TurnDetail';
+import { ChatStudio } from './components/ChatStudio';
 import { CopilotLabPageProvider, useCopilotLabPageContext, type FeedbackOption, type StatusOption } from './CopilotLabPageContext';
 import { STATUS_TONE, VERDICT_TONE } from './labels';
 import styles from './CopilotLabPage.module.css';
@@ -30,6 +32,7 @@ const feedbackOptions = (t: Messages): { value: FeedbackOption; label: string }[
 
 function CopilotLabPageContent() {
   const { t } = useI18n();
+  const [viewMode, setViewMode] = useState<'chat' | 'review'>('review');
   const { status, setStatus, feedback, setFeedback, selectedId, setSelectedId, turns, rows, selected, canReview } =
     useCopilotLabPageContext();
 
@@ -38,53 +41,71 @@ function CopilotLabPageContent() {
       <PageHeader
         title={t.copilot.title}
         description={t.copilot.desc}
+        actions={
+          <Segmented
+            label={t.copilot.title}
+            value={viewMode}
+            options={[
+              { value: 'chat', label: t.copilot.modeChat },
+              { value: 'review', label: t.copilot.modeReview },
+            ]}
+            onChange={(val) => setViewMode(val as 'chat' | 'review')}
+          />
+        }
       />
-      <div className={styles.filters}>
-        <Segmented label={t.copilot.filterStatus} value={status} options={statusOptions(t)} onChange={setStatus} />
-        <Segmented label={t.copilot.filterFeedback} value={feedback} options={feedbackOptions(t)} onChange={setFeedback} />
-      </div>
-      {turns.isPending && <Loading />}
-      {turns.error && <ErrorBlock error={turns.error} onRetry={() => void turns.refetch()} />}
-      {turns.isSuccess && rows.length === 0 && (
-        <EmptyState icon={<MessagesSquare size={28} />} title={t.copilot.emptyTitle} description={t.copilot.emptyDesc} />
-      )}
-      {rows.length > 0 && (
-        <div className={styles.split}>
-          <div className={styles.list}>
-            <ul className={styles.rows} aria-label={t.copilot.listLabel}>
-              {rows.map((turn) => (
-                <li key={turn.turn_id}>
-                  <button
-                    type="button"
-                    className={styles.row}
-                    aria-current={turn.turn_id === selectedId || undefined}
-                    onClick={() => setSelectedId(turn.turn_id)}
-                  >
-                    <span className={styles.rowTop}>
-                      <span className="num">{fmtDateTime(turn.at)}</span>
-                      <Badge tone={STATUS_TONE[turn.status]}>{t.copilot.status[turn.status]}</Badge>
-                      {turn.review && <Badge tone={VERDICT_TONE[turn.review.verdict]}>{t.copilot.verdict[turn.review.verdict]}</Badge>}
-                      <FeedbackMark value={turn.feedback} />
-                    </span>
-                    <span className={styles.query}>{turn.query}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-            {turns.hasNextPage && (
-              <Button variant="secondary" onClick={() => void turns.fetchNextPage()} loading={turns.isFetchingNextPage}>
-                {t.copilot.loadMore}
-              </Button>
-            )}
+
+      {viewMode === 'chat' ? (
+        <ChatStudio />
+      ) : (
+        <>
+          <div className={styles.filters}>
+            <Segmented label={t.copilot.filterStatus} value={status} options={statusOptions(t)} onChange={setStatus} />
+            <Segmented label={t.copilot.filterFeedback} value={feedback} options={feedbackOptions(t)} onChange={setFeedback} />
           </div>
-          <div className={styles.pane}>
-            {selected ? (
-              <TurnDetail turn={selected} canReview={canReview} />
-            ) : (
-              <EmptyState title={t.copilot.pick} />
-            )}
-          </div>
-        </div>
+          {turns.isPending && <Loading />}
+          {turns.error && <ErrorBlock error={turns.error} onRetry={() => void turns.refetch()} />}
+          {turns.isSuccess && rows.length === 0 && (
+            <EmptyState icon={<MessagesSquare size={28} />} title={t.copilot.emptyTitle} description={t.copilot.emptyDesc} />
+          )}
+          {rows.length > 0 && (
+            <div className={styles.split}>
+              <div className={styles.list}>
+                <ul className={styles.rows} aria-label={t.copilot.listLabel}>
+                  {rows.map((turn) => (
+                    <li key={turn.turn_id}>
+                      <button
+                        type="button"
+                        className={styles.row}
+                        aria-current={turn.turn_id === selectedId || undefined}
+                        onClick={() => setSelectedId(turn.turn_id)}
+                      >
+                        <span className={styles.rowTop}>
+                          <span className="num">{fmtDateTime(turn.at)}</span>
+                          <Badge tone={STATUS_TONE[turn.status]}>{t.copilot.status[turn.status]}</Badge>
+                          {turn.review && <Badge tone={VERDICT_TONE[turn.review.verdict]}>{t.copilot.verdict[turn.review.verdict]}</Badge>}
+                          <FeedbackMark value={turn.feedback} />
+                        </span>
+                        <span className={styles.query}>{turn.query}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                {turns.hasNextPage && (
+                  <Button variant="secondary" onClick={() => void turns.fetchNextPage()} loading={turns.isFetchingNextPage}>
+                    {t.copilot.loadMore}
+                  </Button>
+                )}
+              </div>
+              <div className={styles.pane}>
+                {selected ? (
+                  <TurnDetail turn={selected} canReview={canReview} />
+                ) : (
+                  <EmptyState title={t.copilot.pick} />
+                )}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </>
   );

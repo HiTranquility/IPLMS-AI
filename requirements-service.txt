@@ -6,7 +6,7 @@
 torch==2.14.1+cpu
 torchvision==0.29.1+cpu
 numpy>=1.24
-pillow>=10.0
+pillow>=10.1
 opencv-python-headless>=5.0.0.93
 easyocr>=1.7
 ultralytics>=8.3
@@ -16,8 +16,8 @@ fastapi>=0.110
 uvicorn[standard]>=0.27
 python-multipart>=0.0.9
 # Keep generated stubs and the protobuf runtime on the same compatible line.
-grpcio==1.84.0
-grpcio-tools==1.84.0
+grpcio==1.71.0
+grpcio-tools==1.71.0
 protobuf==5.29.5
 pydantic-settings>=2.0.0
 pgvector>=0.5.1

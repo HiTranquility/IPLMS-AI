@@ -1,0 +1,501 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  background: var(--color-surface);
+  border: var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+
+.banner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--color-surface-2);
+  border: var(--hairline);
+  border-radius: var(--radius-md);
+}
+
+@media (min-width: 48rem) {
+  .banner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.bannerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.pipelineTag {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-accent-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.desc {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 48rem;
+}
+
+.safetyBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
+  border: var(--hairline);
+  border-radius: var(--radius-sm);
+  align-self: flex-start;
+  white-space: nowrap;
+}
+
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+}
+
+@media (min-width: 64rem) {
+  .mainGrid {
+    grid-template-columns: 20rem 1fr;
+  }
+}
+
+.controlsColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.controlCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--color-surface-2);
+  border: var(--hairline);
+  border-radius: var(--radius-md);
+}
+
+.controlCardTitle {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.fieldLabelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+}
+
+.fieldLabel {
+  color: var(--color-muted);
+}
+
+.fieldValue {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--color-accent-dark);
+  font-variant-numeric: tabular-nums;
+}
+
+.selectInput {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: var(--hairline);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  outline: none;
+  transition: var(--transition);
+}
+
+.selectInput:focus {
+  border-color: var(--color-accent);
+}
+
+.rangeInput {
+  width: 100%;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.testApiBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: var(--hairline);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.testApiBtn:hover {
+  background: var(--color-surface-3);
+  color: var(--color-accent-dark);
+}
+
+.adrCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--color-surface-2);
+  border: var(--hairline);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+}
+
+.adrTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+  color: var(--color-warning);
+}
+
+.adrDesc {
+  color: var(--color-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.contentColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.kpiRow {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
+@media (min-width: 40rem) {
+  .kpiRow {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.kpiCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  background: var(--color-surface-2);
+  border: var(--hairline);
+  border-radius: var(--radius-md);
+}
+
+.kpiLabel {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+.kpiValueRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.kpiValue {
+  font-family: var(--font-mono);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.kpiAccent {
+  color: var(--color-accent-dark);
+}
+
+.kpiSuccess {
+  color: var(--color-success);
+}
+
+.kpiInfo {
+  color: var(--color-info);
+}
+
+.kpiUnit {
+  font-size: var(--text-xs);
+  color: var(--color-faded);
+}
+
+.chartCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface-2);
+  border: var(--hairline);
+  border-radius: var(--radius-md);
+}
+
+.chartHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.chartTitle {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.chartBaselineBadge {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  background: var(--color-surface-3);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  border: var(--hairline);
+}
+
+.chartWrapper {
+  width: 100%;
+  position: relative;
+}
+
+.svgChart {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+
+.gridLine {
+  stroke: var(--color-border-subtle);
+  stroke-width: 1;
+}
+
+.axisText {
+  fill: var(--color-faded);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.axisTextY {
+  text-anchor: end;
+  dominant-baseline: middle;
+}
+
+.axisTextX {
+  text-anchor: middle;
+  dominant-baseline: hanging;
+}
+
+.thresholdLine {
+  stroke: var(--color-danger);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+}
+
+.thresholdLabel {
+  fill: var(--color-danger);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-anchor: start;
+}
+
+.areaFill {
+  fill: var(--color-accent-soft);
+}
+
+.curveLine {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.dataPoint {
+  fill: var(--color-surface);
+  stroke: var(--color-accent);
+  stroke-width: 2;
+  cursor: pointer;
+  transition: r 120ms ease;
+}
+
+.dataPointPeak {
+  fill: var(--color-danger);
+  stroke: var(--color-surface);
+  stroke-width: 2;
+}
+
+.dataPoint:hover {
+  r: 5;
+}
+
+.chartLegend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  border-top: var(--hairline);
+  padding-top: var(--space-3);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.legendColorBox {
+  width: var(--space-3);
+  height: var(--space-3);
+  border-radius: var(--radius-sm);
+}
+
+.legendColorOccupancy {
+  background: var(--color-accent);
+}
+
+.legendColorThreshold {
+  background: var(--color-danger);
+}
+
+.legendColorPeak {
+  background: var(--color-danger);
+  border-radius: var(--radius-full);
+}
+
+/* Modal Dialog for ADR-0008 Gate Test */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: var(--space-4);
+}
+
+.modalCard {
+  width: 100%;
+  max-width: 28rem;
+  background: var(--color-surface);
+  border: var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modalTitle {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  padding: var(--space-1);
+  display: inline-flex;
+  border-radius: var(--radius-sm);
+}
+
+.closeBtn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+}
+
+.modalContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+}
+
+.modalStatusRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-danger-soft);
+  border: var(--hairline);
+  border-radius: var(--radius-md);
+  color: var(--color-danger);
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.modalMessage {
+  color: var(--color-muted);
+  line-height: 1.5;
+  background: var(--color-surface-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border-left: var(--space-1) solid var(--color-warning);
+}

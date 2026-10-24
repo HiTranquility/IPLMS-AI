@@ -1,4 +1,4 @@
-import { KeyRound, LockKeyhole, Moon, ShieldCheck, Sun } from 'lucide-react';
+import { AlertTriangle, KeyRound, LockKeyhole, Moon, ShieldCheck, Sun } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Button } from '@/components/common/Ui/button/Button';
 import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
@@ -8,7 +8,6 @@ import { usePasswordLogin } from '@/hooks/mutations/useAuthMutations';
 import { useI18n } from '@/i18n/I18nProvider';
 import { AUTH_ENDPOINTS } from '@/services/apiEndpoints/auth.endpoint';
 import { useThemeStore } from '@/stores/useThemeStore';
-import { EnterpriseBackground } from './components/EnterpriseBackground';
 import { loginErrorMessage } from './loginErrors';
 import styles from './LoginPage.module.css';
 
@@ -50,7 +49,6 @@ export function LoginPage() {
 
   return (
     <div className={styles.page}>
-      <EnterpriseBackground />
 
       <main className={styles.container}>
         <section className={styles.panel} aria-labelledby="login-title">
@@ -60,10 +58,6 @@ export function LoginPage() {
               <div className={styles.logoBadge}>
                 <ShieldCheck size={16} className={styles.logoIcon} aria-hidden />
                 <span className={styles.scope}>{t.login.scope}</span>
-              </div>
-              <div className={styles.statusPill} title="Production AI Auth Gateway — Active">
-                <span className={styles.statusDot} />
-                <span className={styles.statusText}>Gateway Online</span>
               </div>
             </div>
 
@@ -90,7 +84,7 @@ export function LoginPage() {
           {/* Callback Alert */}
           {callbackError && (
             <div className={styles.alert} role="alert">
-              <span className={styles.alertIcon}>⚠️</span>
+              <AlertTriangle size={14} className={styles.alertIcon} aria-hidden />
               <span>{callbackError}</span>
             </div>
           )}
@@ -103,34 +97,14 @@ export function LoginPage() {
             </a>
             <div className={styles.securityHint}>
               <LockKeyhole size={13} className={styles.hintIcon} aria-hidden />
-              <span>Xác thực an toàn qua OAuth 2.0 PKCE · Phiên làm việc RBAC 7 vai trò</span>
-            </div>
-            <div style={{ marginTop: '10px', textAlign: 'center' }}>
-              <a
-                href="/console/api/auth/dev-session"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  color: 'var(--color-primary-600, #4f46e5)',
-                  textDecoration: 'none',
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  backgroundColor: 'rgba(99, 102, 241, 0.08)',
-                }}
-              >
-                <span>⚡</span>
-                <span>Truy cập nhanh (Trưởng dự án Nguyễn Tấn Phát - Full 7 Roles)</span>
-              </a>
+              <span>{t.login.securityHint}</span>
             </div>
           </div>
 
           {/* Divider */}
           <div className={styles.divider} role="separator">
             <span className={styles.dividerLine} />
-            <span className={styles.dividerText}>HOẶC TÀI KHOẢN KHẨN CẤP</span>
+            <span className={styles.dividerText}>{t.login.orEmergency}</span>
             <span className={styles.dividerLine} />
           </div>
 
@@ -170,10 +144,10 @@ export function LoginPage() {
           {/* Footer Security Watermark */}
           <footer className={styles.footer}>
             <p className={styles.footerMain}>
-              Hệ thống nội bộ IPLMS AI Platform
+              {t.login.footerMain}
             </p>
             <p className={styles.footerSub}>
-              Bảo vệ bởi cơ chế Bốn Mắt (Four-Eyes) & Nhật ký kiểm toán bất biến
+              {t.login.footerSub}
             </p>
           </footer>
         </section>

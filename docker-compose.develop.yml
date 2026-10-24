@@ -47,6 +47,9 @@ services:
         ]
 
   console:
+    environment:
+      # Nút "nạp mẫu thực hành" Vision Lab — chỉ dev, base/production để tắt.
+      - AI_CONSOLE_DEMO_SEED_ENABLED=true
     volumes:
       - ./app:/app/app:ro
       - ./ui/dist:/app/ui/dist:ro

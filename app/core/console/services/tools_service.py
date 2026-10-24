@@ -6,7 +6,11 @@ hình hay chưa".
 """
 from __future__ import annotations
 
-from typing import Optional
+import asyncio
+import importlib.metadata
+import os
+import sys
+from typing import Any, Optional
 from uuid import UUID
 
 from app.config import get_config
@@ -20,6 +24,8 @@ from app.core.knowledge.dtos.knowledge_dto import IngestDocumentCommand
 from app.infra.database.console_store import console_store
 
 CONSOLE_TRY_TASK = "console_try"
+# Ảnh thử ANPR trên console: cùng trần với tệp tri thức, đủ cho ảnh camera cổng.
+ANPR_TRY_MAX_BYTES = KNOWLEDGE_MAX_FILE_BYTES
 _ALLOWED_SUFFIXES = (".pdf", ".docx", ".txt", ".md", ".markdown")
 
 
@@ -28,6 +34,45 @@ def _lot(parking_lot_id: Optional[str]) -> Optional[str]:
     if len(value) > 128:
         raise ValueError("Mã bãi tối đa 128 ký tự.")
     return value or None
+
+
+def _engine_status(vision) -> dict[str, Any]:
+    """Trạng thái engine Vision đọc từ cấu hình, đĩa và bộ nhớ process — không nạp model.
+
+    Trường nào không biết chắc thì None để UI hiện "—" (ai bug-018: không hằng số).
+    """
+    path = vision.yolo_model_path
+    loaded_yolo = loaded_ocr = None
+    try:
+        from app.core.vision.engines.anpr import models as anpr_models
+
+        loaded_yolo = anpr_models.yolo_model() is not None
+        loaded_ocr = anpr_models.ocr_reader() is not None
+    except Exception:  # noqa: BLE001 — thiếu thư viện vision thì báo "không rõ"
+        pass
+    try:
+        torch_version: Optional[str] = importlib.metadata.version("torch")
+    except importlib.metadata.PackageNotFoundError:
+        torch_version = None
+    torch_mod = sys.modules.get("torch")  # chỉ đọc khi đã nạp sẵn; không import torch chỉ để hỏi
+    cuda = None
+    if torch_mod is not None:
+        try:
+            cuda = bool(torch_mod.cuda.is_available())
+        except Exception:  # noqa: BLE001
+            cuda = None
+    return {
+        "yolo_weights_path": path,
+        "yolo_weights_bytes": os.path.getsize(path) if os.path.isfile(path) else None,
+        "yolo_version": vision.yolo_model_version,
+        "yolo_loaded": loaded_yolo,
+        "ocr_languages": vision.ocr_language_list,
+        "ocr_cache_dir": vision.ocr_model_storage_dir or None,
+        "ocr_loaded": loaded_ocr,
+        "onnx_enabled": vision.onnx_enabled,
+        "torch_version": torch_version,
+        "cuda_available": cuda,
+    }
 
 
 class ConsoleToolsService:
@@ -65,11 +110,80 @@ class ConsoleToolsService:
             "vision_device": cfg.vision.device,
             "telemetry_retention_days": cfg.telemetry.retention_days,
             "vision_retention_days": cfg.console.vision_retention_days,
+            "engines": _engine_status(cfg.vision),
         }
 
+    async def try_anpr(self, actor: ConsoleActor, image: bytes, lane_id: Optional[str] = None) -> dict:
+        """Chạy đúng engine ANPR đang nạp trong process này trên một ảnh (ai bug-018).
+
+        Không lưu ảnh (persist_files=False): ảnh biển số là PII, lượt thử không để lại file.
+        """
+        access_policy.require(actor, "ai:model:evaluate")
+        if not image:
+            raise ValueError("Ảnh rỗng.")
+        if len(image) > ANPR_TRY_MAX_BYTES:
+            raise ValueError("Ảnh vượt 8 MB.")
+        from app.core.vision.dtos.vision_dto import RecognizePlateCommand
+        from app.core.vision.services.anpr_service import AnprService
+
+        command = RecognizePlateCommand(image_data=image, lane_id=_lot(lane_id))
+        result = await asyncio.to_thread(AnprService.recognize_bytes, command, False)
+        return {
+            "plate_number": result.plate_number,
+            "confidence": result.confidence,
+            "vehicle_type": result.vehicle_type,
+            "plate_color": result.plate_color,
+            "latency_ms": round(result.process_time * 1000, 1) if result.process_time is not None else None,
+        }
+
+    async def verify_match(self, actor: ConsoleActor, expected_type: str, current_type: str) -> dict:
+        """Đối chiếu loại xe vào/ra bằng anti_fraud_service thật (ai bug-018).
+
+        Service chưa so ảnh (SUGGESTION-007 B6) nên `similarity_score` luôn là None ở đây,
+        không trả hằng số 0.0 của service như thể đó là số đo.
+        """
+        access_policy.require(actor, "ai:model:evaluate")
+        from app.core.constants import SIMILARITY_NOT_MEASURED
+        from app.core.vision.dtos.vision_dto import VehicleMatchQuery
+        from app.core.vision.services.anti_fraud_service import anti_fraud_service
+
+        result = anti_fraud_service.verify_vehicle_match(VehicleMatchQuery(
+            checkin_crop_url="", checkout_crop_url="",
+            expected_vehicle_type=expected_type.strip(), current_vehicle_type=current_type.strip(),
+        ))
+        reason = getattr(result.mismatch_reason, "value", result.mismatch_reason)
+        measured = result.similarity_score != SIMILARITY_NOT_MEASURED
+        return {
+            "is_matched": result.is_matched,
+            "similarity_score": result.similarity_score if measured else None,
+            "mismatch_reason": str(reason or ""),
+        }
+
+    async def knowledge_documents(self, actor: ConsoleActor, parking_lot_id: Optional[str] = None) -> list[dict]:
+        """Tài liệu thật trong kho tri thức (metadata, không kèm nội dung) — ai bug-018."""
+        access_policy.require(actor, "ai:prompt:edit")
+        docs = await self._ingestion_service().list(_lot(parking_lot_id))
+        return [
+            {
+                "id": d.document_id,
+                "title": d.file_name,
+                "category": d.category,
+                "source": d.file_name,
+                "chunk_count": d.chunk_count,
+                "latest_version_no": d.latest_version_no,
+                "latest_status": d.latest_status,
+                "published_version_no": d.published_version_no,
+                "updated_at": d.updated_at,
+            }
+            for d in docs
+        ]
+
     async def try_copilot_stream(
-        self, actor: ConsoleActor, query: str, parking_lot_id: Optional[str] = None
+        self, actor: ConsoleActor, query: str, parking_lot_id: Optional[str] = None,
+        top_k: Optional[int] = None, min_similarity: Optional[float] = None,
+        temperature: Optional[float] = None,
     ):
+        # Tham số thử chỉ dùng được với quyền sửa prompt, cùng quyền của cả lượt thử.
         access_policy.require(actor, "ai:prompt:edit")
         query = (query or "").strip()
         if not 1 <= len(query) <= 2000:
@@ -77,12 +191,15 @@ class ConsoleToolsService:
         request = AskQuestionRequest(
             query=query, user_id=actor.member_id, user_role="console",
             parking_lot_id=_lot(parking_lot_id), preview=False,
+            top_k=top_k, min_similarity=min_similarity, temperature=temperature,
         )
         async for chunk in self.copilot.stream_answer(request):
             yield chunk
 
     async def try_copilot(
-        self, actor: ConsoleActor, query: str, parking_lot_id: Optional[str] = None
+        self, actor: ConsoleActor, query: str, parking_lot_id: Optional[str] = None,
+        top_k: Optional[int] = None, min_similarity: Optional[float] = None,
+        temperature: Optional[float] = None,
     ) -> CopilotAnswer:
         access_policy.require(actor, "ai:prompt:edit")
         query = (query or "").strip()
@@ -91,6 +208,7 @@ class ConsoleToolsService:
         request = AskQuestionRequest(
             query=query, user_id=actor.member_id, user_role="console",
             parking_lot_id=_lot(parking_lot_id), preview=False,
+            top_k=top_k, min_similarity=min_similarity, temperature=temperature,
         )
         return await self.copilot.ask_question(request, task=CONSOLE_TRY_TASK)
 

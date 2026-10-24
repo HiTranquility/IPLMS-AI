@@ -17,7 +17,11 @@ function proposed(item: ReviewItem): string {
   return DASH;
 }
 
-export function renderPlateDiff(gate: string, machine: string) {
+export function renderPlateDiff(
+  gate: string,
+  machine: string,
+  diffTitle: (machine: string, gate: string) => string,
+) {
   if (!gate || !machine) return <span>{machine || gate || DASH}</span>;
   const maxLen = Math.max(gate.length, machine.length);
   const elements = [];
@@ -37,7 +41,7 @@ export function renderPlateDiff(gate: string, machine: string) {
             borderRadius: '2px',
             fontWeight: 700,
           }}
-          title={`Máy đọc: '${c2}', Cổng: '${c1}'`}
+          title={diffTitle(c2, c1)}
         >
           {c2 || '␣'}
         </span>,
@@ -71,21 +75,35 @@ export function ReviewRow({ item }: ReviewRowProps) {
             {t.vision.verdict[item.label.verdict]}
           </Badge>
           <span className={styles.plate}>{proposed(item)}</span>
-          {isExactMatch && <Badge tone="success">Khớp 100%</Badge>}
+          {isExactMatch && <Badge tone="success">{t.review.exactBadge}</Badge>}
         </div>
+
+        {item.label.quality_flags && item.label.quality_flags.length > 0 && (
+          <div className={styles.plateRow} aria-label={t.label.flagsTitle}>
+            {item.label.quality_flags.map((flag) => (
+              <Badge key={flag} tone="neutral">
+                {t.label.flags[flag]}
+              </Badge>
+            ))}
+          </div>
+        )}
 
         <div className={styles.comparisonRow}>
           <span>
             {t.review.machine}{' '}
             <span className={styles.plateDiffBox}>
-              {renderPlateDiff(item.confirmed_plate, item.machine_plate)}
+              {renderPlateDiff(item.confirmed_plate, item.machine_plate, t.review.charDiff)}
             </span>{' '}
             ({fmtPercent(item.machine_confidence)})
           </span>
           <span>·</span>
           <span>
             {t.review.gateConfirmed}{' '}
-            <span className={styles.plateDiffBox}>{item.confirmed_plate || DASH}</span>
+            {item.confirmed_plate ? (
+              <span className={styles.plateDiffBox}>{item.confirmed_plate}</span>
+            ) : (
+              <span title={t.review.gateEmptyHint}>{t.review.gateEmpty}</span>
+            )}
           </span>
         </div>
 

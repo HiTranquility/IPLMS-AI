@@ -10,6 +10,7 @@ import {
   proposeModel,
   proposePolicy,
   registerModel,
+  seedDemoBatch,
   startEval,
 } from '@/services/apiEndpoints/vision.endpoint';
 import type {
@@ -34,7 +35,7 @@ function useVisionMutation<A, R>(fn: (args: A) => Promise<R>) {
 }
 
 export const useAddLabelMutation = () =>
-  useVisionMutation((a: AddLabelRequest) => addLabel(a.captureId, a.verdict, a.plateText));
+  useVisionMutation((a: AddLabelRequest) => addLabel(a.captureId, a.verdict, a.plateText, a.qualityFlags));
 
 export const useDecideLabelMutation = () =>
   useVisionMutation((a: DecideLabelRequest) => decideLabel(a.labelId, a.decision, a.note));
@@ -73,3 +74,6 @@ export const usePromoteModel = usePromoteModelMutation;
 export const useStartEval = useStartEvalMutation;
 export const useProposePolicy = useProposePolicyMutation;
 export const useDecidePolicy = useDecidePolicyMutation;
+export const useSeedDemoBatchMutation = () =>
+  useVisionMutation(() => seedDemoBatch());
+export const useSeedDemoBatch = useSeedDemoBatchMutation;
