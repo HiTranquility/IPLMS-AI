@@ -35,7 +35,12 @@ export function LabelForm({ sample, remaining }: LabelFormProps) {
   };
 
   const send = (verdict: LabelVerdict) =>
-    add.mutate({ captureId: sample.capture_id, verdict, plateText: verdict === 'CORRECTED' ? plate : '' });
+    add.mutate({
+      captureId: sample.capture_id,
+      verdict,
+      plateText: verdict === 'CORRECTED' ? plate : '',
+      qualityFlags: [],
+    });
 
   // Phím tắt giống trang gán nhãn của moderator (platform): 1 đúng · 2 sửa · 3 hỏng.
   useEffect(() => {

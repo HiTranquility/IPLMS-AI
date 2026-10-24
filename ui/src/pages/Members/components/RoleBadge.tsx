@@ -1,35 +1,37 @@
 import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { useI18n } from '@/i18n/I18nProvider';
+import type { Messages } from '@/i18n/vi';
 import styles from './RoleBadge.module.css';
 
 export interface RoleMeta {
   role: string;
   cleanName: string;
-  labelVi: string;
+  label: string;
   className: string;
 }
 
-export const ROLE_DEFINITIONS: Record<string, { labelVi: string; styleClass: string }> = {
-  ai_lead: { labelVi: 'Trưởng nhóm', styleClass: styles.lead },
-  ai_console_admin: { labelVi: 'Quản trị hệ thống', styleClass: styles.admin },
-  ai_ml_engineer: { labelVi: 'Kỹ sư ML', styleClass: styles.ml },
-  ai_reviewer: { labelVi: 'Duyệt nhãn', styleClass: styles.reviewer },
-  ai_annotator: { labelVi: 'Gán nhãn', styleClass: styles.annotator },
-  ai_data_engineer: { labelVi: 'Kỹ sư dữ liệu', styleClass: styles.data },
-  ai_analyst: { labelVi: 'Chuyên viên phân tích', styleClass: styles.analyst },
+type RoleNames = Messages['members']['roleNames'];
+
+export const ROLE_STYLES: Record<keyof RoleNames, string> = {
+  ai_lead: styles.lead,
+  ai_console_admin: styles.admin,
+  ai_ml_engineer: styles.ml,
+  ai_reviewer: styles.reviewer,
+  ai_annotator: styles.annotator,
+  ai_data_engineer: styles.data,
+  ai_analyst: styles.analyst,
 };
 
-export function getRoleMeta(rawRole: string): RoleMeta {
+/** Nhãn vai lấy từ i18n (`members.roleNames`); vai lạ hiện tên kỹ thuật. */
+export function getRoleMeta(rawRole: string, names: RoleNames): RoleMeta {
   const cleanName = rawRole.replace(/^ai_/, '');
-  const found = ROLE_DEFINITIONS[rawRole] || ROLE_DEFINITIONS[`ai_${cleanName}`] || {
-    labelVi: cleanName,
-    styleClass: styles.analyst,
-  };
+  const key = (rawRole in ROLE_STYLES ? rawRole : `ai_${cleanName}`) as keyof RoleNames;
   return {
     role: rawRole,
     cleanName,
-    labelVi: found.labelVi,
-    className: found.styleClass,
+    label: names[key] ?? cleanName,
+    className: ROLE_STYLES[key] ?? styles.analyst,
   };
 }
 
@@ -42,16 +44,18 @@ export interface RoleBadgeProps {
   className?: string;
 }
 
-export function RoleBadge({ role, showDesc = false, onRemove, removeTitle = 'Thu hồi vai trò', className = '' }: RoleBadgeProps) {
-  const meta = getRoleMeta(role);
+export function RoleBadge({ role, showDesc = false, onRemove, removeTitle, className = '' }: RoleBadgeProps) {
+  const { t } = useI18n();
+  const meta = getRoleMeta(role, t.members.roleNames);
+  const removeLabel = removeTitle ?? t.members.revokeRole;
 
   return (
     <span
       className={`${styles.badge} ${meta.className} ${className}`}
-      title={`${meta.cleanName} — ${meta.labelVi}`}
+      title={`${meta.cleanName} — ${meta.label}`}
     >
       <span>{meta.cleanName}</span>
-      {showDesc && <span style={{ opacity: 0.75, fontSize: '10px' }}>({meta.labelVi})</span>}
+      {showDesc && <span style={{ opacity: 0.75, fontSize: '10px' }}>({meta.label})</span>}
       {onRemove && (
         <button
           type="button"
@@ -60,8 +64,8 @@ export function RoleBadge({ role, showDesc = false, onRemove, removeTitle = 'Thu
             e.stopPropagation();
             onRemove();
           }}
-          aria-label={`${removeTitle} ${meta.cleanName}`}
-          title={`${removeTitle} ${meta.cleanName}`}
+          aria-label={`${removeLabel} ${meta.cleanName}`}
+          title={`${removeLabel} ${meta.cleanName}`}
         >
           <X size={11} aria-hidden />
         </button>

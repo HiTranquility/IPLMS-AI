@@ -45,9 +45,8 @@ export function UsageSection({ usage }: UsageSectionProps) {
           hint={rated ? t.overview.helpfulHint(fmtInt(usage.thumbs_up), fmtInt(usage.thumbs_down)) : t.overview.noRatings}
         />
         <Stat
-          label="Tốc độ sinh TB"
+          label={t.overview.avgSpeed}
           value={usage.avg_speed_tok_s ? `${usage.avg_speed_tok_s} tok/s` : DASH}
-          hint="Mô hình Qwen3.5 LLM"
         />
       </dl>
       <h2 className={styles.sectionTitle}>{t.overview.byDay}</h2>
@@ -60,7 +59,7 @@ export function UsageSection({ usage }: UsageSectionProps) {
               <th scope="col" className={table.num}>{t.overview.refusedShort}</th>
               <th scope="col" className={table.num}>{t.overview.errors}</th>
               <th scope="col" className={table.num}>{t.overview.avgLatency}</th>
-              <th scope="col" className={table.num}>Tốc độ</th>
+              <th scope="col" className={table.num}>{t.overview.speedCol}</th>
             </tr>
           </thead>
           <tbody>

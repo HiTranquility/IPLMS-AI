@@ -36,8 +36,8 @@ export function TurnDetail({ turn, canReview }: TurnDetailProps) {
         <dt>Model</dt><dd className={styles.mono}>{turn.model || DASH}</dd>
         <dt>{t.copilot.latency}</dt><dd className="num">{fmtMs(turn.latency_ms)}</dd>
         <dt>{t.copilot.tokens}</dt><dd className="num">{tokens}</dd>
-        <dt>Tốc độ</dt><dd className="num">{turn.speed_tok_s ? `${turn.speed_tok_s} tok/s` : DASH}</dd>
-        <dt>Ngữ cảnh</dt><dd className="num">{turn.input_tokens ? `${fmtInt(turn.input_tokens)} / 4,096` : DASH}</dd>
+        <dt>{t.copilot.speed}</dt><dd className="num">{turn.speed_tok_s ? `${turn.speed_tok_s} tok/s` : DASH}</dd>
+        <dt>{t.copilot.context}</dt><dd className="num">{turn.input_tokens ? fmtInt(turn.input_tokens) : DASH}</dd>
         <dt>{t.copilot.cost}</dt><dd className="num">{fmtUsd(turn.cost_usd)}</dd>
         <dt>{t.copilot.role}</dt><dd>{turn.user_role || DASH}</dd>
         <dt>{t.copilot.lot}</dt><dd className={styles.mono}>{turn.parking_lot_id || DASH}</dd>

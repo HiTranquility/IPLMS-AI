@@ -73,6 +73,15 @@ def to_feedback_response(recorded: bool):
 
 def to_usage_summary_response(summary: UsageSummary):
     return _pb2.UsageSummaryResponse(
-        **summary.model_dump(exclude={"days"}),
-        days=[_pb2.UsageDay(**day.model_dump()) for day in summary.days],
+        **summary.model_dump(exclude={"days", "avg_speed_tok_s"}),
+        days=[
+            _pb2.UsageDay(
+                date=day.date,
+                requests=day.requests,
+                errors=day.errors,
+                refused=day.refused,
+                avg_latency_ms=day.avg_latency_ms,
+            )
+            for day in summary.days
+        ],
     )

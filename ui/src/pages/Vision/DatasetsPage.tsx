@@ -55,31 +55,31 @@ export function DatasetsPage() {
       <div className={styles.statsGrid}>
         <MemberStatCard
           icon={<Database size={22} />}
-          label="Tổng số Dataset"
+          label={t.datasets.statTotal}
           value={stats.total}
           tone="primary"
-          subtext="Các mốc snapshot dữ liệu"
+          subtext={t.datasets.statTotalSub}
         />
         <MemberStatCard
           icon={<FileCheck size={22} />}
-          label="Tập Golden Benchmark"
+          label={t.datasets.statGolden}
           value={stats.golden}
           tone="accent"
-          subtext={`${stats.frozen} tập đã đóng băng`}
+          subtext={t.datasets.statGoldenSub(stats.frozen)}
         />
         <MemberStatCard
           icon={<Lock size={22} />}
-          label="Đóng băng bất biến"
+          label={t.datasets.statFrozen}
           value={stats.frozen}
           tone="warning"
-          subtext="Có khoá SHA-256 an toàn"
+          subtext={t.datasets.statFrozenSub}
         />
         <MemberStatCard
           icon={<Images size={22} />}
-          label="Tổng mẫu lưu trữ"
+          label={t.datasets.statSamples}
           value={fmtInt(stats.totalSamples)}
           tone="success"
-          subtext="Ảnh biển số đã gom cụm"
+          subtext={t.datasets.statSamplesSub}
         />
       </div>
 
@@ -103,15 +103,15 @@ export function DatasetsPage() {
                 className={styles.filterSelect}
                 value={kindFilter}
                 onChange={(e) => setKindFilter(e.target.value as any)}
-                aria-label="Lọc theo loại dataset"
+                aria-label={t.datasets.filterLabel}
               >
-                <option value="all">Tất cả loại dataset</option>
-                <option value="golden">Chỉ tập Golden Benchmark</option>
-                <option value="train">Chỉ tập Huấn luyện (Train)</option>
+                <option value="all">{t.datasets.filterAll}</option>
+                <option value="golden">{t.datasets.filterGolden}</option>
+                <option value="train">{t.datasets.filterTrain}</option>
               </select>
 
               <span className={styles.tableCount}>
-                Hiển thị {filteredSnapshots.length} / {rawList.length} snapshot
+                {t.datasets.showing(filteredSnapshots.length, rawList.length)}
               </span>
             </div>
 

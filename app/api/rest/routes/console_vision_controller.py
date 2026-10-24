@@ -43,6 +43,7 @@ class PendingLabel(BaseModel):
     plate_text: str
     labeler: str
     created_at: str
+    quality_flags: List[str] = []
 
 
 class ReviewItem(Sample):
@@ -69,6 +70,9 @@ class Status(BaseModel):
 class LabelIn(BaseModel):
     verdict: Literal["CORRECT", "CORRECTED", "UNUSABLE"]
     plate_text: str = Field("", max_length=24)
+    quality_flags: List[Literal["blurry", "glare", "skewed", "occluded", "two_line"]] = Field(
+        default_factory=list, max_length=5
+    )
 
 
 class DecisionIn(BaseModel):
@@ -78,6 +82,11 @@ class DecisionIn(BaseModel):
 
 class Created(BaseModel):
     id: str
+
+
+class SeedResult(BaseModel):
+    seeded_samples: int
+    seeded_reviews: int
 
 
 class Snapshot(BaseModel):
@@ -214,6 +223,12 @@ async def status(actor: ConsoleActor = Depends(require_permission("ai:metrics:re
     return BaseResponse.ok([Status(**await console_vision_lab_service.status(actor))], "OK")
 
 
+@router.post("/seed-demo", response_model=BaseResponse[SeedResult])
+async def seed_demo(actor: ConsoleActor = Depends(require_any_permission("ai:task:label", "ai:label:approve", "ai:member:manage"))):
+    result = await console_vision_lab_service.seed_demo_samples(actor)
+    return BaseResponse.ok([SeedResult(**result)], f"Đã nạp {result['seeded_samples']} mẫu thực hành.")
+
+
 @router.get("/queue", response_model=BaseResponse[Sample])
 async def label_queue(
     limit: int = Query(20, ge=1, le=100),
@@ -240,7 +255,9 @@ async def add_label(
     capture_id: str, payload: LabelIn,
     actor: ConsoleActor = Depends(require_permission("ai:task:label")),
 ):
-    label_id = await console_vision_lab_service.add_label(actor, capture_id, payload.verdict, payload.plate_text)
+    label_id = await console_vision_lab_service.add_label(
+        actor, capture_id, payload.verdict, payload.plate_text, payload.quality_flags
+    )
     return BaseResponse.ok([Created(id=label_id)], "Đã gán nhãn — chờ người khác duyệt.")
 
 

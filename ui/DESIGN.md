@@ -32,7 +32,7 @@ src/
       Shared/   Forbidden, NotFound
       System/   ScrollToTop
       Ui/{button,data-display,feedback,form,media}/   UI primitive thuần (không gọi API)
-    layout/     AppShell (rail trái + PageBoundary), PageHeader, navigation, LanguageSwitch
+    layout/     AppShell (rail trái + PageBoundary; < 768px rail thành ngăn kéo mở bằng nút menu ở thanh trên, có focus trap và Esc — SUGGESTION-003), PageHeader, navigation, LanguageSwitch
   i18n/         vi.ts (từ điển gốc, kiểu `Messages`), en.ts, I18nProvider (useI18n)
   pages/{Auth,Overview,Copilot,Tools,Members,Audit,Vision}/
     {Name}Page.tsx + {Name}Page.module.css + {Name}PageContext.tsx + components/ + index.ts
@@ -53,7 +53,9 @@ Cùng **tên** token với 3 app frontend (`--color-bg`, `--color-surface*`, `--
 | `--color-primary` | `#24272b` graphite | `#ecebe7` | CTA chính, segment đang chọn |
 | `--color-accent` | `#d97706` amber | `#f59e0b` | Viền mục đang chọn, nút "Lưu kết quả", nhãn phạm vi |
 | `--color-accent-ink` | `#1c1204` | `#1c1204` | Chữ trên nền accent |
-| `--color-accent-dark` | `#92400e` | `#fbbf24` | Chữ accent trên nền thường |
+| `--color-accent-dark` | `#92400e` | `#fbbf24` | Chữ accent trên nền thường. `--color-accent` sáng chỉ đạt 3.2:1 trên nền trắng nên **không dùng làm màu chữ** (bug-025) |
+| `--color-faded` | `#69665e` | `#9a978f` | Chữ phụ nhạt nhất; vẫn ≥ 4.5:1 trên bg, surface, surface-2, surface-3 (bug-025) |
+| `--color-success` / `--color-warning` | `#166534` / `#854d0e` | `#4ade80` / `#fbbf24` | Chữ trạng thái; ≥ 4.5:1 cả trên nền `*-soft` của chính nó (bug-025) |
 
 Font hệ thống (`system-ui`, `ui-monospace`) — không tải font. Theme sáng/tối theo hệ điều hành, đổi tay ở rail và nhớ trong `localStorage`.
 
@@ -74,7 +76,9 @@ Font hệ thống (`system-ui`, `ui-monospace`) — không tải font. Theme sá
 5. Danh sách dùng row + rail bất đối xứng (Copilot Lab: danh sách 2fr / chi tiết 3fr), không lưới card.
 6. Số dùng `tabular-nums`; control cao tối thiểu 44px trên màn cảm ứng (`pointer: coarse`); với chuột, nút `sm` và segmented thấp hơn (32–36px) cho mật độ bảng.
 7. Mọi màn hình dữ liệu có loading, empty, error (kèm mã lỗi và "Thử lại").
-8. Màu/font chỉ qua token; mỗi theme có `--color-accent-ink`.
+8. Màu/font chỉ qua token; mỗi theme có `--color-accent-ink`. Đổ bóng/lớp phủ dùng `--shadow-sm|md|lg`, `--color-scrim`; khung soi ảnh biển số luôn tối dùng `--color-viewer-*` (ISSUE-005). Ngoại lệ có chủ đích, chỉ ba chỗ:
+   - Nút và logo Google ở trang đăng nhập: màu theo hướng dẫn thương hiệu Google, giống nhau ở hai theme.
+   - Bảng màu định danh vai (`RoleBadge.module.css`) và nhóm hành động (`AuditActionBadge.module.css`): mỗi mục một màu riêng có biến thể sáng/tối, đã đo ≥ 4.5:1 (ai bug-025). Thêm vai/nhóm mới thì thêm màu ở đúng file đó và đo lại.
 
 ## Ngoại lệ và việc chưa làm
 

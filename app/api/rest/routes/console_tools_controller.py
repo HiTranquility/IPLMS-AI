@@ -2,11 +2,11 @@ import json
 """Công cụ thử trong AI Console — thay trang dev `/dashboard` cũ (IPLMS ADR-0050)."""
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.api.rest.console_access import require_permission
+from app.api.rest.console_access import require_any_permission, require_permission
 from app.api.rest.schemas.base_response import BaseResponse
 from app.core.console.dtos import ConsoleActor
 from app.core.console.services.tools_service import console_tools_service
@@ -22,6 +22,20 @@ class Check(BaseModel):
     ok: bool
 
 
+class EngineStatus(BaseModel):
+    # None = không biết chắc (UI hiện "—"), không có giá trị mặc định nào giả làm số đo.
+    yolo_weights_path: str
+    yolo_weights_bytes: Optional[int]
+    yolo_version: str
+    yolo_loaded: Optional[bool]
+    ocr_languages: List[str]
+    ocr_cache_dir: Optional[str]
+    ocr_loaded: Optional[bool]
+    onnx_enabled: bool
+    torch_version: Optional[str]
+    cuda_available: Optional[bool]
+
+
 class SystemCheck(BaseModel):
     checks: List[Check]
     llm_model: str
@@ -29,12 +43,59 @@ class SystemCheck(BaseModel):
     vision_device: str
     telemetry_retention_days: int
     vision_retention_days: int
+    engines: EngineStatus
+
+
+class AnprTryOut(BaseModel):
+    plate_number: str
+    confidence: Optional[float]
+    vehicle_type: Optional[str]
+    plate_color: Optional[str]
+    latency_ms: Optional[float]
+
+
+class VerifyMatchIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_vehicle_type: str = Field(min_length=1, max_length=64)
+    current_vehicle_type: str = Field(min_length=1, max_length=64)
+
+
+class VerifyMatchOut(BaseModel):
+    is_matched: bool
+    similarity_score: Optional[float]
+    mismatch_reason: str
+
+
+class KnowledgeDocOut(BaseModel):
+    id: str
+    title: str
+    category: str
+    source: str
+    chunk_count: int
+    latest_version_no: int
+    latest_status: str
+    published_version_no: int
+    updated_at: str
+
+
+# Hợp đồng body của Chat Studio (ai bug-017). Giữ khớp với
+# ui/src/pages/Copilot/components/ChatStudio/askContract.ts (ASK_BODY_FIELDS);
+# test/test_console_tools.py và ChatStudio.test.tsx đối chiếu danh sách này.
+ASK_BODY_FIELDS = ("query", "parking_lot_id", "min_similarity", "top_k", "temperature")
 
 
 class AskIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     query: str = Field(min_length=1, max_length=2000)
     parking_lot_id: Optional[str] = Field(None, max_length=128)
+    # Biên khớp thanh trượt Inspector. min_similarity chỉ làm truy xuất chặt hơn cấu hình
+    # (rag_pipeline._limits), không nới được cổng NO_CONTEXT.
+    min_similarity: Optional[float] = Field(None, ge=0.0, le=1.0)
+    top_k: Optional[int] = Field(None, ge=1, le=10)
+    temperature: Optional[float] = Field(None, ge=0.0, le=1.0)
+
+    def tuning(self) -> dict:
+        return {"top_k": self.top_k, "min_similarity": self.min_similarity, "temperature": self.temperature}
 
 
 class IngestOut(BaseModel):
@@ -53,10 +114,40 @@ async def system(actor: ConsoleActor = Depends(require_permission("ai:metrics:re
     return BaseResponse.ok([SystemCheck(**await console_tools_service.system_check(actor))], "OK")
 
 
+@router.post("/anpr/recognize", response_model=BaseResponse[AnprTryOut])
+async def try_anpr(
+    file: UploadFile = File(...),
+    lane_id: Optional[str] = Form(None, max_length=128),
+    actor: ConsoleActor = Depends(require_permission("ai:model:evaluate")),
+):
+    image = await file.read(KNOWLEDGE_MAX_FILE_BYTES + 1)
+    result = await console_tools_service.try_anpr(actor, image, lane_id)
+    return BaseResponse.ok([AnprTryOut(**result)], "Kết quả từ engine ANPR đang nạp (ảnh không được lưu).")
+
+
+@router.post("/vision/verify-match", response_model=BaseResponse[VerifyMatchOut])
+async def verify_match(payload: VerifyMatchIn, actor: ConsoleActor = Depends(require_permission("ai:model:evaluate"))):
+    result = await console_tools_service.verify_match(
+        actor, payload.expected_vehicle_type, payload.current_vehicle_type
+    )
+    return BaseResponse.ok([VerifyMatchOut(**result)], "Đối chiếu theo loại xe; chưa so ảnh.")
+
+
+@router.get("/knowledge/documents", response_model=BaseResponse[KnowledgeDocOut])
+async def knowledge_documents(
+    parking_lot_id: Optional[str] = Query(None, max_length=128),
+    actor: ConsoleActor = Depends(require_permission("ai:prompt:edit")),
+):
+    docs = await console_tools_service.knowledge_documents(actor, parking_lot_id)
+    return BaseResponse.ok([KnowledgeDocOut(**d) for d in docs], "OK")
+
+
 @router.post("/copilot/stream")
-async def try_copilot_stream(payload: AskIn, actor: ConsoleActor = Depends(require_permission("ai:prompt:edit"))):
+async def try_copilot_stream(payload: AskIn, actor: ConsoleActor = Depends(require_any_permission("ai:prompt:edit", "ai:chatlog:read"))):
     async def event_generator():
-        async for chunk in console_tools_service.try_copilot_stream(actor, payload.query, payload.parking_lot_id):
+        async for chunk in console_tools_service.try_copilot_stream(
+            actor, payload.query, payload.parking_lot_id, **payload.tuning()
+        ):
             data = {
                 "token": chunk.token,
                 "is_finished": chunk.is_finished,
@@ -77,8 +168,8 @@ async def try_copilot_stream(payload: AskIn, actor: ConsoleActor = Depends(requi
 
 
 @router.post("/copilot", response_model=BaseResponse[CopilotAnswer])
-async def try_copilot(payload: AskIn, actor: ConsoleActor = Depends(require_permission("ai:prompt:edit"))):
-    answer = await console_tools_service.try_copilot(actor, payload.query, payload.parking_lot_id)
+async def try_copilot(payload: AskIn, actor: ConsoleActor = Depends(require_any_permission("ai:prompt:edit", "ai:chatlog:read"))):
+    answer = await console_tools_service.try_copilot(actor, payload.query, payload.parking_lot_id, **payload.tuning())
     return BaseResponse.ok([answer], "Trả lời từ pipeline RAG có guard (lượt thử, không tính vào số sản phẩm).")
 
 

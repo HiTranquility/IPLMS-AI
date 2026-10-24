@@ -21,7 +21,7 @@ GENERATED_PACKAGE = "app.api.grpc.generated"
 
 def find_proto_files() -> list[Path]:
     """Tìm tất cả file .proto trong proto/ gốc repo hoặc ai/proto/."""
-    for proto_dir in (AI_ROOT / "proto", REPO_ROOT / "proto"):
+    for proto_dir in (REPO_ROOT / "proto", AI_ROOT / "proto"):
         if proto_dir.exists():
             protos = list(proto_dir.glob("*.proto"))
             if protos:

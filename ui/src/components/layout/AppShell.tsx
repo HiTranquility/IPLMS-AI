@@ -1,6 +1,6 @@
-import { LogOut, Moon, Sun } from 'lucide-react';
-import { type ReactNode } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { LogOut, Menu, Moon, Sun, X } from 'lucide-react';
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { PageBoundary } from '@/components/common/Boundary/PageBoundary';
 import { ScrollToTop } from '@/components/common/System/ScrollToTop';
 import { Button } from '@/components/common/Ui/button/Button';
@@ -19,11 +19,73 @@ export interface AppShellProps {
   children?: ReactNode;
 }
 
+// Dưới mốc này rail thành ngăn kéo (SUGGESTION-003); khớp @media trong AppShell.module.css.
+const DRAWER_QUERY = '(max-width: 767px)';
+const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
 export function AppShell({ me, children }: AppShellProps) {
   const { t } = useI18n();
   const logout = useLogout();
   const { theme, toggleTheme } = useThemeStore();
   const { persona } = useWorkspaceStore();
+  const location = useLocation();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const railRef = useRef<HTMLElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Chuyển trang thì đóng ngăn kéo; lên màn rộng thì bỏ trạng thái mở.
+  useEffect(() => setDrawerOpen(false), [location.pathname]);
+  useEffect(() => {
+    const mq = window.matchMedia?.(DRAWER_QUERY);
+    if (!mq) return;
+    const onChange = () => {
+      if (!mq.matches) setDrawerOpen(false);
+    };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  // Mở: đưa focus vào ngăn kéo. Đóng: trả focus về nút menu (chỉ khi nút đang hiện).
+  // Đặt focus ở khung hình sau: lúc effect chạy, rail có thể chưa hết visibility: hidden.
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    let frame = 0;
+    if (drawerOpen) {
+      frame = requestAnimationFrame(() => railRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus());
+    } else if (wasOpen.current) {
+      menuButtonRef.current?.focus();
+    }
+    wasOpen.current = drawerOpen;
+    return () => cancelAnimationFrame(frame);
+  }, [drawerOpen]);
+
+  // Esc đóng ở bất kỳ đâu khi ngăn kéo mở (kể cả khi focus chưa vào được ngăn kéo).
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setDrawerOpen(false);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [drawerOpen]);
+
+  // Tab vòng trong ngăn kéo khi đang mở (focus trap).
+  const onRailKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (!drawerOpen || event.key !== 'Tab' || !railRef.current) return;
+    const items = [...railRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((el) => el.offsetParent !== null);
+    if (items.length === 0) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
 
   const groups = NAV_GROUPS.map((group) => ({
     ...group,
@@ -34,7 +96,7 @@ export function AppShell({ me, children }: AppShellProps) {
     if (!me.roles.length) return t.shell.rolesNone;
     const clean = me.roles.map((r) => r.replace(/^ai_/, ''));
     if (clean.includes('lead') && clean.length >= 4) {
-      return 'lead (toàn quyền)';
+      return t.shell.rolesLeadAll;
     }
     if (clean.length > 3) {
       return `${clean.slice(0, 2).join(', ')} (+${clean.length - 2})`;
@@ -45,10 +107,37 @@ export function AppShell({ me, children }: AppShellProps) {
   return (
     <div className={styles.shell}>
       <ScrollToTop />
-      <aside className={styles.rail}>
+      <header className={styles.topbar}>
+        <button
+          ref={menuButtonRef}
+          type="button"
+          className={styles.menuButton}
+          aria-label={t.shell.openMenu}
+          aria-expanded={drawerOpen}
+          aria-controls="console-rail"
+          onClick={() => setDrawerOpen(true)}
+        >
+          <Menu size={18} aria-hidden />
+        </button>
+        <span className={styles.brandName}>AI Console</span>
+      </header>
+      {drawerOpen && (
+        <button type="button" className={styles.scrim} aria-label={t.shell.closeMenu} tabIndex={-1} onClick={() => setDrawerOpen(false)} />
+      )}
+      <aside
+        id="console-rail"
+        ref={railRef}
+        className={drawerOpen ? `${styles.rail} ${styles.railOpen}` : styles.rail}
+        onKeyDown={onRailKeyDown}
+      >
         <div className={styles.brand}>
-          <span className={styles.brandName}>AI Console</span>
-          <span className={styles.brandScope}>{t.shell.scope}</span>
+          <div className={styles.brandText}>
+            <span className={styles.brandName}>AI Console</span>
+            <span className={styles.brandScope}>{t.shell.scope}</span>
+          </div>
+          <button type="button" className={styles.closeButton} aria-label={t.shell.closeMenu} onClick={() => setDrawerOpen(false)}>
+            <X size={18} aria-hidden />
+          </button>
         </div>
 
         <PersonaSwitcher me={me} />

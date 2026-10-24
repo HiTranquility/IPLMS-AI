@@ -1,4 +1,4 @@
-import { Send } from 'lucide-react';
+import { BarChart2, Clock, Layers, Send, Zap } from 'lucide-react';
 import { useState, useRef, type FormEvent } from 'react';
 import { Button } from '@/components/common/Ui/button/Button';
 import { Badge } from '@/components/common/Ui/data-display/Badge';
@@ -72,11 +72,11 @@ export function CopilotSection() {
       });
 
       if (!response.ok) {
-        throw new Error(`Lỗi máy chủ (${response.status})`);
+        throw new Error(t.tools.serverError(response.status));
       }
 
       const reader = response.body?.getReader();
-      if (!reader) throw new Error('Không đọc được stream từ máy chủ.');
+      if (!reader) throw new Error(t.tools.noStream);
 
       const decoder = new TextDecoder();
       let buffer = '';
@@ -117,7 +117,7 @@ export function CopilotSection() {
                   outputTokens: chunk.output_tokens ?? prev.outputTokens,
                   speedTokPerSec: chunk.speed_tok_s ?? prev.speedTokPerSec,
                   contextTokens: chunk.context_tokens ?? prev.contextTokens,
-                  contextLimit: chunk.context_limit ?? prev.contextLimit ?? 4096,
+                  contextLimit: chunk.context_limit ?? prev.contextLimit,
                   liveSpeed,
                   liveTokens: tokenChunksReceived,
                 };
@@ -150,7 +150,7 @@ export function CopilotSection() {
         <TextField label={t.tools.lot} hint={t.tools.lotHint} maxLength={128} value={lot} onChange={(e) => setLot(e.target.value)} />
         <Button type="submit" loading={streamData?.isStreaming} disabled={!query.trim()}>
           <Send size={16} aria-hidden />
-          {streamData?.isStreaming ? 'Đang stream...' : t.tools.send}
+          {streamData?.isStreaming ? t.tools.streaming : t.tools.send}
         </Button>
       </form>
       {streamData?.error && <ErrorBlock error={new Error(streamData.error)} />}
@@ -169,7 +169,7 @@ export function CopilotSection() {
               <span>·</span>
               <span>~{streamData.liveTokens || 0} tokens</span>
               <span>·</span>
-              <span>đang suy luận...</span>
+              <span>{t.tools.thinking}</span>
             </div>
           )}
 
@@ -177,22 +177,26 @@ export function CopilotSection() {
           {!streamData.isStreaming && (
             <div className={styles.metricsBar}>
               {streamData.speedTokPerSec !== undefined && (
-                <span className={styles.speedBadge} title="Tốc độ sinh token (Tokens per second)">
-                  ⚡ {streamData.speedTokPerSec} tok/s
+                <span className={styles.speedBadge} title={t.tools.speedTitle}>
+                  <Zap size={12} aria-hidden /> {streamData.speedTokPerSec} tok/s
                 </span>
               )}
               {streamData.inputTokens !== undefined && streamData.outputTokens !== undefined && (
-                <span className={styles.tokensBadge} title="Phân bổ token: Prompt + Generated">
-                  📊 {streamData.inputTokens}p + {streamData.outputTokens}g = {streamData.inputTokens + streamData.outputTokens} tok
+                <span className={styles.tokensBadge} title={t.tools.tokensTitle}>
+                  <BarChart2 size={12} aria-hidden /> {streamData.inputTokens}p + {streamData.outputTokens}g = {streamData.inputTokens + streamData.outputTokens} tok
                 </span>
               )}
               {streamData.contextTokens !== undefined && (
-                <span className={styles.contextBadge} title="Độ dài ngữ cảnh / Giới hạn cửa sổ">
-                  🧠 Context: {streamData.contextTokens.toLocaleString()} / {(streamData.contextLimit || 4096).toLocaleString()} ({Math.round((streamData.contextTokens / (streamData.contextLimit || 4096)) * 100)}%)
+                <span className={styles.contextBadge} title={t.tools.contextTitle}>
+                  <Layers size={12} aria-hidden /> Context: {streamData.contextTokens.toLocaleString()}
+                  {/* Chỉ hiện giới hạn cửa sổ khi server báo — không đoán 4096. */}
+                  {streamData.contextLimit
+                    ? ` / ${streamData.contextLimit.toLocaleString()} (${Math.round((streamData.contextTokens / streamData.contextLimit) * 100)}%)`
+                    : ''}
                 </span>
               )}
               {streamData.latencyMs !== undefined && (
-                <span>⏱️ {Math.round(streamData.latencyMs)}ms</span>
+                <span><Clock size={12} aria-hidden /> {Math.round(streamData.latencyMs)}ms</span>
               )}
               {streamData.confidence !== undefined && (
                 <span>{t.tools.confidence(fmtPercent(streamData.confidence))}</span>

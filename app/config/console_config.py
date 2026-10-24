@@ -11,6 +11,11 @@ class ConsoleConfig(BaseConfig):
     # knowledge_*, để quyền console và tri thức Copilot không dùng chung tài khoản.
     database_url: str = ""
 
+    # Database URL riêng cho process inference (ADR-0051): gRPC server dùng URL này
+    # với user bị siết quyền ai_inference (chỉ bảng A2 và đọc accept_policy).
+    # Nếu để trống, fallback về database_url.
+    inference_database_url: str = ""
+
     # Chỉ dùng nội bộ (ADR-0048 §2): chạy native thì nghe loopback; trong Docker
     # process nghe 0.0.0.0 nhưng compose chỉ publish ra 127.0.0.1.
     bind_host: str = "127.0.0.1"
@@ -34,3 +39,7 @@ class ConsoleConfig(BaseConfig):
 
     # Ảnh cắt nhận qua A2 mà chưa ai gán nhãn ở console sẽ bị xoá sau N ngày (PII).
     vision_retention_days: int = 90
+
+    # Nút "nạp mẫu thực hành" ở Vision Lab ghi mẫu `purpose='train'` vào DB;
+    # chỉ bật ở dev/sandbox (compose develop), production để mặc định tắt.
+    demo_seed_enabled: bool = False
