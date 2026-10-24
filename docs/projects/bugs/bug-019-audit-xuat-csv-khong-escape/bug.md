@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **Ngày / Người báo** | 2026-10-23 / Claude Code, rà UI trong [ISSUE-004](../../issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md) |
-| **Trạng thái** | ✅ Fixed (chờ PR) / 🟠 bảo mật mức vừa |
+| **Trạng thái** | ✅ Fixed — merge vào develop qua HiTranquility/IPLMS-AI#52 (2026-10-24) / 🟠 bảo mật mức vừa |
 | **Môi trường** | `develop@5f8e753` |
 
 ## Hành vi thực tế
