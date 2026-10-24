@@ -1282,9 +1282,9 @@
 }
 
 .badge_regulation {
-  background: rgba(147, 51, 234, 0.12);
+  background: var(--color-primary-soft);
   color: var(--color-accent-dark);
-  border: 1px solid rgba(147, 51, 234, 0.25);
+  border: var(--hairline);
 }
 
 .badge_tariff {
@@ -1296,13 +1296,13 @@
 .badge_fine_policy {
   background: var(--color-danger-soft);
   color: var(--color-danger);
-  border: 1px solid rgba(220, 38, 38, 0.25);
+  border: 1px solid var(--color-danger);
 }
 
 .badge_ev_charging {
   background: var(--color-success-soft);
   color: var(--color-success);
-  border: 1px solid rgba(22, 163, 74, 0.25);
+  border: 1px solid var(--color-success);
 }
 
 .lotScopeBadge,

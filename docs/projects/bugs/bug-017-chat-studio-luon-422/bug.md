@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **Ngày / Người báo** | 2026-10-23 / Claude Code, rà UI trong [ISSUE-004](../../issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md) |
-| **Trạng thái** | ✅ Fixed (chờ PR) — nhánh `bugfix/bug-017-2026-10-chat-studio-contract` |
+| **Trạng thái** | ✅ Fixed — merge vào develop qua HiTranquility/IPLMS-AI#51 (2026-10-24) — nhánh `bugfix/bug-017-2026-10-chat-studio-contract` |
 | **Môi trường** | `develop@5f8e753` |
 
 ## Hành vi thực tế

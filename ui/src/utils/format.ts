@@ -9,7 +9,8 @@ function build(locale: string) {
     integer: new Intl.NumberFormat(locale),
     decimal: new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }),
     percent: new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 1 }),
-    dateTime: new Intl.DateTimeFormat(locale, { timeZone: TZ, dateStyle: 'short', timeStyle: 'medium' }),
+    date: new Intl.DateTimeFormat(locale, { timeZone: TZ, day: '2-digit', month: '2-digit', year: '2-digit' }),
+    time: new Intl.DateTimeFormat(locale, { timeZone: TZ, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }),
     day: new Intl.DateTimeFormat(locale, { timeZone: 'UTC', weekday: 'short', day: '2-digit', month: '2-digit' }),
     dayMonth: new Intl.DateTimeFormat(locale, { timeZone: 'UTC', day: '2-digit', month: '2-digit' }),
   };
@@ -24,7 +25,11 @@ export const fmtInt = (n: number | null | undefined) => (n == null ? DASH : f().
 export const fmtMs = (n: number | null | undefined) => (n == null ? DASH : `${f().decimal.format(n)} ms`);
 export const fmtPercent = (n: number | null | undefined) => (n == null ? DASH : f().percent.format(n));
 export const fmtUsd = (n: number | null | undefined) => (n == null ? DASH : usd.format(n));
-export const fmtDateTime = (iso: string) => f().dateTime.format(new Date(iso));
+// Ngày trước giờ, không giây (ISSUE-005): vi-VN mặc định đặt giờ trước ngày, khó quét theo cột.
+export const fmtDateTime = (iso: string) => {
+  const d = new Date(iso);
+  return `${f().date.format(d)} ${f().time.format(d)}`;
+};
 // `date` của chuỗi ngày đã là ngày theo giờ Việt Nam (server gom theo Asia/Ho_Chi_Minh).
 export const fmtDay = (isoDate: string) => f().day.format(new Date(`${isoDate}T00:00:00Z`));
 /** Nhãn trục ngày: chỉ ngày/tháng, không cắt chuỗi Intl (độ dài đổi theo locale). */

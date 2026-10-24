@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  CheckCircle2,
   Cpu,
   Eye,
   GitCommit,
@@ -147,52 +146,6 @@ export function SystemDiagnostics() {
             </div>
           </div>
         </article>
-      </div>
-
-      {/* 4 Architectural Conventions Checklist */}
-      <div className={styles.conventionsSection}>
-        <h3 className={styles.conventionsTitle}>
-          <GitCommit size={16} aria-hidden />
-          <span>{t.tools.conventionsTitle}</span>
-        </h3>
-
-        <div className={styles.conventionsGrid}>
-          {/* Convention 1 */}
-          <div className={styles.conventionItem}>
-            <div className={styles.conventionHeader}>
-              <CheckCircle2 size={16} aria-hidden />
-              <span>{t.tools.convention1Title}</span>
-            </div>
-            <p className={styles.conventionDesc}>{t.tools.convention1Desc}</p>
-          </div>
-
-          {/* Convention 2 */}
-          <div className={styles.conventionItem}>
-            <div className={styles.conventionHeader}>
-              <CheckCircle2 size={16} aria-hidden />
-              <span>{t.tools.convention2Title}</span>
-            </div>
-            <p className={styles.conventionDesc}>{t.tools.convention2Desc}</p>
-          </div>
-
-          {/* Convention 3 */}
-          <div className={styles.conventionItem}>
-            <div className={styles.conventionHeader}>
-              <CheckCircle2 size={16} aria-hidden />
-              <span>{t.tools.convention3Title}</span>
-            </div>
-            <p className={styles.conventionDesc}>{t.tools.convention3Desc}</p>
-          </div>
-
-          {/* Convention 4 */}
-          <div className={styles.conventionItem}>
-            <div className={styles.conventionHeader}>
-              <CheckCircle2 size={16} aria-hidden />
-              <span>{t.tools.convention4Title}</span>
-            </div>
-            <p className={styles.conventionDesc}>{t.tools.convention4Desc}</p>
-          </div>
-        </div>
       </div>
     </section>
   );

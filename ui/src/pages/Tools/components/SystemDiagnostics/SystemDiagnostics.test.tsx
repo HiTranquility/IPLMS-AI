@@ -52,15 +52,6 @@ describe('SystemDiagnostics Component', () => {
     expect(screen.queryByText('CPU')).toBeNull();
   });
 
-  it('renders 4 architectural conventions conforming to ADRs', () => {
-    renderWithProviders(<SystemDiagnostics />);
-
-    expect(screen.getByText(/1\. Phụ Thuộc 1 Chiều/i)).toBeTruthy();
-    expect(screen.getByText(/2\. Hai Cổng Vào, Một Đường Nghiệp Vụ/i)).toBeTruthy();
-    expect(screen.getByText(/3\. Thà Lỗi Hơn Bịa/i)).toBeTruthy();
-    expect(screen.getByText(/4\. Lazy-Load Model Nặng/i)).toBeTruthy();
-  });
-
   it('handles refresh button click without crashing', () => {
     renderWithProviders(<SystemDiagnostics />);
     const refreshBtn = screen.getByRole('button', { name: /Làm mới/i });
