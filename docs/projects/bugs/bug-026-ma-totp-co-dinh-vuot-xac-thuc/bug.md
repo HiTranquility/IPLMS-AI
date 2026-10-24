@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **Ngày / Người báo** | 2026-10-24 / Claude Code, phát hiện khi bóc i18n `MfaPage.tsx` lúc sửa bug-023 ([ISSUE-004](../../issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md)) |
-| **Trạng thái** | ✅ Fixed (chờ PR) / 🔴 |
+| **Trạng thái** | ✅ Fixed — merge vào develop qua HiTranquility/IPLMS-AI#50 (2026-10-24) / 🔴 |
 | **Môi trường** | `develop@5f8e753`; có từ commit `755b0a4` (2026-10-21, "ho tro dev totp code 000000") |
 
 ## Hành vi thực tế
