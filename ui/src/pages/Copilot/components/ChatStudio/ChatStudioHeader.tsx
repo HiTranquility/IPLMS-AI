@@ -35,8 +35,8 @@ export function ChatStudioHeader({
           type="button"
           className={styles.headerToggleBtn}
           onClick={onToggleSidebar}
-          aria-label={sidebarOpen ? 'Đóng thanh bên' : 'Mở thanh bên'}
-          title={sidebarOpen ? 'Đóng thanh bên' : 'Mở thanh bên'}
+          aria-label={sidebarOpen ? t.copilot.sidebarClose : t.copilot.sidebarOpen}
+          title={sidebarOpen ? t.copilot.sidebarClose : t.copilot.sidebarOpen}
         >
           <PanelLeft size={16} />
         </button>
@@ -55,11 +55,11 @@ export function ChatStudioHeader({
             variant="secondary"
             size="sm"
             onClick={onExportMarkdown}
-            aria-label="Xuất Markdown"
-            title="Tải toàn bộ hội thoại dưới dạng Markdown"
+            aria-label={t.copilot.exportMd}
+            title={t.copilot.exportMdTitle}
           >
             <Download size={14} />
-            <span>Xuất .md</span>
+            <span>{t.copilot.exportMdShort}</span>
           </Button>
         )}
 
@@ -79,8 +79,8 @@ export function ChatStudioHeader({
           type="button"
           className={`${styles.headerToggleBtn} ${inspectorOpen ? styles.headerToggleBtnActive : ''}`}
           onClick={onToggleInspector}
-          aria-label={inspectorOpen ? 'Đóng ngăn kéo kiểm định' : 'Mở ngăn kéo kiểm định'}
-          title={inspectorOpen ? 'Đóng ngăn kéo kiểm định' : 'Mở ngăn kéo kiểm định'}
+          aria-label={inspectorOpen ? t.copilot.inspectorClose : t.copilot.inspectorOpen}
+          title={inspectorOpen ? t.copilot.inspectorClose : t.copilot.inspectorOpen}
         >
           <PanelRight size={16} />
         </button>

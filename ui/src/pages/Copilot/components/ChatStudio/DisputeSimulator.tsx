@@ -34,37 +34,17 @@ interface ScenarioPreset {
   reason: string;
 }
 
-const PRESET_SCENARIOS: ScenarioPreset[] = [
-  {
-    id: 'sc1',
-    name: 'Barie kẹt > 15 phút',
-    disputeId: 'DSP-9821',
-    amount: 35000,
-    reason: 'Barie kẹt lúc ra cổng hơn 15 phút, hệ thống tự động tính quá giờ sai quy chế.',
-  },
-  {
-    id: 'sc2',
-    name: 'Quẹt vết xước thân xe',
-    disputeId: 'DSP-1044',
-    amount: 250000,
-    reason: 'Cần gạt barie hạ xuống va quẹt nắp ca-pô khi xe đang tiến ra cổng theo đèn tín hiệu.',
-  },
-  {
-    id: 'sc3',
-    name: 'Lỗi ANPR quét nhầm biển số',
-    disputeId: 'DSP-2091',
-    amount: 50000,
-    reason: 'Hệ thống nhận diện nhầm biển 51H-123.45 thành 51H-123.46 dẫn đến thu phí 2 lần.',
-  },
-];
-
 export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
   const { t } = useI18n();
+  const d = t.copilot.dispute;
+  const presetScenarios: ScenarioPreset[] = [
+    { id: 'sc1', name: d.sc1Name, disputeId: 'DSP-9821', amount: 35000, reason: d.sc1Reason },
+    { id: 'sc2', name: d.sc2Name, disputeId: 'DSP-1044', amount: 250000, reason: d.sc2Reason },
+    { id: 'sc3', name: d.sc3Name, disputeId: 'DSP-2091', amount: 50000, reason: d.sc3Reason },
+  ];
   const [disputeId, setDisputeId] = useState('DSP-9821');
   const [claimedAmount, setClaimedAmount] = useState<number>(35000);
-  const [claimReason, setClaimReason] = useState(
-    'Barie kẹt lúc ra cổng hơn 15 phút, hệ thống tự ý tính quá giờ',
-  );
+  const [claimReason, setClaimReason] = useState(d.defaultReason);
   const [hasCheckinSnapshot, setHasCheckinSnapshot] = useState(true);
   const [hasCheckoutSnapshot, setHasCheckoutSnapshot] = useState(true);
 
@@ -118,9 +98,7 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
   const handleSendToChat = () => {
     if (!steps) return;
     // Không gài sẵn kết luận nào; chỉ chuyển dữ kiện khách khai sang khung chat.
-    const summary = `Tôi muốn phân tích hồ sơ khiếu nại ${disputeId} (số tiền: ${fmtInt(
-      claimedAmount,
-    )} VNĐ). Lý do: "${claimReason}". Vui lòng cho tôi biết căn cứ quy chế và phương án trả lời khách hàng.`;
+    const summary = d.askSummary(disputeId, fmtInt(claimedAmount), claimReason);
     onAskAboutDispute?.(summary);
   };
 
@@ -133,9 +111,9 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
             <GitBranch size={16} />
           </div>
           <div>
-            <h4 className={styles.dsTitle}>Phân Xử Tranh Chấp (LangGraph)</h4>
+            <h4 className={styles.dsTitle}>{d.title}</h4>
             <span className={styles.dsSub}>
-              Workflow phân xử có giới hạn • <code>ADR-0008: Bounded Workflow</code>
+              {d.sub} • <code>ADR-0008: Bounded Workflow</code>
             </span>
           </div>
         </div>
@@ -147,9 +125,9 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
 
       {/* 2. Scenario Presets */}
       <div className={styles.scenarioBar}>
-        <span className={styles.scenarioLabel}>Tình huống mẫu:</span>
+        <span className={styles.scenarioLabel}>{d.scenarios}</span>
         <div className={styles.scenarioBtnList}>
-          {PRESET_SCENARIOS.map((sc) => (
+          {presetScenarios.map((sc) => (
             <button
               key={sc.id}
               type="button"
@@ -167,7 +145,7 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
         <div className={styles.dsInputGrid}>
           <div className={styles.dsField}>
             <label htmlFor="disp-id" className={styles.dsLabel}>
-              Mã khiếu nại (Ticket ID)
+              {d.ticketId}
             </label>
             <input
               id="disp-id"
@@ -175,14 +153,14 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
               className={`${styles.dsTextInput} num`}
               value={disputeId}
               onChange={(e) => setDisputeId(e.target.value)}
-              placeholder="VD: DSP-9821"
+              placeholder={d.ticketPlaceholder}
               required
             />
           </div>
 
           <div className={styles.dsField}>
             <label htmlFor="disp-amount" className={styles.dsLabel}>
-              Số tiền đòi hoàn (VNĐ)
+              {d.amount}
             </label>
             <input
               id="disp-amount"
@@ -198,7 +176,7 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
 
         <div className={styles.dsField}>
           <label htmlFor="disp-reason" className={styles.dsLabel}>
-            Lý do khiếu nại của khách
+            {d.reason}
           </label>
           <input
             id="disp-reason"
@@ -206,7 +184,7 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
             className={styles.dsTextInput}
             value={claimReason}
             onChange={(e) => setClaimReason(e.target.value)}
-            placeholder="Mô tả sự cố hoặc lý do yêu cầu bồi hoàn"
+            placeholder={d.reasonPlaceholder}
             required
           />
         </div>
@@ -218,7 +196,7 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
               checked={hasCheckinSnapshot}
               onChange={(e) => setHasCheckinSnapshot(e.target.checked)}
             />
-            <span>Ảnh camera check-in</span>
+            <span>{d.checkinPhoto}</span>
           </label>
 
           <label className={styles.dsCheckboxLabel}>
@@ -227,7 +205,7 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
               checked={hasCheckoutSnapshot}
               onChange={(e) => setHasCheckoutSnapshot(e.target.checked)}
             />
-            <span>Ảnh camera check-out</span>
+            <span>{d.checkoutPhoto}</span>
           </label>
         </div>
 
@@ -240,7 +218,7 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
             className={styles.dsRunBtn}
           >
             <Play size={13} className={isRunning ? styles.spin : ''} />
-            <span>{isRunning ? 'Đang duyệt StateGraph...' : 'Chạy Mô Phỏng LangGraph'}</span>
+            <span>{isRunning ? d.running : d.run}</span>
           </Button>
 
           {steps && (
@@ -248,8 +226,8 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
               type="button"
               className={styles.dsResetBtn}
               onClick={() => setSteps(null)}
-              title="Đặt lại"
-              aria-label="Đặt lại mô phỏng"
+              title={d.reset}
+              aria-label={d.resetAria}
             >
               <RotateCcw size={13} />
             </button>
@@ -323,7 +301,7 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
                         onClick={() => setExpandedJsonIdx(isJsonExpanded ? null : idx)}
                       >
                         <Code2 size={12} />
-                        <span>{isJsonExpanded ? 'Ẩn State JSON' : 'Xem State JSON'}</span>
+                        <span>{isJsonExpanded ? d.hideJson : d.showJson}</span>
                       </button>
 
                       {isJsonExpanded && (
@@ -331,10 +309,10 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
                           type="button"
                           className={styles.copyJsonBtn}
                           onClick={() => handleCopyStepJson(idx, st.data)}
-                          title="Sao chép dữ liệu node này"
+                          title={d.copyNodeTitle}
                         >
                           {isCopied ? <Check size={11} className={styles.successColor} /> : <Copy size={11} />}
-                          <span>{isCopied ? 'Đã chép' : 'Chép JSON'}</span>
+                          <span>{isCopied ? d.copied : d.copyJson}</span>
                         </button>
                       )}
                     </div>
@@ -354,12 +332,11 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
           <div className={styles.safetyNoticeBox}>
             <div className={styles.safetyNoticeHeader}>
               <ShieldAlert size={14} className={styles.warningColor} />
-              <span className={styles.safetyNoticeTitle}>Nguyên tắc Bounded Autonomy (ADR-0008)</span>
+              <span className={styles.safetyNoticeTitle}>{d.safetyTitle}</span>
             </div>
             <p className={styles.safetyNoticeText}>
-              Trợ lý AI Copilot chỉ sinh phương án đề xuất bồi hoàn dựa trên Điều 5. Quyết định xuất tiền hoàn tất
-              bắt buộc phải qua <strong>Giám sát bãi xe ký duyệt (Sign-off)</strong>, ngăn chặn hành vi bòn rút hoặc
-              bịa đặt tiền hoàn tự động.
+              {d.safetyText} <strong>{d.safetySignoff}</strong>
+              {d.safetyTail}
             </p>
           </div>
 
@@ -374,7 +351,7 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
                 className={styles.sendToChatBtn}
               >
                 <MessageSquare size={13} />
-                <span>Hỏi Copilot về kết quả phân xử này</span>
+                <span>{d.askCopilot}</span>
               </Button>
             </div>
           )}
@@ -386,7 +363,7 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
         <div className={styles.emptySimulatorState}>
           <HelpCircle size={22} className={styles.emptyIcon} />
           <p className={styles.emptyText}>
-            Nhấn <strong>Chạy Mô Phỏng LangGraph</strong> để gọi workflow phân xử trên server và xem các node nó đi qua.
+            {d.emptyBefore} <strong>{d.run}</strong> {d.emptyAfter}
           </p>
         </div>
       )}
