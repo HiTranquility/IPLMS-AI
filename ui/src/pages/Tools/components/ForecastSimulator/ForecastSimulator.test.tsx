@@ -27,7 +27,7 @@ describe('ForecastSimulator Component', () => {
 
     const svg = container.querySelector('svg');
     expect(svg).toBeTruthy();
-    expect(screen.getByText('Ridge Feature Baseline')).toBeTruthy();
+    expect(screen.getByText('Kịch bản minh hoạ')).toBeTruthy();
     expect(screen.getByText('0h')).toBeTruthy();
     expect(screen.getByText('12h')).toBeTruthy();
     expect(screen.getByText('23h')).toBeTruthy();
@@ -60,5 +60,13 @@ describe('ForecastSimulator Component', () => {
     fireEvent.change(thresholdInput, { target: { value: '90' } });
 
     expect(screen.getAllByText('90%').length).toBeGreaterThanOrEqual(1);
+  });
+
+  // ai bug-018: không có model doanh thu → "—", không dùng hệ số 2.28 tự đặt; nhãn MÔ PHỎNG luôn hiện.
+  it('gắn nhãn MÔ PHỎNG và không bịa biến động doanh thu', () => {
+    renderWithProviders(<ForecastSimulator />);
+    expect(screen.getByText('MÔ PHỎNG')).toBeTruthy();
+    expect(screen.getByText('chưa có mô hình doanh thu')).toBeTruthy();
+    expect(screen.queryByText(/^\+\d+[.,]\d%$/)).toBeNull();
   });
 });

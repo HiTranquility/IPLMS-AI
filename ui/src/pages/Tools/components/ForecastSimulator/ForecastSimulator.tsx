@@ -7,11 +7,13 @@ import {
   Sliders,
   X,
 } from 'lucide-react';
+import { SimulatedBanner } from '@/components/common/Ui/feedback/SimulatedBanner';
 import { useI18n } from '@/i18n/I18nProvider';
 import { fmtInt } from '@/utils/format';
 import styles from './ForecastSimulator.module.css';
 
-// Baseline hourly occupancy profiles for sample parking lots (0h to 23h)
+// Kịch bản lấp đầy minh hoạ theo giờ (0h–23h), KHÔNG phải dự báo: Forecast server chưa có
+// model (FeatureNotImplemented). UI gắn nhãn MÔ PHỎNG và ghi rõ trên biểu đồ (ai bug-018).
 const LOT_OCCUPANCY_BASELINES: Record<string, number[]> = {
   lot_landmark_81: [
     18, 15, 12, 10, 12, 20, 38, 68, 86, 89, 84, 78,
@@ -75,11 +77,6 @@ export function ForecastSimulator() {
     return Math.round(baseRate * multiplier);
   }, [baseRate, multiplier]);
 
-  const estimatedRevenueDiff = useMemo(() => {
-    if (peakHoursCount === 0) return '+0.0%';
-    const pct = (peakHoursCount / 24) * (multiplier - 1) * 100 * 2.28;
-    return `+${pct.toFixed(1)}%`;
-  }, [peakHoursCount, multiplier]);
 
   // Coordinate mappers
   const getX = (hour: number) => PAD.left + (hour / 23) * (CHART_W - PAD.left - PAD.right);
@@ -123,6 +120,8 @@ export function ForecastSimulator() {
           <span>{t.tools.safetyRuleBadge}</span>
         </div>
       </div>
+
+      <SimulatedBanner />
 
       <div className={styles.mainGrid}>
         {/* Left Column: Simulator Controls */}
@@ -274,10 +273,9 @@ export function ForecastSimulator() {
             <div className={styles.kpiCard}>
               <span className={styles.kpiLabel}>{t.tools.kpiRevenueDiff}</span>
               <div className={styles.kpiValueRow}>
-                <span className={`${styles.kpiValue} ${styles.kpiInfo}`}>
-                  {estimatedRevenueDiff}
-                </span>
-                <span className={styles.kpiUnit}>{t.tools.kpiRevenueSub}</span>
+                {/* Chưa có mô hình doanh thu: không dùng hệ số tự đặt. */}
+                <span className={`${styles.kpiValue} ${styles.kpiInfo}`}>—</span>
+                <span className={styles.kpiUnit}>{t.studio.revenueUnknown}</span>
               </div>
             </div>
           </div>

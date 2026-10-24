@@ -7,56 +7,33 @@ import {
   RefreshCw,
   Type,
 } from 'lucide-react';
+import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
 import { useSystemCheck } from '@/hooks/queries/useToolQueries';
 import { useI18n } from '@/i18n/I18nProvider';
 import styles from './SystemDiagnostics.module.css';
 
-interface EngineDiagnosticsState {
-  yoloPath: string;
-  yoloSizeMb: number;
-  yoloVersion: string;
-  yoloReady: boolean;
-  ocrLangs: string[];
-  ocrCacheDir: string;
-  ocrCached: boolean;
-  torchVersion: string;
-  inferenceDevice: string;
-  cudaAvailable: boolean;
-  gpuName: string;
-  lastChecked: Date;
-}
+const DASH = '—';
 
 export function SystemDiagnostics() {
   const { t } = useI18n();
   const systemQuery = useSystemCheck();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
 
-  // Default / probed diagnostics values aligned with Khoa's HTML & IPLMS config
-  const diagnostics: EngineDiagnosticsState = {
-    yoloPath: 'model/artifacts/bootstrap/anpr/best.pt',
-    yoloSizeMb: 14.2,
-    yoloVersion: 'bootstrap-v1',
-    yoloReady: true,
-    ocrLangs: ['en', 'vi'],
-    ocrCacheDir: 'var/easyocr-cache/',
-    ocrCached: true,
-    torchVersion: '2.6.0',
-    inferenceDevice: systemQuery.data?.vision_device?.toUpperCase() || 'CPU',
-    cudaAvailable: false,
-    gpuName: 'None',
-    lastChecked: lastRefreshed,
-  };
+  // Số liệu thật từ /tools/system (ai bug-018): server không biết chắc thì null → "—", không hằng số.
+  const inferenceDevice = systemQuery.data?.vision_device?.toUpperCase() || DASH;
+  const eng = systemQuery.data?.engines;
+  const loadedBadge = (loaded: boolean | null | undefined) =>
+    loaded == null ? t.simulated.notReported : loaded ? t.studio.engineLoaded : t.studio.engineNotLoaded;
+  const yesNo = (value: boolean | null | undefined) => (value == null ? DASH : value ? t.studio.yes : t.studio.no);
+  const weightsMb =
+    eng?.yolo_weights_bytes != null ? t.studio.megabytes((eng.yolo_weights_bytes / 1024 / 1024).toFixed(1)) : DASH;
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
       await systemQuery.refetch();
     } finally {
-      setTimeout(() => {
-        setIsRefreshing(false);
-        setLastRefreshed(new Date());
-      }, 400);
+      setIsRefreshing(false);
     }
   };
 
@@ -86,6 +63,9 @@ export function SystemDiagnostics() {
         </button>
       </div>
 
+      {systemQuery.error && <ErrorBlock error={systemQuery.error} onRetry={() => void handleRefresh()} />}
+      <p className={styles.desc}>{t.studio.diagnosticsNote}</p>
+
       {/* Engine Status Cards Grid */}
       <div className={styles.cardsGrid}>
         {/* Card 1: YOLO Plate Detector */}
@@ -95,31 +75,21 @@ export function SystemDiagnostics() {
               <Eye size={16} aria-hidden />
               <span>{t.tools.yoloTitle}</span>
             </h3>
-            <span
-              className={`${styles.badge} ${
-                diagnostics.yoloReady ? styles.badgeSuccess : styles.badgeDanger
-              }`}
-            >
-              {diagnostics.yoloReady ? t.tools.statusReady : t.tools.statusMissing}
-            </span>
+            <span className={styles.badge}>{loadedBadge(eng?.yolo_loaded)}</span>
           </div>
 
           <div className={styles.cardMeta}>
             <div className={styles.metaRow}>
               <span className={styles.metaLabel}>{t.tools.yoloWeights}</span>
-              <span className={styles.metaValue} title={diagnostics.yoloPath}>
-                {diagnostics.yoloPath}
-              </span>
+              <span className={styles.metaValue} title={eng?.yolo_weights_path}>{eng?.yolo_weights_path || DASH}</span>
             </div>
             <div className={styles.metaRow}>
               <span className={styles.metaLabel}>{t.tools.yoloSize}</span>
-              <span className={`${styles.metaValue} ${styles.metaHighlight}`}>
-                {diagnostics.yoloSizeMb.toFixed(1)} MB
-              </span>
+              <span className={styles.metaValue}>{weightsMb}</span>
             </div>
             <div className={styles.metaRow}>
               <span className={styles.metaLabel}>{t.tools.yoloVersion}</span>
-              <span className={styles.metaValue}>{diagnostics.yoloVersion}</span>
+              <span className={styles.metaValue}>{eng?.yolo_version || DASH}</span>
             </div>
           </div>
         </article>
@@ -131,31 +101,21 @@ export function SystemDiagnostics() {
               <Type size={16} aria-hidden />
               <span>{t.tools.easyOcrTitle}</span>
             </h3>
-            <span
-              className={`${styles.badge} ${
-                diagnostics.ocrCached ? styles.badgeInfo : styles.badgeWarning
-              }`}
-            >
-              {diagnostics.ocrCached ? t.tools.statusCached : t.tools.statusUncached}
-            </span>
+            <span className={styles.badge}>{loadedBadge(eng?.ocr_loaded)}</span>
           </div>
 
           <div className={styles.cardMeta}>
             <div className={styles.metaRow}>
               <span className={styles.metaLabel}>{t.tools.ocrLangs}</span>
-              <span className={`${styles.metaValue} ${styles.metaHighlight}`}>
-                {JSON.stringify(diagnostics.ocrLangs)}
-              </span>
+              <span className={styles.metaValue}>{eng?.ocr_languages.length ? eng.ocr_languages.join(', ') : DASH}</span>
             </div>
             <div className={styles.metaRow}>
               <span className={styles.metaLabel}>{t.tools.ocrCacheDir}</span>
-              <span className={styles.metaValue} title={diagnostics.ocrCacheDir}>
-                {diagnostics.ocrCacheDir}
-              </span>
+              <span className={styles.metaValue} title={eng?.ocr_cache_dir ?? undefined}>{eng?.ocr_cache_dir || DASH}</span>
             </div>
             <div className={styles.metaRow}>
               <span className={styles.metaLabel}>{t.tools.ocrStatus}</span>
-              <span className={styles.metaValue}>{t.tools.statusReadyOffline}</span>
+              <span className={styles.metaValue}>{loadedBadge(eng?.ocr_loaded)}</span>
             </div>
           </div>
         </article>
@@ -167,37 +127,23 @@ export function SystemDiagnostics() {
               <Cpu size={16} aria-hidden />
               <span>{t.tools.pytorchTitle}</span>
             </h3>
-            <span
-              className={`${styles.badge} ${
-                diagnostics.cudaAvailable ? styles.badgeSuccess : styles.badgeInfo
-              }`}
-            >
-              {diagnostics.cudaAvailable ? t.tools.statusAccelerated : t.tools.statusStandard}
-            </span>
+            <span className={styles.badge}>{eng?.torch_version ? t.studio.engineLoaded : t.simulated.notReported}</span>
           </div>
 
           <div className={styles.cardMeta}>
             <div className={styles.metaRow}>
               <span className={styles.metaLabel}>{t.tools.torchVersion}</span>
-              <span className={styles.metaValue}>{diagnostics.torchVersion}</span>
+              <span className={styles.metaValue}>{eng?.torch_version || DASH}</span>
             </div>
             <div className={styles.metaRow}>
               <span className={styles.metaLabel}>{t.tools.torchDevice}</span>
               <span className={`${styles.metaValue} ${styles.metaHighlight}`}>
-                {diagnostics.inferenceDevice}
+                {inferenceDevice}
               </span>
             </div>
             <div className={styles.metaRow}>
               <span className={styles.metaLabel}>{t.tools.cudaSupport}</span>
-              <span className={styles.metaValue}>
-                {diagnostics.cudaAvailable ? t.tools.cudaTrue : t.tools.cudaFalse}
-              </span>
-            </div>
-            <div className={styles.metaRow}>
-              <span className={styles.metaLabel}>{t.tools.gpuCard}</span>
-              <span className={styles.metaValue}>
-                {diagnostics.gpuName === 'None' ? t.tools.gpuNone : diagnostics.gpuName}
-              </span>
+              <span className={styles.metaValue}>{yesNo(eng?.cuda_available)}</span>
             </div>
           </div>
         </article>
