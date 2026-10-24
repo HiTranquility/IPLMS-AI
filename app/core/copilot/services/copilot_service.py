@@ -9,6 +9,7 @@ from app.core.copilot.dtos.copilot_dto import (
     CopilotAnswer,
     DisputeArbitrationRequest,
     DisputeVerdict,
+    tuning_kwargs,
 )
 from app.core.copilot.engines.rag_pipeline import PROMPT_VERSION, rag_pipeline
 from app.core.copilot.services.usage_service import usage_service
@@ -30,6 +31,7 @@ class CopilotService:
                 request.query,
                 parking_lot_id=request.parking_lot_id,
                 preview=request.preview,
+                **tuning_kwargs(request),
             )
         except Exception as exc:
             usage_service.record_soon(usage_service.build_entry(
@@ -59,6 +61,7 @@ class CopilotService:
                 request.query,
                 parking_lot_id=request.parking_lot_id,
                 preview=getattr(request, "preview", False),
+                **tuning_kwargs(request),
             ):
                 finished = chunk["is_finished"]
                 if finished:

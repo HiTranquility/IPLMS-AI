@@ -13,31 +13,43 @@ const systemData = {
 };
 
 describe('SystemDiagnostics Component', () => {
-  it('renders all three engine inspection cards with correct status and metadata', () => {
-    mockApi((url) => {
-      if (url.endsWith('/tools/system')) return ok(systemData);
-      return undefined;
-    });
-
+  // ai bug-018: server không gửi engines (bản cũ) → mọi ô engine là "—", không hằng số.
+  it('chỉ hiện thiết bị server báo, các ô engine chưa báo là "—", không còn hằng số', async () => {
+    mockApi((url) => (url.endsWith('/tools/system') ? ok(systemData) : undefined));
     renderWithProviders(<SystemDiagnostics />);
 
-    // YOLO Card
     expect(screen.getByText('YOLO Plate Detector')).toBeTruthy();
-    expect(screen.getByText('model/artifacts/bootstrap/anpr/best.pt')).toBeTruthy();
-    expect(screen.getByText('14.2 MB')).toBeTruthy();
-    expect(screen.getByText('READY')).toBeTruthy();
-
-    // EasyOCR Card
     expect(screen.getByText('EasyOCR Character Reader')).toBeTruthy();
-    expect(screen.getByText('["en","vi"]')).toBeTruthy();
-    expect(screen.getByText('var/easyocr-cache/')).toBeTruthy();
-    expect(screen.getByText('CACHED')).toBeTruthy();
+    expect(await screen.findByText('CPU')).toBeTruthy();
+    for (const fake of ['model/artifacts/bootstrap/anpr/best.pt', '14.2 MB', 'READY', 'CACHED', '2.6.0', 'STANDARD', '["en","vi"]']) {
+      expect(screen.queryByText(fake)).toBeNull();
+    }
+    expect(screen.getAllByText('Máy chủ chưa báo').length).toBe(4); // 3 thẻ + trạng thái EasyOCR
+  });
 
-    // PyTorch & Hardware Card
-    expect(screen.getByText(/PyTorch & Phần cứng/i)).toBeTruthy();
-    expect(screen.getByText('2.6.0')).toBeTruthy();
-    expect(screen.getByText('CPU')).toBeTruthy();
-    expect(screen.getByText('STANDARD')).toBeTruthy();
+  it('hiện đúng trạng thái engine server báo (ai bug-018: số liệu thật)', async () => {
+    const engines = {
+      yolo_weights_path: 'model/x/best.pt', yolo_weights_bytes: 3 * 1024 * 1024, yolo_version: 'v9',
+      yolo_loaded: true, ocr_languages: ['en', 'vi'], ocr_cache_dir: null, ocr_loaded: false,
+      onnx_enabled: true, torch_version: '2.14.1', cuda_available: null,
+    };
+    mockApi((url) => (url.endsWith('/tools/system') ? ok({ ...systemData, engines }) : undefined));
+    renderWithProviders(<SystemDiagnostics />);
+
+    expect(await screen.findByText('model/x/best.pt')).toBeTruthy();
+    expect(screen.getByText(/^3[.,]0 MB$/)).toBeTruthy();
+    expect(screen.getByText('v9')).toBeTruthy();
+    expect(screen.getByText('en, vi')).toBeTruthy();
+    expect(screen.getByText('2.14.1')).toBeTruthy();
+    expect(screen.getAllByText('Chưa nạp').length).toBeGreaterThan(0); // EasyOCR
+    expect(screen.queryByText('Có')).toBeNull(); // CUDA không rõ → "—", không đoán
+  });
+
+  it('API lỗi thì báo lỗi và thiết bị là "—"', async () => {
+    mockApi(() => ({ status: 500, body: { success: false, message: 'Hỏng', data: [], code: 'ERR' } }));
+    renderWithProviders(<SystemDiagnostics />);
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.queryByText('CPU')).toBeNull();
   });
 
   it('renders 4 architectural conventions conforming to ADRs', () => {

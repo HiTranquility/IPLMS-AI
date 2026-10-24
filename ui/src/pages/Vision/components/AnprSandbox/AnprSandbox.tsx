@@ -18,7 +18,10 @@ import {
   UploadCloud,
 } from 'lucide-react';
 import { Badge, type BadgeTone } from '@/components/common/Ui/data-display/Badge';
+import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
 import { Spinner } from '@/components/common/Ui/feedback/Spinner';
+import { useI18n } from '@/i18n/I18nProvider';
+import { recognizePlate, verifyMatch } from '@/services/apiEndpoints/studio.endpoint';
 import type {
   AnprResult,
   AntiFraudVerification,
@@ -107,21 +110,12 @@ function getVehicleTypeBadge(type: string): { label: string; tone: BadgeTone } {
   }
 }
 
-function inferVehicleType(plate: string): VehicleType {
-  const clean = plate.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-  if (/^\d{2}[A-Z][0-9A-Z]\d{4,5}$/.test(clean)) {
-    return 'motorbike';
-  }
-  if (/^\d{2}[CH]\d{4,5}$/.test(clean)) {
-    return 'truck';
-  }
-  if (/^\d{2}[A-Z]\d{4,5}$/.test(clean)) {
-    return 'car_sedan';
-  }
-  return 'car_sedan';
-}
+/** Số từ server; thiếu thì "—", không điền số mặc định (ai bug-018). */
+const pct = (value: number | null | undefined) =>
+  typeof value === 'number' ? `${(value * 100).toFixed(1)}%` : '—';
 
 export function AnprSandbox() {
+  const { t } = useI18n();
   const [currentBlob, setCurrentBlob] = useState<Blob | null>(null);
   const [originalImgUrl, setOriginalImgUrl] = useState<string>('');
   const [cropImgUrl, setCropImgUrl] = useState<string>('');
@@ -130,12 +124,14 @@ export function AnprSandbox() {
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
   const [isRecognizing, setIsRecognizing] = useState<boolean>(false);
   const [recognitionResult, setRecognitionResult] = useState<AnprResult | null>(null);
+  const [recognitionError, setRecognitionError] = useState<unknown>(null);
 
   // Anti-fraud state
   const [fraudInType, setFraudInType] = useState<VehicleType>('car_sedan');
   const [fraudOutType, setFraudOutType] = useState<VehicleType>('motorbike');
   const [isVerifyingMatch, setIsVerifyingMatch] = useState<boolean>(false);
   const [fraudResult, setFraudResult] = useState<AntiFraudVerification | null>(null);
+  const [fraudError, setFraudError] = useState<unknown>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -301,11 +297,13 @@ export function AnprSandbox() {
     }
   };
 
-  // Execute ANPR Recognition
+  // Nhận diện: chỉ hiện kết quả server trả; lỗi/404 thì báo lỗi, không dựng biển số từ preset.
   const handleRunAnpr = async () => {
     if (!currentBlob) return;
 
     setIsRecognizing(true);
+    setRecognitionResult(null);
+    setRecognitionError(null);
     const startTime = performance.now();
 
     try {
@@ -314,137 +312,47 @@ export function AnprSandbox() {
       if (selectedLane) {
         formData.append('lane_id', selectedLane);
       }
-
-      // First attempt real API endpoint
-      const response = await fetch('/api/anpr/recognize', {
-        method: 'POST',
-        headers: {
-          'X-Console-Request': '1',
-        },
-        body: formData,
-      });
-
-      const latencyMs = Math.round(performance.now() - startTime);
-
-      if (response.ok) {
-        const json = await response.json();
-        if (json.success && json.data && json.data.length > 0) {
-          const item = json.data[0];
-          const detectedPlate = item.plate_number || '51A-888.88';
-          const vehicleType = item.vehicle_type || inferVehicleType(detectedPlate);
-          const plateColor = (item.plate_color?.toLowerCase() || 'white') as PlateColor;
-
-          setRecognitionResult({
-            plateNumber: detectedPlate,
-            confidence: item.confidence ?? 0.985,
-            plateColor,
-            vehicleType,
-            cropPlateImageUrl: item.crop_plate_image_url || cropImgUrl,
-            originalImageUrl: originalImgUrl,
-            eventId: item.event_id || `evt-${Date.now().toString(36)}`,
-            timestamp: item.timestamp || new Date().toISOString(),
-            latencyMs,
-          });
-          return;
-        }
-      }
-
-      // Fallback deterministic simulation when backend service is offline
-      const matchedPreset = SAMPLE_PRESETS.find((p) => p.id === activePresetId);
-      const simulatedPlate = matchedPreset ? matchedPreset.plateNumber : '51A-888.88';
-      const simulatedVehicleType = matchedPreset ? matchedPreset.vehicleType : inferVehicleType(simulatedPlate);
-      const simulatedColor = matchedPreset ? matchedPreset.plateColor : 'white';
-
+      const item = (await recognizePlate(formData)) as Record<string, unknown>;
+      const plate = (item.plate_number ?? item.plate_text ?? item.plate) as string | undefined;
       setRecognitionResult({
-        plateNumber: simulatedPlate,
-        confidence: 0.985,
-        plateColor: simulatedColor,
-        vehicleType: simulatedVehicleType,
-        cropPlateImageUrl: cropImgUrl,
+        plateNumber: plate || '—',
+        confidence: typeof item.confidence === 'number' ? item.confidence : undefined,
+        plateColor: typeof item.plate_color === 'string' ? (item.plate_color.toLowerCase() as PlateColor) : undefined,
+        vehicleType: typeof item.vehicle_type === 'string' ? item.vehicle_type : 'unknown',
+        cropPlateImageUrl: (item.crop_plate_image_url as string | undefined) || cropImgUrl,
         originalImageUrl: originalImgUrl,
-        eventId: `evt-${Date.now().toString(36)}`,
-        timestamp: new Date().toISOString(),
-        latencyMs,
+        eventId: item.event_id as string | undefined,
+        timestamp: item.timestamp as string | undefined,
+        latencyMs: Math.round(performance.now() - startTime),
       });
-    } catch {
-      // Offline fallback handling
-      const latencyMs = Math.round(performance.now() - startTime);
-      const matchedPreset = SAMPLE_PRESETS.find((p) => p.id === activePresetId);
-      const fallbackPlate = matchedPreset ? matchedPreset.plateNumber : '51A-888.88';
-      const fallbackVehicle = matchedPreset ? matchedPreset.vehicleType : inferVehicleType(fallbackPlate);
-      const fallbackColor = matchedPreset ? matchedPreset.plateColor : 'white';
-
-      setRecognitionResult({
-        plateNumber: fallbackPlate,
-        confidence: 0.978,
-        plateColor: fallbackColor,
-        vehicleType: fallbackVehicle,
-        cropPlateImageUrl: cropImgUrl,
-        originalImageUrl: originalImgUrl,
-        eventId: `evt-local-${Date.now().toString(36)}`,
-        timestamp: new Date().toISOString(),
-        latencyMs,
-      });
+    } catch (err) {
+      setRecognitionError(err);
     } finally {
       setIsRecognizing(false);
     }
   };
 
-  // Anti-fraud vehicle matching
+  // Đối chiếu chống tráo xe: chỉ hiện kết luận server trả; không tự so hai ô chọn rồi gán độ tương đồng.
   const handleVerifyAntiFraud = async () => {
     setIsVerifyingMatch(true);
+    setFraudResult(null);
+    setFraudError(null);
 
     try {
-      const response = await fetch('/api/vision/verify-match', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Console-Request': '1',
-        },
-        body: JSON.stringify({
-          expected_vehicle_type: fraudInType,
-          current_vehicle_type: fraudOutType,
-          checkin_crop_url: cropImgUrl,
-          checkout_crop_url: cropImgUrl,
-        }),
+      const res = await verifyMatch({
+        expected_vehicle_type: fraudInType,
+        current_vehicle_type: fraudOutType,
       });
-
-      if (response.ok) {
-        const json = await response.json();
-        if (json.success && json.data && json.data.length > 0) {
-          const res = json.data[0];
-          setFraudResult({
-            isMatched: res.is_matched,
-            similarityScore: res.similarity_score ?? (res.is_matched ? 0.982 : 0.12),
-            mismatchReason: res.mismatch_reason || (res.is_matched ? 'MATCHED' : 'TYPE_MISMATCH'),
-            expectedType: fraudInType,
-            currentType: fraudOutType,
-            verifiedAt: new Date().toISOString(),
-          });
-          return;
-        }
-      }
-
-      // Deterministic fallback matching logic
-      const isMatched = fraudInType === fraudOutType;
       setFraudResult({
-        isMatched,
-        similarityScore: isMatched ? 0.985 : 0.124,
-        mismatchReason: isMatched ? 'MATCHED' : `MISMATCH_${fraudInType.toUpperCase()}_VS_${fraudOutType.toUpperCase()}`,
+        isMatched: res.is_matched,
+        similarityScore: typeof res.similarity_score === 'number' ? res.similarity_score : undefined,
+        mismatchReason: res.mismatch_reason || '—',
         expectedType: fraudInType,
         currentType: fraudOutType,
         verifiedAt: new Date().toISOString(),
       });
-    } catch {
-      const isMatched = fraudInType === fraudOutType;
-      setFraudResult({
-        isMatched,
-        similarityScore: isMatched ? 0.985 : 0.124,
-        mismatchReason: isMatched ? 'MATCHED' : `MISMATCH_${fraudInType.toUpperCase()}_VS_${fraudOutType.toUpperCase()}`,
-        expectedType: fraudInType,
-        currentType: fraudOutType,
-        verifiedAt: new Date().toISOString(),
-      });
+    } catch (err) {
+      setFraudError(err);
     } finally {
       setIsVerifyingMatch(false);
     }
@@ -553,7 +461,7 @@ export function AnprSandbox() {
                 <span className={styles.paramLabel}>Trạng thái phân loại xe</span>
                 <div className={styles.paramBadgeStatus}>
                   <span className={styles.statusIndicatorDot} />
-                  <span>CNN NetV2 Active</span>
+                  <span>{t.simulated.notReported}</span>
                 </div>
               </div>
             </div>
@@ -601,6 +509,8 @@ export function AnprSandbox() {
               </span>
             </div>
 
+            {recognitionError !== null && <ErrorBlock error={recognitionError} />}
+
             {!recognitionResult && !originalImgUrl ? (
               <div className={styles.emptyState}>
                 <Scan size={44} className={styles.emptyIcon} />
@@ -625,14 +535,18 @@ export function AnprSandbox() {
                       <div className={styles.metaItem}>
                         <span>Độ tin cậy:</span>
                         <span className={styles.metaValueStrong}>
-                          {(recognitionResult.confidence * 100).toFixed(1)}%
+                          {pct(recognitionResult.confidence)}
                         </span>
                       </div>
                       <div className={styles.metaItem}>
                         <span>Màu biển:</span>
-                        <Badge tone={getPlateColorBadge(recognitionResult.plateColor).tone}>
-                          {getPlateColorBadge(recognitionResult.plateColor).label}
-                        </Badge>
+                        {recognitionResult.plateColor ? (
+                          <Badge tone={getPlateColorBadge(recognitionResult.plateColor).tone}>
+                            {getPlateColorBadge(recognitionResult.plateColor).label}
+                          </Badge>
+                        ) : (
+                          <span>—</span>
+                        )}
                       </div>
                       <div className={styles.metaItem}>
                         <span>Phân loại:</span>
@@ -677,8 +591,8 @@ export function AnprSandbox() {
 
                 {recognitionResult && (
                   <div className={styles.metaFooter}>
-                    <span>Sự kiện: {recognitionResult.eventId}</span>
-                    <span>Thời gian: {recognitionResult.timestamp}</span>
+                    <span>Sự kiện: {recognitionResult.eventId ?? '—'}</span>
+                    <span>Thời gian: {recognitionResult.timestamp ?? '—'}</span>
                   </div>
                 )}
               </div>
@@ -789,6 +703,8 @@ export function AnprSandbox() {
           )}
         </button>
 
+        {fraudError !== null && <ErrorBlock error={fraudError} />}
+
         {/* Verification Result Box */}
         {fraudResult && (
           <div
@@ -829,7 +745,7 @@ export function AnprSandbox() {
             )}
 
             <div className={styles.fraudMetricsRow}>
-              <span>Độ tương đồng: {(fraudResult.similarityScore * 100).toFixed(1)}%</span>
+              <span>Độ tương đồng: {pct(fraudResult.similarityScore)}</span>
               <span>Barie: {fraudResult.isMatched ? 'MỞ CHO QUA' : 'KHÓA CHẶT (LOCKDOWN)'}</span>
               <span>Thời điểm kiểm tra: {fraudResult.verifiedAt}</span>
             </div>

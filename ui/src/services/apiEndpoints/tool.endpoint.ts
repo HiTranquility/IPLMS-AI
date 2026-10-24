@@ -4,6 +4,8 @@ import type { CopilotAnswer, IngestResult, SystemCheck } from '@/types/tool';
 export const TOOL_ENDPOINTS = {
   SYSTEM_CHECK: '/tools/system',
   TRY_COPILOT: '/tools/copilot',
+  // SSE: apiClient không đọc stream nên ChatStudio gọi fetch với API_BASE + đường này.
+  TRY_COPILOT_STREAM: '/tools/copilot/stream',
   INGEST_KNOWLEDGE: '/tools/knowledge',
 } as const;
 

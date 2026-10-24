@@ -1,4 +1,9 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { useSystemCheck } from '@/hooks/queries/useToolQueries';
+import { useI18n } from '@/i18n/I18nProvider';
+import { API_BASE, ApiError } from '@/services/apiClient';
+import { TOOL_ENDPOINTS } from '@/services/apiEndpoints/tool.endpoint';
+import { buildAskBody } from './askContract';
 import { ChatInput } from './ChatInput';
 import { ChatSidebar } from './ChatSidebar';
 import { ChatStream } from './ChatStream';
@@ -7,7 +12,6 @@ import { InspectorDrawer } from './InspectorDrawer';
 import type {
   ChatMessage,
   InspectorTab,
-  ModelProfilePreset,
   PlaygroundParams,
   PromptPreset,
   RagSource,
@@ -43,6 +47,10 @@ const DEFAULT_PRESETS: PromptPreset[] = [
 ];
 
 export function ChatStudio() {
+  const { t } = useI18n();
+  // Tên model lấy từ /tools/system; chưa có thì "—", không tự đặt tên (ai bug-018).
+  const systemQuery = useSystemCheck();
+  const activeModelName = systemQuery.data?.llm_model || '—';
 
   // State
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -51,7 +59,6 @@ export function ChatStudio() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>('citations');
-  const [activeModelName, setActiveModelName] = useState('Copilot RAG v2.4 (Ollama / Local)');
   const [selectedCitation, setSelectedCitation] = useState<RagSource | null>(null);
 
   const [params, setParams] = useState<PlaygroundParams>({
@@ -125,9 +132,6 @@ export function ChatStudio() {
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
-    const apiBase = window.location.pathname.startsWith('/console') ? '/console/api' : '/api';
-    const streamUrl = `${apiBase}/tools/copilot/stream`;
-
     const startTime = performance.now();
     let accumulatedContent = '';
     let ragSourcesExtracted: RagSource[] = [];
@@ -136,26 +140,29 @@ export function ChatStudio() {
     let inputTokens = 0;
     let outputTokens = 0;
     let speedTokPerSec = 0;
+    let refused = false;
+    let guardrailTriggered: string | undefined;
+    let confidence: number | undefined;
+    let turnId = '';
 
     try {
-      const response = await fetch(streamUrl, {
+      const response = await fetch(`${API_BASE}${TOOL_ENDPOINTS.TRY_COPILOT_STREAM}`, {
         method: 'POST',
+        credentials: 'same-origin',
         headers: {
           'Content-Type': 'application/json',
           'X-Console-Request': '1',
         },
-        body: JSON.stringify({
-          query,
-          parking_lot_id: params.parkingLotId,
-          min_similarity: params.minSimilarity,
-          top_k: params.topK,
-          temperature: params.temperature,
-        }),
+        body: JSON.stringify(buildAskBody(query, params)),
         signal: controller.signal,
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        // Lỗi trả về theo envelope console ({message, code}); 422 của FastAPI chỉ có `detail`.
+        const body = (await response.json().catch(() => null)) as { message?: string; code?: string } | null;
+        const message =
+          body?.message ?? (response.status === 422 ? t.errors.invalidData : t.errors.http(response.status));
+        throw new ApiError(response.status, body?.code ?? `HTTP_${response.status}`, message, Boolean(body?.message));
       }
 
       if (!response.body) {
@@ -185,22 +192,15 @@ export function ChatStudio() {
             try {
               const parsed = JSON.parse(dataStr);
 
-              // 1. Token chunk
-              if (parsed.chunk) {
-                accumulatedContent += parsed.chunk;
-              } else if (parsed.content) {
-                accumulatedContent += parsed.content;
+              // Trường SSE theo console_tools_controller.try_copilot_stream.
+              if (typeof parsed.token === 'string') accumulatedContent += parsed.token;
+              if (Array.isArray(parsed.sources) && parsed.sources.length > 0) {
+                ragSourcesExtracted = parsed.sources.map((title: string) => ({ title }));
               }
-
-              // 2. Metadata / Citations
-              if (parsed.citations && Array.isArray(parsed.citations)) {
-                ragSourcesExtracted = parsed.citations.map((c: any) => ({
-                  title: c.title || c.document || 'Tài liệu quy chế',
-                  score: c.score ?? c.similarity,
-                  chunkId: c.chunk_id || c.id,
-                  snippet: c.snippet || c.content,
-                }));
-              }
+              if (parsed.refused) refused = true;
+              if (parsed.guardrail_triggered) guardrailTriggered = parsed.guardrail_triggered;
+              if (typeof parsed.confidence === 'number') confidence = parsed.confidence;
+              if (parsed.turn_id) turnId = parsed.turn_id;
 
               if (parsed.prompt_version) promptVersion = parsed.prompt_version;
               if (parsed.latency_ms) latencyMs = parsed.latency_ms;
@@ -238,23 +238,27 @@ export function ChatStudio() {
           m.id === botMessageId
             ? {
                 ...m,
-                content: accumulatedContent || 'Đã xử lý yêu cầu thành công.',
+                content: accumulatedContent || t.studio.chatEmptyAnswer,
                 isStreaming: false,
-                status: 'SUCCESS',
+                status: refused ? 'REFUSED' : 'SUCCESS',
+                guardrailTriggered,
+                confidence,
+                turnId: turnId || undefined,
                 latencyMs: latencyMs || elapsedTotal,
-                speedTokPerSec: speedTokPerSec || Math.round((accumulatedContent.length / 4 / (elapsedTotal / 1000)) * 10) / 10,
+                // Chỉ số do server đo; không có thì để trống, không ước lượng.
+                speedTokPerSec: speedTokPerSec || undefined,
               }
             : m,
         ),
       );
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
         setMessages((prev) =>
           prev.map((m) =>
             m.id === botMessageId
               ? {
                   ...m,
-                  content: accumulatedContent + '\n\n*(Đã dừng luồng trả lời theo yêu cầu)*',
+                  content: `${accumulatedContent}\n\n*(${t.studio.chatStopped})*`,
                   isStreaming: false,
                 }
               : m,
@@ -266,7 +270,7 @@ export function ChatStudio() {
             m.id === botMessageId
               ? {
                   ...m,
-                  content: `Lỗi kết nối hoặc AI Service không phản hồi: ${err.message || 'Unknown error'}`,
+                  content: t.studio.chatError(err instanceof Error ? err.message : t.errors.network),
                   isStreaming: false,
                   status: 'ERROR',
                 }
@@ -304,10 +308,6 @@ export function ChatStudio() {
   const handleAskAboutDispute = (summary: string) => {
     setInputQuery(summary);
     inputRef.current?.focus();
-  };
-
-  const handleSelectModelProfile = (profile: ModelProfilePreset) => {
-    setActiveModelName(`${profile.name} (${profile.model})`);
   };
 
   const handleFeedback = (messageId: string, feedbackVal: 1 | -1) => {
@@ -424,7 +424,6 @@ export function ChatStudio() {
           selectedCitation={selectedCitation}
           onAskAboutDocument={handleAskAboutDocument}
           onAskAboutDispute={handleAskAboutDispute}
-          onSelectModelProfile={handleSelectModelProfile}
         />
       </div>
     </div>

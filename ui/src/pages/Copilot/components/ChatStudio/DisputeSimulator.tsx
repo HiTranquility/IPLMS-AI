@@ -14,6 +14,10 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/common/Ui/button/Button';
+import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
+import { SimulatedBanner } from '@/components/common/Ui/feedback/SimulatedBanner';
+import { useI18n } from '@/i18n/I18nProvider';
+import { simulateDispute } from '@/services/apiEndpoints/studio.endpoint';
 import { fmtInt } from '@/utils/format';
 import type { DisputeStep } from './types';
 import styles from './ChatStudio.module.css';
@@ -55,6 +59,7 @@ const PRESET_SCENARIOS: ScenarioPreset[] = [
 ];
 
 export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
+  const { t } = useI18n();
   const [disputeId, setDisputeId] = useState('DSP-9821');
   const [claimedAmount, setClaimedAmount] = useState<number>(35000);
   const [claimReason, setClaimReason] = useState(
@@ -64,7 +69,7 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
   const [hasCheckoutSnapshot, setHasCheckoutSnapshot] = useState(true);
 
   const [isRunning, setIsRunning] = useState(false);
-  const [currentRunningStep, setCurrentRunningStep] = useState<number | null>(null);
+  const [runError, setRunError] = useState<unknown>(null);
   const [steps, setSteps] = useState<DisputeStep[] | null>(null);
   const [expandedJsonIdx, setExpandedJsonIdx] = useState<number | null>(null);
   const [copiedStepIdx, setCopiedStepIdx] = useState<number | null>(null);
@@ -82,123 +87,26 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
 
     setIsRunning(true);
     setSteps(null);
-
-    // 5 Node LangGraph Bounded Journey
-    const fiveSteps: DisputeStep[] = [
-      {
-        step: 1,
-        node: 'validate_ticket',
-        status: 'COMPLETED',
-        description: `Kiểm tra tính hợp lệ của mã khiếu nại [${disputeId}] và đối chiếu phiên đỗ xe trên cơ sở dữ liệu hệ thống.`,
-        data: {
-          dispute_id: disputeId,
-          ticket_valid: true,
-          session_id: `SESS-${disputeId.replace(/\D/g, '') || '8812'}`,
-          claimed_amount: claimedAmount,
-          customer_tier: 'STANDARD_MEMBER',
-          ticket_created_at: new Date(Date.now() - 3600000).toISOString(),
-        },
-      },
-      {
-        step: 2,
-        node: 'verify_snapshots',
-        status: 'COMPLETED',
-        description:
-          'Trích xuất đặc trưng thị giác từ camera barrier check-in & check-out; đối chiếu biển số xe ANPR và độ trễ cổng barie.',
-        data: {
-          has_checkin_snapshot: hasCheckinSnapshot,
-          has_checkout_snapshot: hasCheckoutSnapshot,
-          anpr_match: hasCheckinSnapshot && hasCheckoutSnapshot,
-          detected_plate: '51H-892.41',
-          gate_sensor_delay_minutes: 15.2,
-          barrier_event: 'SENSOR_TIMEOUT_DETECTED',
-          evidence_integrity_score: hasCheckinSnapshot && hasCheckoutSnapshot ? 0.98 : 0.45,
-        },
-      },
-      {
-        step: 3,
-        node: 'assess_claim',
-        status: 'COMPLETED',
-        description:
-          'Đối chiếu quy chế Điều 5 (Quy chế xử lý khiếu nại & bồi hoàn phí trễ do sự cố barie) từ kho tri thức pgvector.',
-        data: {
-          applicable_policy: 'Điều 5 - Quy chế xử lý khiếu nại (Quy_che_xu_ly_khieu_nai_dieu_5.pdf)',
-          rule_clause: 'Trường hợp barie kẹt > 10 phút, hệ thống tự động trừ thời gian trễ khỏi phí tính',
-          entitled_refund: claimedAmount,
-          system_fault_confirmed: true,
-          proposed_verdict: 'APPROVE_FULL_REFUND',
-          confidence_score: 0.94,
-        },
-      },
-      {
-        step: 4,
-        node: 'supervisor_approval',
-        status: 'AWAITING_STAFF_SIGN_OFF',
-        description:
-          'Chuyển giao cho Giám sát bãi xe ký duyệt phân xử (ngăn chặn AI tự ý chi trả tiền - ADR-0008 Bounded Autonomy).',
-        data: {
-          requires_human_approval: true,
-          assigned_role: 'PARKING_LOT_SUPERVISOR',
-          supervisor_id: 'SUP-049',
-          auto_refund_permitted: false,
-          gatekeeper_check: 'PASSED',
-          safety_invariant: 'Thà lỗi hơn bịa (ADR-0008)',
-        },
-      },
-      {
-        step: 5,
-        node: 'finalize_dispute',
-        status: 'COMPLETED',
-        description:
-          'Tất toán hồ sơ khiếu nại, tạo mã giao dịch hoàn phí ví IPLMS Wallet và ghi nhật ký kiểm toán bất biến.',
-        data: {
-          final_status: 'RESOLVED_REFUNDED',
-          refunded_amount: claimedAmount,
-          payment_method: 'IPLMS_WALLET',
-          wallet_tx_id: `TX-${disputeId}-REF`,
-          audit_log_hash: 'sha256:7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069',
-          resolved_at: new Date().toISOString(),
-        },
-      },
-    ];
-
-    // Thử gọi backend simulate endpoint
+    setRunError(null);
+    // Chỉ hiện bước server trả về; lỗi hoặc rỗng thì báo, không dựng hành trình mẫu (ai bug-018).
     try {
-      const apiBase = window.location.pathname.startsWith('/console') ? '/console/api' : '/api';
-      const res = await fetch(`${apiBase}/copilot/dispute-workflow/simulate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          dispute_id: disputeId,
-          claimed_amount: claimedAmount,
-          claim_reason: claimReason,
-          has_checkin_snapshot: hasCheckinSnapshot,
-          has_checkout_snapshot: hasCheckoutSnapshot,
-        }),
+      const result = await simulateDispute({
+        dispute_id: disputeId,
+        claimed_amount: claimedAmount,
+        claim_reason: claimReason,
+        has_checkin_snapshot: hasCheckinSnapshot,
+        has_checkout_snapshot: hasCheckoutSnapshot,
       });
-
-      if (res.ok) {
-        const resData = await res.json();
-        if (resData.steps && Array.isArray(resData.steps) && resData.steps.length > 0) {
-          // Backend trả về kết quả, hiển thị mượt mà
-          setSteps(fiveSteps);
-          setIsRunning(false);
-          return;
-        }
+      if (!Array.isArray(result.steps) || result.steps.length === 0) {
+        setRunError(new Error(t.studio.disputeNoSteps));
+      } else {
+        setSteps(result.steps);
       }
-    } catch {
-      // Fallback sang local animated state machine
+    } catch (err) {
+      setRunError(err);
+    } finally {
+      setIsRunning(false);
     }
-
-    // Mô phỏng chuyển động qua 5 node
-    for (let i = 1; i <= 5; i++) {
-      setCurrentRunningStep(i);
-      await new Promise((r) => setTimeout(r, 260));
-    }
-
-    setCurrentRunningStep(null);
-    setSteps(fiveSteps);
-    setIsRunning(false);
   };
 
   const handleCopyStepJson = (idx: number, data: Record<string, any>) => {
@@ -209,9 +117,10 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
 
   const handleSendToChat = () => {
     if (!steps) return;
+    // Không gài sẵn kết luận nào; chỉ chuyển dữ kiện khách khai sang khung chat.
     const summary = `Tôi muốn phân tích hồ sơ khiếu nại ${disputeId} (số tiền: ${fmtInt(
       claimedAmount,
-    )} VNĐ). Lý do: "${claimReason}". Kết quả mô phỏng LangGraph cho thấy cần Giám sát duyệt hoàn tiền theo Điều 5. Vui lòng cho tôi biết căn cứ chi tiết và phương án trả lời khách hàng.`;
+    )} VNĐ). Lý do: "${claimReason}". Vui lòng cho tôi biết căn cứ quy chế và phương án trả lời khách hàng.`;
     onAskAboutDispute?.(summary);
   };
 
@@ -226,13 +135,15 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
           <div>
             <h4 className={styles.dsTitle}>Phân Xử Tranh Chấp (LangGraph)</h4>
             <span className={styles.dsSub}>
-              Hành trình máy trạng thái 5 Node • <code>ADR-0008: Bounded Workflow</code>
+              Workflow phân xử có giới hạn • <code>ADR-0008: Bounded Workflow</code>
             </span>
           </div>
         </div>
 
         <span className={styles.dsBoundedBadge}>Human-in-the-loop</span>
       </div>
+
+      <SimulatedBanner />
 
       {/* 2. Scenario Presets */}
       <div className={styles.scenarioBar}>
@@ -346,24 +257,26 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
         </div>
       </form>
 
-      {/* 4. Active Stepping Indicator while running */}
+      {/* 4. Đang chờ server */}
       {isRunning && (
         <div className={styles.runningProgressBox}>
           <div className={styles.runningNodePill}>
             <Sparkles size={13} className={styles.spin} />
-            <span>Đang chuyển trạng thái qua Node {currentRunningStep} / 5...</span>
+            <span>{t.feedback.loading}</span>
           </div>
         </div>
       )}
 
-      {/* 5. Steps Journey Timeline (5 Nodes) */}
+      {runError !== null && !isRunning && <ErrorBlock error={runError} />}
+
+      {/* 5. Các node server trả về */}
       {steps && (
         <div className={styles.workflowJourney}>
           <div className={styles.journeyHeader}>
             <span className={styles.journeyTitle}>
-              <CheckCircle2 size={14} className={styles.successColor} /> Hành trình chuyển dịch trạng thái (5 Node)
+              <CheckCircle2 size={14} className={styles.successColor} /> {t.studio.disputeJourney(steps.length)}
             </span>
-            <span className={`${styles.journeyNodesBadge} num`}>5/5 Nodes Traversed</span>
+            <span className={`${styles.journeyNodesBadge} num`}>{t.studio.disputeNodes(steps.length)}</span>
           </div>
 
           <div className={styles.nodeTimeline}>
@@ -469,12 +382,11 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
       )}
 
       {/* Empty state when not run yet */}
-      {!steps && !isRunning && (
+      {!steps && !isRunning && runError === null && (
         <div className={styles.emptySimulatorState}>
           <HelpCircle size={22} className={styles.emptyIcon} />
           <p className={styles.emptyText}>
-            Nhấn <strong>Chạy Mô Phỏng LangGraph</strong> để quan sát hành trình chuyển dịch trạng thái qua 5 node
-            theo luồng phân xử thực tế.
+            Nhấn <strong>Chạy Mô Phỏng LangGraph</strong> để gọi workflow phân xử trên server và xem các node nó đi qua.
           </p>
         </div>
       )}

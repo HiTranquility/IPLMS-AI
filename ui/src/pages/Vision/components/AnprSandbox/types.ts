@@ -4,8 +4,8 @@ export type PlateColor = 'white' | 'yellow' | 'blue' | 'red';
 
 export interface AnprResult {
   plateNumber: string;
-  confidence: number;
-  plateColor: PlateColor;
+  confidence?: number;
+  plateColor?: PlateColor;
   vehicleType: string;
   cropPlateImageUrl?: string;
   originalImageUrl?: string;
@@ -16,7 +16,7 @@ export interface AnprResult {
 
 export interface AntiFraudVerification {
   isMatched: boolean;
-  similarityScore: number;
+  similarityScore?: number;
   mismatchReason: string;
   expectedType: string;
   currentType: string;

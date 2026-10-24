@@ -15,6 +15,17 @@ class AskQuestionRequest(BaseModel):
     # Bản xem trước của scope `parking_lot_id` thay vì bản khách thấy (ISSUE-009).
     # Backend chỉ bật cờ này cho người quản lý đúng scope đó.
     preview: bool = False
+    # Tham số thử của Chat Studio trên console (ai bug-017). None = giữ cấu hình mặc định.
+    # Chặn biên ở AskIn của console; ở đây chỉ mang giá trị đi tiếp.
+    top_k: Optional[int] = None
+    min_similarity: Optional[float] = None
+    temperature: Optional[float] = None
+
+
+def tuning_kwargs(request: "AskQuestionRequest") -> dict:
+    """Chỉ những tham số thử đã đặt, để caller cũ và pipeline giả trong test giữ chữ ký."""
+    names = ("top_k", "min_similarity", "temperature")
+    return {name: getattr(request, name) for name in names if getattr(request, name, None) is not None}
 
 
 class CopilotAnswer(BaseModel):
