@@ -1,4 +1,5 @@
 import { Check, Plus } from 'lucide-react';
+import { useI18n } from '@/i18n/I18nProvider';
 import { ROLES } from '@/types/auth';
 import { getRoleMeta } from './RoleBadge';
 import styles from './RoleSelectorGroup.module.css';
@@ -16,6 +17,7 @@ export function RoleSelectorGroup({
   onChange,
   disabled = false,
 }: RoleSelectorGroupProps) {
+  const { t } = useI18n();
   const toggleRole = (r: string) => {
     if (disabled) return;
     if (selectedRoles.includes(r)) {
@@ -26,10 +28,10 @@ export function RoleSelectorGroup({
   };
 
   return (
-    <div className={styles.group} role="group" aria-label="Chọn vai trò">
+    <div className={styles.group} role="group" aria-label={t.members.pickRoles}>
       {roles.map((r) => {
         const isSelected = selectedRoles.includes(r);
-        const meta = getRoleMeta(r);
+        const meta = getRoleMeta(r, t.members.roleNames);
 
         return (
           <button
@@ -44,7 +46,7 @@ export function RoleSelectorGroup({
               {isSelected ? <Check size={13} aria-hidden /> : <Plus size={13} aria-hidden />}
             </span>
             <span className={styles.labelName}>{meta.cleanName}</span>
-            <span className={styles.labelDesc}>({meta.labelVi})</span>
+            <span className={styles.labelDesc}>({meta.label})</span>
           </button>
         );
       })}

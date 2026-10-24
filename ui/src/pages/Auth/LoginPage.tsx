@@ -61,10 +61,6 @@ export function LoginPage() {
                 <ShieldCheck size={16} className={styles.logoIcon} aria-hidden />
                 <span className={styles.scope}>{t.login.scope}</span>
               </div>
-              <div className={styles.statusPill} title="Production AI Auth Gateway — Active">
-                <span className={styles.statusDot} />
-                <span className={styles.statusText}>Gateway Online</span>
-              </div>
             </div>
 
             <div className={styles.controls}>
@@ -103,14 +99,14 @@ export function LoginPage() {
             </a>
             <div className={styles.securityHint}>
               <LockKeyhole size={13} className={styles.hintIcon} aria-hidden />
-              <span>Xác thực an toàn qua OAuth 2.0 PKCE · Phiên làm việc RBAC 7 vai trò</span>
+              <span>{t.login.securityHint}</span>
             </div>
           </div>
 
           {/* Divider */}
           <div className={styles.divider} role="separator">
             <span className={styles.dividerLine} />
-            <span className={styles.dividerText}>HOẶC TÀI KHOẢN KHẨN CẤP</span>
+            <span className={styles.dividerText}>{t.login.orEmergency}</span>
             <span className={styles.dividerLine} />
           </div>
 
@@ -150,10 +146,10 @@ export function LoginPage() {
           {/* Footer Security Watermark */}
           <footer className={styles.footer}>
             <p className={styles.footerMain}>
-              Hệ thống nội bộ IPLMS AI Platform
+              {t.login.footerMain}
             </p>
             <p className={styles.footerSub}>
-              Bảo vệ bởi cơ chế Bốn Mắt (Four-Eyes) & Nhật ký kiểm toán bất biến
+              {t.login.footerSub}
             </p>
           </footer>
         </section>

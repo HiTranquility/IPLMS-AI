@@ -146,28 +146,28 @@ export function AuditPage() {
           label={t.audit.statsTotalEvents}
           value={stats.total}
           tone="primary"
-          subtext="Bản ghi bất biến trong DB"
+          subtext={t.audit.statsTotalSub}
         />
         <MemberStatCard
           icon={<UserCheck size={22} />}
           label={t.audit.statsRbacEvents}
           value={stats.rbac}
           tone="success"
-          subtext="Gán/thu hồi quyền & mời"
+          subtext={t.audit.statsRbacSub}
         />
         <MemberStatCard
           icon={<Lock size={22} />}
           label={t.audit.statsMlEvents}
           value={stats.ml}
           tone="warning"
-          subtext="Model, Golden & Chính sách"
+          subtext={t.audit.statsMlSub}
         />
         <MemberStatCard
           icon={<ShieldCheck size={22} />}
           label={t.audit.statsLatestEvent}
           value={stats.latest}
           tone="accent"
-          subtext="Ghi nhận gần nhất"
+          subtext={t.audit.statsLatestSub}
         />
       </div>
 
@@ -190,7 +190,7 @@ export function AuditPage() {
             className={styles.filterSelect}
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value as any)}
-            aria-label="Lọc danh mục kiểm toán"
+            aria-label={t.audit.filterCategoryLabel}
           >
             <option value="all">{t.audit.filterCategoryAll}</option>
             <option value="rbac">{t.audit.filterCategoryRbac}</option>
@@ -211,7 +211,7 @@ export function AuditPage() {
           </div>
 
           <span className={styles.tableCount}>
-            Hiển thị {filteredEntries.length} / {rawList.length} bản ghi
+            {t.audit.showing(filteredEntries.length, rawList.length)}
           </span>
         </div>
 
