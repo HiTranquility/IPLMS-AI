@@ -80,7 +80,7 @@ Kế hoạch mới nhất theo IPLMS REQ-006 F10 / ISSUE-125 review-4: 16 việc
 
 | Việc | Hồ sơ | Người nhận | Hạn | Tới đâu |
 |---|---|---|---|---|
-| Việc vặt tháng 10 — luật ý tưởng giữa chừng + techlead duyệt (IPLMS ADR-0056) | [CHORE-001](chores/10-2026/CHORE-001-monthly-maintenance/issue.md) | @HiTranquility | 2026-10-31 | 🚧 PR chore tháng mở |
+| Việc vặt tháng 10 — luật ý tưởng giữa chừng + techlead duyệt (IPLMS ADR-0059) | [CHORE-001](chores/10-2026/CHORE-001-monthly-maintenance/issue.md) | @HiTranquility | 2026-10-31 | 🚧 PR chore tháng mở |
 | Chặn nạp mẫu demo Vision Lab ở production, sửa nạp lại lỗi 500 / nhãn kẹt bốn mắt | [bug-013](bugs/bug-013-vision-demo-seed-khong-chan-production/bug.md) | @HiTranquility | 2026-10-31 | 🚧 Đã sửa, chờ audit vòng 2 + PR vào develop |
 | Định tuyến Root URL và Nâng cấp Copilot Chat Studio 3-Panel | [ISSUE-003](issues/10-2026/ISSUE-003-console-root-routing-copilot-studio/issue.md) | AI Team | 2026-10-31 | 🚧 Đang hoàn thiện UX & sub-components |
 | Làm nốt 1.3 `materialize_dataset` (tải theo manifest + sha256) | IPLMS ISSUE-013 | Khoa | 2026-10-16 | Đang viết CLI & loader từ private storage |
