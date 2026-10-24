@@ -15,6 +15,7 @@
 |---|---|---|---|
 | 1 | Luật "ý tưởng giữa chừng": dòng trong `AGENTS.md` + ô **Techlead duyệt** / **Làm trước khi duyệt?** trong mẫu SUGGESTION | IPLMS ADR-0059, IPLMS REQ-017 | (commit đầu nhánh) |
 | 2 | Đổi số trích dẫn: IPLMS ADR-0056/REQ-014 → ADR-0059/REQ-017 (gốc trùng số với develop) | IPLMS bug-054 | (commit này) |
+| 3 | BOARD: chuyển bug-015…026 và SUGGESTION-003 (đã merge #50–#55) từ 🙋 xuống ✅, theo `check_drift.py` của gốc | ai ISSUE-004 review-2 | (commit nhánh `chore/CHORE-001-2026-10-board-sweep`) |
 
 ## Tiêu chí chấp nhận
 
