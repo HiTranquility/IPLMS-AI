@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/common/Ui/button/Button';
 import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
-import { SimulatedBanner } from '@/components/common/Ui/feedback/SimulatedBanner';
 import { useI18n } from '@/i18n/I18nProvider';
 import { getKnowledgeSeeds } from '@/services/apiEndpoints/studio.endpoint';
 import { ingestDraft } from '@/services/apiEndpoints/tool.endpoint';
@@ -80,7 +79,7 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
     const matchesQuery =
       !query ||
       doc.title.toLowerCase().includes(query) ||
-      doc.content.toLowerCase().includes(query) ||
+      (doc.content ?? '').toLowerCase().includes(query) ||
       doc.source.toLowerCase().includes(query);
     return matchesCategory && matchesQuery;
   });
@@ -91,7 +90,7 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
   };
 
   const handleCopyCitation = (doc: SeedDocument) => {
-    const text = `${k.citationText(doc.title, doc.source)}\n${doc.content}`;
+    const text = `${k.citationText(doc.title, doc.source)}\n${doc.content ?? ''}`;
     navigator.clipboard?.writeText(text);
     setCopiedId(doc.id || doc.title);
     setTimeout(() => setCopiedId(null), 2000);
@@ -177,7 +176,6 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
         </div>
       </div>
 
-      <SimulatedBanner detail={t.studio.knowledgeListNote} />
       {loadError !== null && <ErrorBlock error={loadError} onRetry={loadDocuments} />}
 
       {/* 2. Ingestion Card (Collapsible) */}
@@ -345,7 +343,15 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
                 </div>
 
                 <div className={`${styles.docContent} ${!isExpanded ? styles.docContentClamped : ''}`}>
-                  <p>{doc.content}</p>
+                  <p>
+                    {doc.content ||
+                      t.studio.knowledgeDocMeta(
+                        doc.chunk_count ?? 0,
+                        doc.latest_version_no ?? 0,
+                        doc.latest_status ?? '',
+                        doc.published_version_no ?? 0,
+                      )}
+                  </p>
                 </div>
 
                 <footer className={styles.docCardFooter}>

@@ -30,12 +30,11 @@ describe('AnprSandbox Component', () => {
     });
   });
 
-  // ai bug-018: console chưa có route ANPR/verify-match → báo lỗi, không bịa biển số hay độ tin cậy.
+  // ai bug-018: route thật /tools/anpr/recognize, /tools/vision/verify-match; lỗi thì báo lỗi, không bịa.
   it('Run ANPR: API 404 thì báo lỗi, không hiện biển của preset hay confidence 98.5%', async () => {
     mockApi(() => undefined);
     const user = userEvent.setup();
     renderWithProviders(<AnprSandbox />);
-    expect(screen.getByText('MÔ PHỎNG')).toBeTruthy();
 
     await user.click(screen.getByText('Mẫu Ô Tô (51A-888.88)'));
     await user.click(screen.getByRole('button', { name: /Thực Hiện Nhận Diện/ }));
@@ -47,14 +46,14 @@ describe('AnprSandbox Component', () => {
   });
 
   it('Run ANPR: hiện đúng kết quả server, trường thiếu thì "—"', async () => {
-    const calls = mockApi((url) => (url.endsWith('/anpr/recognize') ? ok({ plate_number: '30K-111.22' }) : undefined));
+    const calls = mockApi((url) => (url.endsWith('/tools/anpr/recognize') ? ok({ plate_number: '30K-111.22' }) : undefined));
     const user = userEvent.setup();
     renderWithProviders(<AnprSandbox />);
     await user.click(screen.getByText('Mẫu Ô Tô (51A-888.88)'));
     await user.click(screen.getByRole('button', { name: /Thực Hiện Nhận Diện/ }));
 
     await waitFor(() => expect(screen.getByText('30K-111.22')).toBeTruthy());
-    expect(calls.some((c) => c.url === '/console/api/anpr/recognize')).toBe(true);
+    expect(calls.some((c) => c.url === '/console/api/tools/anpr/recognize')).toBe(true);
     expect(screen.getByText('Độ tin cậy:').nextElementSibling?.textContent).toBe('—');
   });
 
@@ -71,7 +70,7 @@ describe('AnprSandbox Component', () => {
 
   it('Đối chiếu loại xe: hiện kết luận server trả', async () => {
     mockApi((url) =>
-      url.endsWith('/vision/verify-match')
+      url.endsWith('/tools/vision/verify-match')
         ? ok({ is_matched: false, similarity_score: 0.31, mismatch_reason: 'TYPE_MISMATCH' })
         : undefined,
     );
@@ -81,5 +80,21 @@ describe('AnprSandbox Component', () => {
 
     await waitFor(() => expect(screen.getByText(/CẢNH BÁO GIAN LẬN: LỆCH LOẠI PHƯƠNG TIỆN \(TYPE_MISMATCH\)/)).toBeTruthy());
     expect(screen.getByText(/Độ tương đồng: 31[.,]0%/)).toBeTruthy();
+  });
+
+  it('Đối chiếu loại xe: chỉ gửi hai loại xe, server chưa so ảnh thì độ tương đồng là "—"', async () => {
+    const calls = mockApi((url) =>
+      url.endsWith('/tools/vision/verify-match')
+        ? ok({ is_matched: true, similarity_score: null, mismatch_reason: 'OK' })
+        : undefined,
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<AnprSandbox />);
+    await user.click(screen.getByRole('button', { name: 'Thực Hiện Đối Chiếu Loại Xe' }));
+
+    await waitFor(() => expect(calls.some((c) => c.url.endsWith('/tools/vision/verify-match'))).toBe(true));
+    const body = JSON.parse(String(calls.find((c) => c.url.endsWith('/verify-match'))?.init?.body));
+    expect(Object.keys(body).sort()).toEqual(['current_vehicle_type', 'expected_vehicle_type']);
+    expect(screen.queryByText(/Độ tương đồng: \d/)).toBeNull();
   });
 });
