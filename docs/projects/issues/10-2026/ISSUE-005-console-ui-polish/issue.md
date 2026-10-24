@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🚧 In progress |
+| **Trạng thái** | 👀 Review — code xong và đã kiểm, chờ PR (merge sau `bugfix/bug-021-…`) |
 | **Người phụ trách** | HiTranquility (cùng Claude Code), theo yêu cầu chủ dự án ngày 2026-10-24 |
 | **Phạm vi** | `ai/ui` (chỉ giao diện, không đổi API/schema) |
 | **Nhánh** | `feature/ISSUE-005-2026-10-console-ui-polish`, tách từ `bugfix/bug-021-2026-10-console-ui-polish`, nên merge sau nhánh đó |
@@ -15,12 +15,39 @@ Nguyên văn yêu cầu: "sửa rồi sau đó làm thêm chỉnh UI này kia l�
 
 ## Tiêu chí chấp nhận
 
-- [ ] Màu viết thẳng trong `*.module.css` đưa về token (`ui/DESIGN.md` §Luật 8). Riêng bảng màu vai/hành động là bảng màu định danh có chủ đích: gom thành token riêng, không để hex rải rác.
-- [ ] Trang đăng nhập bỏ nền sao động, gradient và quầng sáng (`ui/DESIGN.md` §Luật 3).
-- [ ] Gỡ thẻ "Quy chuẩn kiến trúc" tĩnh ở Công cụ thử (review-1 S7).
-- [ ] Ngày giờ dễ quét: Copilot Lab hiện ngày trước giờ; ngày mời thành viên không kèm giây.
-- [ ] Các lỗi nhỏ review-1 đã ghi: nút "Phân vai trò" xuống dòng, ID mẫu bị cắt không xem được bản đầy đủ, ảnh lỗi thiếu chữ thay thế, ô `artifact_key` lệch hàng.
-- [ ] Kiểm: `pnpm typecheck`, vitest, Playwright 11 màn × 375/768/1280 × sáng/tối không tràn ngang, không chữ dưới AA, không lỗi JS.
+- [x] Màu viết thẳng trong `*.module.css` đưa về token (`ui/DESIGN.md` §Luật 8). Riêng bảng màu vai/hành động là bảng màu định danh có chủ đích: gom thành token riêng, không để hex rải rác.
+- [x] Trang đăng nhập bỏ nền sao động, gradient và quầng sáng (`ui/DESIGN.md` §Luật 3).
+- [x] Gỡ thẻ "Quy chuẩn kiến trúc" tĩnh ở Công cụ thử (review-1 S7).
+- [x] Ngày giờ dễ quét: Copilot Lab hiện ngày trước giờ; ngày mời thành viên không kèm giây.
+- [x] Các lỗi nhỏ review-1 đã ghi: nút "Phân vai trò" xuống dòng, ID mẫu bị cắt không xem được bản đầy đủ, ảnh lỗi thiếu chữ thay thế, ô `artifact_key` lệch hàng.
+- [x] Kiểm: `pnpm typecheck`, vitest, Playwright 11 màn × 375/768/1280 × sáng/tối không tràn ngang, không chữ dưới AA, không lỗi JS.
+
+## Đã làm (2026-10-24)
+
+- **Token:** thêm `--shadow-sm|md|lg`, `--color-scrim`, `--color-viewer-*` (`ui/src/index.css`). Thay 41 đổ bóng/lớp phủ/màu viết thẳng, cùng nền menu PersonaSwitcher, chip trích dẫn ở FormattedAnswer, badge ChatStudio, khung soi ảnh LabelPage. Chỉ còn ba ngoại lệ có chủ đích, đã ghi ở `ui/DESIGN.md` §Luật 8: nút/logo Google, bảng màu vai (`RoleBadge`), bảng màu nhóm hành động (`AuditActionBadge`).
+- **Token không tồn tại** (biến rỗng nên CSS bị bỏ qua): `--color-surface-hover`, `--radius-xl`, `--text-base`, `--text-2xl`, đã đổi sang token có thật.
+- **Không gradient/glow/animation trang trí** (§Luật 3): xoá `EnterpriseBackground` (canvas sao động + radial gradient, 274 dòng) khỏi trang đăng nhập và MFA; panel phẳng `--color-surface` + hairline; bỏ gradient avatar ở Thành viên, nhịp pulse ở Model đang phục vụ.
+- **Không `transition: all`** (§Luật 4): 12 chỗ đổi sang danh sách thuộc tính cụ thể.
+- **Công cụ thử:** gỡ thẻ "Quy chuẩn kiến trúc" tĩnh, cùng 9 khoá i18n và CSS chỉ nó dùng. Mô tả trang sửa cho khớp; nút "Làm mới" không xuống dòng.
+- **Ngày giờ:** `fmtDateTime` cho ra `dd/mm/yy hh:mm` (vi) / `mm/dd/yy hh:mm` (en), ngày trước giờ, bỏ giây (`ui/src/utils/format.ts`), có test.
+- **Lỗi nhỏ:**
+  - Nút "Phân vai trò" không xuống dòng.
+  - ID mẫu có `title` hiện mã đầy đủ.
+  - Ảnh lỗi có chữ "Không tải được ảnh cắt", ô lỗi không co thành dải hẹp.
+  - Duyệt nhãn: "cổng xác nhận" trống thì hiện "— (chưa có)" kèm giải thích.
+  - Lưới Gán nhãn dùng `minmax(0, …)`, không còn tràn ngang.
+
+## Đã kiểm
+
+| Bước | Kết quả |
+|---|---|
+| `pnpm typecheck` | PASS |
+| `npx vitest run --maxWorkers=1` | 17 file / 72 test PASS |
+| `npx vite build` (ra scratchpad) | PASS. Bước này bắt được một lỗi cú pháp CSS mà typecheck/vitest bỏ sót. Đã chạy cho cả 4 nhánh bug: đều PASS |
+| Playwright 11 màn × 375/768/1280 × sáng/tối = 66 màn, có bắt overlay lỗi Vite | 0 tràn ngang, 0 chữ dưới AA, 0 lỗi JS |
+| Soát ảnh bằng mắt: đăng nhập, Gán nhãn, Công cụ thử | Đạt |
+
+Chưa làm: ô `artifact_key` lệch hàng ở form đăng ký model (review-1). Chưa tái hiện được trên API giả vì form chỉ hiện với dữ liệu thật, nên để lại.
 
 ## Ngoài phạm vi (chờ duyệt)
 

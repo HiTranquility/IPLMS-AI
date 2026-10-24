@@ -6,7 +6,7 @@
   background: var(--color-surface);
   border: var(--hairline);
   border-radius: var(--radius-lg);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-sm);
 }
 
 .header {
