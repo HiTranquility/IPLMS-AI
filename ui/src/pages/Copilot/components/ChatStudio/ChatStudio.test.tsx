@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { renderWithProviders } from '@/test/utils';
+import { mockApi, ok, renderWithProviders } from '@/test/utils';
 import { ASK_BODY_FIELDS } from './askContract';
 import { ChatStudio } from './ChatStudio';
 
@@ -58,62 +58,81 @@ describe('ChatStudio Component', () => {
     expect(screen.getByText('Tham số thử nghiệm')).toBeTruthy();
   });
 
-  it('switches to Knowledge tab, displays seed documents, and filters by category', async () => {
+  // ai bug-018: console chưa có /knowledge/seeds → báo lỗi, không hiện bộ văn bản mẫu.
+  it('Knowledge tab: API 404 thì báo lỗi, không hiện văn bản mẫu', async () => {
+    mockApi(() => undefined);
     const user = userEvent.setup();
     renderWithProviders(<ChatStudio />);
-
-    // Mở drawer
     await user.click(screen.getByRole('button', { name: 'Mở ngăn kéo kiểm định' }));
-
-    // Click tab Kho tri thức
     await user.click(screen.getByText('Kho tri thức'));
 
     expect(screen.getByText('Kho Tri Thức Quy Chế')).toBeTruthy();
-    expect(screen.getByPlaceholderText(/Tìm kiếm quy chế/)).toBeTruthy();
-
-    // Verify seed document rendered
-    expect(screen.getByText(/Biểu Phí Gửi Xe Ô Tô Bậc Thang/)).toBeTruthy();
-    expect(screen.getByText(/Quy Chế Xử Lý Tranh Chấp & Hoàn Tiền Khiếu Nại/)).toBeTruthy();
-
-    // Lọc theo "Trạm sạc EV"
-    const evPill = screen.getByRole('button', { name: /Trạm sạc EV/ });
-    await user.click(evPill);
-
-    expect(screen.getByText(/Chính Sách Trạm Sạc Xe Điện/)).toBeTruthy();
+    expect(screen.getByText('MÔ PHỎNG')).toBeTruthy();
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+    expect(screen.queryByText(/Biểu Phí Gửi Xe Ô Tô Bậc Thang/)).toBeNull();
+    expect(screen.queryByText(/pgvector: Sẵn sàng/)).toBeNull();
+    expect(screen.getByText('0 văn bản')).toBeTruthy();
   });
 
-  it('switches to Dispute Simulator tab and executes LangGraph 5-node journey', async () => {
+  it('Knowledge tab: hiện đúng văn bản server trả và lọc theo nhóm', async () => {
+    mockApi((url) =>
+      url.endsWith('/knowledge/seeds')
+        ? ok(
+            { id: 'd1', category: 'tariff', title: 'Bảng giá thật', content: 'Giá 5.000đ', source: 'bang-gia.md' },
+            { id: 'd2', category: 'ev_charging', title: 'Trạm sạc thật', content: 'Sạc 3.000đ/kWh', source: 'ev.md' },
+          )
+        : undefined,
+    );
     const user = userEvent.setup();
     renderWithProviders(<ChatStudio />);
-
-    // Mở drawer
     await user.click(screen.getByRole('button', { name: 'Mở ngăn kéo kiểm định' }));
+    await user.click(screen.getByText('Kho tri thức'));
 
-    // Click tab Mô phỏng phân xử
+    await waitFor(() => expect(screen.getByText('Bảng giá thật')).toBeTruthy());
+    await user.click(screen.getByRole('button', { name: /Trạm sạc EV/ }));
+    expect(screen.getByText('Trạm sạc thật')).toBeTruthy();
+    expect(screen.queryByText('Bảng giá thật')).toBeNull();
+  });
+
+  it('Dispute tab: API 404 thì báo lỗi, không dựng 5 node, không có mã giao dịch giả', async () => {
+    mockApi(() => undefined);
+    const user = userEvent.setup();
+    renderWithProviders(<ChatStudio />);
+    await user.click(screen.getByRole('button', { name: 'Mở ngăn kéo kiểm định' }));
     await user.click(screen.getByText('Mô phỏng phân xử'));
 
     expect(screen.getByText('Phân Xử Tranh Chấp (LangGraph)')).toBeTruthy();
-    expect(screen.getByLabelText(/Mã khiếu nại/)).toBeTruthy();
+    expect(screen.getByText('MÔ PHỎNG')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: /Chạy Mô Phỏng LangGraph/ }));
 
-    // Click nút chạy mô phỏng
-    const runBtn = screen.getByRole('button', { name: /Chạy Mô Phỏng LangGraph/ });
-    await user.click(runBtn);
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+    expect(screen.queryByText(/validate_ticket/)).toBeNull();
+    expect(screen.queryByText(/finalize_dispute/)).toBeNull();
+    expect(screen.queryByText(/RESOLVED_REFUNDED|TX-DSP|audit_log_hash/)).toBeNull();
+  });
 
-    // Chờ 5 node xuất hiện
-    await waitFor(
-      () => {
-        expect(screen.getByText(/validate_ticket/)).toBeTruthy();
-        expect(screen.getByText(/verify_snapshots/)).toBeTruthy();
-        expect(screen.getByText(/assess_claim/)).toBeTruthy();
-        expect(screen.getByText(/supervisor_approval/)).toBeTruthy();
-        expect(screen.getByText(/finalize_dispute/)).toBeTruthy();
-      },
-      { timeout: 3500 },
+  it('Dispute tab: hiện đúng các bước server trả', async () => {
+    mockApi((url) =>
+      url.endsWith('/copilot/dispute-workflow/simulate')
+        ? ok({
+            success: true, dispute_id: 'DSP-9821', workflow: 'dispute', nodes_traversed: 2, final_status: 'REVIEW',
+            steps: [
+              { step: 1, node: 'load_evidence', status: 'COMPLETED', description: 'Nạp bằng chứng', data: {} },
+              { step: 2, node: 'human_review', status: 'AWAITING_STAFF_SIGN_OFF', description: 'Chờ người duyệt', data: {} },
+            ],
+          })
+        : undefined,
     );
+    const user = userEvent.setup();
+    renderWithProviders(<ChatStudio />);
+    await user.click(screen.getByRole('button', { name: 'Mở ngăn kéo kiểm định' }));
+    await user.click(screen.getByText('Mô phỏng phân xử'));
+    await user.click(screen.getByRole('button', { name: /Chạy Mô Phỏng LangGraph/ }));
 
-    // Verify Bounded Autonomy rule notice
-    expect(screen.getByText(/Nguyên tắc Bounded Autonomy/)).toBeTruthy();
-    expect(screen.getByText(/5\/5 Nodes Traversed/)).toBeTruthy();
+    await waitFor(() => expect(screen.getByText(/load_evidence/)).toBeTruthy());
+    expect(screen.getByText(/human_review/)).toBeTruthy();
+    expect(screen.getByText('2 node đã đi qua')).toBeTruthy();
+    expect(screen.queryByText(/validate_ticket/)).toBeNull();
   });
 
   it('switches to Params tab and applies smart Model Profile presets', async () => {

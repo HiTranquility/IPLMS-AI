@@ -15,7 +15,11 @@ import {
   X,
 } from 'lucide-react';
 import { Button } from '@/components/common/Ui/button/Button';
-import { DEFAULT_SEED_DOCUMENTS } from './defaultSeeds';
+import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
+import { SimulatedBanner } from '@/components/common/Ui/feedback/SimulatedBanner';
+import { useI18n } from '@/i18n/I18nProvider';
+import { getKnowledgeSeeds } from '@/services/apiEndpoints/studio.endpoint';
+import { ingestDraft } from '@/services/apiEndpoints/tool.endpoint';
 import type { KnowledgeCategory, SeedDocument } from './types';
 import styles from './ChatStudio.module.css';
 
@@ -33,7 +37,10 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: KnowledgeExplorerProps) {
-  const [documents, setDocuments] = useState<SeedDocument[]>(DEFAULT_SEED_DOCUMENTS);
+  const { t } = useI18n();
+  // Chỉ hiện văn bản server trả; API lỗi thì danh sách rỗng + báo lỗi, không thay bằng bộ mẫu (ai bug-018).
+  const [documents, setDocuments] = useState<SeedDocument[]>([]);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<KnowledgeCategory>('all');
   const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
@@ -48,21 +55,14 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
   const [isIngesting, setIsIngesting] = useState(false);
   const [ingestStatus, setIngestStatus] = useState<{ ok: boolean; msg: string } | null>(null);
 
-  // Thử tải từ API backend nếu có
   const loadDocuments = async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
-      const apiBase = window.location.pathname.startsWith('/console') ? '/console/api' : '/api';
-      const res = await fetch(`${apiBase}/knowledge/seeds`);
-      if (res.ok) {
-        const data = await res.json();
-        const items = data.items || (Array.isArray(data) ? data : null);
-        if (items && items.length > 0) {
-          setDocuments(items);
-        }
-      }
-    } catch {
-      // Nếu API offline thì dùng data mặc định từ seed json
+      setDocuments(await getKnowledgeSeeds());
+    } catch (err) {
+      setDocuments([]);
+      setLoadError(err);
     } finally {
       setIsLoading(false);
     }
@@ -117,42 +117,20 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
     setIngestStatus(null);
 
     try {
-      const apiBase = window.location.pathname.startsWith('/console') ? '/console/api' : '/api';
       const formData = new FormData();
       formData.append('file', selectedFile);
-      formData.append('document_id', `doc_${Date.now()}`);
+      // Server đòi UUID và giữ nguyên mã khi thử lại (tools_service.ingest_draft).
+      formData.append('document_id', crypto.randomUUID());
       formData.append('category', ingestCategory);
       if (lotScope.trim()) {
         formData.append('parking_lot_id', lotScope.trim());
       }
-
-      const res = await fetch(`${apiBase}/tools/knowledge`, {
-        method: 'POST',
-        headers: {
-          'X-Console-Request': '1',
-        },
-        body: formData,
-      });
-
-      if (res.ok) {
-        setIngestStatus({
-          ok: true,
-          msg: `Phân tích & vector hoá thành công: ${selectedFile.name}`,
-        });
-        setSelectedFile(null);
-        loadDocuments();
-      } else {
-        const errorData = await res.json().catch(() => ({}));
-        setIngestStatus({
-          ok: false,
-          msg: errorData.message || `Lỗi tải lên (${res.status})`,
-        });
-      }
-    } catch (err: any) {
-      setIngestStatus({
-        ok: false,
-        msg: `Không thể kết nối máy chủ nạp tri thức: ${err.message || 'Lỗi mạng'}`,
-      });
+      const result = await ingestDraft(formData);
+      setIngestStatus({ ok: true, msg: t.studio.ingestOk(selectedFile.name) + (result.message ? ` ${result.message}` : '') });
+      setSelectedFile(null);
+      loadDocuments();
+    } catch (err) {
+      setIngestStatus({ ok: false, msg: err instanceof Error ? err.message : t.errors.network });
     } finally {
       setIsIngesting(false);
     }
@@ -169,7 +147,7 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
           <div>
             <h4 className={styles.keTitle}>Kho Tri Thức Quy Chế</h4>
             <span className={styles.keSub}>
-              {documents.length} văn bản lưu trữ • <code>pgvector: Sẵn sàng</code>
+              {t.studio.knowledgeCount(documents.length)}
             </span>
           </div>
         </div>
@@ -198,6 +176,9 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
           </button>
         </div>
       </div>
+
+      <SimulatedBanner detail={t.studio.knowledgeListNote} />
+      {loadError !== null && <ErrorBlock error={loadError} onRetry={loadDocuments} />}
 
       {/* 2. Ingestion Card (Collapsible) */}
       {ingestOpen && (
