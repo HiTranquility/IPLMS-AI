@@ -35,7 +35,7 @@
 .pipelineTag {
   font-size: var(--text-xs);
   font-weight: 600;
-  color: var(--color-accent);
+  color: var(--color-accent-dark);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -128,7 +128,7 @@
 .fieldValue {
   font-family: var(--font-mono);
   font-weight: 600;
-  color: var(--color-accent);
+  color: var(--color-accent-dark);
   font-variant-numeric: tabular-nums;
 }
 
@@ -173,7 +173,7 @@
 
 .testApiBtn:hover {
   background: var(--color-surface-3);
-  color: var(--color-accent);
+  color: var(--color-accent-dark);
 }
 
 .adrCard {
@@ -250,7 +250,7 @@
 }
 
 .kpiAccent {
-  color: var(--color-accent);
+  color: var(--color-accent-dark);
 }
 
 .kpiSuccess {

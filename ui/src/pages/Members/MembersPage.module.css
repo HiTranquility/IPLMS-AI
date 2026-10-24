@@ -290,7 +290,7 @@
 }
 
 .titleIcon {
-  color: var(--color-accent);
+  color: var(--color-accent-dark);
 }
 
 .fieldBlock {
@@ -456,7 +456,7 @@
 
 .statusProgress {
   font-size: 11px;
-  color: var(--color-accent);
+  color: var(--color-accent-dark);
   font-style: italic;
   margin: 0;
 }
