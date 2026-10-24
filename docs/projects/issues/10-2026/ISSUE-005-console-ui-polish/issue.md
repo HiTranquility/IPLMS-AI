@@ -51,7 +51,7 @@ Nguyên văn yêu cầu: "sửa rồi sau đó làm thêm chỉnh UI này kia l�
 
 ## Ngoài phạm vi (chờ duyệt)
 
-- Sidebar thu gọn trên màn hẹp: [SUGGESTION-003](../../../suggestions/10-2026/SUGGESTION-003-rail-thu-gon-tren-man-hep.md) đang 🔄 REVIEWING (IPLMS ADR-0056: chỉ merge khi techlead ACCEPTED).
+- Sidebar thu gọn trên màn hẹp: [SUGGESTION-003](../../../suggestions/10-2026/SUGGESTION-003-rail-thu-gon-tren-man-hep.md) đang 🔄 REVIEWING (IPLMS ADR-0059: chỉ merge khi techlead ACCEPTED).
 - Gỡ mount `/api` trùng của console (đổi bề mặt API), ghi ở review-1 S7.
 
 ## Hồ sơ liên quan
