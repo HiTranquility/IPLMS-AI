@@ -246,7 +246,7 @@
   height: calc(var(--space-6) * 2);
   border-radius: var(--radius-lg);
   background: var(--color-accent-soft);
-  color: var(--color-accent);
+  color: var(--color-accent-dark);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -295,7 +295,7 @@
 }
 
 .sparkleIcon {
-  color: var(--color-accent);
+  color: var(--color-accent-dark);
 }
 
 /* ── Chat Messages ── */
@@ -1283,7 +1283,7 @@
 
 .badge_regulation {
   background: rgba(147, 51, 234, 0.12);
-  color: var(--color-accent);
+  color: var(--color-accent-dark);
   border: 1px solid rgba(147, 51, 234, 0.25);
 }
 
@@ -1867,7 +1867,7 @@
 }
 
 .accentColor {
-  color: var(--color-accent);
+  color: var(--color-accent-dark);
 }
 
 .emptyIcon {

@@ -53,7 +53,7 @@ export function ChatInput({
             </span>
             <span>·</span>
             <span>
-              <kbd className={styles.kbd}>Shift+Enter</kbd> Xuống dòng
+              <kbd className={styles.kbd}>Shift+Enter</kbd> {t.copilot.newLine}
             </span>
           </div>
 

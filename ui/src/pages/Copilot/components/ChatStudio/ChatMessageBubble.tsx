@@ -58,7 +58,7 @@ export function ChatMessageBubble({
                       type="button"
                       className={styles.citationTag}
                       onClick={() => onSelectCitation?.(source)}
-                      title={`Xem chi tiết đoạn trích: ${source.title}`}
+                      title={t.copilot.citationView(source.title)}
                     >
                       <ExternalLink size={12} />
                       <span className={styles.citationTitle}>{source.title}</span>
@@ -85,12 +85,12 @@ export function ChatMessageBubble({
                 </span>
               )}
               {message.speedTokPerSec != null && (
-                <span className="num" title="Tốc độ sinh token">
+                <span className="num" title={t.copilot.speedTitle}>
                   {message.speedTokPerSec} t/s
                 </span>
               )}
               {message.outputTokens != null && (
-                <span className="num" title="Token hoàn tất">
+                <span className="num" title={t.copilot.outputTokensTitle}>
                   {fmtInt(message.outputTokens)} tok
                 </span>
               )}
@@ -101,8 +101,8 @@ export function ChatMessageBubble({
                 type="button"
                 className={styles.iconBtn}
                 onClick={handleCopy}
-                aria-label={copied ? 'Đã sao chép' : 'Sao chép câu trả lời'}
-                title={copied ? 'Đã sao chép' : 'Sao chép câu trả lời'}
+                aria-label={copied ? t.copilot.copied : t.copilot.copyAnswer}
+                title={copied ? t.copilot.copied : t.copilot.copyAnswer}
               >
                 {copied ? <Check size={14} className={styles.checkIcon} /> : <Copy size={14} />}
               </button>

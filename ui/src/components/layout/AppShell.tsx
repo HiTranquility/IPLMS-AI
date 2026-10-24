@@ -34,7 +34,7 @@ export function AppShell({ me, children }: AppShellProps) {
     if (!me.roles.length) return t.shell.rolesNone;
     const clean = me.roles.map((r) => r.replace(/^ai_/, ''));
     if (clean.includes('lead') && clean.length >= 4) {
-      return 'lead (toàn quyền)';
+      return t.shell.rolesLeadAll;
     }
     if (clean.length > 3) {
       return `${clean.slice(0, 2).join(', ')} (+${clean.length - 2})`;

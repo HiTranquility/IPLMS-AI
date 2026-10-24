@@ -1,6 +1,7 @@
 import { History, RefreshCw, Sparkles } from 'lucide-react';
 import { Button } from '@/components/common/Ui/button/Button';
 import { useSeedDemoBatch } from '@/hooks/mutations/useVisionMutations';
+import { useI18n } from '@/i18n/I18nProvider';
 import styles from './LabelStudio.module.css';
 
 interface LabelMetricsStripProps {
@@ -22,6 +23,8 @@ export function LabelMetricsStrip({
   onToggleHistory,
   showHistory,
 }: LabelMetricsStripProps) {
+  const { t } = useI18n();
+  const s = t.label.studio;
   const seedMutation = useSeedDemoBatch();
 
   const handleSeed = () => {
@@ -33,26 +36,26 @@ export function LabelMetricsStrip({
   };
 
   return (
-    <div className={styles.metricsStrip} role="region" aria-label="Năng suất phiên gán nhãn">
+    <div className={styles.metricsStrip} role="region" aria-label={s.metricsRegion}>
       <div className={styles.metricsGroup}>
         <div className={styles.metricItem}>
-          <span className={styles.metricLabel}>Hàng đợi A2</span>
+          <span className={styles.metricLabel}>{s.metricQueue}</span>
           <span className={styles.metricValue}>
-            {queueCount} <span className={styles.metricSub}>mẫu</span>
+            {queueCount} <span className={styles.metricSub}>{s.unitSamples}</span>
           </span>
         </div>
 
         <div className={styles.metricItem}>
-          <span className={styles.metricLabel}>Đã gán phiên này</span>
+          <span className={styles.metricLabel}>{s.metricSession}</span>
           <span className={styles.metricValue}>
-            {sessionCount} <span className={styles.metricSub}>mẫu</span>
+            {sessionCount} <span className={styles.metricSub}>{s.unitSamples}</span>
           </span>
         </div>
 
         <div className={styles.metricItem}>
-          <span className={styles.metricLabel}>Tốc độ trung bình</span>
+          <span className={styles.metricLabel}>{s.metricVelocity}</span>
           <span className={styles.metricValue}>
-            {avgVelocitySeconds > 0 ? `~${avgVelocitySeconds}s` : '—'} <span className={styles.metricSub}>/ mẫu</span>
+            {avgVelocitySeconds > 0 ? `~${avgVelocitySeconds}s` : '—'} <span className={styles.metricSub}>{s.unitPerSample}</span>
           </span>
         </div>
       </div>
@@ -63,10 +66,10 @@ export function LabelMetricsStrip({
           size="sm"
           onClick={handleSeed}
           loading={seedMutation.isPending}
-          title="Nạp 5 mẫu biển số thực hành đa dạng (xe con, xe máy 2 dòng, taxi vàng, xe điện, biển mờ)"
+          title={s.seedTitle}
         >
           <Sparkles size={14} aria-hidden />
-          Nạp 5 mẫu thực hành
+          {s.seedShort}
         </Button>
 
         {onToggleHistory && (
@@ -74,10 +77,10 @@ export function LabelMetricsStrip({
             variant={showHistory ? 'accent' : 'secondary'}
             size="sm"
             onClick={onToggleHistory}
-            title="Bật/tắt lịch sử các mẫu đã gán trong phiên"
+            title={s.historyToggleTitle}
           >
             <History size={14} aria-hidden />
-            Lịch sử ({sessionCount})
+            {s.historyToggle(sessionCount)}
           </Button>
         )}
 
@@ -86,8 +89,8 @@ export function LabelMetricsStrip({
           size="sm"
           onClick={onRefresh}
           loading={isRefreshing}
-          title="Làm mới hàng đợi"
-          aria-label="Làm mới hàng đợi"
+          title={s.refreshQueue}
+          aria-label={s.refreshQueue}
         >
           <RefreshCw size={14} aria-hidden />
         </Button>

@@ -35,7 +35,7 @@ function useVisionMutation<A, R>(fn: (args: A) => Promise<R>) {
 }
 
 export const useAddLabelMutation = () =>
-  useVisionMutation((a: AddLabelRequest) => addLabel(a.captureId, a.verdict, a.plateText));
+  useVisionMutation((a: AddLabelRequest) => addLabel(a.captureId, a.verdict, a.plateText, a.qualityFlags));
 
 export const useDecideLabelMutation = () =>
   useVisionMutation((a: DecideLabelRequest) => decideLabel(a.labelId, a.decision, a.note));

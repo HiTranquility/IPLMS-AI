@@ -36,5 +36,5 @@ Nguyên văn yêu cầu của chủ dự án:
 
 ## Hồ sơ liên quan
 
-- Bug: bug-015 … bug-025 · Suggestion: SUGGESTION-001 … 005 · Báo cáo: [review-1](review/review-1.md) · Ảnh: [evidence/](evidence/)
+- Bug: bug-015 … bug-026 · Sửa: [review-2](review/review-2.md) · Suggestion: SUGGESTION-001 … 005 · Báo cáo: [review-1](review/review-1.md) · Ảnh: [evidence/](evidence/)
 - [AUDIT-005](../../../audits/10-2026/AUDIT-005-ai-console-security-review.md): cần đính chính vì không nêu bug-015 và bug-016.

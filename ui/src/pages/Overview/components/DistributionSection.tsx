@@ -103,7 +103,7 @@ export function DistributionSection({ usage, review }: DistributionSectionProps)
             </span>
             <span className={styles.rowValue}>
               {review.accuracy !== null ? fmtPercent(review.accuracy) : DASH}
-              {review.reviewed > 0 && <span className={styles.rowSub}>({review.reviewed} đã chấm)</span>}
+              {review.reviewed > 0 && <span className={styles.rowSub}>{t.overview.reviewedCount(review.reviewed)}</span>}
             </span>
           </div>
 
@@ -115,7 +115,7 @@ export function DistributionSection({ usage, review }: DistributionSectionProps)
               <span style={{ color: 'var(--color-danger)' }}>{review.incorrect}</span>
               {review.unsafe > 0 && (
                 <span style={{ color: 'var(--color-warning)', marginLeft: 4 }}>
-                  ({review.unsafe} không an toàn)
+                  {t.overview.unsafeCount(review.unsafe)}
                 </span>
               )}
             </span>
@@ -134,7 +134,7 @@ export function DistributionSection({ usage, review }: DistributionSectionProps)
           </div>
 
           <div className={styles.row}>
-            <span className={styles.rowLabel}>Lượt thích / Không thích</span>
+            <span className={styles.rowLabel}>{t.overview.likesDislikes}</span>
             <span className={styles.rowValue}>
               {fmtInt(usage.thumbs_up)} 👍 · {fmtInt(usage.thumbs_down)} 👎
             </span>

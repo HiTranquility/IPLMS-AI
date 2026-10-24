@@ -369,13 +369,13 @@ export function ForecastSimulator() {
             {/* Hover details if active */}
             {hoveredHour !== null && (
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text)', display: 'flex', gap: 'var(--space-2)' }}>
-                <span>{`Giờ ${hoveredHour}h:`}</span>
-                <strong style={{ color: 'var(--color-accent)' }}>{`${currentBaseline[hoveredHour]}%`}</strong>
+                <span>{t.tools.forecastHour(hoveredHour)}</span>
+                <strong style={{ color: 'var(--color-accent-dark)' }}>{`${currentBaseline[hoveredHour]}%`}</strong>
                 <span style={{ color: 'var(--color-muted)' }}>
-                  {`(${Math.round((capacity * currentBaseline[hoveredHour]) / 100)}/${capacity} chỗ) · ${
+                  {`${t.tools.forecastSlots(Math.round((capacity * currentBaseline[hoveredHour]) / 100), capacity)} · ${
                     currentBaseline[hoveredHour] >= surgeThreshold
-                      ? `${fmtInt(suggestedPeakRate)} đ/h (Giá động)`
-                      : `${fmtInt(baseRate)} đ/h`
+                      ? t.tools.forecastSurgeRate(fmtInt(suggestedPeakRate))
+                      : t.tools.forecastRate(fmtInt(baseRate))
                   }`}
                 </span>
               </div>

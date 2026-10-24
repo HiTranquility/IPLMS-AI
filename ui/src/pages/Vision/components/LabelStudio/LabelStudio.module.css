@@ -232,10 +232,11 @@
   font-size: 11px;
   font-weight: 700;
   padding: 1px 6px;
-  background: var(--color-surface-hover);
-  border: var(--hairline);
+  /* Theo màu chữ của nút chứa nó: trên nút primary nền tối, chữ cố định --color-text bị chìm (bug-022). */
+  background: transparent;
+  border: 1px solid currentColor;
   border-radius: var(--radius-sm);
-  color: var(--color-text);
+  color: inherit;
 }
 
 /* ── Workspace 2-Column Grid (When Sample Active) ────────────────── */

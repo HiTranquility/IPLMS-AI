@@ -45,31 +45,31 @@ function ModelsPageContent() {
       <div className={styles.statsGrid}>
         <MemberStatCard
           icon={<Rocket size={22} />}
-          label="Model Production"
-          value={prodModel ? `${prodModel.name}@${prodModel.version}` : 'Chưa có'}
+          label={t.models.statProd}
+          value={prodModel ? `${prodModel.name}@${prodModel.version}` : t.models.statProdNone}
           tone="success"
-          subtext={prodModel ? `Đã duyệt bởi ${prodModel.approved_by || 'Lead'}` : 'Cần thăng cấp 1 model'}
+          subtext={prodModel ? t.models.statProdBy(prodModel.approved_by || 'Lead') : t.models.statProdNeed}
         />
         <MemberStatCard
           icon={<Boxes size={22} />}
-          label="Tổng số Model"
+          label={t.models.statTotal}
           value={modelList.length}
           tone="primary"
           subtext={`${modelList.filter((m) => m.stage === 'candidate').length} candidate`}
         />
         <MemberStatCard
           icon={<Activity size={22} />}
-          label="Đợt đo Benchmark"
+          label={t.models.statEvals}
           value={evalList.length}
           tone="accent"
-          subtext={`${evalList.filter((e) => e.status === 'DONE').length} hoàn thành`}
+          subtext={t.models.statEvalsDone(evalList.filter((e) => e.status === 'DONE').length)}
         />
         <MemberStatCard
           icon={<ShieldCheck size={22} />}
-          label="Model Chờ duyệt"
+          label={t.models.statPending}
           value={proposedCount}
           tone="warning"
-          subtext={proposedCount > 0 ? 'Cần Lead xác nhận promote' : 'Không có tồn đọng'}
+          subtext={proposedCount > 0 ? t.models.statPendingSub : t.models.statPendingNone}
         />
       </div>
 
@@ -80,16 +80,16 @@ function ModelsPageContent() {
             <span className={styles.prodDot} />
             <div>
               <div className={styles.prodName}>
-                Mô hình đang chạy thực tế: {prodModel.name} <span style={{ fontWeight: 400 }}>({prodModel.version})</span>
+                {t.models.prodRunning} {prodModel.name} <span style={{ fontWeight: 400 }}>({prodModel.version})</span>
               </div>
               <div className={styles.prodMeta}>
-                Artifact: <code>{prodModel.artifact_key}</code> · Phê duyệt lúc {fmtDateTime(prodModel.approved_at || prodModel.registered_at)}
+                Artifact: <code>{prodModel.artifact_key}</code> · {t.models.prodApprovedAt(fmtDateTime(prodModel.approved_at || prodModel.registered_at))}
               </div>
             </div>
           </div>
           <Badge tone="success">
             <CheckCircle2 size={12} aria-hidden />
-            ĐANG PHỤC VỤ CỔNG
+            {t.models.prodServing}
           </Badge>
         </div>
       )}
@@ -121,7 +121,7 @@ function ModelsPageContent() {
                 <thead>
                   <tr>
                     <th scope="col">{t.models.started}</th>
-                    <th scope="col">Tập Golden</th>
+                    <th scope="col">{t.models.goldenCol}</th>
                     <th scope="col">{t.common.status}</th>
                     <th scope="col">Engine</th>
                     <th scope="col" className={table.num}>{t.common.sample}</th>
