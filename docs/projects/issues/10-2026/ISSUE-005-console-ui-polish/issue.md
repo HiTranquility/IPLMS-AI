@@ -47,7 +47,7 @@ Nguyên văn yêu cầu: "sửa rồi sau đó làm thêm chỉnh UI này kia l�
 | Playwright 11 màn × 375/768/1280 × sáng/tối = 66 màn, có bắt overlay lỗi Vite | 0 tràn ngang, 0 chữ dưới AA, 0 lỗi JS |
 | Soát ảnh bằng mắt: đăng nhập, Gán nhãn, Công cụ thử | Đạt |
 
-Chưa làm: ô `artifact_key` lệch hàng ở form đăng ký model (review-1). Chưa tái hiện được trên API giả vì form chỉ hiện với dữ liệu thật, nên để lại.
+Ô `artifact_key` lệch hàng và sidebar màn hẹp: đã làm ở [ISSUE-006](../ISSUE-006-console-rail-and-form-align/issue.md). Lỗi lệch hàng tái hiện được trên API giả; lần trước chỉ chưa đo tới form này.
 
 ## Ngoài phạm vi (chờ duyệt)
 

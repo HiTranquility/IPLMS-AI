@@ -4,10 +4,10 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🔄 REVIEWING |
+| **Trạng thái** | 🟢 ACCEPTED — đã làm ở [ISSUE-006](../../issues/10-2026/ISSUE-006-console-rail-and-form-align/issue.md) |
 | **Ngày** | 2026-10-23 |
 | **Người đề xuất** | Claude Code ([ISSUE-004](../../issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md)) |
-| **Techlead duyệt** | @HiTranquility — ⏳ chờ |
+| **Techlead duyệt** | @HiTranquility — ✅ duyệt 2026-10-24, chỉ thị trong chat phiên Claude Code ("làm luôn") |
 | **Làm trước khi duyệt?** | Có thể: việc nhỏ, chỉ đổi UI, revert được |
 | **Phạm vi** | `ai/ui` (`components/layout/AppShell*`) |
 
@@ -30,4 +30,4 @@ Dưới 768px, sidebar chuyển thành ngăn kéo, mở bằng nút menu ở tha
 
 ## Bước tiếp theo
 
-Giao Phát.
+Đã làm ở ISSUE-006 (2026-10-24): `ui/src/components/layout/AppShell.tsx`, `AppShell.module.css`, test `AppShell.test.tsx`. Ở 375px `main` bắt đầu ở y = 61 (trước đó 812).
