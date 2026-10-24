@@ -455,6 +455,14 @@ export const en: Messages = {
     rightPlate: 'Correct plate',
     saveFix: 'Save fixed plate',
     remaining: (count: number) => `${count} ${count === 1 ? 'sample' : 'samples'} left in this batch. Your label waits for another person to approve it before it enters the dataset.`,
+    flagsTitle: 'Image / plate conditions',
+    flags: {
+      blurry: 'Blurry / dirty plate',
+      glare: 'Headlight glare',
+      skewed: 'Skewed angle',
+      occluded: 'Partly occluded',
+      two_line: 'Two-line plate',
+    },
   },
   review: {
     title: 'Label review',

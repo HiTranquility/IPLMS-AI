@@ -17,7 +17,7 @@ import { TextField } from '@/components/common/Ui/form/Field';
 import { CropImage } from '@/components/common/Ui/media/CropImage';
 import { useAddLabel } from '@/hooks/mutations/useVisionMutations';
 import { useI18n } from '@/i18n/I18nProvider';
-import type { LabelVerdict, VisionSample } from '@/types/vision';
+import { QUALITY_FLAGS, type LabelVerdict, type QualityFlag, type VisionSample } from '@/types/vision';
 import { DASH, fmtPercent } from '@/utils/format';
 import styles from './LabelStudio.module.css';
 
@@ -39,10 +39,10 @@ export function LabelWorkspace({ sample, remaining, onLabeled }: LabelWorkspaceP
   const [invert, setInvert] = useState(false);
   const [highContrast, setHighContrast] = useState(false);
 
-  // Quality Flags (Thuộc tính chất lượng biển số)
-  const [qualityFlags, setQualityFlags] = useState<string[]>([]);
+  // Cờ điều kiện ảnh: gửi cùng nhãn, lưu ở vision_label.quality_flags (bug-022)
+  const [qualityFlags, setQualityFlags] = useState<QualityFlag[]>([]);
 
-  const toggleFlag = (flag: string) => {
+  const toggleFlag = (flag: QualityFlag) => {
     setQualityFlags((prev) =>
       prev.includes(flag) ? prev.filter((f) => f !== flag) : [...prev, flag],
     );
@@ -57,7 +57,12 @@ export function LabelWorkspace({ sample, remaining, onLabeled }: LabelWorkspaceP
   const send = (verdict: LabelVerdict) => {
     const finalPlate = verdict === 'CORRECTED' ? plate : sample.machine_plate;
     add.mutate(
-      { captureId: sample.capture_id, verdict, plateText: verdict === 'CORRECTED' ? plate : '' },
+      {
+        captureId: sample.capture_id,
+        verdict,
+        plateText: verdict === 'CORRECTED' ? plate : '',
+        qualityFlags,
+      },
       {
         onSuccess: () => {
           onLabeled?.(sample.capture_id, verdict, finalPlate);
@@ -135,14 +140,6 @@ export function LabelWorkspace({ sample, remaining, onLabeled }: LabelWorkspaceP
       : confidence >= 0.75
       ? 'var(--color-warning)'
       : 'var(--color-danger)';
-
-  const availableFlags = [
-    { id: 'blurry', label: 'Biển mờ / bụi bẩn' },
-    { id: 'glare', label: 'Chói sáng đèn pha' },
-    { id: 'skewed', label: 'Góc chụp nghiêng' },
-    { id: 'occluded', label: 'Che khuất một phần' },
-    { id: 'two_line', label: 'Biển 2 dòng' },
-  ];
 
   return (
     <div className={styles.workspaceGrid}>
@@ -271,19 +268,20 @@ export function LabelWorkspace({ sample, remaining, onLabeled }: LabelWorkspaceP
 
         {/* Thuộc tính chất lượng (Quality Flags) */}
         <div className={styles.qualityFlagsBox}>
-          <span className={styles.qualityFlagsTitle}>Thuộc tính ảnh / Biển số</span>
+          <span className={styles.qualityFlagsTitle}>{t.label.flagsTitle}</span>
           <div className={styles.flagChips}>
-            {availableFlags.map((flag) => {
-              const active = qualityFlags.includes(flag.id);
+            {QUALITY_FLAGS.map((flag) => {
+              const active = qualityFlags.includes(flag);
               return (
                 <button
-                  key={flag.id}
+                  key={flag}
                   type="button"
+                  aria-pressed={active}
                   className={`${styles.flagChip} ${active ? styles.flagChipActive : ''}`}
-                  onClick={() => toggleFlag(flag.id)}
+                  onClick={() => toggleFlag(flag)}
                 >
                   <Eye size={12} aria-hidden />
-                  {flag.label}
+                  {t.label.flags[flag]}
                 </button>
               );
             })}

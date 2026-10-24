@@ -74,6 +74,16 @@ export function ReviewRow({ item }: ReviewRowProps) {
           {isExactMatch && <Badge tone="success">Khớp 100%</Badge>}
         </div>
 
+        {item.label.quality_flags && item.label.quality_flags.length > 0 && (
+          <div className={styles.plateRow} aria-label={t.label.flagsTitle}>
+            {item.label.quality_flags.map((flag) => (
+              <Badge key={flag} tone="neutral">
+                {t.label.flags[flag]}
+              </Badge>
+            ))}
+          </div>
+        )}
+
         <div className={styles.comparisonRow}>
           <span>
             {t.review.machine}{' '}

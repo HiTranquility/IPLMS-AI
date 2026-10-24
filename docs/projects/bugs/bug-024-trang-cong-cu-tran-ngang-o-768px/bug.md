@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **Ngày / Người báo** | 2026-10-24 / Claude Code, lượt kiểm bổ sung của [ISSUE-004](../../issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md) |
-| **Trạng thái** | 🆕 New / 🟠 |
+| **Trạng thái** | ✅ Fixed (chờ PR) / 🟠 |
 | **Môi trường** | `develop@5f8e753`, UI dev (`vite`) + API giả `evidence/mock_console_api.py`, Chromium 1243 qua Playwright |
 
 ## Hành vi thực tế
@@ -28,4 +28,8 @@ Mở `/tools` ở viewport 768×1024 → cuộn ngang được ([ảnh](../../is
 
 ## Sửa / kiểm chứng
 
-Chưa sửa. Hướng gợi ý (để người nhận quyết): dùng container query theo bề rộng khối, hoặc `repeat(auto-fit, minmax(14rem, 1fr))` kèm `min-width: 0` cho `.card`. Kiểm lại bằng ma trận 375/768/1280 × sáng/tối.
+Sửa 2026-10-24 trên nhánh `bugfix/bug-021-2026-10-console-ui-polish` (HiTranquility):
+
+- `ui/src/pages/Tools/components/SystemDiagnostics/SystemDiagnostics.module.css:83-87`: `.cardsGrid` đổi sang `repeat(auto-fit, minmax(min(100%, 14rem), 1fr))`, nên số cột theo bề rộng khối, không theo viewport. `:93`: `.card` có `min-width: 0` để giá trị monospace co lại theo ellipsis có sẵn.
+
+Kiểm: đo lại `scrollWidth` bằng Playwright ở 375/768/1280 × sáng/tối, kết quả ghi ở review-1 (lượt kiểm sau khi gộp các nhánh).

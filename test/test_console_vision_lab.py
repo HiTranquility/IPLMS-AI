@@ -112,6 +112,20 @@ class VisionLabFlowTest(unittest.TestCase):
         item = next(i for i in asyncio.run(self.lab.review_queue(self.reviewer)) if i["capture_id"] == capture_id)
         asyncio.run(self.lab.decide(self.reviewer, item["label"]["id"], "APPROVED"))
 
+    def test_co_anh_duoc_luu_va_tra_ve_cho_nguoi_duyet(self):
+        """bug-022: cờ điều kiện ảnh đi cùng nhãn, bỏ trùng, giữ thứ tự cố định."""
+        [capture_id] = self._import(1)
+        asyncio.run(self.lab.add_label(self.annotator, capture_id, "CORRECT", "", ["two_line", "glare", "glare"]))
+        item = next(i for i in asyncio.run(self.lab.review_queue(self.reviewer)) if i["capture_id"] == capture_id)
+        self.assertEqual(["glare", "two_line"], item["label"]["quality_flags"])
+
+    def test_co_anh_la_bi_tu_choi(self):
+        [capture_id] = self._import(1)
+        with self.assertRaises(ValueError):
+            asyncio.run(self.lab.add_label(self.annotator, capture_id, "CORRECT", "", ["rain"]))
+        # Không ghi gì khi cờ sai: mẫu vẫn còn trong hàng gán.
+        self.assertIn(capture_id, [s["capture_id"] for s in asyncio.run(self.lab.label_queue(self.annotator))])
+
     def test_bon_mat_nguoi_gan_khong_duyet_duoc_nhan_cua_minh(self):
         [capture_id] = self._import(1)
         self.assertEqual([capture_id], [s["capture_id"] for s in asyncio.run(self.lab.label_queue(self.annotator))])

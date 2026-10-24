@@ -6,6 +6,7 @@ import type {
   EvalRun,
   LabelVerdict,
   ModelInput,
+  QualityFlag,
   ModelVersion,
   ReviewItem,
   VisionSample,
@@ -43,10 +44,16 @@ export const getVisionStatus = (): Promise<VisionStatus> =>
 export const getLabelQueue = (): Promise<VisionSample[]> =>
   apiClient.get<VisionSample>(VISION_ENDPOINTS.QUEUE(20));
 
-export const addLabel = (captureId: string, verdict: LabelVerdict, plateText: string): Promise<{ id: string }> =>
+export const addLabel = (
+  captureId: string,
+  verdict: LabelVerdict,
+  plateText: string,
+  qualityFlags: QualityFlag[] = [],
+): Promise<{ id: string }> =>
   apiClient.postOne<{ id: string }>(VISION_ENDPOINTS.SAMPLE_LABELS(captureId), {
     verdict,
     plate_text: plateText,
+    quality_flags: qualityFlags,
   });
 
 export const getReviewQueue = (): Promise<ReviewItem[]> =>
