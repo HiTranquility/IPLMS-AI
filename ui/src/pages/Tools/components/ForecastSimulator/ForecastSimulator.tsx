@@ -370,7 +370,7 @@ export function ForecastSimulator() {
             {hoveredHour !== null && (
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text)', display: 'flex', gap: 'var(--space-2)' }}>
                 <span>{t.tools.forecastHour(hoveredHour)}</span>
-                <strong style={{ color: 'var(--color-accent)' }}>{`${currentBaseline[hoveredHour]}%`}</strong>
+                <strong style={{ color: 'var(--color-accent-dark)' }}>{`${currentBaseline[hoveredHour]}%`}</strong>
                 <span style={{ color: 'var(--color-muted)' }}>
                   {`${t.tools.forecastSlots(Math.round((capacity * currentBaseline[hoveredHour]) / 100), capacity)} · ${
                     currentBaseline[hoveredHour] >= surgeThreshold
