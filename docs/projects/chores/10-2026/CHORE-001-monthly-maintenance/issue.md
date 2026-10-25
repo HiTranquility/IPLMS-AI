@@ -5,6 +5,8 @@
 | | |
 |---|---|
 | **Trạng thái** | 🚧 In progress |
+| **Người nhận** | @HiTranquility |
+| **Hạn** | 2026-10-31 |
 | **Ngày tạo** | 2026-10-21 |
 | **Người phụ trách** | @HiTranquility |
 | **Phạm vi** | Việc vặt tháng 10/2026 của repo này |

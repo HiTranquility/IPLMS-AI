@@ -7,6 +7,7 @@
 | | |
 |---|---|
 | **Trạng thái / Mức độ** | ✅ Fixed trong nhánh tích hợp — chưa merge / P1 |
+| **Ưu tiên** | 🔴 |
 | **Người báo / Ngày** | Codex root + review agents / 2026-10-15 |
 | **Revision** | `origin/khoa-develop` tại `9a1aafd`; so base `6dd8547`, đối chiếu develop `c80037d` |
 | **Nguồn** | IPLMS AUDIT-008; nhánh này chưa được nhận vào develop |

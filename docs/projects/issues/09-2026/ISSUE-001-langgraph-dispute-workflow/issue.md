@@ -14,6 +14,8 @@ Tạo lát cắt LangGraph đầu tiên cho dispute: state có schema, node thu�
 | **Bắt nguồn từ** | IPLMS ISSUE-005 (`docs/projects/issues/09-2026/ISSUE-005-langgraph-dispute-workflow`), dời về ai ngày 2026-10-18 theo ADR-0054 |
 | **Người viết** | Codex + chủ đồ án |
 | **Trạng thái** | 🚧 In Progress (phase 2 complete) |
+| **Người nhận** | Dương |
+| **Hạn** | 2026-10-18 |
 | **Danh mục** | `ai` |
 | **Depends On** | PROB-035 direct RAG; object refs trong parking session |
 | **Used By** | Copilot dispute review/API ở phase sau |
