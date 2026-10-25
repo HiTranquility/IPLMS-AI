@@ -98,9 +98,9 @@ class KnowledgeEvalStore:
         if not self.db_url:
             raise RagPipelineError("Thiếu AI_DATABASE_URL cho bộ test tri thức.")
         try:
-            import psycopg2
-
-            return psycopg2.connect(self.db_url, connect_timeout=5)
+            from app.infra.database.db_connection import connect_with_fallback
+            connection, self.db_url = connect_with_fallback(self.db_url, connect_timeout=3)
+            return connection
         except Exception as exc:
             raise RagPipelineError("Không kết nối được PostgreSQL/pgvector.") from exc
 

@@ -3,6 +3,7 @@ import {
   Cpu,
   Eye,
   GitCommit,
+  Layers,
   RefreshCw,
   Type,
 } from 'lucide-react';
@@ -143,6 +144,36 @@ export function SystemDiagnostics() {
             <div className={styles.metaRow}>
               <span className={styles.metaLabel}>{t.tools.cudaSupport}</span>
               <span className={styles.metaValue}>{yesNo(eng?.cuda_available)}</span>
+            </div>
+          </div>
+        </article>
+
+        {/* Card 4: VRAM Allocation & 4GB Workstation Safe Architecture */}
+        <article className={styles.card}>
+          <div className={styles.cardTop}>
+            <h3 className={styles.cardTitle}>
+              <Layers size={16} aria-hidden />
+              <span>{t.tools.vramBudgetTitle}</span>
+            </h3>
+            <span className={`${styles.badge} ${styles.badgeSuccess}`}>4GB SAFE</span>
+          </div>
+
+          <div className={styles.cardMeta}>
+            <div className={styles.metaRow}>
+              <span className={styles.metaLabel}>{t.tools.vramLlm}</span>
+              <span className={`${styles.metaValue} ${styles.metaHighlight}`}>{t.tools.vramLlmLayers}</span>
+            </div>
+            <div className={styles.metaRow}>
+              <span className={styles.metaLabel}>{t.tools.vramLlmMem}</span>
+              <span className={styles.metaValue}>~2.93 GB VRAM</span>
+            </div>
+            <div className={styles.metaRow}>
+              <span className={styles.metaLabel}>{t.tools.vramVision}</span>
+              <span className={styles.metaValue}>{t.tools.vramVisionDevice}</span>
+            </div>
+            <div className={styles.metaRow}>
+              <span className={styles.metaLabel}>{t.tools.vramHeadroom}</span>
+              <span className={styles.metaValue}>{t.tools.vramHeadroomEst}</span>
             </div>
           </div>
         </article>
