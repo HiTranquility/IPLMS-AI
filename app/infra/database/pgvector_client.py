@@ -372,11 +372,12 @@ class PgVectorClient:
                     ),
                     fused AS (
                         SELECT COALESCE(v.id, kw.id) AS id,
-                               COALESCE(v.similarity, 0.0) AS similarity,
+                               COALESCE(v.similarity, 1 - (kc_emb.embedding <=> %(emb)s::vector), 0.0) AS similarity,
                                COALESCE(1.0 / (60 + v.rank), 0.0)
                                  + COALESCE(1.0 / (60 + kw.rank), 0.0) AS hybrid_score
                         FROM vector_candidates v
                         FULL OUTER JOIN keyword_candidates kw ON kw.id = v.id
+                        LEFT JOIN scoped kc_emb ON kc_emb.id = COALESCE(v.id, kw.id)
                     )
                     SELECT kc.content, kc.category, fused.similarity,
                            kc.source, kc.metadata, kc.document_id::text, kc.ordinal,
