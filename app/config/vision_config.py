@@ -24,7 +24,20 @@ class VisionConfig(BaseConfig):
     # True (production): nạp model XONG mới mở cổng/readiness.
     # False (dev): mở cổng ngay, nạp model ở nền vào cache volume.
     vision_warmup_on_start: bool = True
-    device: str = "cpu"
+    device: str = "auto"
+
+    @property
+    def resolved_device(self) -> str:
+        dev = (self.device or "auto").lower()
+        if dev in ("auto", "cuda"):
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    return "cuda"
+            except Exception:
+                pass
+            return "cpu"
+        return dev
 
     # Tăng tốc ANPR bằng ONNX Runtime (AI_ONNX_ENABLED và AI_ONNX_MODEL_DIR)
     onnx_enabled: bool = True

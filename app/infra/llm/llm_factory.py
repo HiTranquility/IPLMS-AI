@@ -50,7 +50,7 @@ class LlmFactory:
         self.api_key = api_key or config.llm_api_key
         self.provider = (profile["provider"] if profile and "provider" in profile else getattr(config, "llm_provider", "local")).lower()
         self.base_url = (config.llm_base_url or "").strip() if not profile or profile.get("provider") == "ollama" else ""
-        self.model = profile["model"] if profile else config.llm_model
+        self.model = profile["model"] if profile else getattr(config, "active_model_name", config.llm_model)
         self.timeout_seconds = profile["timeout_seconds"] if profile else config.llm_timeout_seconds
         self.max_retries = config.llm_max_retries
         self.max_output_tokens = profile["max_output_tokens"] if profile else config.llm_max_output_tokens
