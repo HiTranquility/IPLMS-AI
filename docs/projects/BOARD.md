@@ -29,7 +29,16 @@
 | Review trước tích hợp: Dashboard render dữ liệu bằng HTML | [bug-008](bugs/bug-008-dashboard-render-html-khong-escape/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
 | Console trả SPA 200 cho `/docs`, test `test_console_http` đỏ sẵn | [bug-014](bugs/bug-014-console-docs-tra-spa-thay-vi-404/bug.md) | 🟢 | Chốt 404 cho /docs hay sửa test |
 | Đo weights ứng viên chưa nạp: nạp theo `artifact_key` trong process đo riêng (module M4) | IPLMS ISSUE-126 phase-6 6.12 | 🟢 | M4 chưa có người |
-| Smoke test browser 7 vai × viewport × theme | [SUGGESTION-002](suggestions/10-2026/SUGGESTION-002-mock-api-va-ma-tran-browser-cho-ui.md) | 🟡 | Chờ techlead duyệt (SUGGESTION-003 sidebar màn hẹp đã làm ở ISSUE-006) |
+| Gỡ cửa hậu `/auth/dev-session` + nút "Truy cập nhanh", đính chính AUDIT-005 | [bug-015](bugs/bug-015-dev-session-cua-hau-dang-nhap/bug.md) | 🔴 | Đề xuất HiTranquility (auth M1), chờ chủ dự án chốt (ISSUE-004 OPEN-04); đã sửa trên nhánh `bugfix/bug-015-2026-10-console-auth-hardening`, còn xoá phiên cũ + đính chính AUDIT-005 |
+| Bỏ mật khẩu mặc định trong `harden_console_db.py`, đổi mật khẩu role `ai_console` | [bug-016](bugs/bug-016-mat-khau-db-console-mac-dinh-trong-code/bug.md) | 🔴 | Đề xuất HiTranquility; đã sửa trên nhánh `bugfix/bug-015-2026-10-console-auth-hardening`, còn đổi mật khẩu ở các môi trường |
+| Gỡ mã TOTP cố định `000000`/`123456` vượt MFA và step-up | [bug-026](bugs/bug-026-ma-totp-co-dinh-vuot-xac-thuc/bug.md) | 🔴 | Đã sửa trên nhánh `bugfix/bug-015-2026-10-console-auth-hardening`; còn rà nhật ký phiên từ 2026-10-21 |
+| UI: gỡ hoặc gắn nhãn MÔ PHỎNG cho 7 chỗ bịa kết quả, chuyển `fetch` thẳng sang `apiEndpoints` | [bug-018](bugs/bug-018-ui-bia-ket-qua-khi-api-loi/bug.md) | 🔴 | Đã sửa + nối API thật (ANPR, Anti-Fraud, tri thức, chẩn đoán) trên `bugfix/bug-017-2026-10-chat-studio-contract`; còn Dispute thật (Dương, ai ISSUE-001) và Forecast (chưa có model) |
+| Chat Studio luôn 422: chốt nhận hay bỏ tham số Playground (Khoa), sửa UI (Phát), test hợp đồng (Dương) | [bug-017](bugs/bug-017-chat-studio-luon-422/bug.md) | 🔴 | OPEN-01 chốt (a) backend nhận tham số; đã sửa trên `bugfix/bug-017-2026-10-chat-studio-contract` |
+| UI: escape CSV audit + từ điển mã hành động khớp server | [bug-019](bugs/bug-019-audit-xuat-csv-khong-escape/bug.md), [bug-020](bugs/bug-020-audit-tu-dien-hanh-dong-lech-server/bug.md) | 🟠 | Đã sửa trên `bugfix/bug-019-2026-10-audit-export-and-actions` |
+| UI: sửa tràn ngang `/tools` ở 768px + contrast token `--color-faded`/accent hai theme | [bug-024](bugs/bug-024-trang-cong-cu-tran-ngang-o-768px/bug.md), [bug-025](bugs/bug-025-mau-chu-faded-va-accent-duoi-nguong-tuong-phan/bug.md) | 🟠 | Đã sửa trên `bugfix/bug-021-2026-10-console-ui-polish` (66 màn: 0 tràn, 0 dưới AA) |
+| UI: bóc i18n còn sót (419 dòng / 47 file) + kiểm tự động | [bug-023](bugs/bug-023-che-do-en-tron-tieng-viet/bug.md) | 🟡 | Đã sửa trên `bugfix/bug-021-2026-10-console-ui-polish` + test chặn chữ viết cứng |
+| UI: trục ngày biểu đồ, cờ ảnh khi gán nhãn, hai chú giải ở Vision | [bug-021](bugs/bug-021-bieu-do-xu-huong-cat-nhan-ngay/bug.md), [bug-022](bugs/bug-022-thuoc-tinh-anh-gan-nhan-khong-luu/bug.md) | 🟡 | Đã sửa trên `bugfix/bug-021-2026-10-console-ui-polish`; OPEN-02 chốt lưu cờ vào DB |
+| UI: sidebar trên màn hẹp + smoke test browser 7 vai × viewport × theme | [SUGGESTION-003](suggestions/10-2026/SUGGESTION-003-rail-thu-gon-tren-man-hep.md), [SUGGESTION-002](suggestions/10-2026/SUGGESTION-002-mock-api-va-ma-tran-browser-cho-ui.md) | 🟡 | SUGGESTION-003 🟢 ACCEPTED và đã làm ở ISSUE-006; SUGGESTION-002 (smoke test ma trận browser) vẫn chờ techlead |
 | Đăng nhập dev theo vai an toàn (gỡ chặn demo I-3) | [SUGGESTION-001](suggestions/10-2026/SUGGESTION-001-dang-nhap-dev-cuc-bo-an-toan.md) | 🟠 | Chờ techlead duyệt; Dương dùng cho demo |
 | Lưu cờ ảnh khi gán nhãn để đo ANPR theo điều kiện | [SUGGESTION-004](suggestions/10-2026/SUGGESTION-004-luu-thuoc-tinh-anh-khi-gan-nhan.md) | 🟢 | Đề xuất Khoa xác nhận, UI Phát |
 | Ca hồi quy và so A/B prompt trong Copilot Lab | [SUGGESTION-005](suggestions/10-2026/SUGGESTION-005-gom-luot-chat-vao-bo-eval.md) | 🟢 | Đề xuất Khoa + Dương (định dạng ca), UI Phát |
@@ -82,17 +91,13 @@ Kế hoạch mới nhất theo IPLMS REQ-006 F10 / ISSUE-125 review-4: 16 việc
 | Nạp liệu tri thức RAG — phần AI | IPLMS ISSUE-004 | Dương | 2026-10-16 | Giữ phần ingest/retrieve và test AI; E2E container, caller backend và nối FE chuyển HiTranquility điều phối |
 | Sửa vi phạm so với AI_CONVENTIONS (bổ sung luật lỗi & test doc) | IPLMS AUDIT-004 | Dương | 2026-10-19 | Đã có báo cáo AUDIT-004; cập nhật doc & gRPC mapping |
 | Hoàn thiện phần AI của `khoa-develop`: lọc thẻ `<think>`, rà `guardrail_manager`/`prompt_manager`/`ai_logger`/`llama_server_manager`, viết lại 3 test không gọi mạng | IPLMS ISSUE-126 review-6 BUG-05 · commit `ff479f9` | Khoa | — | Giữ sửa/test trong AI; HiTranquility phụ trách nối revision/caller và tích hợp tổng thể; giao gốc 2026-10-18 |
-| Xác nhận cột "đã kiểm/sửa" mục 3b `AI_USAGE.md` cho phần mình nhận (đề Final §5.3, thiếu là −10%) | IPLMS ISSUE-126 phase-6 6.6 | Chủ module M1–M4 | — | M1 (HiTranquility/Phát) và M2 (Dương @23110012) đã duyệt xác nhận; còn M3/M4 |
+| Xác nhận cột "đã kiểm/sửa" mục 3b `AI_USAGE.md` cho phần mình nhận (đề Final §5.3, thiếu là −10%) | IPLMS ISSUE-126 phase-6 6.6 | Chủ module M1–M4 | — | Mới giao 2026-10-18 |
 
 ## ⏳ Chờ duyệt
 
 | Việc | Hồ sơ | Người làm | Người duyệt |
 |---|---|---|---|
-| Rà test restart/resume, duyệt sai và nối simulate LangGraph — phần workflow AI | [ai ISSUE-001](issues/09-2026/ISSUE-001-langgraph-dispute-workflow/issue.md) | Dương (@23110012) | @HiTranquility |
-| Mở rộng bộ held-out Copilot 32 câu (`HO-01`..`HO-32`) và test chống rò rỉ dữ liệu | `feature/ISSUE-007-2026-10-copilot-rag-heldout-dataset` | Dương (@23110012) | @HiTranquility |
-| Bổ sung test hồi quy ma trận 7 vai trò × 15 quyền Console & chốt chặn API | `feature/ISSUE-008-2026-10-console-access-policy-regression-tests` | Dương (@23110012) | @HiTranquility |
-| Bổ sung test hồi quy UI khi API lỗi, timeout hoặc phiên hết hạn | `feature/ISSUE-009-2026-10-console-ui-error-resilience-tests` | Dương (@23110012) | @HiTranquility |
-| I-3: Kịch bản & test tự động demo liên vai 5 vai trò trên UI AI Console | `feature/ISSUE-010-2026-10-console-cross-role-demo-loop` | Dương (@23110012) | @HiTranquility |
+| *(trống)* | | | |
 
 ## ⛔ Bị chặn
 
@@ -108,11 +113,6 @@ Kế hoạch mới nhất theo IPLMS REQ-006 F10 / ISSUE-125 review-4: 16 việc
 
 | Việc | Hồ sơ | Người làm | Ngày |
 |---|---|---|---|
-| Gỡ 3 lỗ hổng đăng nhập console: dev-session, mật khẩu DB mặc định, mã TOTP cố định | [bug-015](bugs/bug-015-dev-session-cua-hau-dang-nhap/bug.md), [bug-016](bugs/bug-016-mat-khau-db-console-mac-dinh-trong-code/bug.md), [bug-026](bugs/bug-026-ma-totp-co-dinh-vuot-xac-thuc/bug.md) — #50 | HiTranquility | 2026-10-24 |
-| Chat Studio hết 422; UI hết bịa số; nối API thật ANPR, Anti-Fraud, tri thức, chẩn đoán | [bug-017](bugs/bug-017-chat-studio-luon-422/bug.md), [bug-018](bugs/bug-018-ui-bia-ket-qua-khi-api-loi/bug.md) — #51 | HiTranquility | 2026-10-24 |
-| CSV audit an toàn, từ điển mã hành động khớp server | [bug-019](bugs/bug-019-audit-xuat-csv-khong-escape/bug.md), [bug-020](bugs/bug-020-audit-tu-dien-hanh-dong-lech-server/bug.md) — #52 | HiTranquility | 2026-10-24 |
-| Trục ngày, lưu cờ ảnh gán nhãn, i18n đủ VI/EN, tương phản AA, hết tràn ngang | [bug-021](bugs/bug-021-bieu-do-xu-huong-cat-nhan-ngay/bug.md) … [bug-025](bugs/bug-025-mau-chu-faded-va-accent-duoi-nguong-tuong-phan/bug.md) — #53 | HiTranquility | 2026-10-24 |
-| Chỉnh UI console (token, bỏ glow, ngày giờ) · sidebar ngăn kéo màn hẹp + căn hàng form model | [ISSUE-005](issues/10-2026/ISSUE-005-console-ui-polish/issue.md) #54, [ISSUE-006](issues/10-2026/ISSUE-006-console-rail-and-form-align/issue.md) #55 | HiTranquility | 2026-10-24 |
 | Rà `ai/ui` bằng REA: 9 bug, 5 suggestion, báo cáo UI/UX + quy chuẩn, gợi ý giao việc | [ISSUE-004](issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md) | Claude Code | 2026-10-23 |
 | Siết quyền DB user `ai_console` cho process inference: chỉ bảng A2 + `accept_policy` + verify fail-closed | IPLMS ADR-0051 §Hệ quả | HiTranquility | 2026-10-22 |
 | Sửa thứ tự ưu tiên proto gốc (`REPO_ROOT / proto`) trong `compile_proto.py` | IPLMS ISSUE-126 review-6 BUG-06 | HiTranquility | 2026-10-22 |
