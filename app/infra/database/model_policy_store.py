@@ -38,22 +38,8 @@ class ModelPolicyStore:
         if not self.db_url:
             raise RagPipelineError("Thiếu AI_DATABASE_URL để quản trị model.")
         try:
-            import psycopg2
-
-            try:
-                connection = psycopg2.connect(self.db_url, connect_timeout=3)
-            except Exception:
-                for old in ("@ai-db:5432/", "@127.0.0.1:5432/", "@localhost:5432/"):
-                    if old in self.db_url:
-                        fallback_url = self.db_url.replace(old, "@127.0.0.1:5435/")
-                        try:
-                            connection = psycopg2.connect(fallback_url, connect_timeout=3)
-                            self.db_url = fallback_url
-                            break
-                        except Exception:
-                            pass
-                else:
-                    raise
+            from app.infra.database.db_connection import connect_with_fallback
+            connection, self.db_url = connect_with_fallback(self.db_url, connect_timeout=3)
             try:
                 with connection:
                     with connection.cursor() as cursor:
