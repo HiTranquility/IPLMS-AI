@@ -247,7 +247,51 @@ async def arbitrate_dispute(payload: DisputePayload) -> Dict[str, Any]:
 
 @router.post("/dispute-workflow/simulate")
 async def simulate_dispute_workflow(payload: WorkflowSimulationPayload) -> Dict[str, Any]:
-    """Mô phỏng máy trạng thái LangGraph của quy trình phân xử khiếu nại."""
+    """Chạy quy trình phân xử khiếu nại bằng LangGraph StateGraph thật (ai ISSUE-001)."""
+    from langgraph.checkpoint.memory import InMemorySaver
+    from app.core.copilot.engines.dispute_workflow.graph import build_dispute_graph
+    from app.core.copilot.engines.dispute_workflow.state import make_initial_state
+    from app.core.copilot.engines.dispute_workflow.fixtures import (
+        ContractEvidenceClient,
+        ContractEvidenceAnalyzer,
+        ContractPolicyRetriever,
+        ContractRecommendationWriter,
+        DisputeWorkflowDependencies,
+        STANDARD_BACKEND_EVIDENCE_BUNDLE,
+    )
+
+    bundle = dict(STANDARD_BACKEND_EVIDENCE_BUNDLE)
+    bundle["session"] = dict(STANDARD_BACKEND_EVIDENCE_BUNDLE["session"])
+    bundle["session"]["fee"] = float(payload.claimed_amount)
+    media_refs = []
+    if payload.has_checkin_snapshot:
+        media_refs.append({"provider": "s3", "key": "in-checkin.jpg", "bucket": "parking-evidence"})
+    if payload.has_checkout_snapshot:
+        media_refs.append({"provider": "s3", "key": "out-checkout.jpg", "bucket": "parking-evidence"})
+    bundle["media_refs"] = media_refs
+
+    deps = DisputeWorkflowDependencies(
+        evidence_client=ContractEvidenceClient(bundles={f"bundle-{payload.dispute_id}": bundle}),
+        evidence_analyzer=ContractEvidenceAnalyzer(),
+        policy_retriever=ContractPolicyRetriever(),
+        recommendation_writer=ContractRecommendationWriter(),
+    )
+
+    checkpointer = InMemorySaver()
+    graph = build_dispute_graph(deps, checkpointer=checkpointer)
+
+    initial_state = make_initial_state(
+        workflow_id=f"wf-{payload.dispute_id}",
+        dispute_id=payload.dispute_id,
+        evidence_bundle_id=f"bundle-{payload.dispute_id}",
+        actor_id="console-operator",
+        claim_reason=payload.claim_reason or "Khiếu nại phí gửi xe",
+        claimed_amount=payload.claimed_amount,
+    )
+
+    config = {"configurable": {"thread_id": f"sim-{payload.dispute_id}"}}
+    result_state = await graph.ainvoke(initial_state, config)
+
     transitions = [
         {
             "step": 1,
@@ -255,8 +299,9 @@ async def simulate_dispute_workflow(payload: WorkflowSimulationPayload) -> Dict[
             "status": "COMPLETED",
             "data": {
                 "dispute_id": payload.dispute_id,
-                "claimed_amount": payload.claimed_amount,
-                "media_count": 2 if payload.has_checkin_snapshot and payload.has_checkout_snapshot else 0
+                "evidence_version": result_state.get("evidence_version"),
+                "parking_lot_id": result_state.get("parking_lot_id"),
+                "media_count": len(result_state.get("media_refs", [])),
             },
             "description": "Nạp gói bằng chứng phiên đỗ (log vào, log ra, ảnh chụp camera barrier)."
         },
@@ -265,9 +310,7 @@ async def simulate_dispute_workflow(payload: WorkflowSimulationPayload) -> Dict[
             "node": "analyze_evidence",
             "status": "COMPLETED",
             "data": {
-                "plate_match": True,
-                "gate_sensor_delay_minutes": 15.2,
-                "barrier_event": "SENSOR_TIMEOUT_DETECTED"
+                "vision_findings": result_state.get("vision_findings", []),
             },
             "description": "Trích xuất đặc trưng thị giác và timestamp đối chiếu sự cố barie."
         },
@@ -276,8 +319,7 @@ async def simulate_dispute_workflow(payload: WorkflowSimulationPayload) -> Dict[
             "node": "retrieve_policy",
             "status": "COMPLETED",
             "data": {
-                "applicable_rule": "Điều 5 - Quy chế xử lý khiếu nại (Quy_che_xu_ly_khieu_nai_dieu_5.pdf)",
-                "rule_content": "Trường hợp barie kẹt > 10 phút, hệ thống tự động trừ thời gian trễ khỏi phí tính."
+                "policy_chunks": result_state.get("policy_chunks", []),
             },
             "description": "Truy xuất quy định hoàn phí tương ứng từ kho tri thức pgvector."
         },
@@ -286,34 +328,39 @@ async def simulate_dispute_workflow(payload: WorkflowSimulationPayload) -> Dict[
             "node": "validate_evidence",
             "status": "COMPLETED",
             "data": {
-                "is_valid": payload.has_checkin_snapshot and payload.has_checkout_snapshot,
-                "route": "draft" if (payload.has_checkin_snapshot and payload.has_checkout_snapshot) else "review"
+                "missing_evidence": result_state.get("missing_evidence", []),
+                "is_valid": len(result_state.get("missing_evidence", [])) == 0,
             },
             "description": "Kiểm tra tính toàn vẹn của bằng chứng trước khi sinh đề xuất."
         },
-        {
-            "step": 5,
+    ]
+
+    if result_state.get("recommendation"):
+        rec = result_state["recommendation"]
+        transitions.append({
+            "step": len(transitions) + 1,
             "node": "draft_recommendation",
             "status": "COMPLETED",
             "data": {
-                "proposed_verdict": "APPROVE_PARTIAL_REFUND",
-                "recommended_amount": payload.claimed_amount,
-                "justification": f"Xác nhận sự cố barie trễ {15.2} phút theo Điều 5. Đề xuất hoàn {payload.claimed_amount:,.0f} VNĐ."
+                "proposed_verdict": rec.get("verdict"),
+                "recommended_amount": rec.get("recommended_refund"),
+                "justification": rec.get("justification"),
+                "cited_sources": rec.get("cited_sources", []),
             },
             "description": "Dự thảo phương án giải quyết dựa trên quy chế và bằng chứng."
+        })
+
+    transitions.append({
+        "step": len(transitions) + 1,
+        "node": "human_review",
+        "status": "AWAITING_STAFF_SIGN_OFF" if result_state.get("status") == "awaiting_review" else result_state.get("status"),
+        "data": {
+            "requires_human_approval": True,
+            "assigned_role": "PARKING_LOT_SUPERVISOR",
+            "auto_refund_permitted": False,
         },
-        {
-            "step": 6,
-            "node": "human_review",
-            "status": "AWAITING_STAFF_SIGN_OFF",
-            "data": {
-                "requires_human_approval": True,
-                "assigned_role": "PARKING_LOT_SUPERVISOR",
-                "auto_refund_permitted": False
-            },
-            "description": "Chuyển giao cho Giám sát bãi xe ký duyệt (ngăn chặn AI tự ý chi trả tiền)."
-        }
-    ]
+        "description": "Chuyển giao cho Giám sát bãi xe ký duyệt (ngăn chặn AI tự ý chi trả tiền)."
+    })
 
     return {
         "success": True,
@@ -321,5 +368,5 @@ async def simulate_dispute_workflow(payload: WorkflowSimulationPayload) -> Dict[
         "workflow": "LangGraph StateGraph [Bounded Dispute Recommendation]",
         "nodes_traversed": len(transitions),
         "steps": transitions,
-        "final_status": "AWAITING_STAFF_SIGN_OFF"
+        "final_status": "AWAITING_STAFF_SIGN_OFF" if result_state.get("status") == "awaiting_review" else result_state.get("status"),
     }
