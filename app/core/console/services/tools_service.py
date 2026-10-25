@@ -50,17 +50,18 @@ def _engine_status(vision) -> dict[str, Any]:
         loaded_ocr = anpr_models.ocr_reader() is not None
     except Exception:  # noqa: BLE001 — thiếu thư viện vision thì báo "không rõ"
         pass
+    cuda = False
+    torch_version = None
     try:
-        torch_version: Optional[str] = importlib.metadata.version("torch")
-    except importlib.metadata.PackageNotFoundError:
-        torch_version = None
-    torch_mod = sys.modules.get("torch")  # chỉ đọc khi đã nạp sẵn; không import torch chỉ để hỏi
-    cuda = None
-    if torch_mod is not None:
+        import torch
+        torch_version = torch.__version__
+        cuda = bool(torch.cuda.is_available())
+    except Exception:
         try:
-            cuda = bool(torch_mod.cuda.is_available())
-        except Exception:  # noqa: BLE001
-            cuda = None
+            torch_version = importlib.metadata.version("torch")
+        except Exception:
+            torch_version = None
+        cuda = False
     return {
         "yolo_weights_path": path,
         "yolo_weights_bytes": os.path.getsize(path) if os.path.isfile(path) else None,
@@ -105,9 +106,9 @@ class ConsoleToolsService:
         ]
         return {
             "checks": [{"key": k, "label": label, "ok": bool(ok)} for k, label, ok in checks],
-            "llm_model": cfg.llm.llm_model,
+            "llm_model": getattr(cfg.llm, "active_model_name", cfg.llm.llm_model),
             "telemetry_enabled": cfg.telemetry.enabled,
-            "vision_device": cfg.vision.device,
+            "vision_device": getattr(cfg.vision, "resolved_device", cfg.vision.device),
             "telemetry_retention_days": cfg.telemetry.retention_days,
             "vision_retention_days": cfg.console.vision_retention_days,
             "engines": _engine_status(cfg.vision),
@@ -178,6 +179,17 @@ class ConsoleToolsService:
             for d in docs
         ]
 
+    async def delete_knowledge_document(
+        self, actor: ConsoleActor, document_id: str, parking_lot_id: Optional[str] = None
+    ) -> int:
+        access_policy.require(actor, "ai:prompt:edit")
+        deleted = await self._ingestion_service().delete(document_id, _lot(parking_lot_id))
+        await self.store.add_audit(
+            actor.member_id, "knowledge.delete", "knowledge_document",
+            str(document_id), f"Đã xóa tài liệu {document_id}",
+        )
+        return deleted
+
     async def try_copilot_stream(
         self, actor: ConsoleActor, query: str, parking_lot_id: Optional[str] = None,
         top_k: Optional[int] = None, min_similarity: Optional[float] = None,
@@ -190,7 +202,7 @@ class ConsoleToolsService:
             raise ValueError("Câu hỏi cần 1–2000 ký tự.")
         request = AskQuestionRequest(
             query=query, user_id=actor.member_id, user_role="console",
-            parking_lot_id=_lot(parking_lot_id), preview=False,
+            parking_lot_id=_lot(parking_lot_id), preview=True,
             top_k=top_k, min_similarity=min_similarity, temperature=temperature,
         )
         async for chunk in self.copilot.stream_answer(request):
@@ -207,7 +219,7 @@ class ConsoleToolsService:
             raise ValueError("Câu hỏi cần 1–2000 ký tự.")
         request = AskQuestionRequest(
             query=query, user_id=actor.member_id, user_role="console",
-            parking_lot_id=_lot(parking_lot_id), preview=False,
+            parking_lot_id=_lot(parking_lot_id), preview=True,
             top_k=top_k, min_similarity=min_similarity, temperature=temperature,
         )
         return await self.copilot.ask_question(request, task=CONSOLE_TRY_TASK)
