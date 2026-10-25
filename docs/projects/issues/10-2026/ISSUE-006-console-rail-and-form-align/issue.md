@@ -5,6 +5,7 @@
 | | |
 |---|---|
 | **Trạng thái** | ✅ Done — merge vào develop qua PR (2026-10-24) |
+| **Ngày đóng** | 2026-10-24 |
 | **Người phụ trách** | HiTranquility (cùng Claude Code) |
 | **Phạm vi** | `ai/ui` (chỉ giao diện) |
 | **Nhánh** | `feature/ISSUE-006-2026-10-console-rail-and-form-align` |

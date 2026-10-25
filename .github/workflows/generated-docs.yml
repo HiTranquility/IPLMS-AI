@@ -1,0 +1,82 @@
+# File sinh tự động chỉ CI trên develop ghi (IPLMS ADR-0060). Bản giống hệt ở gốc IPLMS và 6 repo con.
+name: IPLMS · Generated docs
+
+on:
+  pull_request:
+  push:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: PR không sửa file sinh
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # Tên nhánh đi qua env, không nội suy vào shell (bug-047).
+      - name: Check generated files
+        env:
+          BASE: ${{ github.base_ref }}
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+        run: python -X utf8 script/check_generated.py --base "origin/$BASE"
+      - name: Test board generator
+        run: |
+          if [ -f script/test_board_gen.py ]; then python -X utf8 script/test_board_gen.py; fi
+
+  regenerate:
+    name: Sinh lại BOARD và registry
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    concurrency:
+      group: generated-docs-${{ github.repository }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Generate BOARD
+        run: python -X utf8 script/board_gen.py
+      # Chỉ ở gốc IPLMS. Cần SUBMODULES_TOKEN (PAT read-only 6 repo con, bug-048); thiếu thì bỏ qua registry.
+      - name: Generate ISSUE registry
+        if: hashFiles('script/issue_registry.py') != ''
+        env:
+          TOKEN: ${{ secrets.SUBMODULES_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::notice::Thiếu SUBMODULES_TOKEN (bug-048): bỏ qua issue-registry.md"
+            exit 0
+          fi
+          trap 'git config --global --remove-section "url.https://x-access-token:${TOKEN}@github.com/" || true' EXIT
+          git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
+          git submodule update --init
+          python -X utf8 script/issue_registry.py
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for f in docs/projects/BOARD.md docs/projects/issue-registry.md; do
+            if [ -f "$f" ]; then git add -- "$f"; fi
+          done
+          if git diff --cached --quiet; then
+            echo "Không có gì đổi"
+            exit 0
+          fi
+          git commit -m "chore(docs): sinh lại BOARD/registry từ hồ sơ [skip ci]"
+          git pull --rebase origin develop
+          git push origin HEAD:develop

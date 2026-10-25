@@ -6,6 +6,8 @@
 |---|---|
 | **Ngày / Người báo** | 2026-10-23 / Claude Code, tìm thấy khi đọc code console trong [ISSUE-004](../../issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md) |
 | **Trạng thái** | ✅ Fixed — merge vào develop qua HiTranquility/IPLMS-AI#50 (2026-10-24) / 🔴 bảo mật (lộ secret) |
+| **Ngày đóng** | 2026-10-24 |
+| **Ưu tiên** | 🔴 |
 | **Môi trường** | `develop@5f8e753`, thêm ở commit `ae47ad2` |
 
 ## Hành vi thực tế
