@@ -27,7 +27,6 @@
 | Review trước tích hợp: Hiệu chỉnh biển số mất ký tự | [bug-005](bugs/bug-005-plate-correction-mat-ky-tu/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
 | Review trước tích hợp: Prior loại xe không phải observation | [bug-006](bugs/bug-006-vehicle-prior-gia-lam-observation/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
 | Review trước tích hợp: Dashboard render dữ liệu bằng HTML | [bug-008](bugs/bug-008-dashboard-render-html-khong-escape/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
-| Console trả SPA 200 cho `/docs`, test `test_console_http` đỏ sẵn | [bug-014](bugs/bug-014-console-docs-tra-spa-thay-vi-404/bug.md) | 🟢 | Chốt 404 cho /docs hay sửa test |
 | Đo weights ứng viên chưa nạp: nạp theo `artifact_key` trong process đo riêng (module M4) | IPLMS ISSUE-126 phase-6 6.12 | 🟢 | M4 chưa có người |
 | Gỡ cửa hậu `/auth/dev-session` + nút "Truy cập nhanh", đính chính AUDIT-005 | [bug-015](bugs/bug-015-dev-session-cua-hau-dang-nhap/bug.md) | 🔴 | Đề xuất HiTranquility (auth M1), chờ chủ dự án chốt (ISSUE-004 OPEN-04); đã sửa trên nhánh `bugfix/bug-015-2026-10-console-auth-hardening`, còn xoá phiên cũ + đính chính AUDIT-005 |
 | Bỏ mật khẩu mặc định trong `harden_console_db.py`, đổi mật khẩu role `ai_console` | [bug-016](bugs/bug-016-mat-khau-db-console-mac-dinh-trong-code/bug.md) | 🔴 | Đề xuất HiTranquility; đã sửa trên nhánh `bugfix/bug-015-2026-10-console-auth-hardening`, còn đổi mật khẩu ở các môi trường |
@@ -113,6 +112,7 @@ Kế hoạch mới nhất theo IPLMS REQ-006 F10 / ISSUE-125 review-4: 16 việc
 
 | Việc | Hồ sơ | Người làm | Ngày |
 |---|---|---|---|
+| Console trả 404 cho /docs, /redoc, /openapi.json (không lộ qua SPA fallback) | [bug-014](bugs/bug-014-console-docs-tra-spa-thay-vi-404/bug.md) | HiTranquility | 2026-10-25 |
 | Rà `ai/ui` bằng REA: 9 bug, 5 suggestion, báo cáo UI/UX + quy chuẩn, gợi ý giao việc | [ISSUE-004](issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md) | Claude Code | 2026-10-23 |
 | Siết quyền DB user `ai_console` cho process inference: chỉ bảng A2 + `accept_policy` + verify fail-closed | IPLMS ADR-0051 §Hệ quả | HiTranquility | 2026-10-22 |
 | Sửa thứ tự ưu tiên proto gốc (`REPO_ROOT / proto`) trong `compile_proto.py` | IPLMS ISSUE-126 review-6 BUG-06 | HiTranquility | 2026-10-22 |
@@ -120,5 +120,4 @@ Kế hoạch mới nhất theo IPLMS REQ-006 F10 / ISSUE-125 review-4: 16 việc
 | Rà soát và kiểm chứng 3 bug tích hợp (bug-003 Docker context, bug-004 launcher REST/gRPC, bug-007 ingest duration_ms) | [bug-003](bugs/bug-003-docker-context-khong-dong-bo/bug.md), [bug-004](bugs/bug-004-launcher-dev-dung-grpc/bug.md), [bug-007](bugs/bug-007-ingest-response-sai-duration/bug.md) | HiTranquility | 2026-10-22 |
 | Cổng từ chối Copilot (chunk vector tốt nhất < `AI_RAG_MIN_SIMILARITY` → NO_CONTEXT, không gọi LLM) + eval end-to-end + bộ held-out — **merge trước khi Khoa/Dương duyệt** theo quyết định chủ đồ án 2026-10-18; Khoa/Dương cần xem lại sau | IPLMS ISSUE-126 review-7 | Claude Code | 2026-10-18 |
 | Gộp `khoa-develop` (5f24a1f) vào nhánh console, giữ bản develop khi xung đột; bug-011 hết do ADR-0050 bỏ `/api/copilot/ask` | [bug-011](bugs/bug-011-copilot-ask-nhan-api-key-tu-client-va-tra-loi-gia-khi-llm-loi/bug.md) · IPLMS ISSUE-126 | Claude Code | 2026-10-17 |
-| Lỗi model không tồn tại bị nuốt thành "AI service unreachable" | IPLMS bug-014 | Dương | 2026-10-13 |
 | Sửa 4 lỗi sai im lặng (grader tiền, occupancy 0%, seasonal baseline, phân loại xe) + nâng ANPR/keyword/Forecast | bug-001 · IPLMS PROB-045 | Claude | 2026-10-06 |
