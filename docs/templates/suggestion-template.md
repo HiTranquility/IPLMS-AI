@@ -8,7 +8,7 @@
 | **Ngày** | YYYY-MM-DD |
 | **Người đề xuất** | <tên> |
 | **Techlead duyệt** | @HiTranquility — ⏳ chờ / 🟢 ACCEPTED YYYY-MM-DD / 🔴 REJECTED + lý do *(chỉ techlead điền)* |
-| **Làm trước khi duyệt?** | Không / Có — nhánh `…`, PR draft #… *(chỉ việc nhỏ theo ADR-0056 §3; không merge trước khi duyệt)* |
+| **Làm trước khi duyệt?** | Không / Có — nhánh `…`, PR draft #… *(chỉ việc nhỏ theo IPLMS ADR-0059 §3; không merge trước khi duyệt)* |
 | **Phạm vi** | <repo này> |
 
 ## Đề xuất
