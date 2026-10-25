@@ -82,13 +82,17 @@ Kế hoạch mới nhất theo IPLMS REQ-006 F10 / ISSUE-125 review-4: 16 việc
 | Nạp liệu tri thức RAG — phần AI | IPLMS ISSUE-004 | Dương | 2026-10-16 | Giữ phần ingest/retrieve và test AI; E2E container, caller backend và nối FE chuyển HiTranquility điều phối |
 | Sửa vi phạm so với AI_CONVENTIONS (bổ sung luật lỗi & test doc) | IPLMS AUDIT-004 | Dương | 2026-10-19 | Đã có báo cáo AUDIT-004; cập nhật doc & gRPC mapping |
 | Hoàn thiện phần AI của `khoa-develop`: lọc thẻ `<think>`, rà `guardrail_manager`/`prompt_manager`/`ai_logger`/`llama_server_manager`, viết lại 3 test không gọi mạng | IPLMS ISSUE-126 review-6 BUG-05 · commit `ff479f9` | Khoa | — | Giữ sửa/test trong AI; HiTranquility phụ trách nối revision/caller và tích hợp tổng thể; giao gốc 2026-10-18 |
-| Xác nhận cột "đã kiểm/sửa" mục 3b `AI_USAGE.md` cho phần mình nhận (đề Final §5.3, thiếu là −10%) | IPLMS ISSUE-126 phase-6 6.6 | Chủ module M1–M4 | — | Mới giao 2026-10-18 |
+| Xác nhận cột "đã kiểm/sửa" mục 3b `AI_USAGE.md` cho phần mình nhận (đề Final §5.3, thiếu là −10%) | IPLMS ISSUE-126 phase-6 6.6 | Chủ module M1–M4 | — | M1 (HiTranquility/Phát) và M2 (Dương @23110012) đã duyệt xác nhận; còn M3/M4 |
 
 ## ⏳ Chờ duyệt
 
 | Việc | Hồ sơ | Người làm | Người duyệt |
 |---|---|---|---|
-| *(trống)* | | | |
+| Rà test restart/resume, duyệt sai và nối simulate LangGraph — phần workflow AI | [ai ISSUE-001](issues/09-2026/ISSUE-001-langgraph-dispute-workflow/issue.md) | Dương (@23110012) | @HiTranquility |
+| Mở rộng bộ held-out Copilot 32 câu (`HO-01`..`HO-32`) và test chống rò rỉ dữ liệu | `feature/ISSUE-007-2026-10-copilot-rag-heldout-dataset` | Dương (@23110012) | @HiTranquility |
+| Bổ sung test hồi quy ma trận 7 vai trò × 15 quyền Console & chốt chặn API | `feature/ISSUE-008-2026-10-console-access-policy-regression-tests` | Dương (@23110012) | @HiTranquility |
+| Bổ sung test hồi quy UI khi API lỗi, timeout hoặc phiên hết hạn | `feature/ISSUE-009-2026-10-console-ui-error-resilience-tests` | Dương (@23110012) | @HiTranquility |
+| I-3: Kịch bản & test tự động demo liên vai 5 vai trò trên UI AI Console | `feature/ISSUE-010-2026-10-console-cross-role-demo-loop` | Dương (@23110012) | @HiTranquility |
 
 ## ⛔ Bị chặn
 
