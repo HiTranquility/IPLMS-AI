@@ -27,7 +27,6 @@
 | Review trước tích hợp: Hiệu chỉnh biển số mất ký tự | [bug-005](bugs/bug-005-plate-correction-mat-ky-tu/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
 | Review trước tích hợp: Prior loại xe không phải observation | [bug-006](bugs/bug-006-vehicle-prior-gia-lam-observation/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
 | Review trước tích hợp: Dashboard render dữ liệu bằng HTML | [bug-008](bugs/bug-008-dashboard-render-html-khong-escape/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
-| Console trả SPA 200 cho `/docs`, test `test_console_http` đỏ sẵn | [bug-014](bugs/bug-014-console-docs-tra-spa-thay-vi-404/bug.md) | 🟢 | Chốt 404 cho /docs hay sửa test |
 | Đo weights ứng viên chưa nạp: nạp theo `artifact_key` trong process đo riêng (module M4) | IPLMS ISSUE-126 phase-6 6.12 | 🟢 | M4 chưa có người |
 | Gỡ cửa hậu `/auth/dev-session` + nút "Truy cập nhanh", đính chính AUDIT-005 | [bug-015](bugs/bug-015-dev-session-cua-hau-dang-nhap/bug.md) | 🔴 | Đề xuất HiTranquility (auth M1), chờ chủ dự án chốt (ISSUE-004 OPEN-04); đã sửa trên nhánh `bugfix/bug-015-2026-10-console-auth-hardening`, còn xoá phiên cũ + đính chính AUDIT-005 |
 | Bỏ mật khẩu mặc định trong `harden_console_db.py`, đổi mật khẩu role `ai_console` | [bug-016](bugs/bug-016-mat-khau-db-console-mac-dinh-trong-code/bug.md) | 🔴 | Đề xuất HiTranquility; đã sửa trên nhánh `bugfix/bug-015-2026-10-console-auth-hardening`, còn đổi mật khẩu ở các môi trường |
@@ -113,6 +112,12 @@ Kế hoạch mới nhất theo IPLMS REQ-006 F10 / ISSUE-125 review-4: 16 việc
 
 | Việc | Hồ sơ | Người làm | Ngày |
 |---|---|---|---|
+| Console trả 404 cho /docs, /redoc, /openapi.json (không lộ qua SPA fallback) | [bug-014](bugs/bug-014-console-docs-tra-spa-thay-vi-404/bug.md) | HiTranquility | 2026-10-25 |
+| Gỡ 3 lỗ hổng đăng nhập console: dev-session, mật khẩu DB mặc định, mã TOTP cố định | [bug-015](bugs/bug-015-dev-session-cua-hau-dang-nhap/bug.md), [bug-016](bugs/bug-016-mat-khau-db-console-mac-dinh-trong-code/bug.md), [bug-026](bugs/bug-026-ma-totp-co-dinh-vuot-xac-thuc/bug.md) — #50 | HiTranquility | 2026-10-24 |
+| Chat Studio hết 422; UI hết bịa số; nối API thật ANPR, Anti-Fraud, tri thức, chẩn đoán | [bug-017](bugs/bug-017-chat-studio-luon-422/bug.md), [bug-018](bugs/bug-018-ui-bia-ket-qua-khi-api-loi/bug.md) — #51 | HiTranquility | 2026-10-24 |
+| CSV audit an toàn, từ điển mã hành động khớp server | [bug-019](bugs/bug-019-audit-xuat-csv-khong-escape/bug.md), [bug-020](bugs/bug-020-audit-tu-dien-hanh-dong-lech-server/bug.md) — #52 | HiTranquility | 2026-10-24 |
+| Trục ngày, lưu cờ ảnh gán nhãn, i18n đủ VI/EN, tương phản AA, hết tràn ngang | [bug-021](bugs/bug-021-bieu-do-xu-huong-cat-nhan-ngay/bug.md) … [bug-025](bugs/bug-025-mau-chu-faded-va-accent-duoi-nguong-tuong-phan/bug.md) — #53 | HiTranquility | 2026-10-24 |
+| Chỉnh UI console (token, bỏ glow, ngày giờ) · sidebar ngăn kéo màn hẹp + căn hàng form model | [ISSUE-005](issues/10-2026/ISSUE-005-console-ui-polish/issue.md) #54, [ISSUE-006](issues/10-2026/ISSUE-006-console-rail-and-form-align/issue.md) #55 | HiTranquility | 2026-10-24 |
 | Rà `ai/ui` bằng REA: 9 bug, 5 suggestion, báo cáo UI/UX + quy chuẩn, gợi ý giao việc | [ISSUE-004](issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md) | Claude Code | 2026-10-23 |
 | Siết quyền DB user `ai_console` cho process inference: chỉ bảng A2 + `accept_policy` + verify fail-closed | IPLMS ADR-0051 §Hệ quả | HiTranquility | 2026-10-22 |
 | Sửa thứ tự ưu tiên proto gốc (`REPO_ROOT / proto`) trong `compile_proto.py` | IPLMS ISSUE-126 review-6 BUG-06 | HiTranquility | 2026-10-22 |
