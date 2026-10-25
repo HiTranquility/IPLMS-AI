@@ -13,7 +13,8 @@
 
 | # | Việc | Nguồn | Commit |
 |---|---|---|---|
-| 1 | Luật "ý tưởng giữa chừng": dòng trong `AGENTS.md` + ô **Techlead duyệt** / **Làm trước khi duyệt?** trong mẫu SUGGESTION | IPLMS ADR-0056, IPLMS REQ-014 | (commit đầu nhánh) |
+| 1 | Luật "ý tưởng giữa chừng": dòng trong `AGENTS.md` + ô **Techlead duyệt** / **Làm trước khi duyệt?** trong mẫu SUGGESTION | IPLMS ADR-0059, IPLMS REQ-017 | (commit đầu nhánh) |
+| 2 | Đổi số trích dẫn: IPLMS ADR-0056/REQ-014 → ADR-0059/REQ-017 (gốc trùng số với develop) | IPLMS bug-054 | (commit này) |
 
 ## Tiêu chí chấp nhận
 

@@ -8,7 +8,7 @@
 | **Ngày** | 2026-10-23 |
 | **Người đề xuất** | Claude Code (rà UI theo yêu cầu chủ dự án, [ISSUE-004](../../issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md)) |
 | **Techlead duyệt** | @HiTranquility — ⏳ chờ |
-| **Làm trước khi duyệt?** | Không: chạm xác thực, thuộc diện phải chờ duyệt theo IPLMS ADR-0056 |
+| **Làm trước khi duyệt?** | Không: chạm xác thực, thuộc diện phải chờ duyệt theo IPLMS ADR-0059 |
 | **Phạm vi** | `ai/` (console auth và UI đăng nhập) |
 
 ## Đề xuất
