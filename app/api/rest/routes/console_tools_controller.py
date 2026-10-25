@@ -84,6 +84,11 @@ class KnowledgeDocOut(BaseModel):
 ASK_BODY_FIELDS = ("query", "parking_lot_id", "min_similarity", "top_k", "temperature")
 
 
+class DeleteDocOut(BaseModel):
+    deleted: int
+    document_id: str
+
+
 class AskIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     query: str = Field(min_length=1, max_length=2000)
@@ -140,6 +145,16 @@ async def knowledge_documents(
 ):
     docs = await console_tools_service.knowledge_documents(actor, parking_lot_id)
     return BaseResponse.ok([KnowledgeDocOut(**d) for d in docs], "OK")
+
+
+@router.delete("/knowledge/documents/{document_id}", response_model=BaseResponse[DeleteDocOut])
+async def delete_knowledge_document(
+    document_id: str,
+    parking_lot_id: Optional[str] = Query(None, max_length=128),
+    actor: ConsoleActor = Depends(require_permission("ai:prompt:edit")),
+):
+    deleted_count = await console_tools_service.delete_knowledge_document(actor, document_id, parking_lot_id)
+    return BaseResponse.ok([DeleteDocOut(deleted=deleted_count, document_id=document_id)], f"Đã xóa tài liệu {document_id}")
 
 
 @router.post("/copilot/stream")
