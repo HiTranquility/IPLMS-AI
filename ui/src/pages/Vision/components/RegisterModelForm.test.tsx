@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { renderWithProviders } from '@/test/utils';
@@ -20,8 +20,8 @@ describe('RegisterModelForm', () => {
     await user.click(check);
     expect(screen.getByText('artifact_key không được để trống.')).toBeTruthy();
 
-    await user.type(screen.getByLabelText(/artifact_key/), 'models/anpr/1.2.0.pt');
-    await user.type(screen.getByLabelText(/sha256 weights/), 'ab'.repeat(32));
+    fireEvent.change(screen.getByLabelText(/artifact_key/), { target: { value: 'models/anpr/1.2.0.pt' } });
+    fireEvent.change(screen.getByLabelText(/sha256 weights/), { target: { value: 'ab'.repeat(32) } });
     await user.click(check);
     expect(screen.getByText(/Định dạng hợp lệ\. Chỉ kiểm cục bộ/)).toBeTruthy();
     expect(screen.queryByText(/16ms/)).toBeNull();
