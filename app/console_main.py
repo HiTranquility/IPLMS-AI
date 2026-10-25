@@ -5,7 +5,7 @@ Chạy native: `python -m app.console_main` (nghe AI_CONSOLE_BIND_HOST, mặc đ
 """
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
 from app.api.rest.console_router import console_router
@@ -90,6 +90,21 @@ def assets(path: str):
     if candidate.is_file() and candidate.is_relative_to(UI_DIST / "assets"):
         return FileResponse(candidate)
     return JSONResponse(status_code=404, content={"message": "Asset not found"})
+
+
+# Không lộ swagger/openapi dù có fallback SPA (bug-014 / ADR-0048 §5).
+@app.get("/docs", include_in_schema=False)
+@app.get("/docs/{_path:path}", include_in_schema=False)
+@app.get("/redoc", include_in_schema=False)
+@app.get("/redoc/{_path:path}", include_in_schema=False)
+@app.get("/openapi.json", include_in_schema=False)
+@app.get("/console/docs", include_in_schema=False)
+@app.get("/console/docs/{_path:path}", include_in_schema=False)
+@app.get("/console/redoc", include_in_schema=False)
+@app.get("/console/redoc/{_path:path}", include_in_schema=False)
+@app.get("/console/openapi.json", include_in_schema=False)
+def disabled_docs(_path: str = ""):
+    return Response(status_code=404)
 
 
 @app.get("/", include_in_schema=False)

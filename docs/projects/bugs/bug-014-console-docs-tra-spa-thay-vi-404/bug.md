@@ -5,25 +5,31 @@
 | | |
 |---|---|
 | **Ngày / Người báo** | 2026-10-23 / Claude Code (phát hiện khi kiểm [bug-013](../bug-013-vision-demo-seed-khong-chan-production/bug.md)) |
-| **Trạng thái** | 🆕 New / 🟡 |
+| **Trạng thái** | ✅ Fixed |
 | **Môi trường** | local, `develop@534e0f8` |
 
 ## Hành vi thực tế
 
-`GET /docs` trên console trả 200 (nội dung `index.html` của SPA). `test/test_console_http.py:134` chờ 404 nên FAIL.
+Trước khi sửa: `GET /docs` trên console trả 200 (nội dung `index.html` của SPA fallback). `test/test_console_http.py:134` chờ 404 nên FAIL (`AssertionError: 404 != 200`).
 
 ## Hành vi mong đợi
 
-Cần chốt một trong hai: (a) đường dẫn nhạy cảm (`/docs`, `/redoc`, `/openapi.json`) trả 404 dù có SPA fallback; hoặc (b) chấp nhận SPA fallback và sửa test chỉ kiểm "không phải Swagger".
+Đường dẫn nhạy cảm/docs (`/docs`, `/docs/{path}`, `/redoc`, `/redoc/{path}`, `/openapi.json`, và các tiền tố `/console/docs`, v.v.) phải trả 404 dù có SPA fallback, tuân thủ nguyên tắc không lộ Swagger / 0 CDN (ADR-0048 §5).
 
 ## Tái hiện
 
-`AI_TEST_DATABASE_URL=… python -m unittest test.test_console_http` trên `develop` (chưa có thay đổi bug-013) → `AssertionError: 404 != 200`.
+`AI_TEST_DATABASE_URL=… python -m unittest test.test_console_http` trên `develop` → `AssertionError: 404 != 200`.
 
 ## Bằng chứng
 
-`app/console_main.py:98` `@app.get("/{path:path}")` (thêm ở `cb42e9c`, ISSUE-003) bắt mọi đường dẫn; `docs_url=None` ở `app/console_main.py:29` vẫn đúng nên không lộ Swagger, chỉ test lệch.
+`app/console_main.py` `@app.get("/{path:path}")` bắt mọi đường dẫn; `docs_url=None` ở `app/console_main.py:29` không đăng ký route của Swagger nên request rơi vào route catch-all SPA trả `index.html`.
 
 ## Sửa / kiểm chứng
 
-Chưa sửa.
+- `app/console_main.py`: Khai báo explicit 404 handler cho các path:
+  - `/docs`, `/docs/{_path:path}`
+  - `/redoc`, `/redoc/{_path:path}`
+  - `/openapi.json`
+  - `/console/docs`, `/console/docs/{_path:path}`, `/console/redoc`, `/console/openapi.json`
+- `test/test_console_http.py`: Kiểm tra trả về 404 cho `/docs`, `/openapi.json`, và `/redoc`.
+- Chạy kiểm thử: `docker exec -i iplms-ai-dev-console-1 python -` với `test_console_http.py` → 2/2 tests PASS.
