@@ -2,7 +2,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { Turn } from '@/api/types';
-import { me, mockApi, ok, renderWithProviders } from '@/test/utils';
+import { fail, me, mockApi, ok, renderWithProviders } from '@/test/utils';
 import { CopilotLabPage } from './CopilotLabPage';
 
 const turn: Turn = {
@@ -56,5 +56,67 @@ describe('CopilotLabPage', () => {
     await screen.findByRole('button', { name: /Phí gửi xe/ });
     await user.click(screen.getByRole('button', { name: 'Chưa đúng' }));
     await waitFor(() => expect(calls.some((c) => c.url.includes('feedback=-1'))).toBe(true));
+  });
+
+  it('khi API tải danh sách lượt trả lỗi 500 thì hiện khối lỗi và bấm "Thử lại" phục hồi được', async () => {
+    let attempts = 0;
+    mockApi((url) => {
+      if (url.endsWith('/me')) return ok(me());
+      if (url.includes('/copilot/turns?')) {
+        attempts += 1;
+        return attempts === 1
+          ? fail(500, 'INTERNAL_ERROR', 'Không truy cập được telemetry AI.')
+          : ok(turn);
+      }
+      return undefined;
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<CopilotLabPage />);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Không truy cập được telemetry AI.');
+    expect(alert.textContent).toContain('Mã: INTERNAL_ERROR');
+
+    await user.click(screen.getByRole('button', { name: 'Thử lại' }));
+    expect(await screen.findByRole('button', { name: /Phí gửi xe/ })).toBeTruthy();
+    expect(attempts).toBe(2);
+  });
+
+  it('khi gửi chấm điểm bị chặn 403 FORBIDDEN thì báo lỗi trung thực, không báo lưu thành công giả', async () => {
+    mockApi((url) => {
+      if (url.endsWith('/me')) return ok(me());
+      if (url.includes('/copilot/turns?')) return ok(turn);
+      if (url.endsWith('/review')) return fail(403, 'FORBIDDEN', 'Bạn không có quyền thực hiện thao tác này.');
+      return undefined;
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<CopilotLabPage />);
+
+    await user.click(await screen.findByRole('button', { name: /Phí gửi xe/ }));
+    await user.click(screen.getByRole('button', { name: 'Lưu kết quả' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Bạn không có quyền thực hiện thao tác này.');
+    expect(alert.textContent).toContain('Mã: FORBIDDEN');
+    expect(screen.queryByText('Đã lưu kết quả chấm.')).toBeNull();
+  });
+
+  it('khi phiên hết hạn (401 NO_SESSION) lúc lưu kết quả chấm thì báo mã NO_SESSION và không báo đã lưu', async () => {
+    mockApi((url) => {
+      if (url.endsWith('/me')) return ok(me());
+      if (url.includes('/copilot/turns?')) return ok(turn);
+      if (url.endsWith('/review')) return fail(401, 'NO_SESSION', 'Phiên đã hết hạn, vui lòng đăng nhập lại.');
+      return undefined;
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<CopilotLabPage />);
+
+    await user.click(await screen.findByRole('button', { name: /Phí gửi xe/ }));
+    await user.click(screen.getByRole('button', { name: 'Lưu kết quả' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Phiên đã hết hạn, vui lòng đăng nhập lại.');
+    expect(alert.textContent).toContain('Mã: NO_SESSION');
+    expect(screen.queryByText('Đã lưu kết quả chấm.')).toBeNull();
   });
 });

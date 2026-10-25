@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { fail, mockApi, ok } from '@/test/utils';
-import { ApiError, request } from './client';
+import { ApiError, request, requestOne } from './client';
 
 describe('request', () => {
   it('request ghi gắn header chống CSRF, request đọc thì không', async () => {
@@ -24,5 +24,46 @@ describe('request', () => {
     const error = await request('/members', { method: 'POST', body: {} }).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ApiError);
     expect((error as ApiError).message).toBe('Dữ liệu gửi lên chưa hợp lệ.');
+  });
+
+  it('đứt mạng hoặc timeout khi fetch ném ApiError mã NETWORK (status 0)', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await expect(request('/copilot/turns')).rejects.toMatchObject({
+      status: 0,
+      code: 'NETWORK',
+      message: 'Không kết nối được tới AI Console. Process console có đang chạy không?',
+      fromServer: false,
+    });
+  });
+
+  it('máy chủ lỗi 500 trả về HTML/rỗng không phải JSON vẫn báo HTTP_500 an toàn', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response('Internal Server Error', { status: 500, headers: { 'Content-Type': 'text/plain' } }),
+    );
+    await expect(request('/copilot/turns')).rejects.toMatchObject({
+      status: 500,
+      code: 'HTTP_500',
+      message: 'Máy chủ console trả lỗi 500.',
+      fromServer: false,
+    });
+  });
+
+  it('lỗi 403 FORBIDDEN giữ nguyên mã và thông điệp từ chối quyền của server', async () => {
+    mockApi(() => fail(403, 'FORBIDDEN', 'Bạn không có quyền thực hiện thao tác này.'));
+    await expect(request('/copilot/turns/123/review', { method: 'POST', body: {} })).rejects.toMatchObject({
+      status: 403,
+      code: 'FORBIDDEN',
+      message: 'Bạn không có quyền thực hiện thao tác này.',
+      fromServer: true,
+    });
+  });
+
+  it('requestOne khi server trả mảng data rỗng ném ApiError mã EMPTY', async () => {
+    mockApi(() => ok());
+    await expect(requestOne('/me')).rejects.toMatchObject({
+      status: 500,
+      code: 'EMPTY',
+      message: 'Máy chủ không trả dữ liệu.',
+    });
   });
 });

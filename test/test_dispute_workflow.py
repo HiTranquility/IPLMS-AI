@@ -323,5 +323,200 @@ class DisputeGraphIntegrationTest(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("approved_command", result)
 
 
+    async def test_graph_restart_and_resume_persistence(self):
+        from langgraph.checkpoint.memory import InMemorySaver
+        from langgraph.types import Command
+
+        checkpointer = InMemorySaver()
+        deps1, _writer1 = _dependencies()
+        graph1 = build_dispute_graph(deps1, checkpointer=checkpointer)
+        config = {"configurable": {"thread_id": "workflow-restart-persist"}}
+
+        paused = await graph1.ainvoke(_state("workflow-restart-persist"), config)
+        self.assertEqual(paused["status"], "awaiting_review")
+
+        # Simulate system/process restart with fresh graph instance over same checkpointer
+        deps2, _writer2 = _dependencies()
+        graph2 = build_dispute_graph(deps2, checkpointer=checkpointer)
+
+        state_snapshot = await graph2.aget_state(config)
+        self.assertEqual(state_snapshot.next, ("human_review",))
+        self.assertEqual(state_snapshot.values.get("status"), "awaiting_review")
+        self.assertTrue(len(state_snapshot.tasks) > 0)
+        self.assertTrue(len(state_snapshot.tasks[0].interrupts) > 0)
+        interrupt_val = state_snapshot.tasks[0].interrupts[0].value
+        self.assertEqual(interrupt_val["dispute_id"], "dispute-1")
+
+        resumed = await graph2.ainvoke(
+            Command(
+                resume={
+                    "action": "approve",
+                    "reviewer_id": "staff-after-restart",
+                    "comment": "Duyệt sau restart",
+                }
+            ),
+            config,
+        )
+        self.assertEqual(resumed["status"], "approved_for_backend")
+        self.assertEqual(resumed["review"]["reviewer_id"], "staff-after-restart")
+        self.assertEqual(
+            resumed["approved_command"]["operation_key"],
+            "workflow-restart-persist:approved-action:v1",
+        )
+
+    async def test_graph_invalid_resume_payloads_fail_closed(self):
+        from langgraph.checkpoint.memory import InMemorySaver
+        from langgraph.types import Command
+
+        deps, _writer = _dependencies()
+        checkpointer = InMemorySaver()
+        graph = build_dispute_graph(deps, checkpointer=checkpointer)
+        config = {"configurable": {"thread_id": "workflow-invalid-resume"}}
+
+        await graph.ainvoke(_state("workflow-invalid-resume"), config)
+
+        for bad_resume in (
+            {"action": "unknown_action", "reviewer_id": "staff-1"},
+            {"action": "approve", "reviewer_id": ""},
+            {"action": "approve"},
+            "plain_text_command",
+            {},
+        ):
+            with self.subTest(bad_resume=bad_resume):
+                with self.assertRaises(WorkflowStateError):
+                    await graph.ainvoke(Command(resume=bad_resume), config)
+
+        # Ensure state remained at awaiting_review and was not corrupted
+        snapshot = await graph.aget_state(config)
+        self.assertEqual(snapshot.values.get("status"), "awaiting_review")
+        self.assertEqual(snapshot.next, ("human_review",))
+
+    async def test_graph_double_resume_is_idempotent(self):
+        from langgraph.checkpoint.memory import InMemorySaver
+        from langgraph.types import Command
+
+        deps, writer = _dependencies()
+        graph = build_dispute_graph(deps, checkpointer=InMemorySaver())
+        config = {"configurable": {"thread_id": "workflow-double-resume"}}
+
+        await graph.ainvoke(_state("workflow-double-resume"), config)
+        res1 = await graph.ainvoke(
+            Command(resume={"action": "approve", "reviewer_id": "staff-original"}),
+            config,
+        )
+        self.assertEqual(res1["status"], "approved_for_backend")
+        writer_calls_before = writer.calls
+
+        # Snapshot next is empty after graph termination
+        snapshot = await graph.aget_state(config)
+        self.assertEqual(snapshot.next, ())
+
+        # Second resume attempt must be idempotent and not change reviewer or state
+        res2 = await graph.ainvoke(
+            Command(resume={"action": "approve", "reviewer_id": "staff-attacker"}),
+            config,
+        )
+        self.assertEqual(res2["status"], "approved_for_backend")
+        self.assertEqual(res2["review"]["reviewer_id"], "staff-original")
+        self.assertEqual(writer.calls, writer_calls_before)
+
+    async def test_graph_resume_nonexistent_thread_fails_closed(self):
+        from langgraph.checkpoint.memory import InMemorySaver
+        from langgraph.types import Command
+
+        deps, _writer = _dependencies()
+        graph = build_dispute_graph(deps, checkpointer=InMemorySaver())
+        config = {"configurable": {"thread_id": "workflow-nonexistent-thread"}}
+
+        with self.assertRaises(KeyError):
+            await graph.ainvoke(
+                Command(resume={"action": "approve", "reviewer_id": "staff-1"}),
+                config,
+            )
+
+    async def test_backend_contract_evidence_fixture_e2e(self):
+        from langgraph.checkpoint.memory import InMemorySaver
+        from langgraph.types import Command
+        from app.core.copilot.engines.dispute_workflow.fixtures import (
+            create_contract_dispute_dependencies,
+        )
+
+        deps = create_contract_dispute_dependencies()
+        graph = build_dispute_graph(deps, checkpointer=InMemorySaver())
+        config = {"configurable": {"thread_id": "workflow-contract-e2e"}}
+
+        state = make_initial_state(
+            workflow_id="wf-contract-1",
+            dispute_id="disp-contract-1",
+            evidence_bundle_id="bundle-contract-001",
+            actor_id="member-user-1",
+            claim_reason="Xe kẹt barie 25 phút không ra được.",
+            claimed_amount=60000,
+        )
+
+        paused = await graph.ainvoke(state, config)
+        self.assertEqual(paused["status"], "awaiting_review")
+        self.assertEqual(paused["evidence_version"], "evidence-v3")
+        self.assertEqual(len(paused["vision_findings"]), 2)
+        self.assertEqual(paused["recommendation"]["verdict"], "APPROVE_REFUND")
+        self.assertEqual(paused["recommendation"]["recommended_refund"], 60000.0)
+
+        completed = await graph.ainvoke(
+            Command(
+                resume={
+                    "action": "approve",
+                    "reviewer_id": "supervisor-1",
+                    "comment": "Đồng ý xử lý theo Điều 5",
+                }
+            ),
+            config,
+        )
+        self.assertEqual(completed["status"], "approved_for_backend")
+        self.assertEqual(
+            completed["approved_command"]["operation_key"],
+            "wf-contract-1:approved-action:v1",
+        )
+        self.assertEqual(
+            completed["approved_command"]["reviewer_id"],
+            "supervisor-1",
+        )
+
+    async def test_simulate_dispute_workflow_endpoint_uses_real_graph(self):
+        from app.api.rest.routes.copilot_controller import (
+            WorkflowSimulationPayload,
+            simulate_dispute_workflow,
+        )
+
+        res_full = await simulate_dispute_workflow(
+            WorkflowSimulationPayload(
+                dispute_id="DSP-EP-01",
+                claim_reason="Kẹt barie 20 phút",
+                claimed_amount=50000.0,
+                has_checkin_snapshot=True,
+                has_checkout_snapshot=True,
+            )
+        )
+        self.assertTrue(res_full["success"])
+        self.assertEqual(res_full["nodes_traversed"], 6)
+        self.assertEqual(res_full["final_status"], "AWAITING_STAFF_SIGN_OFF")
+
+        res_missing = await simulate_dispute_workflow(
+            WorkflowSimulationPayload(
+                dispute_id="DSP-EP-02",
+                claim_reason="Thiếu ảnh ra",
+                claimed_amount=50000.0,
+                has_checkin_snapshot=True,
+                has_checkout_snapshot=False,
+            )
+        )
+        self.assertTrue(res_missing["success"])
+        self.assertEqual(res_missing["nodes_traversed"], 5)
+        step_nodes = [s["node"] for s in res_missing["steps"]]
+        self.assertNotIn("draft_recommendation", step_nodes)
+        self.assertIn("validate_evidence", step_nodes)
+        self.assertIn("human_review", step_nodes)
+
+
+
 if __name__ == "__main__":
     unittest.main()
