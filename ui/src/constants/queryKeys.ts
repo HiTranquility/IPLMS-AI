@@ -20,6 +20,7 @@ export const queryKeys = {
   tools: {
     all: () => ['tools'] as const,
     systemCheck: () => [...queryKeys.tools.all(), 'system'] as const,
+    knowledgeDocuments: (lot?: string) => [...queryKeys.tools.all(), 'knowledge', 'documents', lot ?? ''] as const,
   },
   members: {
     all: () => ['members'] as const,
@@ -57,6 +58,7 @@ export const QUERY_KEYS = {
   TOOLS: {
     ALL: queryKeys.tools.all,
     SYSTEM_CHECK: queryKeys.tools.systemCheck,
+    KNOWLEDGE_DOCUMENTS: queryKeys.tools.knowledgeDocuments,
   },
   MEMBERS: {
     ALL: queryKeys.members.all,

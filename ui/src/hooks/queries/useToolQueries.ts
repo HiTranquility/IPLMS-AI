@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/constants/queryKeys';
-import { getSystemCheck } from '@/services/apiEndpoints/tool.endpoint';
+import { getKnowledgeDocuments, getSystemCheck } from '@/services/apiEndpoints/tool.endpoint';
 
 export function useSystemCheckQuery() {
   return useQuery({
@@ -10,3 +10,12 @@ export function useSystemCheckQuery() {
 }
 
 export const useSystemCheck = useSystemCheckQuery;
+
+export function useKnowledgeDocumentsQuery(parkingLotId?: string) {
+  return useQuery({
+    queryKey: queryKeys.tools.knowledgeDocuments(parkingLotId),
+    queryFn: () => getKnowledgeDocuments(parkingLotId),
+  });
+}
+
+export const useKnowledgeDocuments = useKnowledgeDocumentsQuery;
