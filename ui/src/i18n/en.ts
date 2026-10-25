@@ -1040,6 +1040,7 @@ export const en: Messages = {
       'policy.approved': 'Threshold approved',
       'policy.rejected': 'Threshold rejected',
       'knowledge.ingest_draft': 'Knowledge document ingested (draft)',
+      'knowledge.delete': 'Knowledge document deleted',
       'vision.demo_seed': 'Vision demo samples seeded',
       'vision.label': 'Plate labelled',
       'vision.review': 'Plate label reviewed',
