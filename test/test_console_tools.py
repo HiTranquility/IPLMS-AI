@@ -115,6 +115,16 @@ class StudioRealApiTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(4, docs[0]["chunk_count"])
         with self.assertRaises(ConsoleAccessDenied):
             await svc.knowledge_documents(ANALYST)
+    async def test_xoa_tai_lieu_tri_thuc_can_quyen_va_ghi_audit(self):
+        svc, _, ingestion, store = service()
+        ingestion.delete.return_value = 1
+        with self.assertRaises(ConsoleAccessDenied):
+            await svc.delete_knowledge_document(ANALYST, DOC)
+        res = await svc.delete_knowledge_document(ML, DOC, " lot-1 ")
+        ingestion.delete.assert_awaited_once_with(DOC, "lot-1")
+        self.assertEqual(1, res)
+        self.assertEqual("knowledge.delete", store.add_audit.await_args.args[1])
+
 
     async def test_trang_thai_engine_khong_bia_khi_thieu_weights(self):
         svc, *_ = service()

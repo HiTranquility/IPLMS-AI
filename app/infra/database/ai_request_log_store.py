@@ -27,17 +27,8 @@ class AiRequestLogStore:
         if not self.db_url:
             raise RagPipelineError("Thiếu AI_DATABASE_URL để lưu telemetry AI.")
         try:
-            import psycopg2
-
-            try:
-                connection = psycopg2.connect(self.db_url, connect_timeout=3)
-            except Exception:
-                if "@database-vector:5432/" in self.db_url:
-                    fallback_url = self.db_url.replace("@database-vector:5432/", "@127.0.0.1:5435/")
-                    connection = psycopg2.connect(fallback_url, connect_timeout=3)
-                    self.db_url = fallback_url
-                else:
-                    raise
+            from app.infra.database.db_connection import connect_with_fallback
+            connection, self.db_url = connect_with_fallback(self.db_url, connect_timeout=3)
             try:
                 with connection:
                     with connection.cursor() as cursor:

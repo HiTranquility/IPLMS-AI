@@ -1,0 +1,139 @@
+"""Quản lý kết nối PostgreSQL an toàn, tự động nhận diện và fallback đa môi trường (Host/Docker)."""
+from __future__ import annotations
+
+import os
+import urllib.parse
+from typing import Any, List, Optional, Tuple
+
+import psycopg2
+from app.util.logger import logger
+
+# Cache URL đã kết nối thành công để không phải thử lại nhiều lần
+_RESOLVED_URL_CACHE: dict[str, str] = {}
+
+
+def resolve_db_candidates(db_url: str) -> List[str]:
+    """Sinh danh sách các URL tiềm năng để thử kết nối, bao phủ mọi trường hợp của các dev:
+    1. URL gốc được cấu hình.
+    2. Nếu URL trỏ vào hostname container Docker (ai-db, database-vector, postgres, etc.) trên port 5432:
+       Thử các cổng ánh xạ máy host: 5435 (mặc định của IPLMS), AI_DB_HOST_PORT, và 5432.
+    3. Nếu URL trỏ vào 127.0.0.1 / localhost trên port 5432 nhưng Postgres chạy ở 5435:
+       Thử port 5435.
+    4. Nếu URL trỏ vào 127.0.0.1 / localhost trên port 5435 nhưng Postgres chạy native ở 5432:
+       Thử port 5432.
+    5. Hỗ trợ host.docker.internal nếu dev chạy từ trong container ra máy host.
+    """
+    if not db_url:
+        return []
+
+    candidates: List[str] = [db_url]
+
+    try:
+        parsed = urllib.parse.urlsplit(db_url)
+        hostname = (parsed.hostname or "").lower()
+        port = parsed.port or 5432
+
+        # Danh sách host thay thế khi đang ở host machine
+        docker_hosts = {"ai-db", "database-vector", "postgres", "ai_db", "db"}
+        local_hosts = ["127.0.0.1", "localhost", "host.docker.internal"]
+
+        host_port_env = os.environ.get("AI_DB_HOST_PORT", "5435")
+        try:
+            custom_port = int(host_port_env)
+        except ValueError:
+            custom_port = 5435
+
+        target_ports: List[int] = [custom_port, 5435, 5432]
+        seen_ports: List[int] = []
+        for p in target_ports:
+            if p not in seen_ports:
+                seen_ports.append(p)
+
+        def make_url(new_host: str, new_port: int) -> str:
+            netloc = f"{parsed.username or ''}"
+            if parsed.password:
+                netloc += f":{parsed.password}"
+            if netloc:
+                netloc += "@"
+            netloc += f"{new_host}:{new_port}"
+            return urllib.parse.urlunsplit((parsed.scheme, netloc, parsed.path, parsed.query, parsed.fragment))
+
+        # Nếu hostname là tên container trong docker-compose
+        if hostname in docker_hosts:
+            for lh in local_hosts:
+                for p in seen_ports:
+                    cand = make_url(lh, p)
+                    if cand not in candidates:
+                        candidates.append(cand)
+
+        # Nếu hostname là localhost / 127.0.0.1
+        elif hostname in ("127.0.0.1", "localhost"):
+            for p in seen_ports:
+                if p != port:
+                    cand = make_url(hostname, p)
+                    if cand not in candidates:
+                        candidates.append(cand)
+            # Thử thêm host.docker.internal
+            for p in seen_ports:
+                cand = make_url("host.docker.internal", p)
+                if cand not in candidates:
+                    candidates.append(cand)
+
+    except Exception as exc:
+        logger.warning(f"Lỗi phân tích URL DB ({exc}), chỉ dùng URL gốc.")
+
+    return candidates
+
+
+def connect_with_fallback(
+    db_url: str,
+    connect_timeout: int = 3,
+    register_vector: bool = False,
+) -> Tuple[Any, str]:
+    """Kết nối PostgreSQL với cơ chế tự động thử các ứng viên fallback đa môi trường.
+
+    Returns:
+        (connection, working_db_url)
+    """
+    if not db_url:
+        raise ValueError("URL kết nối cơ sở dữ liệu rỗng.")
+
+    # 1. Thử URL đã được resolve trong cache
+    if db_url in _RESOLVED_URL_CACHE:
+        cached_url = _RESOLVED_URL_CACHE[db_url]
+        try:
+            conn = psycopg2.connect(cached_url, connect_timeout=connect_timeout)
+            if register_vector:
+                from pgvector.psycopg2 import register_vector as reg_vec
+                reg_vec(conn)
+            return conn, cached_url
+        except Exception:
+            _RESOLVED_URL_CACHE.pop(db_url, None)
+
+    # 2. Thử lần lượt các candidates
+    candidates = resolve_db_candidates(db_url)
+    last_exc = None
+
+    for cand_url in candidates:
+        try:
+            conn = psycopg2.connect(cand_url, connect_timeout=connect_timeout)
+            if register_vector:
+                from pgvector.psycopg2 import register_vector as reg_vec
+                reg_vec(conn)
+
+            # Lưu vào cache để các lần gọi sau không mất thời gian thử lại
+            _RESOLVED_URL_CACHE[db_url] = cand_url
+            if cand_url != db_url:
+                logger.info(
+                    "Database Fallback: Chuyển hướng kết nối thành công từ %s sang %s",
+                    urllib.parse.urlsplit(db_url).netloc,
+                    urllib.parse.urlsplit(cand_url).netloc,
+                )
+            return conn, cand_url
+        except Exception as exc:
+            last_exc = exc
+            continue
+
+    if last_exc:
+        raise last_exc
+    raise psycopg2.OperationalError(f"Không thể kết nối tới bất kỳ ứng viên nào của DB: {candidates}")

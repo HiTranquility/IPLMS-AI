@@ -1,4 +1,5 @@
 """Cấu hình Domain Copilot: pgvector knowledge base + LLM provider."""
+from pathlib import Path
 from pydantic_settings import SettingsConfigDict
 
 from app.config.base_config import BaseConfig
@@ -43,3 +44,13 @@ class LlmConfig(BaseConfig):
     local_llm_parallel_slots: int = 1  # -np 1: Single slot KV cache (~270MB), dành toàn bộ VRAM cho weights & ANPR
     local_llm_threads: int = 4
 
+    @property
+    def active_model_name(self) -> str:
+        """Tên model thực tế đang chạy: nếu dùng local llama-server thì lấy tên file mô hình GGUF."""
+        if self.llm_provider == "local":
+            if self.local_llm_model_path:
+                stem = Path(self.local_llm_model_path).stem
+                if stem:
+                    return stem
+            return "Qwen3.5-4B-Q4_K_M"
+        return self.llm_model

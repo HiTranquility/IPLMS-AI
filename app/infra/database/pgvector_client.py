@@ -26,20 +26,10 @@ class PgVectorClient:
         if not self.db_url:
             raise RagPipelineError("Thiếu AI_DATABASE_URL cho kho tri thức.")
         try:
-            import psycopg2
-            from pgvector.psycopg2 import register_vector
-
-            try:
-                connection = psycopg2.connect(self.db_url, connect_timeout=3)
-            except Exception:
-                if "@database-vector:5432/" in self.db_url:
-                    fallback_url = self.db_url.replace("@database-vector:5432/", "@127.0.0.1:5435/")
-                    connection = psycopg2.connect(fallback_url, connect_timeout=3)
-                    self.db_url = fallback_url
-                else:
-                    raise
-            if register:
-                register_vector(connection)
+            from app.infra.database.db_connection import connect_with_fallback
+            connection, self.db_url = connect_with_fallback(
+                self.db_url, connect_timeout=3, register_vector=register
+            )
             return connection
         except Exception as exc:
             raise RagPipelineError("Không kết nối được PostgreSQL/pgvector.") from exc
@@ -382,11 +372,12 @@ class PgVectorClient:
                     ),
                     fused AS (
                         SELECT COALESCE(v.id, kw.id) AS id,
-                               COALESCE(v.similarity, 0.0) AS similarity,
+                               COALESCE(v.similarity, 1 - (kc_emb.embedding <=> %(emb)s::vector), 0.0) AS similarity,
                                COALESCE(1.0 / (60 + v.rank), 0.0)
                                  + COALESCE(1.0 / (60 + kw.rank), 0.0) AS hybrid_score
                         FROM vector_candidates v
                         FULL OUTER JOIN keyword_candidates kw ON kw.id = v.id
+                        LEFT JOIN scoped kc_emb ON kc_emb.id = COALESCE(v.id, kw.id)
                     )
                     SELECT kc.content, kc.category, fused.similarity,
                            kc.source, kc.metadata, kc.document_id::text, kc.ordinal,
