@@ -27,7 +27,6 @@
 | Review trước tích hợp: Hiệu chỉnh biển số mất ký tự | [bug-005](bugs/bug-005-plate-correction-mat-ky-tu/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
 | Review trước tích hợp: Prior loại xe không phải observation | [bug-006](bugs/bug-006-vehicle-prior-gia-lam-observation/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
 | Review trước tích hợp: Dashboard render dữ liệu bằng HTML | [bug-008](bugs/bug-008-dashboard-render-html-khong-escape/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
-| Console trả SPA 200 cho `/docs`, test `test_console_http` đỏ sẵn | [bug-014](bugs/bug-014-console-docs-tra-spa-thay-vi-404/bug.md) | 🟢 | Chốt 404 cho /docs hay sửa test |
 | Đo weights ứng viên chưa nạp: nạp theo `artifact_key` trong process đo riêng (module M4) | IPLMS ISSUE-126 phase-6 6.12 | 🟢 | M4 chưa có người |
 | Smoke test browser 7 vai × viewport × theme | [SUGGESTION-002](suggestions/10-2026/SUGGESTION-002-mock-api-va-ma-tran-browser-cho-ui.md) | 🟡 | Chờ techlead duyệt (SUGGESTION-003 sidebar màn hẹp đã làm ở ISSUE-006) |
 | Đăng nhập dev theo vai an toàn (gỡ chặn demo I-3) | [SUGGESTION-001](suggestions/10-2026/SUGGESTION-001-dang-nhap-dev-cuc-bo-an-toan.md) | 🟠 | Chờ techlead duyệt; Dương dùng cho demo |
@@ -104,6 +103,7 @@ Kế hoạch mới nhất theo IPLMS REQ-006 F10 / ISSUE-125 review-4: 16 việc
 
 | Việc | Hồ sơ | Người làm | Ngày |
 |---|---|---|---|
+| Console trả 404 cho /docs, /redoc, /openapi.json (không lộ qua SPA fallback) | [bug-014](bugs/bug-014-console-docs-tra-spa-thay-vi-404/bug.md) | HiTranquility | 2026-10-25 |
 | Gỡ 3 lỗ hổng đăng nhập console: dev-session, mật khẩu DB mặc định, mã TOTP cố định | [bug-015](bugs/bug-015-dev-session-cua-hau-dang-nhap/bug.md), [bug-016](bugs/bug-016-mat-khau-db-console-mac-dinh-trong-code/bug.md), [bug-026](bugs/bug-026-ma-totp-co-dinh-vuot-xac-thuc/bug.md) — #50 | HiTranquility | 2026-10-24 |
 | Chat Studio hết 422; UI hết bịa số; nối API thật ANPR, Anti-Fraud, tri thức, chẩn đoán | [bug-017](bugs/bug-017-chat-studio-luon-422/bug.md), [bug-018](bugs/bug-018-ui-bia-ket-qua-khi-api-loi/bug.md) — #51 | HiTranquility | 2026-10-24 |
 | CSV audit an toàn, từ điển mã hành động khớp server | [bug-019](bugs/bug-019-audit-xuat-csv-khong-escape/bug.md), [bug-020](bugs/bug-020-audit-tu-dien-hanh-dong-lech-server/bug.md) — #52 | HiTranquility | 2026-10-24 |
