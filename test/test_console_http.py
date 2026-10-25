@@ -133,6 +133,7 @@ class ConsoleHttpFlowTest(unittest.TestCase):
         self.assertEqual("no-store", r.headers["cache-control"])
         self.assertEqual(404, self.client.get("/docs").status_code)
         self.assertEqual(404, self.client.get("/openapi.json").status_code)
+        self.assertEqual(404, self.client.get("/redoc").status_code)
 
 
 if __name__ == "__main__":
