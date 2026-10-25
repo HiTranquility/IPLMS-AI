@@ -2,7 +2,7 @@
 status: canonical
 audience: AI coding agents + developers
 applies-to: `ai/` — Python service (FastAPI REST + gRPC), ANPR · Forecast · Copilot
-verified-against-code: 2026-09-11 — mọi đường dẫn, tên file, hướng import dưới đây đọc trực tiếp từ `ai/app/`
+verified-against-code: 2026-10-25 — mọi đường dẫn, tên file, hướng import dưới đây đọc trực tiếp từ `ai/app/`
 ---
 
 # 🧠 AI Conventions — IPLMS
@@ -55,6 +55,9 @@ app/core/<domain>/
 | `knowledge_eval` | `case_generator.py` · `gate.py` · `grader.py` · `judge.py` | `eval_service.py` |
 | `model_policy` | `validation.py` | `model_policy_service.py` |
 | `dataset` | `image_quality.py` · `plate_metrics.py` · `sample_selector.py` | `curation_service.py` · `evaluation_service.py` · `snapshot_service.py` |
+| `console` | `access_policy.py` · `session_policy.py` · `totp.py` | `auth_service.py` · `copilot_lab_service.py` · `member_service.py` · `model_lab_service.py` · `tools_service.py` · `vision_lab_service.py` · `vision_import_service.py` · `accept_policy_service.py` |
+
+Mỗi domain package (`app/core/<domain>/__init__.py`) xuất public symbol để các tầng `api/` import gọn ở đầu file (`from app.core.<domain> import ...`), không dùng inline import `from app...` trong thân hàm. Ngoại lệ duy nhất: trì hoãn nạp thư viện ML nặng theo §6. Xoá inline import thì phải thêm import ở đầu file (AUDIT-006 A-1: thiếu bước này làm `ExportForConsole`/`GetAcceptPolicy` ném `NameError`).
 
 ### Engine ⇄ Service — ranh giới
 
@@ -97,7 +100,7 @@ api/rest/routes/anpr_controller.py  ─┘
 
 ### REST
 
-`routes/` (endpoint) · `schemas/` (body/response Pydantic) · `middlewares/` · `router.py` (gom route).
+`routes/` (endpoint) · `schemas/` (body/response Pydantic) · `middlewares/` · `router.py` (gom route cho cả `api_router` cổng 8000 và `console_router` cổng 8090).
 
 **[MUST]** File REST đặt `<domain>_controller.py`: `anpr_controller.py`, `health_controller.py`. Đổi tên file phải sửa import ở `router.py`; tên file không đổi URL public. Ngoại lệ `health.py` đã được gỡ ngày 2026-10-14.
 

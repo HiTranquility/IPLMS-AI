@@ -11,6 +11,7 @@ import { useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } fr
 import { Button } from '@/components/common/Ui/button/Button';
 import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
 import { SelectField, TextField } from '@/components/common/Ui/form/Field';
+import { PARKING_LOTS, resolveLotLabel } from '@/constants/parkingLots';
 import { useDeleteKnowledgeDocument, useIngestDraft } from '@/hooks/mutations/useToolMutations';
 import { useKnowledgeDocuments } from '@/hooks/queries/useToolQueries';
 import { useI18n } from '@/i18n/I18nProvider';
@@ -36,6 +37,8 @@ export function IngestSection() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [documentId, setDocumentId] = useState(newDocumentId);
   const [category, setCategory] = useState('regulation');
+  const [lotMode, setLotMode] = useState('');
+  const [customLot, setCustomLot] = useState('');
   const [lot, setLot] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -277,16 +280,43 @@ export function IngestSection() {
           <option value="ev_charging">{t.tools.catEv}</option>
         </SelectField>
 
-        <TextField
+        <SelectField
           label={t.tools.lot}
           hint={t.tools.lotHint}
-          maxLength={128}
-          value={lot}
+          value={lotMode}
           onChange={(e) => {
             resetStaleState();
-            setLot(e.target.value);
+            const val = e.target.value;
+            setLotMode(val);
+            if (val !== '__custom__') {
+              setLot(val);
+            } else {
+              setLot(customLot);
+            }
           }}
-        />
+        >
+          <option value="">{t.tools.lotAll}</option>
+          {PARKING_LOTS.map((lot) => (
+            <option key={lot.id} value={lot.id}>
+              {resolveLotLabel(lot, t)}
+            </option>
+          ))}
+          <option value="__custom__">{t.tools.lotCustom}</option>
+        </SelectField>
+
+        {lotMode === '__custom__' && (
+          <TextField
+            label={t.tools.lotCustom}
+            placeholder={t.tools.customLotPlaceholder}
+            maxLength={128}
+            value={customLot}
+            onChange={(e) => {
+              resetStaleState();
+              setCustomLot(e.target.value);
+              setLot(e.target.value);
+            }}
+          />
+        )}
 
         {batchProgress && (
           <div className={styles.batchProgressBar}>

@@ -232,3 +232,22 @@
   color: var(--color-accent-ink);
   border-style: solid;
 }
+
+.wrapCollapsed {
+  padding: 0;
+  align-items: center;
+}
+
+.selectorButtonCollapsed {
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+}
+
+.singleBadgeCollapsed {
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+}

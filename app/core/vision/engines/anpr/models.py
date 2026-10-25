@@ -95,3 +95,24 @@ def ocr_reader() -> Optional[Any]:
 
 def yolo_model() -> Optional[Any]:
     return _state["yolo_model"]
+
+
+def unload_models() -> dict[str, bool]:
+    """Giải phóng YOLO và EasyOCR khỏi RAM/VRAM theo yêu cầu từ Console (Settings/Diagnostics)."""
+    import gc
+
+    with _load_lock:
+        had_yolo = _state["yolo_model"] is not None
+        had_ocr = _state["ocr_reader"] is not None
+        _state["yolo_model"] = None
+        _state["ocr_reader"] = None
+        _state["initialized"] = False
+    gc.collect()
+    try:
+        import torch
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except Exception:
+        pass
+    logger.info(f"Vision ANPR models unloaded: had_yolo={had_yolo}, had_ocr={had_ocr}")
+    return {"unloaded_yolo": had_yolo, "unloaded_ocr": had_ocr}

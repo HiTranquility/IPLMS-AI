@@ -1,5 +1,6 @@
 import { CheckCheck, ClipboardCheck, RefreshCw, Sparkles } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/common/Ui/button/Button';
 import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
@@ -66,6 +67,56 @@ export function ReviewPage() {
         title={t.review.title}
         description={t.review.desc}
       />
+
+      {/* Thanh điều hướng Quy trình 4-Mắt */}
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 'var(--space-2)',
+          padding: '10px 14px',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--color-border)',
+          background: 'var(--color-surface)',
+          fontSize: 'var(--text-xs)',
+          marginBottom: 'var(--space-3)',
+        }}
+      >
+        <div>
+          <strong>{t.review.workflowTitle} </strong>
+          <span style={{ color: 'var(--color-muted)' }}>{t.review.workflowDesc}</span>
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Link
+            to="/vision/label"
+            style={{
+              padding: '4px 10px',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text)',
+              textDecoration: 'none',
+              fontWeight: 500,
+            }}
+          >
+            {t.review.goToLabel}
+          </Link>
+          <Link
+            to="/vision/datasets"
+            style={{
+              padding: '4px 10px',
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--color-accent)',
+              color: '#fff',
+              textDecoration: 'none',
+              fontWeight: 600,
+            }}
+          >
+            {t.review.goToDatasets}
+          </Link>
+        </div>
+      </div>
 
       {queue.isPending && <Loading />}
       {queue.error && <ErrorBlock error={queue.error} onRetry={() => void queue.refetch()} />}

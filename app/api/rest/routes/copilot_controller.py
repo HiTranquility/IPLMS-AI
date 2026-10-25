@@ -2,21 +2,23 @@
 import json
 import os
 from typing import Any, Dict, List, Optional
+
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-from app.core.copilot.dtos.copilot_dto import (
+from app.api.rest.schemas.base_response import BaseResponse
+from app.config import get_config
+from app.core.copilot import (
     AskQuestionRequest,
     CopilotAnswer,
     DisputeArbitrationRequest,
+    copilot_service,
 )
-from app.core.copilot.services.copilot_service import copilot_service
 from app.core.exceptions import FeatureNotImplementedError
-from app.api.rest.schemas.base_response import BaseResponse
-from app.config import get_config
 
 router = APIRouter(prefix="/copilot", tags=["Copilot & RAG"])
+
 
 def get_seed_path() -> str:
     candidates = [
@@ -66,8 +68,7 @@ class WorkflowSimulationPayload(BaseModel):
 @router.get("/metrics")
 async def get_ai_metrics():
     """Lấy số liệu thống kê AI requests, tokens, latency và chi phí (Mục 4.2)."""
-    from app.infra.monitoring.ai_logger import ai_telemetry_logger
-    return BaseResponse.ok([ai_telemetry_logger.get_metrics_summary()], "AI Telemetry & Cost Summary")
+    return BaseResponse.ok([copilot_service.get_metrics_summary()], "AI Telemetry & Cost Summary")
 
 
 def _stream_sse_response(
@@ -172,7 +173,7 @@ async def ask_copilot(payload: AskPayload) -> BaseResponse[AskResponse]:
                 )],
                 "Answer generated via local RAG" if is_local else "Answer generated via live RAG"
             )
-        except Exception as exc:
+        except Exception:
             pass  # Fallback to local semantic seed lookup if LLM failed
 
     # Offline fallback qua seed documents trong data/knowledge/
@@ -181,21 +182,20 @@ async def ask_copilot(payload: AskPayload) -> BaseResponse[AskResponse]:
         try:
             with open(seed_path, "r", encoding="utf-8") as f:
                 seeds = json.load(f)
-            
+
             q_lower = payload.query.lower()
             matched_sources = []
             matched_snippets = []
-            
+
             for item in seeds:
                 content = item.get("content", "")
                 title = item.get("title", "")
                 source = item.get("source", "regulations_seed.json")
                 category = item.get("category", "general")
-                
-                # Simple keyword matching across query tokens
+
                 tokens = [t for t in q_lower.split() if len(t) > 2]
                 match_count = sum(1 for t in tokens if t in content.lower() or t in title.lower())
-                
+
                 if match_count > 0 or not tokens:
                     matched_sources.append(source)
                     matched_snippets.append(f"**{title}** ({category}):\n{content}")
@@ -248,125 +248,10 @@ async def arbitrate_dispute(payload: DisputePayload) -> Dict[str, Any]:
 @router.post("/dispute-workflow/simulate")
 async def simulate_dispute_workflow(payload: WorkflowSimulationPayload) -> Dict[str, Any]:
     """Chạy quy trình phân xử khiếu nại bằng LangGraph StateGraph thật (ai ISSUE-001)."""
-    from langgraph.checkpoint.memory import InMemorySaver
-    from app.core.copilot.engines.dispute_workflow.graph import build_dispute_graph
-    from app.core.copilot.engines.dispute_workflow.state import make_initial_state
-    from app.core.copilot.engines.dispute_workflow.fixtures import (
-        ContractEvidenceClient,
-        ContractEvidenceAnalyzer,
-        ContractPolicyRetriever,
-        ContractRecommendationWriter,
-        DisputeWorkflowDependencies,
-        STANDARD_BACKEND_EVIDENCE_BUNDLE,
-    )
-
-    bundle = dict(STANDARD_BACKEND_EVIDENCE_BUNDLE)
-    bundle["session"] = dict(STANDARD_BACKEND_EVIDENCE_BUNDLE["session"])
-    bundle["session"]["fee"] = float(payload.claimed_amount)
-    media_refs = []
-    if payload.has_checkin_snapshot:
-        media_refs.append({"provider": "s3", "key": "in-checkin.jpg", "bucket": "parking-evidence"})
-    if payload.has_checkout_snapshot:
-        media_refs.append({"provider": "s3", "key": "out-checkout.jpg", "bucket": "parking-evidence"})
-    bundle["media_refs"] = media_refs
-
-    deps = DisputeWorkflowDependencies(
-        evidence_client=ContractEvidenceClient(bundles={f"bundle-{payload.dispute_id}": bundle}),
-        evidence_analyzer=ContractEvidenceAnalyzer(),
-        policy_retriever=ContractPolicyRetriever(),
-        recommendation_writer=ContractRecommendationWriter(),
-    )
-
-    checkpointer = InMemorySaver()
-    graph = build_dispute_graph(deps, checkpointer=checkpointer)
-
-    initial_state = make_initial_state(
-        workflow_id=f"wf-{payload.dispute_id}",
+    return await copilot_service.simulate_dispute_workflow(
         dispute_id=payload.dispute_id,
-        evidence_bundle_id=f"bundle-{payload.dispute_id}",
-        actor_id="console-operator",
-        claim_reason=payload.claim_reason or "Khiếu nại phí gửi xe",
+        claim_reason=payload.claim_reason,
         claimed_amount=payload.claimed_amount,
+        has_checkin_snapshot=payload.has_checkin_snapshot,
+        has_checkout_snapshot=payload.has_checkout_snapshot,
     )
-
-    config = {"configurable": {"thread_id": f"sim-{payload.dispute_id}"}}
-    result_state = await graph.ainvoke(initial_state, config)
-
-    transitions = [
-        {
-            "step": 1,
-            "node": "load_evidence",
-            "status": "COMPLETED",
-            "data": {
-                "dispute_id": payload.dispute_id,
-                "evidence_version": result_state.get("evidence_version"),
-                "parking_lot_id": result_state.get("parking_lot_id"),
-                "media_count": len(result_state.get("media_refs", [])),
-            },
-            "description": "Nạp gói bằng chứng phiên đỗ (log vào, log ra, ảnh chụp camera barrier)."
-        },
-        {
-            "step": 2,
-            "node": "analyze_evidence",
-            "status": "COMPLETED",
-            "data": {
-                "vision_findings": result_state.get("vision_findings", []),
-            },
-            "description": "Trích xuất đặc trưng thị giác và timestamp đối chiếu sự cố barie."
-        },
-        {
-            "step": 3,
-            "node": "retrieve_policy",
-            "status": "COMPLETED",
-            "data": {
-                "policy_chunks": result_state.get("policy_chunks", []),
-            },
-            "description": "Truy xuất quy định hoàn phí tương ứng từ kho tri thức pgvector."
-        },
-        {
-            "step": 4,
-            "node": "validate_evidence",
-            "status": "COMPLETED",
-            "data": {
-                "missing_evidence": result_state.get("missing_evidence", []),
-                "is_valid": len(result_state.get("missing_evidence", [])) == 0,
-            },
-            "description": "Kiểm tra tính toàn vẹn của bằng chứng trước khi sinh đề xuất."
-        },
-    ]
-
-    if result_state.get("recommendation"):
-        rec = result_state["recommendation"]
-        transitions.append({
-            "step": len(transitions) + 1,
-            "node": "draft_recommendation",
-            "status": "COMPLETED",
-            "data": {
-                "proposed_verdict": rec.get("verdict"),
-                "recommended_amount": rec.get("recommended_refund"),
-                "justification": rec.get("justification"),
-                "cited_sources": rec.get("cited_sources", []),
-            },
-            "description": "Dự thảo phương án giải quyết dựa trên quy chế và bằng chứng."
-        })
-
-    transitions.append({
-        "step": len(transitions) + 1,
-        "node": "human_review",
-        "status": "AWAITING_STAFF_SIGN_OFF" if result_state.get("status") == "awaiting_review" else result_state.get("status"),
-        "data": {
-            "requires_human_approval": True,
-            "assigned_role": "PARKING_LOT_SUPERVISOR",
-            "auto_refund_permitted": False,
-        },
-        "description": "Chuyển giao cho Giám sát bãi xe ký duyệt (ngăn chặn AI tự ý chi trả tiền)."
-    })
-
-    return {
-        "success": True,
-        "dispute_id": payload.dispute_id,
-        "workflow": "LangGraph StateGraph [Bounded Dispute Recommendation]",
-        "nodes_traversed": len(transitions),
-        "steps": transitions,
-        "final_status": "AWAITING_STAFF_SIGN_OFF" if result_state.get("status") == "awaiting_review" else result_state.get("status"),
-    }
