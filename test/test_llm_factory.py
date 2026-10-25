@@ -55,17 +55,29 @@ class FakeChat:
 class LlmProviderTest(unittest.TestCase):
     """ISSUE-011: OpenAI hoặc endpoint tương thích (Ollama) chỉ bằng cấu hình."""
 
-    def _factory(self, base_url="", api_key="", client=None):
+    def _factory(self, base_url="", api_key="", client=None, provider="openai"):
         factory = LlmFactory(api_key=api_key, client=client)
         factory.api_key = api_key
         factory.base_url = base_url
+        factory.provider = provider
         return factory
 
     def test_missing_key_without_base_url_is_precondition_error(self):
         from app.core.exceptions import ModelNotLoadedError
 
+        # Provider OpenAI khai rõ mà thiếu key thì vẫn báo lỗi rõ (ISSUE-011).
         with self.assertRaises(ModelNotLoadedError):
             self._factory()._get_client()
+
+    def test_default_ollama_provider_uses_placeholder_key_without_probe(self):
+        # A-39 (chọn B): mặc định ollama không cần key, không dò llama-server.
+        from unittest.mock import patch
+
+        with patch("urllib.request.urlopen") as urlopen:
+            client = self._factory(provider="ollama")._get_client()
+        urlopen.assert_not_called()
+        self.assertEqual("ollama", client.api_key)
+        self.assertTrue(str(client.base_url).rstrip("/").endswith("/v1"))
 
     def test_base_url_without_key_uses_placeholder_key(self):
         client = self._factory(base_url="http://localhost:11434/v1")._get_client()

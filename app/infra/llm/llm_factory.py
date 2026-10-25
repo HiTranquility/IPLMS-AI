@@ -23,7 +23,7 @@ def _should_use_responses_api(client: Any, provider: str, has_api_key: bool) -> 
         return False
     if not hasattr(client, "chat"):
         return True
-    return provider != "local" and has_api_key
+    return provider not in ("local", "ollama") and has_api_key
 
 
 def _strip_thinking_tags(text: str) -> str:
@@ -49,8 +49,15 @@ class LlmFactory:
         config = get_config().llm
         self.api_key = api_key or config.llm_api_key
         self.provider = (profile["provider"] if profile and "provider" in profile else getattr(config, "llm_provider", "local")).lower()
-        self.base_url = (config.llm_base_url or "").strip() if not profile or profile.get("provider") == "ollama" else ""
-        self.model = profile["model"] if profile else getattr(config, "active_model_name", config.llm_model)
+        raw_base = (config.llm_base_url or "").strip() if not profile or profile.get("provider") == "ollama" else ""
+        import os
+        if "host.docker.internal" in raw_base and not os.path.exists("/.dockerenv"):
+            raw_base = raw_base.replace("host.docker.internal", "127.0.0.1")
+        self.base_url = raw_base
+        model_name = profile["model"] if profile else getattr(config, "active_model_name", config.llm_model)
+        if self.provider in ("local", "ollama") and (not model_name or model_name in ("gpt-5.6-luna", "Qwen3.5-4B-Q4_K_M")):
+            model_name = "qwen2.5:0.5b"
+        self.model = model_name
         self.timeout_seconds = profile["timeout_seconds"] if profile else config.llm_timeout_seconds
         self.max_retries = config.llm_max_retries
         self.max_output_tokens = profile["max_output_tokens"] if profile else config.llm_max_output_tokens
@@ -80,12 +87,23 @@ class LlmFactory:
         config = get_config().llm
         provider = getattr(config, "llm_provider", "openai").lower()
 
-        # Dùng llama-server khi cấu hình local (hoặc base_url là host.docker.internal không thể truy cập từ host)
-        if (self.provider == "local" or provider == "local") and ("host.docker.internal" in self.base_url or not self.base_url):
-            from app.infra.llm.llama_server_manager import llama_server_manager
-            try:
-                llama_server_manager.ensure_server_running()
-                local_url = getattr(config, "local_llm_url", "http://127.0.0.1:8005/v1")
+        # Hỗ trợ Local LLM / Ollama linh hoạt
+        active_prov = (self.provider or provider).lower()
+        if active_prov in ("local", "ollama") and ("host.docker.internal" in self.base_url or not self.base_url):
+            # A. Thử kết nối llama-server nếu đang chạy ở local_llm_url
+            local_url = getattr(config, "local_llm_url", "http://127.0.0.1:8005/v1")
+            llama_alive = False
+            # Provider ollama không dò llama-server; URL health theo local_llm_url, không viết cứng.
+            if active_prov == "local":
+                try:
+                    import urllib.request
+                    health_url = f"{local_url.rstrip('/').removesuffix('/v1')}/health"
+                    with urllib.request.urlopen(health_url, timeout=0.3) as r:
+                        llama_alive = r.status == 200
+                except Exception:  # noqa: BLE001 — server chưa bật thì chuyển sang Ollama
+                    llama_alive = False
+
+            if llama_alive:
                 from openai import AsyncOpenAI
                 self._client = AsyncOpenAI(
                     base_url=local_url,
@@ -94,10 +112,29 @@ class LlmFactory:
                     max_retries=1,
                 )
                 return self._client
-            except Exception as exc:
-                logger.warning("Không thể tự động bật llama-server: %s", exc)
 
-        api_key = "ollama" if self.base_url else self.api_key
+            # B. Nếu llama-server không chạy, tự động kết nối Ollama local
+            ollama_url = getattr(config, "ollama_url", "http://127.0.0.1:11434/v1")
+            custom_base = getattr(config, "llm_base_url", "")
+            target_base = custom_base or ollama_url
+            import os
+            if "host.docker.internal" in target_base and not os.path.exists("/.dockerenv"):
+                target_base = target_base.replace("host.docker.internal", "127.0.0.1")
+            if not target_base.endswith("/v1"):
+                target_base = f"{target_base.rstrip('/')}/v1"
+
+            from openai import AsyncOpenAI
+            self._client = AsyncOpenAI(
+                base_url=target_base,
+                api_key="ollama",
+                timeout=self.timeout_seconds,
+                max_retries=1,
+            )
+            if not self.model or self.model in ("gpt-5.6-luna", "Qwen3.5-4B-Q4_K_M"):
+                self.model = "qwen2.5:0.5b"
+            return self._client
+
+        api_key = "ollama" if (self.base_url or active_prov in ("local", "ollama")) else self.api_key
         if not api_key:
             logger.error("Thiếu AI_LLM_API_KEY; Copilot chưa thể gọi mô hình ngôn ngữ.")
             raise ModelNotLoadedError(
@@ -348,10 +385,14 @@ class LlmFactory:
                 raise RagPipelineError("Luồng trả lời từ OpenAI bị gián đoạn.") from exc
             return
 
-        # Chat completions stream (Local llama-server / Qwen3.5-4B-GGUF / Ollama)
+        # Chat completions stream (Local llama-server / Qwen / Ollama)
         try:
+            target_model = self.model
+            if provider in ("local", "ollama") and (not target_model or target_model in ("gpt-5.6-luna", "Qwen3.5-4B-Q4_K_M")):
+                target_model = "qwen2.5:0.5b"
+
             stream = await client.chat.completions.create(
-                model=self.model,
+                model=target_model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {

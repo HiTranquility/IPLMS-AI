@@ -100,3 +100,7 @@ static/original/*
 
 # Stub gRPC sinh từ proto/ai_service.proto — chạy app/scripts/compile_proto.py để tạo lại
 app/api/grpc/generated/
+
+# Cấu hình đổi ở trang Settings / ứng viên eval của AI Console (máy cục bộ)
+var/runtime_settings.json
+var/eval_candidates.json

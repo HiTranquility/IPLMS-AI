@@ -119,4 +119,58 @@ describe('CopilotLabPage', () => {
     expect(alert.textContent).toContain('Mã: NO_SESSION');
     expect(screen.queryByText('Đã lưu kết quả chấm.')).toBeNull();
   });
+
+  it('thanh tìm kiếm lọc danh sách câu hỏi theo từ khoá', async () => {
+    setup();
+    const user = userEvent.setup();
+    renderWithProviders(<CopilotLabPage />);
+
+    expect(await screen.findByRole('button', { name: /Phí gửi xe/ })).toBeTruthy();
+    const searchInput = screen.getByPlaceholderText('Tìm kiếm theo câu hỏi, câu trả lời, mã lượt...');
+    await user.type(searchInput, 'từ_khoá_không_tồn_tại_123');
+
+    // Không còn thấy lượt cũ
+    expect(screen.queryByRole('button', { name: /Phí gửi xe/ })).toBeNull();
+
+    // Xoá tìm kiếm thì lượt quay lại
+    await user.click(screen.getByRole('button', { name: 'Xoá tìm kiếm' }));
+    expect(await screen.findByRole('button', { name: /Phí gửi xe/ })).toBeTruthy();
+  });
+
+  it('dải tiến độ thẩm định hiển thị đúng số lượt và tỉ lệ', async () => {
+    setup();
+    renderWithProviders(<CopilotLabPage />);
+
+    expect(await screen.findByText('Tiến độ thẩm định câu hỏi')).toBeTruthy();
+    expect(screen.getByText('0 / 1 (0%)')).toBeTruthy();
+  });
+
+  it('bấm nút 1-click [1] Đúng gửi kết quả chấm ngay', async () => {
+    const calls = setup();
+    const user = userEvent.setup();
+    renderWithProviders(<CopilotLabPage />);
+
+    await user.click(await screen.findByRole('button', { name: /Phí gửi xe/ }));
+    const quickCorrectBtn = screen.getByRole('button', { name: '[1] Đúng' });
+    await user.click(quickCorrectBtn);
+
+    await waitFor(() => expect(calls.some((c) => c.url.endsWith('/review'))).toBe(true));
+    const sent = calls.find((c) => c.url.endsWith('/review'));
+    expect(JSON.parse(String(sent?.init?.body))).toEqual({ verdict: 'CORRECT', note: '' });
+  });
+
+  it('gắn nhanh lý do từ chối điền vào ô ghi chú', async () => {
+    setup();
+    const user = userEvent.setup();
+    renderWithProviders(<CopilotLabPage />);
+
+    await user.click(await screen.findByRole('button', { name: /Phí gửi xe/ }));
+    await user.click(screen.getByRole('button', { name: '[2] Sai' }));
+
+    const tagFeeBtn = screen.getByRole('button', { name: 'Sai biểu phí' });
+    await user.click(tagFeeBtn);
+
+    const noteInput = screen.getByLabelText('Ghi chú') as HTMLTextAreaElement;
+    expect(noteInput.value).toContain('Sai biểu phí');
+  });
 });

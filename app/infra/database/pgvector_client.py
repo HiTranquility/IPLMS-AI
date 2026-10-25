@@ -7,6 +7,7 @@ from uuid import uuid4
 from typing import Any, Dict, List, Optional
 
 from app.config import get_config
+from app.infra.database.db_connection import connect_with_fallback
 from app.core.exceptions import RagPipelineError
 from app.infra.database.keyword_search import FOLDED_CONTENT_TSVECTOR, build_keyword_tsquery
 from app.util.logger import logger
@@ -21,14 +22,14 @@ class PgVectorClient:
         self.dimensions = config.embedding.dimensions
         self._schema_ready = False
         self._schema_lock = asyncio.Lock()
+        self._has_pgvector = True
 
     def _connect_sync(self, register: bool = True):
         if not self.db_url:
             raise RagPipelineError("Thiếu AI_DATABASE_URL cho kho tri thức.")
         try:
-            from app.infra.database.db_connection import connect_with_fallback
             connection, self.db_url = connect_with_fallback(
-                self.db_url, connect_timeout=3, register_vector=register
+                self.db_url, connect_timeout=3, register_vector=(register and self._has_pgvector)
             )
             return connection
         except Exception as exc:
@@ -85,10 +86,32 @@ class PgVectorClient:
                     # 2 replica cùng khởi động cùng chạy khối này: khoá để DDL/backfill
                     # chạy tuần tự, tránh lỗi trùng khoá khi cả hai cùng INSERT.
                     cursor.execute("SELECT pg_advisory_xact_lock(724100)")
-                    cursor.execute("CREATE EXTENSION IF NOT EXISTS vector")
-                    from pgvector.psycopg2 import register_vector
+                    cursor.execute("SELECT 1 FROM pg_available_extensions WHERE name = 'vector'")
+                    self._has_pgvector = cursor.fetchone() is not None
+                    if self._has_pgvector:
+                        cursor.execute("CREATE EXTENSION IF NOT EXISTS vector")
+                        from pgvector.psycopg2 import register_vector
 
-                    register_vector(connection)
+                        register_vector(connection)
+                        embedding_col_type = f"vector({self.dimensions})"
+                    else:
+                        embedding_col_type = "DOUBLE PRECISION[]"
+                        cursor.execute(
+                            """
+                            CREATE OR REPLACE FUNCTION iplms_cosine_sim(a DOUBLE PRECISION[], b DOUBLE PRECISION[])
+                            RETURNS DOUBLE PRECISION
+                            LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
+                                SELECT CASE
+                                    WHEN a IS NULL OR b IS NULL THEN 0.0
+                                    ELSE COALESCE(
+                                        SUM(x * y) / NULLIF(SQRT(SUM(x * x)) * SQRT(SUM(y * y)), 0.0),
+                                        0.0
+                                    )
+                                END
+                                FROM unnest(a, b) AS t(x, y);
+                            $$
+                            """
+                        )
                     cursor.execute(
                         """
                         CREATE TABLE IF NOT EXISTS knowledge_documents (
@@ -118,7 +141,7 @@ class PgVectorClient:
                             source VARCHAR(255) NOT NULL,
                             ordinal INTEGER NOT NULL DEFAULT 0,
                             metadata JSONB NOT NULL DEFAULT '{{}}'::jsonb,
-                            embedding vector({self.dimensions}) NOT NULL,
+                            embedding {embedding_col_type} NOT NULL,
                             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                         )
                         """
@@ -153,13 +176,14 @@ class PgVectorClient:
                         ON knowledge_chunks (parking_lot_id, category)
                         """
                     )
-                    cursor.execute(
-                        """
-                        CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_embedding_hnsw
-                        ON knowledge_chunks USING hnsw (embedding vector_cosine_ops)
-                        WHERE embedding IS NOT NULL
-                        """
-                    )
+                    if self._has_pgvector:
+                        cursor.execute(
+                            """
+                            CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_embedding_hnsw
+                            ON knowledge_chunks USING hnsw (embedding vector_cosine_ops)
+                            WHERE embedding IS NOT NULL
+                            """
+                        )
                     # Index cũ (có dấu) không còn câu truy vấn nào dùng; giữ lại chỉ
                     # tốn chi phí ghi mỗi lần nạp chunk.
                     cursor.execute("DROP INDEX IF EXISTS idx_knowledge_chunks_content_fts")
@@ -336,6 +360,16 @@ class PgVectorClient:
                     "top_k": top_k,
                     "preview_scope": parking_lot_id,
                 }
+                sim_expr = (
+                    "1 - (embedding <=> %(emb)s::vector)"
+                    if self._has_pgvector
+                    else "iplms_cosine_sim(embedding, %(emb)s::double precision[])"
+                )
+                fused_sim_expr = (
+                    "1 - (kc_emb.embedding <=> %(emb)s::vector)"
+                    if self._has_pgvector
+                    else "iplms_cosine_sim(kc_emb.embedding, %(emb)s::double precision[])"
+                )
                 cursor.execute(
                     f"""
                     WITH visible AS ({self._visible_versions_sql(preview)}),
@@ -350,7 +384,7 @@ class PgVectorClient:
                         SELECT id, similarity,
                                ROW_NUMBER() OVER (ORDER BY similarity DESC) AS rank
                         FROM (
-                            SELECT id, 1 - (embedding <=> %(emb)s::vector) AS similarity
+                            SELECT id, {sim_expr} AS similarity
                             FROM scoped WHERE embedding IS NOT NULL
                         ) scored
                         WHERE similarity >= %(min_sim)s
@@ -372,7 +406,7 @@ class PgVectorClient:
                     ),
                     fused AS (
                         SELECT COALESCE(v.id, kw.id) AS id,
-                               COALESCE(v.similarity, 1 - (kc_emb.embedding <=> %(emb)s::vector), 0.0) AS similarity,
+                               COALESCE(v.similarity, {fused_sim_expr}, 0.0) AS similarity,
                                COALESCE(1.0 / (60 + v.rank), 0.0)
                                  + COALESCE(1.0 / (60 + kw.rank), 0.0) AS hybrid_score
                         FROM vector_candidates v

@@ -25,6 +25,9 @@ export interface ChatMessage {
   feedback?: 1 | -1 | null;
   guardrailTriggered?: string;
   isStreaming?: boolean;
+  reviewVerdict?: 'CORRECT' | 'INCORRECT' | 'UNSAFE';
+  promotedToEval?: boolean;
+  userQuery?: string;
 }
 
 export interface PromptPreset {
@@ -81,7 +84,7 @@ export const MODEL_PROFILES: ModelProfilePreset[] = [
       temperature: 0.1,
       topK: 3,
       maxTokens: 512,
-      minSimilarity: 0.75,
+      minSimilarity: 0.35,
     },
   },
   {
@@ -94,7 +97,7 @@ export const MODEL_PROFILES: ModelProfilePreset[] = [
       temperature: 0.2,
       topK: 5,
       maxTokens: 1024,
-      minSimilarity: 0.68,
+      minSimilarity: 0.35,
     },
   },
   {
@@ -107,7 +110,7 @@ export const MODEL_PROFILES: ModelProfilePreset[] = [
       temperature: 0.15,
       topK: 4,
       maxTokens: 768,
-      minSimilarity: 0.72,
+      minSimilarity: 0.40,
     },
   },
 ];

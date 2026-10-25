@@ -10,6 +10,7 @@ import { AuditPage } from '@/pages/Audit/AuditPage';
 import { CopilotLabPage } from '@/pages/Copilot/CopilotLabPage';
 import { MembersPage } from '@/pages/Members/MembersPage';
 import { OverviewPage } from '@/pages/Overview/OverviewPage';
+import { SettingsPage } from '@/pages/Settings/SettingsPage';
 import { ToolsPage } from '@/pages/Tools/ToolsPage';
 import { DatasetsPage, LabelPage, ModelsPage, ReviewPage, VisionOverviewPage } from '@/pages/Vision';
 import type { Me } from '@/types/auth';
@@ -18,6 +19,14 @@ import type { Me } from '@/types/auth';
 function Home({ me }: { me: Me }) {
   const { t } = useI18n();
   const { persona } = useWorkspaceStore();
+
+  const returnTo = typeof window !== 'undefined' ? sessionStorage.getItem('console_return_to') : null;
+  if (returnTo) {
+    sessionStorage.removeItem('console_return_to');
+    if (returnTo.startsWith('/') && !returnTo.startsWith('//') && !returnTo.startsWith('/auth')) {
+      return <Navigate to={returnTo} replace />;
+    }
+  }
 
   if (persona === 'admin' && me.permissions.includes('ai:member:manage')) {
     return <Navigate to="/members" replace />;
@@ -112,6 +121,14 @@ export function AuthenticatedRoutes({ me }: AuthenticatedRoutesProps) {
           element={
             <PermissionGuard me={me} permission="ai:audit:read">
               <AuditPage />
+            </PermissionGuard>
+          }
+        />
+        <Route
+          path="settings"
+          element={
+            <PermissionGuard me={me} permission={['ai:metrics:read', 'ai:member:manage', 'ai:audit:read']}>
+              <SettingsPage />
             </PermissionGuard>
           }
         />

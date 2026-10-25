@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Cpu,
   Eye,
   GitCommit,
   Layers,
   RefreshCw,
+  Sliders,
   Type,
 } from 'lucide-react';
 import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
@@ -47,20 +49,26 @@ export function SystemDiagnostics() {
           </h2>
           <p className={styles.desc}>{t.tools.diagnosticsDesc}</p>
         </div>
-        <button
-          type="button"
-          className={styles.refreshBtn}
-          onClick={() => void handleRefresh()}
-          disabled={isRefreshing}
-          aria-label={t.tools.refreshStatus}
-        >
-          <RefreshCw
-            size={14}
-            className={isRefreshing ? styles.spinning : undefined}
-            aria-hidden
-          />
-          <span>{t.tools.refreshStatus}</span>
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+          <Link to="/settings" className={styles.refreshBtn} style={{ textDecoration: 'none' }}>
+            <Sliders size={14} aria-hidden />
+            <span>{t.settings.openSettingsBtn}</span>
+          </Link>
+          <button
+            type="button"
+            className={styles.refreshBtn}
+            onClick={() => void handleRefresh()}
+            disabled={isRefreshing}
+            aria-label={t.tools.refreshStatus}
+          >
+            <RefreshCw
+              size={14}
+              className={isRefreshing ? styles.spinning : undefined}
+              aria-hidden
+            />
+            <span>{t.tools.refreshStatus}</span>
+          </button>
+        </div>
       </div>
 
       {systemQuery.error && <ErrorBlock error={systemQuery.error} onRetry={() => void handleRefresh()} />}

@@ -24,6 +24,8 @@
 
 | Việc | Hồ sơ | Ưu tiên | Ghi chú |
 |---|---|---|---|
+| Forecast luôn chạy baseline: id bãi UI lệch `area_key` Gold lake | [bug-028](bugs/bug-028-forecast-id-bai-lech-area-key/bug.md) | 🟠 | Gợi ý HiTranquility (chạm analytic) |
+| Fallback DB sang 5432 tự `CREATE DATABASE` trên Postgres khác | [bug-029](bugs/bug-029-db-fallback-tu-tao-database-tren-postgres-khac/bug.md) | 🟠 | AUDIT-006 A-23 |
 | Review trước tích hợp: Hiệu chỉnh biển số mất ký tự | [bug-005](bugs/bug-005-plate-correction-mat-ky-tu/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
 | Review trước tích hợp: Prior loại xe không phải observation | [bug-006](bugs/bug-006-vehicle-prior-gia-lam-observation/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
 | Review trước tích hợp: Dashboard render dữ liệu bằng HTML | [bug-008](bugs/bug-008-dashboard-render-html-khong-escape/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
@@ -70,6 +72,7 @@ Kế hoạch mới nhất theo IPLMS REQ-006 F10 / ISSUE-125 review-4: 16 việc
 
 | Việc | Hồ sơ | Người nhận | Hạn | Tới đâu |
 |---|---|---|---|---|
+| Đợt WIP AI Console: Settings, seed demo, dọn AUDIT-006 | [ISSUE-019](issues/10-2026/ISSUE-019-console-settings-va-don-audit-006/issue.md) | @HiTranquility | — | 🚧 Hết P0/P1; còn kiểm browser + P2 |
 | Việc vặt tháng 10 — luật ý tưởng giữa chừng + techlead duyệt (IPLMS ADR-0059) | [CHORE-001](chores/10-2026/CHORE-001-monthly-maintenance/issue.md) | @HiTranquility | 2026-10-31 | 🚧 PR chore tháng mở |
 | Chặn nạp mẫu demo Vision Lab ở production, sửa nạp lại lỗi 500 / nhãn kẹt bốn mắt | [bug-013](bugs/bug-013-vision-demo-seed-khong-chan-production/bug.md) | @HiTranquility | 2026-10-31 | 🚧 Đã sửa, chờ audit vòng 2 + PR vào develop |
 | Định tuyến Root URL và Nâng cấp Copilot Chat Studio 3-Panel | [ISSUE-003](issues/10-2026/ISSUE-003-console-root-routing-copilot-studio/issue.md) | AI Team | 2026-10-31 | 🚧 Đang hoàn thiện UX & sub-components |

@@ -11,10 +11,12 @@ from pydantic import BaseModel, Field
 
 from app.api.rest.console_access import require_any_permission, require_permission
 from app.api.rest.schemas.base_response import BaseResponse
-from app.core.console.dtos import ConsoleActor
-from app.core.console.services.accept_policy_service import console_accept_policy_service
-from app.core.console.services.model_lab_service import console_model_lab_service
-from app.core.console.services.vision_lab_service import console_vision_lab_service
+from app.core.console import (
+    ConsoleActor,
+    console_accept_policy_service,
+    console_model_lab_service,
+    console_vision_lab_service,
+)
 
 router = APIRouter(prefix="/vision", tags=["AI Console vision"])
 
@@ -225,7 +227,7 @@ async def status(actor: ConsoleActor = Depends(require_permission("ai:metrics:re
 
 @router.post("/seed-demo", response_model=BaseResponse[SeedResult])
 async def seed_demo(actor: ConsoleActor = Depends(require_any_permission("ai:task:label", "ai:label:approve", "ai:member:manage"))):
-    result = await console_vision_lab_service.seed_demo_samples(actor)
+    result = await console_vision_lab_service.seed_demo_samples(actor, reset=True)
     return BaseResponse.ok([SeedResult(**result)], f"Đã nạp {result['seeded_samples']} mẫu thực hành.")
 
 

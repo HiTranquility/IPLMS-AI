@@ -90,4 +90,78 @@ class ConsoleCopilotLabService:
         await self.store.review_turn(turn_id, turn_at, verdict, note, actor.member_id)
 
 
+    async def promote_to_eval(
+        self,
+        actor: ConsoleActor,
+        turn_id: str,
+        query: str,
+        expected_behavior: str = "ANSWER",
+        category: str = "regulation",
+        note: str = "",
+    ) -> dict:
+        """SUGGESTION-005: Đưa một lượt chat thực tế từ Copilot Lab vào danh sách ứng viên Eval hồi quy."""
+        import json
+        import os
+
+        if not (access_policy.can(actor, "ai:label:approve") or access_policy.can(actor, "ai:prompt:edit")):
+            access_policy.require(actor, "ai:label:approve")
+        if not _UUID.match(turn_id or ""):
+            raise ValueError("turn_id không hợp lệ.")
+        clean_query = (query or "").strip()
+        if not 1 <= len(clean_query) <= 2000:
+            raise ValueError("Câu hỏi cần 1–2000 ký tự.")
+        if expected_behavior not in ("ANSWER", "REFUSE"):
+            raise ValueError("Hành vi kỳ vọng chỉ nhận ANSWER hoặc REFUSE.")
+        clean_cat = (category or "regulation").strip()[:64] or "regulation"
+        clean_note = (note or "").strip()[:500]
+
+        path = "var/eval_candidates.json"
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        items: list[dict] = []
+        if os.path.isfile(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    items = json.load(f) or []
+            except Exception:
+                items = []
+
+        entry = {
+            "turn_id": turn_id,
+            "query": clean_query,
+            "expected_behavior": expected_behavior,
+            "category": clean_cat,
+            "note": clean_note,
+            "promoted_by": actor.member_id,
+            "promoted_at": datetime.utcnow().isoformat() + "Z",
+        }
+        items = [x for x in items if x.get("turn_id") != turn_id]
+        items.insert(0, entry)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(items[:200], f, ensure_ascii=False, indent=2)
+
+        await self.store.add_audit(
+            actor.member_id,
+            "copilot.promote_eval",
+            "copilot_turn",
+            turn_id,
+            f"Đưa vào bộ Eval ({expected_behavior} · {clean_cat}): {clean_query[:80]}",
+        )
+        return entry
+
+    async def list_eval_candidates(self, actor: ConsoleActor) -> list[dict]:
+        import json
+        import os
+
+        if not (access_policy.can(actor, "ai:chatlog:read") or access_policy.can(actor, "ai:metrics:read")):
+            access_policy.require(actor, "ai:chatlog:read")
+        path = "var/eval_candidates.json"
+        if not os.path.isfile(path):
+            return []
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f) or []
+        except Exception:
+            return []
+
+
 console_copilot_lab_service = ConsoleCopilotLabService()
