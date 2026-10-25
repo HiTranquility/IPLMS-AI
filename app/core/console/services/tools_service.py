@@ -202,7 +202,7 @@ class ConsoleToolsService:
             raise ValueError("Câu hỏi cần 1–2000 ký tự.")
         request = AskQuestionRequest(
             query=query, user_id=actor.member_id, user_role="console",
-            parking_lot_id=_lot(parking_lot_id), preview=False,
+            parking_lot_id=_lot(parking_lot_id), preview=True,
             top_k=top_k, min_similarity=min_similarity, temperature=temperature,
         )
         async for chunk in self.copilot.stream_answer(request):
@@ -219,7 +219,7 @@ class ConsoleToolsService:
             raise ValueError("Câu hỏi cần 1–2000 ký tự.")
         request = AskQuestionRequest(
             query=query, user_id=actor.member_id, user_role="console",
-            parking_lot_id=_lot(parking_lot_id), preview=False,
+            parking_lot_id=_lot(parking_lot_id), preview=True,
             top_k=top_k, min_similarity=min_similarity, temperature=temperature,
         )
         return await self.copilot.ask_question(request, task=CONSOLE_TRY_TASK)

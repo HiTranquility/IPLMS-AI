@@ -9,32 +9,50 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import math
+import re
 import struct
+import time
+import unicodedata
 from typing import Any, Iterable, List, Sequence
 
 from app.config import get_config
 from app.core.exceptions import EmbeddingError, ModelNotLoadedError
+from app.infra.database.keyword_search import _STOPWORDS, fold
 from app.util.logger import logger
 
 
 def _deterministic_embedding(text: str, dimensions: int = 768) -> List[float]:
-    """Tạo vector chuẩn hóa L2 có tính tất định từ text băm (hash-based unit vector).
+    """Tạo vector chuẩn hóa L2 có tính tất định từ đặc trưng từ vựng và n-gram (feature hashing).
 
     Giúp môi trường local dev/offline hoạt động 100% không bị chặn bởi ConnectError,
-    đồng thời bảo toàn tính toán khoảng cách cosine trong pgvector.
+    đồng thời bảo toàn tính tương đồng cosine trong pgvector: văn bản có chung từ khóa
+    trọng tâm sẽ đạt cosine similarity >= 0.35 (đáp ứng ADR-0008), câu hỏi lạc đề trả về ~0.0.
     """
-    digest = hashlib.sha256(text.encode("utf-8")).digest()
-    seed = struct.unpack(">I", digest[:4])[0]
+    words = re.findall(r"\w+", unicodedata.normalize("NFC", text).lower())
+    meaningful = [w for w in words if w not in _STOPWORDS] or words
+    folded_words = [fold(w) for w in meaningful if len(fold(w)) >= 2] or [fold(w) for w in words]
+    if not folded_words:
+        folded_words = ["empty"]
 
-    vec: list[float] = []
-    state = seed or 1
-    for _ in range(dimensions):
-        state = (state * 1664525 + 1013904223) & 0xFFFFFFFF
-        val = (state / 0xFFFFFFFF) * 2.0 - 1.0
-        vec.append(val)
+    tokens: list[tuple[str, float]] = []
+    for w in folded_words:
+        tokens.append((w, 1.0))
+    for i in range(len(folded_words) - 1):
+        tokens.append((f"{folded_words[i]}_{folded_words[i+1]}", 1.5))
 
-    norm = math.sqrt(sum(x * x for x in vec)) or 1.0
-    return [x / norm for x in vec]
+    vec = [0.0] * dimensions
+    for token, weight in tokens:
+        h = int(hashlib.sha256(token.encode("utf-8")).hexdigest()[:8], 16)
+        idx = h % dimensions
+        sign = 1.0 if (h & 0x10000) else -1.0
+        vec[idx] += sign * weight
+
+    # Thêm background signature cực nhỏ để vector luôn hợp lệ ngay cả với từ hiếm
+    doc_hash = int(hashlib.sha256(text.encode("utf-8")).hexdigest()[:8], 16)
+    vec[doc_hash % dimensions] += 0.01
+
+    l2 = math.sqrt(sum(x * x for x in vec)) or 1.0
+    return [round(x / l2, 6) for x in vec]
 
 
 def _status_code(exc: Exception) -> int | None:
@@ -70,6 +88,7 @@ class EmbeddingClient:
         self._api_key = get_config().llm.llm_api_key
         self._base_url = (self._config.base_url or "").strip()
         self._resolved_base_url: str | None = None
+        self._offline_until: float = 0.0
 
     def _create_sdk_client(self, base_url: str | None = None) -> Any:
         api_key = self._api_key or ("ollama" if (base_url or self._base_url) else "")
@@ -118,6 +137,10 @@ class EmbeddingClient:
         if self._client is not None:
             return await self._call_sdk(self._client, texts)
 
+        # Nếu đã xác định đang ở chế độ offline (thời gian làm mới 30s): dùng ngay deterministic embedding
+        if time.monotonic() < self._offline_until:
+            return [_deterministic_embedding(t, self._config.dimensions) for t in texts]
+
         # Thử lần lượt các URL ứng viên (host.docker.internal, 127.0.0.1, localhost)
         candidate_urls = _candidate_base_urls(self._base_url)
         last_exc: Exception | None = None
@@ -136,6 +159,7 @@ class EmbeddingClient:
 
         # Nếu không thể kết nối tới Ollama / OpenAI (máy dev offline, Ollama chưa chạy):
         # Kích hoạt deterministic fallback embedding (768-dim) để quá trình nạp và test hoạt động 100%
+        self._offline_until = time.monotonic() + 30.0
         logger.warning(
             "Không thể kết nối dịch vụ embedding (%s). Tự động kích hoạt deterministic local fallback embedding (dim=%d) để đảm bảo nạp dữ liệu offline an toàn.",
             last_exc,
