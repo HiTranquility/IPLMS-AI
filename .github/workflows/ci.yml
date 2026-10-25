@@ -53,7 +53,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install \
-            grpcio grpcio-tools numpy opencv-python-headless \
+            grpcio grpcio-tools numpy opencv-python-headless "pillow>=10.0.0" \
             "fastapi>=0.110" "python-multipart>=0.0.9" "pyarrow>=14.0.0" \
             pydantic pydantic-settings "pypdf>=6.19.0" python-docx \
             "openai>=1.68.0,<2.0.0" "pgvector>=0.2.5" "psycopg2-binary>=2.9.9" \
