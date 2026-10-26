@@ -573,6 +573,7 @@ export const vi = {
     diagnosticsTitle: 'Trạng Thái Hệ Thống & Kiểm Tra Cấu Hình (Diagnostics)',
     diagnosticsDesc: 'File weights, thư mục cache, phiên bản PyTorch và thiết bị suy luận của process console.',
     refreshStatus: 'Làm mới',
+    refreshDocs: 'Làm mới danh sách tài liệu',
     yoloTitle: 'YOLO Plate Detector',
     yoloWeights: 'File Weights:',
     yoloSize: 'Dung lượng:',
@@ -910,6 +911,8 @@ export const vi = {
     },
   },
   review: {
+    approveFor: (plate: string) => `Duyệt nhãn ${plate}`,
+    rejectFor: (plate: string) => `Trả lại nhãn ${plate}`,
     title: 'Duyệt nhãn',
     desc: 'Bốn mắt: nhãn của bạn không hiện ở đây và hệ thống chặn tự duyệt. Chỉ nhãn đã duyệt mới vào snapshot.',
     empty: 'Không có nhãn nào chờ duyệt',
@@ -1014,6 +1017,7 @@ export const vi = {
     goldenCol: 'Tập Golden',
   },
   members: {
+    manageRolesFor: (name: string) => `Phân vai trò cho ${name}`,
     title: 'Thành viên & vai trò',
     desc: 'Quyền console nằm ở DB riêng của console. Admin/Moderator của platform không tự có vai trò nào ở đây.',
     status: { INVITED: 'Đã mời', ACTIVE: 'Đang dùng', DISABLED: 'Đã khoá' },
@@ -1184,6 +1188,8 @@ export const vi = {
     presetCpuTitle: 'CPU-Only Eco Mode (Không cần GPU rời)',
     presetCpuDesc: 'Tắt hoàn toàn GPU offload (0 layers), chạy cả LLM và Vision trên CPU đa luồng tiết kiệm tài nguyên.',
     applyPresetBtn: 'Áp dụng cấu hình này',
+    applyPresetFor: (preset: string) => `Áp dụng cấu hình ${preset}`,
+    activePresetFor: (preset: string) => `${preset}: đang kích hoạt`,
     activePresetBadge: 'Đang kích hoạt',
     computeFormTitle: 'Tinh chỉnh Chuyên sâu GPU / CPU / Engine',
     visionDeviceLabel: 'Thiết bị suy luận Vision (YOLO + EasyOCR)',

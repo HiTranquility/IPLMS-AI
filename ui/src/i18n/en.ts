@@ -594,6 +594,7 @@ export const en: Messages = {
     diagnosticsTitle: 'System & Engine Diagnostics Inspector',
     diagnosticsDesc: 'Weight files, cache directories, PyTorch runtime and inference hardware of the console process.',
     refreshStatus: 'Refresh Diagnostics',
+    refreshDocs: 'Refresh document list',
     yoloTitle: 'YOLO Plate Detector',
     yoloWeights: 'Weights File:',
     yoloSize: 'Size:',
@@ -931,6 +932,8 @@ export const en: Messages = {
     },
   },
   review: {
+    approveFor: (plate: string) => `Approve label ${plate}`,
+    rejectFor: (plate: string) => `Send back label ${plate}`,
     title: 'Label review',
     desc: 'Four eyes: your own labels do not appear here and the system blocks self-approval. Only approved labels enter a snapshot.',
     empty: 'No labels awaiting review',
@@ -1035,6 +1038,7 @@ export const en: Messages = {
     goldenCol: 'Golden set',
   },
   members: {
+    manageRolesFor: (name: string) => `Manage roles for ${name}`,
     title: 'Members & roles',
     desc: 'Console permissions live in the console’s own DB. Platform Admin/Moderator accounts get no role here automatically.',
     status: { INVITED: 'Invited', ACTIVE: 'Active', DISABLED: 'Disabled' },
@@ -1205,6 +1209,8 @@ export const en: Messages = {
     presetCpuTitle: 'CPU-Only Eco Mode (No discrete GPU)',
     presetCpuDesc: 'Disables GPU offload (0 layers) and runs both LLM and Vision on multi-threaded CPU.',
     applyPresetBtn: 'Apply preset',
+    applyPresetFor: (preset: string) => `Apply preset ${preset}`,
+    activePresetFor: (preset: string) => `${preset}: active profile`,
     activePresetBadge: 'Active profile',
     computeFormTitle: 'Fine-Grained GPU / CPU / Engine Tuning',
     visionDeviceLabel: 'Vision inference device (YOLO + EasyOCR)',

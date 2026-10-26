@@ -72,13 +72,14 @@
 
 .mainGrid {
   display: grid;
-  grid-template-columns: 1fr;
+  /* minmax(0, …): biểu đồ SVG và tiêu đề không được ép cột rộng hơn màn hẹp (375px). */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-5);
 }
 
 @media (min-width: 64rem) {
   .mainGrid {
-    grid-template-columns: 20rem 1fr;
+    grid-template-columns: 20rem minmax(0, 1fr);
   }
 }
 
@@ -288,6 +289,7 @@
   font-weight: 600;
   color: var(--color-text);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
   margin: 0;

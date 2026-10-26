@@ -379,6 +379,7 @@ export function IngestSection() {
                 key={cat}
                 type="button"
                 className={`${styles.catFilterBtn} ${selectedCatFilter === cat ? styles.catFilterBtnActive : ''}`}
+                aria-pressed={selectedCatFilter === cat}
                 onClick={() => setSelectedCatFilter(cat)}
               >
                 {cat === 'all'
@@ -396,7 +397,8 @@ export function IngestSection() {
               type="button"
               className={styles.catFilterBtn}
               onClick={() => void docsQuery.refetch()}
-              title={t.tools.refreshStatus}
+              title={t.tools.refreshDocs}
+              aria-label={t.tools.refreshDocs}
             >
               <RefreshCw size={12} aria-hidden />
             </button>
