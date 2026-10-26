@@ -95,7 +95,7 @@ jobs:
 
       # undici (qua jsdom của vitest) cần zlib zstd ở Node 22.15 trở lên.
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: pnpm
