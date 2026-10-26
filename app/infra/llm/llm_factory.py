@@ -5,6 +5,7 @@ import json
 from typing import Any, AsyncGenerator
 
 from app.config import get_config
+from app.config.llm_config import DEFAULT_LOCAL_LLM_MODEL, NON_OLLAMA_MODEL_NAMES
 from app.core.exceptions import ModelConfigurationError, ModelNotLoadedError, RagPipelineError
 from app.util.logger import logger
 
@@ -55,8 +56,8 @@ class LlmFactory:
             raw_base = raw_base.replace("host.docker.internal", "127.0.0.1")
         self.base_url = raw_base
         model_name = profile["model"] if profile else getattr(config, "active_model_name", config.llm_model)
-        if self.provider in ("local", "ollama") and (not model_name or model_name in ("gpt-5.6-luna", "Qwen3.5-4B-Q4_K_M")):
-            model_name = "qwen2.5:0.5b"
+        if self.provider in ("local", "ollama") and (not model_name or model_name in NON_OLLAMA_MODEL_NAMES):
+            model_name = DEFAULT_LOCAL_LLM_MODEL
         self.model = model_name
         self.timeout_seconds = profile["timeout_seconds"] if profile else config.llm_timeout_seconds
         self.max_retries = config.llm_max_retries
@@ -111,6 +112,8 @@ class LlmFactory:
                     timeout=self.timeout_seconds,
                     max_retries=1,
                 )
+                # llama-server chỉ nạp một file GGUF: báo đúng tên model đang chạy (A-40).
+                self.model = getattr(config, "local_gguf_model_name", None) or self.model
                 return self._client
 
             # B. Nếu llama-server không chạy, tự động kết nối Ollama local
@@ -130,8 +133,9 @@ class LlmFactory:
                 timeout=self.timeout_seconds,
                 max_retries=1,
             )
-            if not self.model or self.model in ("gpt-5.6-luna", "Qwen3.5-4B-Q4_K_M"):
-                self.model = "qwen2.5:0.5b"
+            # Rơi sang Ollama: tên GGUF của llama-server không dùng được ở đây.
+            if not self.model or self.model in NON_OLLAMA_MODEL_NAMES:
+                self.model = DEFAULT_LOCAL_LLM_MODEL
             return self._client
 
         api_key = "ollama" if (self.base_url or active_prov in ("local", "ollama")) else self.api_key
@@ -387,12 +391,8 @@ class LlmFactory:
 
         # Chat completions stream (Local llama-server / Qwen / Ollama)
         try:
-            target_model = self.model
-            if provider in ("local", "ollama") and (not target_model or target_model in ("gpt-5.6-luna", "Qwen3.5-4B-Q4_K_M")):
-                target_model = "qwen2.5:0.5b"
-
             stream = await client.chat.completions.create(
-                model=target_model,
+                model=self.model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {

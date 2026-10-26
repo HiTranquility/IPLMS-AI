@@ -297,6 +297,27 @@ class ConsoleSettingsAndToolsEndpointTest(unittest.IsolatedAsyncioTestCase):
         res = await svc.update_compute_settings(ML, {"llm_provider": "ollama", "llm_model": "qwen3:4b"})
         self.assertEqual("ollama", res["compute"]["llm_provider"])
 
+    async def test_ghi_file_loi_thi_hoan_tac_cau_hinh(self):
+        from app.core.console.services import tools_service
+
+        from app.config.runtime_override_config import snapshot_runtime_fields
+
+        svc, *_ = service()
+        cfg = tools_service.get_config()
+        cfg.llm.llm_provider = "ollama"
+        before = snapshot_runtime_fields(cfg)
+        # Lỗi ở chính os.replace (vd Windows khoá file đích) chứ không chỉ ở hàm ghi bị giả lập.
+        with patch("app.config.runtime_override_config.os.replace", side_effect=PermissionError("locked")):
+            with self.assertRaises(PermissionError):
+                await svc.update_policy_settings(LEAD, {"rag_top_k": 19, "reason": "thử lỗi ghi"})
+            with self.assertRaises(PermissionError):
+                await svc.update_compute_settings(ML, {"local_llm_threads": 63, "llm_provider": "local"})
+            with self.assertRaises(PermissionError):
+                await svc.update_compute_settings(ML, {"preset": "cpu_eco"})
+        # A-53: API báo lỗi thì cấu hình đang chạy giữ nguyên, kể cả provider; không để lại tệp tạm.
+        self.assertEqual(before, snapshot_runtime_fields(cfg))
+        self.assertFalse(os.path.exists(self._settings_path + ".tmp"))
+
     def test_file_override_hong_khong_ap_do_dang(self):
         import json
 
@@ -340,6 +361,19 @@ class ConsoleSettingsAndToolsEndpointTest(unittest.IsolatedAsyncioTestCase):
         self.assertIn("reason_code", quote)
         self.assertIn("occupancy_pct", quote)
         self.assertIn("current_occupancy_pct", quote)
+        # A-11/12: hợp đồng giờ khớp kiểu UI, không gắn tên model chưa có.
+        inference = res["stage3_inference"]
+        self.assertEqual(24, len(inference["hourly_predictions"]))
+        self.assertEqual(
+            {"hour_of_day", "predicted_occupancy_pct", "estimated_free_spots", "surge_multiplier", "confidence"},
+            set(inference["hourly_predictions"][0]),
+        )
+        expected = "heuristic-baseline" if inference["is_fallback"] else "profile-7x24"
+        self.assertEqual(expected, inference["model_version"])
+        # Bãi không có trong lake → baseline, và số bản ghi là số thật của dataset (không phải hằng).
+        self.assertTrue(inference["is_fallback"])
+        self.assertGreater(res["stage1_datalake"]["total_records"], 0)
+        self.assertEqual(len(res["stage2_features"]["sample_rows"]) > 0, res["stage2_features"]["total_samples"] > 0)
 
     async def test_grpc_dataset_handler_exports_without_name_error(self):
         from unittest.mock import MagicMock

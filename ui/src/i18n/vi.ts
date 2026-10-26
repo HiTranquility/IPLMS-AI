@@ -241,6 +241,7 @@ export const vi = {
     likesDislikes: 'Lượt thích / Không thích',
   },
   copilot: {
+    configuredModel: (m: string) => `Model cấu hình: ${m}. Khi llama-server đang chạy, câu trả lời dùng model GGUF của server.`,
     title: 'Copilot Lab',
     desc: 'Lượt hỏi gần nhất, câu chữ đã che PII. Chấm đúng/sai để có tỉ lệ đúng thật và gom ca vào bộ eval.',
     status: { SUCCESS: 'Đã trả lời', REFUSED: 'Guard chặn', NO_CONTEXT: 'Thiếu ngữ cảnh', ERROR: 'Lỗi' },
@@ -497,7 +498,7 @@ export const vi = {
     notConfigured: 'chưa cấu hình',
     // Nhãn mục kiểm do server gửi bằng tiếng Việt; ngôn ngữ khác dịch theo `key`.
     checks: {} as Record<string, string>,
-    llmModel: 'Model LLM',
+    llmModel: 'Model LLM (cấu hình)',
     telemetry: (on: boolean, days: string) => `telemetry ${on ? 'bật' : 'tắt'} (giữ ${days} ngày)`,
     a2Retention: (days: string) => `ảnh A2 giữ ${days} ngày`,
     visionDevice: 'Vision chạy trên',
@@ -641,6 +642,10 @@ export const vi = {
     stage3Title: '3. Động Cơ Giá Động & Cổng An Toàn (ForecastService)',
     stage3Sub: 'Luật Surge Tariff 3 bậc (<75%: 1.0x · 75–84.9%: 1.15–1.25x · ≥85%: 1.30–1.50x)',
     stage3ModelVer: 'Phiên bản Engine:',
+    dataSourceLabel: 'Nguồn dữ liệu:',
+    dataSourceLake: 'Dữ liệu thật từ Gold lake',
+    dataSourceBaseline: 'Baseline: bãi chưa có dữ liệu thật',
+    dataSourceLocalSim: 'Mô phỏng tại trình duyệt, chưa chạy pipeline',
     stage3Reason: 'Mã quyết định:',
     dayLabel: 'Thứ trong tuần (day_of_week)',
     dayNames: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'],

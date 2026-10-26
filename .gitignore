@@ -103,4 +103,5 @@ app/api/grpc/generated/
 
 # Cấu hình đổi ở trang Settings / ứng viên eval của AI Console (máy cục bộ)
 var/runtime_settings.json
+var/runtime_settings.json.tmp
 var/eval_candidates.json

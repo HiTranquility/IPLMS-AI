@@ -67,6 +67,16 @@ def apply_runtime_overrides(config) -> None:
         setattr(getattr(config, group), attr, value)
 
 
+def snapshot_runtime_fields(config) -> dict[str, Any]:
+    """Chụp giá trị hiện tại của các trường đổi được, để hoàn tác khi ghi file lỗi (A-53)."""
+    return {(group, attr): getattr(getattr(config, group), attr) for group, attr, _ in _FIELDS.values()}
+
+
+def restore_runtime_fields(config, snapshot: dict[str, Any]) -> None:
+    for (group, attr), value in snapshot.items():
+        setattr(getattr(config, group), attr, value)
+
+
 def persist_runtime_overrides(overrides: dict[str, Any]) -> None:
     """Gộp `overrides` vào file. Lỗi ghi được ném ra để API không báo lưu giả."""
     unknown = set(overrides) - set(_FIELDS)
@@ -78,5 +88,12 @@ def persist_runtime_overrides(overrides: dict[str, Any]) -> None:
         with open(RUNTIME_SETTINGS_PATH, "r", encoding="utf-8") as f:
             existing = json.load(f) or {}
     existing.update(overrides)
-    with open(RUNTIME_SETTINGS_PATH, "w", encoding="utf-8") as f:
-        json.dump(existing, f, ensure_ascii=False, indent=2)
+    # Ghi tệp tạm rồi thay, để process chết giữa chừng không để lại file hỏng.
+    tmp_path = f"{RUNTIME_SETTINGS_PATH}.tmp"
+    try:
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(existing, f, ensure_ascii=False, indent=2)
+        os.replace(tmp_path, RUNTIME_SETTINGS_PATH)
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
