@@ -51,6 +51,18 @@ class RagPipelineTest(unittest.TestCase):
         self.assertEqual([], result["sources"])
         self.assertEqual(0.0, result["confidence"])
 
+    def test_khong_co_chunk_thi_khong_lay_seed_demo_o_production(self):
+        # Seed là quy chế demo chung, chọn theo trùng chữ: bãi thật chưa nạp quy chế
+        # không được nhận biểu phí demo (ADR-0008).
+        engine = RagPipelineEngine(FakeEmbedder(), FakeStore([]), FakeLlm(), demo_seed_enabled=False)
+        result = asyncio.run(engine.query("phí gửi xe máy bao nhiêu?"))
+        self.assertEqual(NO_CONTEXT_ANSWER, result["answer"])
+
+    def test_khong_co_chunk_thi_lay_seed_demo_khi_bat_co(self):
+        engine = RagPipelineEngine(FakeEmbedder(), FakeStore([]), FakeLlm(), demo_seed_enabled=True)
+        chunks = asyncio.run(engine._retrieve("phí gửi xe máy bao nhiêu?", None))
+        self.assertTrue(chunks)
+
     def test_keyword_only_hits_abstain_without_calling_llm(self):
         # Nhánh keyword của tìm kiếm lai trả similarity 0: trùng chữ, không trùng nghĩa.
         chunks = [{"content": "Bãi xe mở cửa 6h", "source": "gio.md", "similarity": 0.0}]
