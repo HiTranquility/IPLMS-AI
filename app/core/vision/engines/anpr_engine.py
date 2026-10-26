@@ -19,7 +19,13 @@ from app.core.vision.engines.anpr.detector import detect_plate
 from app.core.vision.engines.anpr.ocr import read_plate_details, read_with_confidence
 from app.core.vision.engines.anpr.plate_text import is_valid_plate, plate_key
 from app.core.vision.engines.anpr.preprocess import (
-    enhance_for_ocr, is_valid_crop, detect_plate_color, enhance_yellow_plate, deskew_plate,
+    assess_crop_quality,
+    deskew_plate,
+    detect_plate_color,
+    enhance_for_ocr,
+    enhance_yellow_plate,
+    is_valid_crop,
+    suppress_glare_for_ocr,
 )
 from app.core.vision.engines.anpr.scoring import PlateCandidate, select_plate_candidate
 from app.core.vision.engines.anpr_onnx_engine import AnprOnnxEngine
@@ -70,6 +76,7 @@ def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
     crop_is_valid = False
     crop_candidate: Optional[PlateCandidate] = None
     det_conf: Optional[float] = None
+    crop_quality_flags: List[str] = []
     try:
         crop, det_conf = get_anpr_detector().detect_plate(img_cv)
         # Không có detector: detect_plate trả đúng object ảnh gốc. Không OCR lại
@@ -77,6 +84,7 @@ def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
         if isinstance(crop, np.ndarray) and not (det_conf is None and crop is img_cv):
             plate_crop = crop
             crop_is_valid = is_valid_crop(crop)
+            crop_quality_flags = assess_crop_quality(crop)
             if crop_is_valid:
                 crop_text, crop_conf, crop_is_2line, _ = read_plate_details(crop)
                 if is_valid_plate(crop_text):
@@ -102,11 +110,12 @@ def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
     if plate_crop is not None:
         try:
             # Làm nét vốn đắt. Chỉ chạy khi ảnh cắt chưa đủ chất lượng / không đọc
-            # được, hoặc ảnh gốc và ảnh cắt bất đồng — đúng lúc cần "trọng tài".
+            # được, bị chói lóa chưa rõ dấu, hoặc ảnh gốc và ảnh cắt bất đồng.
             full_key = plate_key(full_text) if is_valid_plate(full_text) else ""
             should_enhance = (
                 not crop_is_valid
                 or crop_candidate is None
+                or ("glare" in crop_quality_flags and not crop_candidate.strong_format)
                 or (
                     bool(full_key)
                     and full_key != crop_candidate.key
@@ -117,6 +126,8 @@ def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
             )
             if should_enhance:
                 ocr_crop = deskew_plate(plate_crop)
+                if "glare" in crop_quality_flags:
+                    ocr_crop = suppress_glare_for_ocr(ocr_crop)
                 if detect_plate_color(plate_crop) == "yellow":
                     ocr_crop = enhance_yellow_plate(ocr_crop)
                 enhanced_img = enhance_for_ocr(ocr_crop)
@@ -159,4 +170,5 @@ def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
         "is_two_line": is_two_line,
         # No detector crop means no observed plate background. Never infer from vehicle paint.
         "plate_color": detect_plate_color(plate_crop) if plate_crop is not None else None,
+        "quality_flags": crop_quality_flags,
     }
