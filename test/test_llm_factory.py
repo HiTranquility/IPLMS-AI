@@ -60,6 +60,30 @@ class LlmFactoryTest(unittest.TestCase):
             self.assertEqual("Câu trả lời có nguồn", asyncio.run(run()))
         self.assertNotEqual(seen["loop"], seen["thread"])
 
+    def test_tao_client_dong_thoi_chi_khoi_tao_mot_lan(self):
+        # A-72: hai coroutine goi _aget_client cung luc khi _client con None chi tao 1 client.
+        import time
+        from unittest.mock import patch
+
+        factory = LlmFactory()
+        fake = SimpleNamespace(responses=self.responses)
+        calls = []
+
+        def slow_build():
+            time.sleep(0.02)
+            calls.append(1)
+            factory._client = fake
+            return fake
+
+        async def run_both():
+            return await asyncio.gather(factory._aget_client(), factory._aget_client())
+
+        with patch.object(factory, "_get_client", side_effect=slow_build):
+            c1, c2 = asyncio.run(run_both())
+        self.assertIs(c1, fake)
+        self.assertIs(c2, fake)
+        self.assertEqual(1, len(calls))
+
 
 class FakeChat:
     def __init__(self, content):

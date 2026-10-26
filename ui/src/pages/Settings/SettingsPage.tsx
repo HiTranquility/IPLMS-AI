@@ -198,6 +198,7 @@ export function SettingsPage() {
       <div
         className={styles.tabsBar}
         role="tablist"
+        aria-label={s.title}
         onKeyDown={(e) => {
           // WAI-ARIA tabs: mũi tên trái/phải chuyển tab và chuyển focus theo.
           if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
@@ -254,8 +255,10 @@ export function SettingsPage() {
       )}
 
       {/* TAB 1: PHẦN CỨNG GPU / CPU / VRAM & ENGINE */}
-      {tab === 'compute' && data && (
-        <div role="tabpanel" id="settings-panel-compute" aria-labelledby="settings-tab-compute">
+      {tab === 'compute' && (
+        <div role="tabpanel" id="settings-panel-compute" aria-labelledby="settings-tab-compute" tabIndex={0}>
+          {data && (
+          <>
           <section className={styles.sectionCard}>
             <div className={styles.sectionHeader}>
               <div>
@@ -577,12 +580,15 @@ export function SettingsPage() {
               {savedCompute && <span className={styles.okBanner}>{s.savedComputeMsg}</span>}
             </div>
           </form>
+          </>
+          )}
         </div>
       )}
 
       {/* TAB 2: NGƯỠNG AI, RAG & CHÍNH SÁCH LƯU TRỮ */}
-      {tab === 'policy' && data && (
-        <div role="tabpanel" id="settings-panel-policy" aria-labelledby="settings-tab-policy">
+      {tab === 'policy' && (
+        <div role="tabpanel" id="settings-panel-policy" aria-labelledby="settings-tab-policy" tabIndex={0}>
+          {data && (
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div>
@@ -737,12 +743,13 @@ export function SettingsPage() {
             {savedPolicy && <span className={styles.okBanner}>{s.savedPolicyMsg}</span>}
           </div>
         </section>
+          )}
         </div>
       )}
 
       {/* TAB 3: PHIÊN ĐĂNG NHẬP ĐANG HOẠT ĐỘNG & BỘ EVAL HỒI QUY */}
       {tab === 'security' && (
-        <div role="tabpanel" id="settings-panel-security" aria-labelledby="settings-tab-security">
+        <div role="tabpanel" id="settings-panel-security" aria-labelledby="settings-tab-security" tabIndex={0}>
           <section className={styles.sectionCard}>
             <div className={styles.sectionHeader}>
               <div>
