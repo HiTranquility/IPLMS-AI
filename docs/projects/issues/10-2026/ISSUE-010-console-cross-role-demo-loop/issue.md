@@ -4,7 +4,8 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🟢 Resolved (Chờ merge PR) |
+| **Trạng thái** | ✅ Done |
+| **Ngày đóng** | 2026-10-25 |
 | **Người phụ trách** | Dương (@23110012) |
 | **Ngày tạo** | 2026-10-25 |
 | **Phạm vi** | `ai/ui` (`ui/src/pages/Vision/CrossRoleDemoLoop.test.tsx`, `docs/projects/issues/10-2026/ISSUE-010-console-cross-role-demo-loop/issue.md`) |
