@@ -117,10 +117,12 @@ def _split_sections(text: str) -> List[Tuple[Optional[str], str]]:
         sections.append((None, head))
 
     for i, match in enumerate(matches):
-        title = match.group(1).strip()
+        raw_title = match.group(1).strip()
         end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
         body = text[match.end():end].strip()
-        sections.append((title, f"{title}\n{body}" if body else title))
+        # Tránh tiêu đề phình to khi OCR thiếu dấu ngắt dòng làm tiêu đề dính cả đoạn văn
+        title = raw_title[:200].rsplit(" ", 1)[0] if len(raw_title) > 200 else raw_title
+        sections.append((title, f"{raw_title}\n{body}" if body else raw_title))
 
     return sections
 

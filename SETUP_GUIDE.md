@@ -170,18 +170,19 @@ Use this method when you want to test the exact production container orchestrati
 
 2. **Build and start all 3 containers**:
    ```bash
-   docker compose --env-file .env.dev up -d --build
+   # Thiếu file develop thì Traefik dùng traefik.yml: dashboard :8080 tắt.
+   docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.develop.yml up -d --build
    ```
 
 3. **Check container health**:
    ```bash
-   docker compose --env-file .env.dev ps
+   docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.develop.yml ps
    ```
    *All services (`iplms-ai-dev-ai`, `iplms-ai-dev-gateway`, `iplms-ai-dev-postgres`) should be in `Up (healthy)` state.*
 
 4. **Stop the stack**:
    ```bash
-   docker compose --env-file .env.dev down
+   docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.develop.yml down
    ```
 
 ---

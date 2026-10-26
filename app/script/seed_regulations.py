@@ -12,99 +12,70 @@ SAMPLE_KNOWLEDGE_CHUNKS = [
     {
         "category": "tariff",
         "title": "Biểu Phí Gửi Xe Ô Tô Bậc Thang (Khu vực Trung tâm)",
-        "content": (
-            "Biểu phí gửi xe ô tô tại các bãi xe trung tâm (Landmark 81, Vincom Đồng Khởi):\n"
-            "- 2 giờ đầu tiên: 35.000 VNĐ / giờ.\n"
-            "- Từ giờ thứ 3 đến giờ thứ 5: 45.000 VNĐ / giờ.\n"
-            "- Từ giờ thứ 6 trở đi: Áp dụng mức phí lũy tiến 55.000 VNĐ / giờ.\n"
-            "- Khung giờ ban đêm (từ 22:00 đến 06:00 sáng hôm sau): Phụ thu thêm 50.000 VNĐ / lượt qua đêm.\n"
-            "- Miễn phí 15 phút đầu tiên đối với các lượt xe vào trả khách (Drop-off)."
-        ),
+        "content": "Biểu phí gửi xe ô tô tại các bãi xe trung tâm (Landmark 81, Vincom Đồng Khởi):\n- 2 giờ đầu tiên: 35.000 VNĐ / giờ.\n- Từ giờ thứ 3 đến giờ thứ 5: 45.000 VNĐ / giờ.\n- Từ giờ thứ 6 trở đi: Áp dụng mức phí lũy tiến 55.000 VNĐ / giờ.\n- Khung giờ ban đêm (từ 22:00 đến 06:00 sáng hôm sau): Phụ thu thêm 50.000 VNĐ / lượt qua đêm.\n- Miễn phí 15 phút đầu tiên đối với các lượt xe vào trả khách (Drop-off).",
         "source": "Bieu_phi_do_xe_o_to_2026.pdf",
         "parking_lot_id": "lot_landmark_81"
     },
     {
         "category": "tariff",
-        "title": "Biểu Phí Gửi Xe Máy & Xe Đạp Điện",
-        "content": (
-            "Biểu phí gửi xe máy tại toàn bộ hệ thống bãi xe IPLMS:\n"
-            "- Khung giờ ban ngày (06:00 - 22:00): 6.000 VNĐ / lượt (tối đa 4 tiếng), mỗi 4 tiếng tiếp theo cộng 4.000 VNĐ.\n"
-            "- Khung giờ ban đêm (22:00 - 06:00): 15.000 VNĐ / lượt qua đêm.\n"
-            "- Gói gửi xe tháng (Member VIP): 180.000 VNĐ / tháng (được cố định ô đỗ và tự động mở barrier bằng ANPR)."
-        ),
+        "title": "Biểu Phí Gửi Xe Máy & Xe Đạp Điện (Hệ thống IPLMS)",
+        "content": "Biểu phí gửi xe máy tại toàn bộ hệ thống bãi xe IPLMS:\n- Khung giờ ban ngày (06:00 - 22:00): 6.000 VNĐ / lượt (tối đa 4 tiếng), mỗi 4 tiếng tiếp theo cộng 4.000 VNĐ.\n- Khung giờ ban đêm (22:00 - 06:00): 15.000 VNĐ / lượt qua đêm.\n- Phụ thu ngày Lễ, Tết theo quy định Nhà nước: Áp dụng mức phụ thu thêm 5.000 VNĐ / lượt đối với tất cả các khung giờ gửi xe.\n- Gói gửi xe tháng (Member VIP): 180.000 VNĐ / tháng (được cố định ô đỗ và tự động mở barrier bằng ANPR).",
         "source": "Quy_dinh_xe_may_2026.pdf",
         "parking_lot_id": None
     },
     {
         "category": "regulation",
+        "title": "Quy Trình Xử Lý Mất Thẻ Giữ Xe & Cấp Lại Thẻ Mới",
+        "content": "Điều 6 - Thủ tục xử lý khi khách hàng làm mất thẻ từ giữ xe:\n1. Khai báo & Khóa thẻ: Khách hàng thông báo ngay cho nhân viên kiểm soát tại bãi xe để khóa ID thẻ bị mất trên hệ thống, tránh trường hợp kẻ gian nhặt được thẻ lấy xe ra ngoài.\n2. Thủ tục xác minh phương tiện: Khách hàng cần xuất trình Căn cước công dân (CCCD) / Hộ chiếu; Giấy chứng nhận đăng ký xe (Cà vẹt xe) chính chủ hoặc giấy tờ ủy quyền hợp pháp; Đối chiếu hình ảnh camera check-in lúc vào bãi (biển số, khuôn mặt, trang phục người gửi xe) trùng khớp 100% với dữ liệu hệ thống IPLMS.\n3. Lập biên bản cam kết: Nhân viên trực cổng lập Biên bản cam kết nhận xe và xác nhận bàn giao phương tiện có chữ ký của hai bên.\n4. Mức phí bồi thường phát hành thẻ mới: Mức bồi thường chi phí phát hành lại phôi thẻ từ/chip mới là 50.000 VNĐ / thẻ (bao gồm chi phí phôi thẻ và mã hóa bảo mật). Tiền gửi xe trong bãi được tính theo số giờ thực tế đỗ đến thời điểm lấy xe.",
+        "source": "Quy_trinh_xu_ly_mat_the_xe.pdf",
+        "parking_lot_id": None
+    },
+    {
+        "category": "regulation",
+        "title": "Quy Định Thời Hạn Lưu Đỗ Tối Đa & Quy Trình Xử Lý Xe Vô Chủ",
+        "content": "Điều 7 - Thời gian lưu bãi tối đa và xử lý xe vô chủ:\n1. Thời hạn lưu bãi tối đa đối với xe gửi vé lượt là 24 giờ cho mỗi phiên gửi (trừ trường hợp chủ xe đã đăng ký gửi dài ngày qua ứng dụng).\n2. Quá 72 giờ (3 ngày) kể từ khi vào bãi mà chủ xe không đến lấy xe và không có thông báo trước: Hệ thống kích hoạt cảnh báo, ban quản lý bãi tiến hành khóa bánh xe tại chỗ, lập biên bản ghi nhận hiện trạng và phụ thu phí mở khóa 200.000 VNĐ kèm tiền gửi lũy tiến.\n3. Sau 30 ngày liên tục không có người đến nhận xe và không liên lạc được với chủ sở hữu: Bãi xe sẽ phối hợp với Công an địa phương và cơ quan chức năng lập biên bản xử lý phương tiện vô chủ, kiểm tra số khung số máy và di dời xe về kho chuyên dụng theo quy định pháp luật.",
+        "source": "Quy_dinh_thoi_han_luu_bai_va_xe_vo_chu.pdf",
+        "parking_lot_id": None
+    },
+    {
+        "category": "regulation",
+        "title": "Chính Sách Miễn Phí Vé & Ưu Tiên Cho Phương Tiện Đặc Biệt",
+        "content": "Điều 11 - Quy chế hiện hành của tòa nhà đối với các loại xe ưu tiên được miễn phí vé gửi xe khi vào bãi đỗ:\n1. Các loại phương tiện ưu tiên sau đây được MIỄN PHÍ 100% vé gửi xe khi ra vào bãi đỗ xe tòa nhà:\n- Xe chữa cháy của Cảnh sát Phòng cháy chữa cháy và Cứu nạn cứu hộ đang thực thi nhiệm vụ.\n- Xe cứu thương đang chở bệnh nhân cấp cứu hoặc đi đón bệnh nhân.\n- Xe quân sự, xe công an, xe hộ đê, xe đi làm nhiệm vụ khẩn cấp theo lệnh điều động của Nhà nước.\n- Xe của đoàn xe hộ tống, xe dẫn đường có cờ ưu tiên.\n2. Quy trình kiểm soát tại cổng: Hệ thống ANPR tự động nhận diện biển số đỏ (quân sự), biển số xanh 80 (công vụ) hoặc nhân viên cổng bấm nút ưu tiên để mở barrier khẩn cấp trong vòng 3 giây mà không cần quét thẻ tính tiền.\n3. Ô đỗ ưu tiên: Luôn bố trí tối thiểu 02 ô đỗ khẩn cấp ngay sát cổng ra vào dành riêng cho xe cứu thương và cứu hỏa khi cần tiếp cận tòa nhà.",
+        "source": "Chinh_sach_phuong_tien_uu_tien.pdf",
+        "parking_lot_id": None
+    },
+    {
+        "category": "regulation",
         "title": "Quy Chế Xử Lý Tranh Chấp & Hoàn Tiền Khiếu Nại (Dispute Policy)",
-        "content": (
-            "Điều 5 - Quy trình xử lý khiếu nại và hoàn phí:\n"
-            "1. Trường hợp cảm biến barie hoặc hệ thống quét biển số (ANPR) gặp sự cố kỹ thuật dẫn đến chậm trễ lúc ra cổng > 10 phút, hệ thống tự động trừ thời gian trễ này khỏi tổng thời gian tính phí.\n"
-            "2. Khách hàng có quyền tạo yêu cầu Khiếu nại (Dispute Ticket) trên ứng dụng trong vòng 48 giờ kể từ khi kết thúc phiên gửi.\n"
-            "3. Trợ lý AI Copilot sẽ đối chiếu video log và thời gian thực để đề xuất hoàn tiền 100% phần phí chênh lệch do lỗi hệ thống vào ví IPLMS Wallet trong vòng 15 phút."
-        ),
+        "content": "Điều 5 - Quy trình xử lý khiếu nại và hoàn phí:\n1. Trường hợp cảm biến barie hoặc hệ thống quét biển số (ANPR) gặp sự cố kỹ thuật dẫn đến chậm trễ lúc ra cổng > 10 phút, hệ thống tự động trừ thời gian trễ này khỏi tổng thời gian tính phí.\n2. Khách hàng có quyền tạo yêu cầu Khiếu nại (Dispute Ticket) trên ứng dụng trong vòng 48 giờ kể từ khi kết thúc phiên gửi.\n3. Trợ lý AI Copilot sẽ đối chiếu video log và thời gian thực để đề xuất hoàn tiền 100% phần phí chênh lệch do lỗi hệ thống vào ví IPLMS Wallet trong vòng 15 phút.\n4. Quy trình xử lý khiếu nại trầy xước, va quẹt, vết móp xe: Đối chiếu snapshot camera check-in và check-out. Nếu phát sinh trong bãi do lỗi vận hành, bồi thường theo quy chế. Nếu camera bị che khuất hoặc thiếu chứng cứ, chuyển Quản lý xác minh thủ công trong 24 giờ.",
         "source": "Quy_che_xu_ly_khieu_nai_dieu_5.pdf",
         "parking_lot_id": None
     },
     {
         "category": "fine_policy",
         "title": "Chính Sách Xử Phạt Vi Phạm Đỗ Sai Vị Trí & Quá Giờ",
-        "content": (
-            "Điều 8 - Xử phạt vi phạm nội quy bãi đỗ xe:\n"
-            "- Đỗ sai ô đã đặt trước (sai slot ID được chỉ định): Phạt cảnh cáo lần đầu, tái phạm phạt 50.000 VNĐ.\n"
-            "- Chiếm dụng ô sạc xe điện (EV Charging Slot) mà không sạc hoặc đã sạc đầy quá 30 phút: Phụ thu 20.000 VNĐ / 30 phút quá giờ.\n"
-            "- Gửi xe quá hạn hợp đồng tháng hoặc quá 72 giờ không thông báo: Xe sẽ bị khóa bánh tại chỗ, phí mở khóa là 200.000 VNĐ kèm tiền gửi lũy tiến."
-        ),
+        "content": "Điều 8 - Xử phạt vi phạm nội quy bãi đỗ xe:\n- Đỗ sai ô đã đặt trước (sai slot ID được chỉ định): Phạt cảnh cáo lần đầu, tái phạm phạt 50.000 VNĐ.\n- Chiếm dụng ô sạc xe điện (EV Charging Slot) mà không sạc hoặc đã sạc đầy quá 30 phút: Phụ thu 20.000 VNĐ / 30 phút quá giờ.\n- Gửi xe quá hạn hợp đồng tháng hoặc quá 72 giờ không thông báo: Xe sẽ bị khóa bánh tại chỗ, phí mở khóa là 200.000 VNĐ kèm tiền gửi lũy tiến.",
         "source": "Noi_quy_va_che_tai_bai_xe.pdf",
         "parking_lot_id": None
     },
     {
         "category": "ev_charging",
         "title": "Chính Sách Trạm Sạc Xe Điện (EV Charging Station)",
-        "content": (
-            "Quy định sử dụng trụ sạc AC/DC tại bãi xe:\n"
-            "- Đơn giá sạc điện: 3.850 VNĐ / kWh (chưa bao gồm VAT).\n"
-            "- Phí đỗ xe trong thời gian đang sạc (dưới 2 giờ): Giảm 50% so với biểu phí gửi xe thông thường.\n"
-            "- Sau khi sạc đầy (pin đạt 100%), hệ thống gửi thông báo qua App. Chủ xe có 30 phút ân hạn để di chuyển xe sang ô đỗ tiêu chuẩn."
-        ),
+        "content": "Quy định sử dụng trụ sạc AC/DC tại bãi xe:\n- Đơn giá sạc điện: 3.850 VNĐ / kWh (chưa bao gồm VAT).\n- Phí đỗ xe trong thời gian đang sạc (dưới 2 giờ): Giảm 50% so với biểu phí gửi xe thông thường.\n- Sau khi sạc đầy (pin đạt 100%), hệ thống gửi thông báo qua App. Chủ xe có 30 phút ân hạn để di chuyển xe sang ô đỗ tiêu chuẩn.",
         "source": "Huong_dan_tram_sac_ev.pdf",
         "parking_lot_id": "lot_vincom_center"
     },
-    # ── Hai mục dưới đây mô tả ĐÚNG luật đang chạy trong code, không phải luật
-    # ước lệ. Nguồn sự thật: `backend/src/modules/Parking/services/shared/
-    # overstay-penalty.policy.ts` (công thức + trần nền tảng) và
-    # `.../operation-settings.policy.ts` (khung chủ bãi được đặt).
-    #
-    # [MUST] Sửa hai file đó ⇒ sửa luôn hai mục này. Copilot trả lời khác con số
-    # hệ thống thực thu là cách nhanh nhất để đẻ ra một vụ khiếu nại mà chính
-    # trợ lý AI đã hứa sai.
     {
         "category": "fine_policy",
         "title": "Phụ Phí Quá Giờ (Overstay) — Cách Tính Chính Thức",
-        "content": (
-            "Điều 9 - Phụ phí khi xe ở quá giờ đã đặt:\n"
-            "1. Ân hạn: quá giờ trong khoảng ân hạn của bãi thì KHÔNG có phụ phí. Mặc định 15 phút; mỗi bãi tự đặt trong khoảng 0-60 phút.\n"
-            "2. Quá ân hạn: tính phụ phí theo GIỜ BẮT ĐẦU (quá 10 phút vẫn tính tròn 1 giờ). Mặc định 5.000 VNĐ/giờ, trần nền tảng là 20.000 VNĐ/giờ.\n"
-            "3. Phụ phí này CỘNG THÊM vào tiền giờ thực đỗ, không thay thế tiền giờ.\n"
-            "4. Có trần cho mỗi lượt: mặc định 50.000 VNĐ, tối đa 100.000 VNĐ tuỳ bãi.\n"
-            "5. Trường hợp khách vãng lai chiếm ô đã bán vé tháng/flex của người khác, phụ phí bị nhân tối đa 3 lần vì đã đẩy chủ ô hợp lệ ra ngoài.\n"
-            "6. Mức của từng bãi được công khai cho khách TRƯỚC khi đặt (màn hình chi tiết bãi và trên vé), không phải tới lúc ra cổng mới biết."
-        ),
+        "content": "Điều 9 - Phụ phí khi xe ở quá giờ đã đặt:\n1. Ân hạn: quá giờ trong khoảng ân hạn của bãi thì KHÔNG có phụ phí. Mặc định 15 phút; mỗi bãi tự đặt trong khoảng 0-60 phút.\n2. Quá ân hạn: tính phụ phí theo GIỜ BẮT ĐẦU (quá 10 phút vẫn tính tròn 1 giờ). Mặc định 5.000 VNĐ/giờ, trần nền tảng là 20.000 VNĐ/giờ.\n3. Phụ phí này CỘNG THÊM vào tiền giờ thực đỗ, không thay thế tiền giờ.\n4. Có trần cho mỗi lượt: mặc định 50.000 VNĐ, tối đa 100.000 VNĐ tuỳ bãi.\n5. Trường hợp khách vãng lai chiếm ô đã bán vé tháng/flex của người khác, phụ phí bị nhân tối đa 3 lần vì đã đẩy chủ ô hợp lệ ra ngoài.\n6. Mức của từng bãi được công khai cho khách TRƯỚC khi đặt (màn hình chi tiết bãi và trên vé), không phải tới lúc ra cổng mới biết.",
         "source": "Chinh_sach_phu_phi_qua_gio_dieu_9.pdf",
         "parking_lot_id": None
     },
     {
         "category": "regulation",
         "title": "Khung Quy Định Vận Hành Mỗi Bãi Được Tự Đặt",
-        "content": (
-            "Điều 10 - Phạm vi chủ bãi được tự quyết:\n"
-            "- Chủ bãi đặt riêng cho bãi mình: thời gian ân hạn quá giờ, phụ phí quá giờ mỗi giờ, trần phụ phí mỗi lượt, ân hạn và mức phạt nhân viên vào ca trễ.\n"
-            "- Mọi tham số đều bị kẹp trong khung cứng của nền tảng. Đặt vượt khung thì hệ thống tự kéo về giá trị hợp lệ gần nhất chứ không áp con số vượt trần.\n"
-            "- Bãi không đặt gì riêng thì chạy theo mặc định nền tảng: ân hạn 15 phút, phụ phí 5.000 VNĐ/giờ, trần 50.000 VNĐ/lượt.\n"
-            "- Thay đổi quy định chỉ áp dụng cho lượt đặt MỚI. Lượt đã đặt trước đó giữ nguyên điều kiện tại thời điểm đặt.\n"
-            "- Khách có quyền yêu cầu đối chiếu mức phí đã công bố lúc đặt với mức bị thu lúc ra cổng; lệch nhau thì xử theo Điều 5 (khiếu nại & hoàn tiền)."
-        ),
+        "content": "Điều 10 - Phạm vi chủ bãi được tự quyết:\n- Chủ bãi đặt riêng cho bãi mình: thời gian ân hạn quá giờ, phụ phí quá giờ mỗi giờ, trần phụ phí mỗi lượt, ân hạn và mức phạt nhân viên vào ca trễ.\n- Mọi tham số đều bị kẹp trong khung cứng của nền tảng. Đặt vượt khung thì hệ thống tự kéo về giá trị hợp lệ gần nhất chứ không áp con số vượt trần.\n- Bãi không đặt gì riêng thì chạy theo mặc định nền tảng: ân hạn 15 phút, phụ phí 5.000 VNĐ/giờ, trần 50.000 VNĐ/lượt.\n- Thay đổi quy định chỉ áp dụng cho lượt đặt MỚI. Lượt đã đặt trước đó giữ nguyên điều kiện tại thời điểm đặt.\n- Khách có quyền yêu cầu đối chiếu mức phí đã công bố lúc đặt với mức bị thu lúc ra cổng; lệch nhau thì xử theo Điều 5 (khiếu nại & hoàn tiền).",
         "source": "Quy_dinh_van_hanh_bai_xe_dieu_10.pdf",
         "parking_lot_id": None
     }
