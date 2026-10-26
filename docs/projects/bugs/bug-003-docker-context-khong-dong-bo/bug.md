@@ -7,6 +7,7 @@
 | | |
 |---|---|
 | **Trạng thái** | ✅ Fixed (đã merge develop) |
+| **Người nhận** | HiTranquility |
 | **Mức độ** | P1 |
 | **Người báo / Ngày** | Codex root + review agents / 2026-10-15 |
 | **Revision** | `origin/khoa-develop` tại `9a1aafd`; so base `6dd8547`, đối chiếu develop `c80037d` |

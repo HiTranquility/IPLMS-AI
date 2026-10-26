@@ -5,6 +5,7 @@
 | | |
 |---|---|
 | **Trạng thái** | ✅ Done — merge vào develop qua PR (2026-10-24) |
+| **Ngày đóng** | 2026-10-24 |
 | **Người phụ trách** | HiTranquility (cùng Claude Code), theo yêu cầu chủ dự án ngày 2026-10-24 |
 | **Phạm vi** | `ai/ui` (chỉ giao diện, không đổi API/schema) |
 | **Nhánh** | `feature/ISSUE-005-2026-10-console-ui-polish`, tách từ `bugfix/bug-021-2026-10-console-ui-polish`, nên merge sau nhánh đó |
