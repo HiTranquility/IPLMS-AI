@@ -20,6 +20,7 @@
   "policy.approved": "ml",
   "policy.rejected": "ml",
   "knowledge.ingest_draft": "ml",
+  "knowledge.delete": "ml",
   "vision.demo_seed": "ml",
   "vision.label": "review",
   "vision.review": "review",

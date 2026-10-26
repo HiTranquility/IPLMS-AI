@@ -1019,6 +1019,7 @@ export const vi = {
       'policy.approved': 'Duyệt ngưỡng',
       'policy.rejected': 'Từ chối ngưỡng',
       'knowledge.ingest_draft': 'Nạp tài liệu tri thức (nháp)',
+      'knowledge.delete': 'Xoá tài liệu tri thức',
       'vision.demo_seed': 'Nạp mẫu demo Vision',
       'vision.label': 'Gán nhãn biển số',
       'vision.review': 'Duyệt nhãn biển số',
