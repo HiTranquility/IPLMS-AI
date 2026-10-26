@@ -76,6 +76,8 @@ Giới hạn: runner kiểm **quyền ở API**, không bấm giao diện. Muố
 | OPEN-01 | 🟠 | Thu hồi vai không hỏi lý do, ghi lý do cố định vào nhật ký; README màn Thành viên ghi "bắt buộc lý do" | `ui/src/pages/Members/components/RoleForm.tsx:77` dùng `t.members.quickRevokeReason`; `ui/README.md` bảng Màn hình | Chờ chọn: bắt lý do khi thu hồi nhanh, hay bỏ nút thu hồi nhanh |
 | BUG-02 | 🟡 | Tài khoản khẩn cấp hiện "Đã mời / Chờ đăng nhập Google" | Trang Thành viên, 3 tài khoản `qa-agent-*` | Chưa ghi hồ sơ — chờ xác nhận có phải ý đồ |
 | BUG-03 | 🟡 | Thẻ "Ảnh hỏng" vẫn có chip "Khớp 100%" | Trang Duyệt nhãn, mẫu `a0000000-…0004` | Chưa ghi hồ sơ |
+| BUG-04 | 🟡 | Tài khoản chỉ có `ai_console_admin` (2 quyền) vẫn thấy không gian "Toàn quyền (All-in-One) · LEAD DECK"; không gian đang chọn lưu ở `localStorage['iplms_active_workspace']` dùng chung mọi tài khoản trên một trình duyệt, nên người đăng nhập sau thừa hưởng không gian của người trước. Chỉ sai nhãn/điều hướng: menu vẫn lọc theo `permissions`, API chặn đúng (runner 18/18) | `ui/src/components/layout/navigation.ts:99` (`isSuper` gồm `ai_console_admin`), `ui/src/stores/useWorkspaceStore.ts:4-13` | Chờ quyết hướng sửa |
+| OPEN-02 | 🟡 | Console đã chạy ở gốc `/` từ [ISSUE-003](../../ISSUE-003-console-root-routing-copilot-studio/issue.md), `/console/` chỉ còn tương thích ngược (`app/console_main.py:111-114`), nhưng `ui/README.md` và phiếu audit vẫn hướng dẫn mở `/console/` — đúng đường dính bug-033 | `ui/README.md` mục Chạy/Màn hình, `handoff/phieu-audit-1.md` "Cách dùng phiếu" | Chờ chọn: đổi tài liệu sang `/`, hay bỏ hẳn `/console/` |
 
 ## Đề xuất
 
