@@ -36,7 +36,7 @@ class CopilotStreamingAndTelemetryApiTest(unittest.TestCase):
             self.assertTrue(last_event["refused"])
 
     def test_post_stream_out_of_scope_guardrail(self):
-        """Mục 4.2 & 6.3: POST /stream từ chối câu hỏi ngoài phạm vi (ADR-0008)."""
+        """Mục 4.2 & 6.3: POST /stream từ chối câu hỏi ngoài phạm vi (ai ADR-0002)."""
         with self.client.stream(
             "POST",
             "/api/copilot/stream",

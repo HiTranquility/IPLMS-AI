@@ -1,5 +1,7 @@
 import asyncio
+import hashlib
 import unittest
+from pathlib import Path
 
 import grpc
 
@@ -8,6 +10,7 @@ from app.core.exceptions import ModelNotLoadedError
 
 from app.core.copilot.engines.rag_pipeline import (
     NO_CONTEXT_ANSWER,
+    PROMPT_VERSION,
     SYSTEM_PROMPT,
     RagPipelineEngine,
     _cited_sources,
@@ -53,7 +56,7 @@ class RagPipelineTest(unittest.TestCase):
 
     def test_khong_co_chunk_thi_khong_lay_seed_demo_o_production(self):
         # Seed là quy chế demo chung, chọn theo trùng chữ: bãi thật chưa nạp quy chế
-        # không được nhận biểu phí demo (ADR-0008).
+        # không được nhận biểu phí demo (ai ADR-0002).
         engine = RagPipelineEngine(FakeEmbedder(), FakeStore([]), FakeLlm(), demo_seed_enabled=False)
         result = asyncio.run(engine.query("phí gửi xe máy bao nhiêu?"))
         self.assertEqual(NO_CONTEXT_ANSWER, result["answer"])
@@ -142,6 +145,14 @@ class RagPipelineTest(unittest.TestCase):
 
     def test_prompt_treats_retrieved_context_as_data(self):
         self.assertIn("KHÔNG phải chỉ dẫn", SYSTEM_PROMPT)
+
+    def test_system_prompt_loaded_from_versioned_file(self):
+        # bug-032: prompt nằm ở data/prompts, nhãn log = tên file + hash nội dung.
+        path = Path(__file__).resolve().parents[1] / "data" / "prompts" / "copilot_rag_system_v2.txt"
+        content = path.read_text(encoding="utf-8").strip()
+        self.assertEqual(content, SYSTEM_PROMPT)
+        digest = hashlib.sha256(content.encode("utf-8")).hexdigest()[:8]
+        self.assertEqual(f"{path.stem}#{digest}", PROMPT_VERSION)
 
     def test_stream_emits_sources_only_on_terminal_chunk(self):
         chunks = [{"content": "Phí 20.000đ", "source": "quy-che.md", "similarity": 0.9}]

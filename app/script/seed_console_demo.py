@@ -67,7 +67,7 @@ OFFICIAL_DOCS = [
                     "Điều 5 - Quy trình xử lý khiếu nại và hoàn phí:\n"
                     "1. Trường hợp cảm biến barie hoặc hệ thống quét biển số (ANPR) gặp sự cố kỹ thuật dẫn đến chậm trễ lúc ra cổng > 10 phút, hệ thống tự động trừ thời gian trễ này khỏi tổng thời gian tính phí.\n"
                     "2. Khách hàng có quyền tạo yêu cầu Khiếu nại (Dispute Ticket) trên ứng dụng trong vòng 48 giờ kể từ khi kết thúc phiên gửi.\n"
-                    "3. Trợ lý AI Copilot sẽ đối chiếu video log và thời gian thực để đề xuất hoàn tiền 100% phần phí chênh lệch do lỗi hệ thống (tối đa theo thẩm quyền quy định, và bắt buộc có chữ ký xác nhận của Quản lý ca trực theo nguyên tắc tự chủ có giới hạn ADR-0008).\n"
+                    "3. Trợ lý AI Copilot sẽ đối chiếu video log và thời gian thực để đề xuất hoàn tiền 100% phần phí chênh lệch do lỗi hệ thống (tối đa theo thẩm quyền quy định, và bắt buộc có chữ ký xác nhận của Quản lý ca trực theo nguyên tắc tự chủ có giới hạn ai ADR-0003).\n"
                     "4. Quy trình xử lý khiếu nại trầy xước, va quẹt: Đối chiếu ảnh camera check-in và check-out."
                 ),
             },
@@ -319,7 +319,7 @@ async def seed_copilot_telemetry() -> None:
             "lot": "lot_landmark_81",
             "feedback": "DOWN",
             "error_code": "NO_CONTEXT",
-            "review": ("CORRECT", "Câu hỏi ngoài phạm vi kho tri thức, hệ thống từ chối lịch sự theo ADR-0008."),
+            "review": ("CORRECT", "Câu hỏi ngoài phạm vi kho tri thức, hệ thống từ chối lịch sự theo ai ADR-0002."),
         },
         {
             "turn_id": str(uuid5(NAMESPACE_DNS, "turn-demo-08")),
