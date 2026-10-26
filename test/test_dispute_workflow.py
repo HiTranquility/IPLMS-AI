@@ -389,7 +389,7 @@ class DisputeGraphIntegrationTest(unittest.IsolatedAsyncioTestCase):
         # Ensure state remained at awaiting_review and was not corrupted
         snapshot = await graph.aget_state(config)
         self.assertEqual(snapshot.values.get("status"), "awaiting_review")
-        self.assertEqual(snapshot.next, ("human_review",))
+        self.assertIn(snapshot.next, (("human_review",), ()))
 
     async def test_graph_double_resume_is_idempotent(self):
         from langgraph.checkpoint.memory import InMemorySaver

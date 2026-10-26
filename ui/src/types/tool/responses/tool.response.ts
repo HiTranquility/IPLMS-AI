@@ -43,3 +43,70 @@ export interface IngestResult {
   version_id: string;
   version_no: number;
 }
+
+export interface HardwareTelemetry {
+  cpu_logical_cores: number | null;
+  ram_total_mb: number | null;
+  ram_available_mb: number | null;
+  ram_used_percent: number | null;
+  cuda_available: boolean;
+  gpu_name: string | null;
+  vram_total_mb: number | null;
+  vram_used_mb: number | null;
+  vram_free_mb: number | null;
+}
+
+export interface ComputeSettings {
+  profile: 'safe_4gb' | 'cpu_eco' | 'gpu_full' | 'custom';
+  vision_device: string;
+  vision_resolved_device: string;
+  onnx_enabled: boolean;
+  vision_warmup_on_start: boolean;
+  llm_provider: string;
+  llm_model: string;
+  local_llm_gpu_layers: number;
+  local_llm_ctx_size: number;
+  local_llm_threads: number;
+  local_llm_parallel_slots: number;
+}
+
+export interface PolicySettings {
+  rag_min_similarity: number;
+  rag_top_k: number;
+  llm_timeout_seconds: number;
+  llm_max_output_tokens: number;
+  vehicle_min_confidence: number;
+  default_lane_id: string;
+  telemetry_enabled: boolean;
+  telemetry_retention_days: number;
+  vision_retention_days: number;
+}
+
+export interface RuntimeSettings {
+  hardware: HardwareTelemetry;
+  compute: ComputeSettings;
+  policy: PolicySettings;
+  engines: EngineStatus;
+}
+
+export interface ActiveSession {
+  session_id: string;
+  member_id: string;
+  email: string;
+  display_name: string;
+  created_at: string | null;
+  last_seen_at: string | null;
+  mfa_verified: boolean;
+  step_up_at: string | null;
+  is_current: boolean;
+}
+
+export interface EvalCandidate {
+  turn_id: string;
+  query: string;
+  expected_behavior: 'ANSWER' | 'REFUSE';
+  category: string;
+  note: string;
+  promoted_by: string;
+  promoted_at: string;
+}

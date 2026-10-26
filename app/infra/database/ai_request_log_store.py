@@ -10,6 +10,7 @@ import time
 from typing import Any, Callable
 
 from app.config import get_config
+from app.infra.database.db_connection import connect_with_fallback
 from app.core.exceptions import RagPipelineError
 
 _PURGE_EVERY_SECONDS = 3600
@@ -27,7 +28,6 @@ class AiRequestLogStore:
         if not self.db_url:
             raise RagPipelineError("Thiếu AI_DATABASE_URL để lưu telemetry AI.")
         try:
-            from app.infra.database.db_connection import connect_with_fallback
             connection, self.db_url = connect_with_fallback(self.db_url, connect_timeout=3)
             try:
                 with connection:

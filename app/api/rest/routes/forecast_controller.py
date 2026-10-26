@@ -6,11 +6,11 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 
 from app.core.constants import DEFAULT_FORECAST_HOURS
-from app.core.forecast.dtos.forecast_dto import (
+from app.core.forecast import (
     AreaOccupancyForecastResult,
     SurgeMultiplierResult,
+    forecast_service,
 )
-from app.core.forecast.services.forecast_service import forecast_service
 from app.util.logger import logger
 
 router = APIRouter(tags=["Forecast"])

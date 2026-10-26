@@ -11,3 +11,5 @@ from app.api.rest.routes.console_vision_controller import router as vision_route
 console_router = APIRouter(dependencies=[Depends(require_same_origin_write)])
 for router in (auth_router, member_router, copilot_router, vision_router, tools_router):
     console_router.include_router(router)
+
+__all__ = ["console_router"]

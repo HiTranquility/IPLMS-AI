@@ -11,6 +11,7 @@ export interface ChatStreamProps {
   onSelectPreset: (prompt: string) => void;
   onSelectCitation?: (citation: RagSource) => void;
   onFeedback?: (messageId: string, feedback: 1 | -1) => void;
+  onRegenerate?: (messageId: string) => void;
   messagesEndRef: RefObject<HTMLDivElement | null>;
 }
 
@@ -20,6 +21,7 @@ export function ChatStream({
   onSelectPreset,
   onSelectCitation,
   onFeedback,
+  onRegenerate,
   messagesEndRef,
 }: ChatStreamProps) {
   const { t } = useI18n();
@@ -56,6 +58,7 @@ export function ChatStream({
               message={msg}
               onSelectCitation={onSelectCitation}
               onFeedback={onFeedback}
+              onRegenerate={onRegenerate}
             />
           ))}
           <div ref={messagesEndRef} />

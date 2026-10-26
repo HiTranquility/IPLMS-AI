@@ -45,7 +45,7 @@ export function ChatStudio() {
   const [params, setParams] = useState<PlaygroundParams>({
     temperature: 0.1,
     maxTokens: 512,
-    minSimilarity: 0.72,
+    minSimilarity: 0.35,
     topK: 4,
     parkingLotId: '',
   });
@@ -80,21 +80,13 @@ export function ChatStudio() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isStreaming, inspectorOpen]);
 
-  // Lấy tin nhắn trợ lý mới nhất
+  // Lấy tin nhắn trợ lý mới nhất và câu hỏi user gần nhất
   const latestAssistantMessage = [...messages].reverse().find((m) => m.role === 'assistant') || null;
+  const lastUserQuery = [...messages].reverse().find((m) => m.role === 'user')?.content || '';
 
-  // Gửi câu hỏi & SSE Streaming
-  const handleSubmit = async (e?: FormEvent) => {
-    e?.preventDefault();
-    const query = inputQuery.trim();
+  // Luồng gọi SSE Stream tập trung
+  const executeStream = async (query: string, reuseUserMessage = false) => {
     if (!query || isStreaming) return;
-
-    const userMessage: ChatMessage = {
-      id: `usr_${Date.now()}`,
-      role: 'user',
-      content: query,
-      at: new Date().toISOString(),
-    };
 
     const botMessageId = `bot_${Date.now()}`;
     const botPlaceholder: ChatMessage = {
@@ -104,10 +96,21 @@ export function ChatStudio() {
       at: new Date().toISOString(),
       isStreaming: true,
       ragSources: [],
+      userQuery: query,
     };
 
-    setMessages((prev) => [...prev, userMessage, botPlaceholder]);
-    setInputQuery('');
+    if (reuseUserMessage) {
+      setMessages((prev) => [...prev, botPlaceholder]);
+    } else {
+      const userMessage: ChatMessage = {
+        id: `usr_${Date.now()}`,
+        role: 'user',
+        content: query,
+        at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, userMessage, botPlaceholder]);
+    }
+
     setIsStreaming(true);
 
     const controller = new AbortController();
@@ -228,6 +231,7 @@ export function ChatStudio() {
                 latencyMs: latencyMs || elapsedTotal,
                 // Chỉ số do server đo; không có thì để trống, không ước lượng.
                 speedTokPerSec: speedTokPerSec || undefined,
+                userQuery: query,
               }
             : m,
         ),
@@ -263,6 +267,36 @@ export function ChatStudio() {
       setIsStreaming(false);
       abortControllerRef.current = null;
     }
+  };
+
+  // Gửi câu hỏi mới
+  const handleSubmit = async (e?: FormEvent) => {
+    e?.preventDefault();
+    const query = inputQuery.trim();
+    if (!query || isStreaming) return;
+    setInputQuery('');
+    await executeStream(query, false);
+  };
+
+  // Tái tạo / Thử lại câu trả lời (Regenerate)
+  const handleRegenerate = async (botMessageId: string) => {
+    if (isStreaming) return;
+    const botIdx = messages.findIndex((m) => m.id === botMessageId);
+    if (botIdx === -1) return;
+
+    // Tìm câu hỏi của người dùng liền trước
+    let userQuery = '';
+    for (let i = botIdx - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') {
+        userQuery = messages[i].content;
+        break;
+      }
+    }
+    if (!userQuery) return;
+
+    // Cắt bỏ botMessage này và chạy lại stream
+    setMessages((prev) => prev.filter((m) => m.id !== botMessageId));
+    await executeStream(userQuery, true);
   };
 
   const handleStopStreaming = () => {
@@ -381,6 +415,7 @@ export function ChatStudio() {
             onSelectPreset={handleSelectPreset}
             onSelectCitation={handleSelectCitation}
             onFeedback={handleFeedback}
+            onRegenerate={handleRegenerate}
             messagesEndRef={messagesEndRef}
           />
 
@@ -391,6 +426,11 @@ export function ChatStudio() {
             isStreaming={isStreaming}
             onStopStreaming={handleStopStreaming}
             inputRef={inputRef}
+            presets={presets}
+            onSelectPreset={handleSelectPreset}
+            parkingLotId={params.parkingLotId}
+            onChangeParkingLotId={(lotId) => setParams((p) => ({ ...p, parkingLotId: lotId }))}
+            lastUserQuery={lastUserQuery}
           />
         </main>
 

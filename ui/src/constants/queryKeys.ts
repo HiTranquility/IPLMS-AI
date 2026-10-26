@@ -21,6 +21,9 @@ export const queryKeys = {
     all: () => ['tools'] as const,
     systemCheck: () => [...queryKeys.tools.all(), 'system'] as const,
     knowledgeDocuments: (lot?: string) => [...queryKeys.tools.all(), 'knowledge', 'documents', lot ?? ''] as const,
+    runtimeSettings: () => [...queryKeys.tools.all(), 'settings'] as const,
+    sessions: () => [...queryKeys.tools.all(), 'sessions'] as const,
+    evalCandidates: () => [...queryKeys.tools.all(), 'eval-candidates'] as const,
   },
   members: {
     all: () => ['members'] as const,
