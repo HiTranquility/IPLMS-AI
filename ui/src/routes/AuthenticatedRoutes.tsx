@@ -10,6 +10,7 @@ import { AuditPage } from '@/pages/Audit/AuditPage';
 import { CopilotLabPage } from '@/pages/Copilot/CopilotLabPage';
 import { MembersPage } from '@/pages/Members/MembersPage';
 import { OverviewPage } from '@/pages/Overview/OverviewPage';
+import { KnowledgePage } from '@/pages/Knowledge';
 import { ToolsPage } from '@/pages/Tools/ToolsPage';
 import { DatasetsPage, LabelPage, ModelsPage, ReviewPage, VisionOverviewPage } from '@/pages/Vision';
 import type { Me } from '@/types/auth';
@@ -47,7 +48,23 @@ export function AuthenticatedRoutes({ me }: AuthenticatedRoutesProps) {
           path="copilot"
           element={
             <PermissionGuard me={me} permission="ai:chatlog:read">
-              <CopilotLabPage />
+              <CopilotLabPage initialMode="chat" />
+            </PermissionGuard>
+          }
+        />
+        <Route
+          path="copilot/logs"
+          element={
+            <PermissionGuard me={me} permission="ai:chatlog:read">
+              <CopilotLabPage initialMode="review" />
+            </PermissionGuard>
+          }
+        />
+        <Route
+          path="knowledge"
+          element={
+            <PermissionGuard me={me} permission="ai:prompt:edit">
+              <KnowledgePage />
             </PermissionGuard>
           }
         />

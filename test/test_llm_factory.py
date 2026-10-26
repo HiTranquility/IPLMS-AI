@@ -56,7 +56,7 @@ class LlmProviderTest(unittest.TestCase):
     """ISSUE-011: OpenAI hoặc endpoint tương thích (Ollama) chỉ bằng cấu hình."""
 
     def _factory(self, base_url="", api_key="", client=None):
-        factory = LlmFactory(api_key=api_key, client=client)
+        factory = LlmFactory(api_key=api_key, client=client, profile={"provider": "openai", "model": "gpt-5.6-luna", "task": "test", "revision": "1", "timeout_seconds": 60, "max_output_tokens": 1200, "reasoning_effort": "none", "id": "1"})
         factory.api_key = api_key
         factory.base_url = base_url
         return factory

@@ -128,7 +128,8 @@ class PgVectorClient:
                         """
                         ALTER TABLE knowledge_chunks
                             ADD COLUMN IF NOT EXISTS document_id UUID,
-                            ADD COLUMN IF NOT EXISTS ordinal INTEGER NOT NULL DEFAULT 0
+                            ADD COLUMN IF NOT EXISTS ordinal INTEGER NOT NULL DEFAULT 0,
+                            ALTER COLUMN title TYPE TEXT
                         """
                     )
                     cursor.execute(
@@ -533,6 +534,7 @@ class PgVectorClient:
         except ValueError:
             raise
         except Exception as exc:
+            logger.error("Không ghi được tài liệu vào pgvector: %s", exc, exc_info=True)
             connection.rollback()
             raise RagPipelineError("Không ghi được tài liệu vào pgvector; đã rollback.") from exc
         finally:

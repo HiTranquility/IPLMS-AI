@@ -12,6 +12,7 @@ from app.core.console.dtos import ConsoleActor
 from app.core.console.services.tools_service import console_tools_service
 from app.core.constants import KNOWLEDGE_MAX_FILE_BYTES
 from app.core.copilot.dtos.copilot_dto import CopilotAnswer
+from app.util.logger import logger
 
 router = APIRouter(prefix="/tools", tags=["AI Console tools"])
 
@@ -78,6 +79,28 @@ class KnowledgeDocOut(BaseModel):
     latest_status: str
     published_version_no: int
     updated_at: str
+
+
+class DocumentChunkItem(BaseModel):
+    ordinal: int
+    section_title: str
+    content: str
+
+
+class DocumentVersionItem(BaseModel):
+    version_no: int
+    status: str
+    chunk_count: int
+    created_at: str
+    published_at: str
+
+
+class DocumentChunksOut(BaseModel):
+    version_no: int
+    status: str
+    total: int
+    chunks: List[DocumentChunkItem]
+    versions: List[DocumentVersionItem]
 
 
 # Hợp đồng body của Chat Studio (ai bug-017). Giữ khớp với
@@ -161,24 +184,55 @@ async def delete_knowledge_document(
     return BaseResponse.ok([DeleteDocOut(deleted=deleted_count, document_id=document_id)], f"Đã xóa tài liệu {document_id}")
 
 
+@router.get("/knowledge/documents/{document_id}/chunks", response_model=BaseResponse[DocumentChunksOut])
+async def get_document_chunks(
+    document_id: str,
+    parking_lot_id: Optional[str] = Query(None, max_length=128),
+    version_no: int = Query(0, ge=0),
+    actor: ConsoleActor = Depends(require_permission("ai:prompt:edit")),
+):
+    chunks_data = await console_tools_service.document_chunks(actor, document_id, parking_lot_id, version_no)
+    return BaseResponse.ok([DocumentChunksOut(**chunks_data)], "OK")
+
+
 @router.post("/copilot/stream")
 async def try_copilot_stream(payload: AskIn, actor: ConsoleActor = Depends(require_any_permission("ai:prompt:edit", "ai:chatlog:read"))):
     async def event_generator():
-        async for chunk in console_tools_service.try_copilot_stream(
-            actor, payload.query, payload.parking_lot_id, **payload.tuning()
-        ):
-            data = {
-                "token": chunk.token,
-                "is_finished": chunk.is_finished,
-                "sources": chunk.sources,
-                "confidence": chunk.confidence,
-                "refused": chunk.refused,
-                "guardrail_triggered": chunk.guardrail_triggered,
-                "prompt_version": chunk.prompt_version,
-                "turn_id": chunk.turn_id,
-                "latency_ms": chunk.latency_ms,
+        try:
+            async for chunk in console_tools_service.try_copilot_stream(
+                actor, payload.query, payload.parking_lot_id, **payload.tuning()
+            ):
+                data = {
+                    "token": chunk.token,
+                    "is_finished": chunk.is_finished,
+                    "sources": chunk.sources,
+                    "confidence": chunk.confidence,
+                    "refused": chunk.refused,
+                    "guardrail_triggered": chunk.guardrail_triggered,
+                    "prompt_version": chunk.prompt_version,
+                    "turn_id": chunk.turn_id,
+                    "latency_ms": chunk.latency_ms,
+                    "speed_tok_s": chunk.speed_tok_s,
+                    "input_tokens": chunk.input_tokens,
+                    "output_tokens": chunk.output_tokens,
+                    "context_tokens": chunk.context_tokens,
+                    "context_limit": chunk.context_limit,
+                }
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+        except Exception as exc:
+            logger.exception("Error in try_copilot_stream: %s", exc)
+            err_data = {
+                "token": f"\n\n⚠️ Lỗi kết nối mô hình ngôn ngữ (LLM): {exc}",
+                "is_finished": True,
+                "sources": [],
+                "confidence": 0.0,
+                "refused": True,
+                "guardrail_triggered": "connection_error",
+                "prompt_version": "v1",
+                "turn_id": None,
+                "latency_ms": 0.0,
             }
-            yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+            yield f"data: {json.dumps(err_data, ensure_ascii=False)}\n\n"
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",

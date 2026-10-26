@@ -7,6 +7,34 @@
     "parking_lot_id": "lot_landmark_81"
   },
   {
+    "category": "tariff",
+    "title": "Biểu Phí Gửi Xe Máy & Xe Đạp Điện (Hệ thống IPLMS)",
+    "content": "Biểu phí gửi xe máy tại toàn bộ hệ thống bãi xe IPLMS:\n- Khung giờ ban ngày (06:00 - 22:00): 6.000 VNĐ / lượt (tối đa 4 tiếng), mỗi 4 tiếng tiếp theo cộng 4.000 VNĐ.\n- Khung giờ ban đêm (22:00 - 06:00): 15.000 VNĐ / lượt qua đêm.\n- Phụ thu ngày Lễ, Tết theo quy định Nhà nước: Áp dụng mức phụ thu thêm 5.000 VNĐ / lượt đối với tất cả các khung giờ gửi xe.\n- Gói gửi xe tháng (Member VIP): 180.000 VNĐ / tháng (được cố định ô đỗ và tự động mở barrier bằng ANPR).",
+    "source": "Quy_dinh_xe_may_2026.pdf",
+    "parking_lot_id": null
+  },
+  {
+    "category": "regulation",
+    "title": "Quy Trình Xử Lý Mất Thẻ Giữ Xe & Cấp Lại Thẻ Mới",
+    "content": "Điều 6 - Thủ tục xử lý khi khách hàng làm mất thẻ từ giữ xe:\n1. Khai báo & Khóa thẻ: Khách hàng thông báo ngay cho nhân viên kiểm soát tại bãi xe để khóa ID thẻ bị mất trên hệ thống, tránh trường hợp kẻ gian nhặt được thẻ lấy xe ra ngoài.\n2. Thủ tục xác minh phương tiện: Khách hàng cần xuất trình Căn cước công dân (CCCD) / Hộ chiếu; Giấy chứng nhận đăng ký xe (Cà vẹt xe) chính chủ hoặc giấy tờ ủy quyền hợp pháp; Đối chiếu hình ảnh camera check-in lúc vào bãi (biển số, khuôn mặt, trang phục người gửi xe) trùng khớp 100% với dữ liệu hệ thống IPLMS.\n3. Lập biên bản cam kết: Nhân viên trực cổng lập Biên bản cam kết nhận xe và xác nhận bàn giao phương tiện có chữ ký của hai bên.\n4. Mức phí bồi thường phát hành thẻ mới: Mức bồi thường chi phí phát hành lại phôi thẻ từ/chip mới là 50.000 VNĐ / thẻ (bao gồm chi phí phôi thẻ và mã hóa bảo mật). Tiền gửi xe trong bãi được tính theo số giờ thực tế đỗ đến thời điểm lấy xe.",
+    "source": "Quy_trinh_xu_ly_mat_the_xe.pdf",
+    "parking_lot_id": null
+  },
+  {
+    "category": "regulation",
+    "title": "Quy Định Thời Hạn Lưu Đỗ Tối Đa & Quy Trình Xử Lý Xe Vô Chủ",
+    "content": "Điều 7 - Thời gian lưu bãi tối đa và xử lý xe vô chủ:\n1. Thời hạn lưu bãi tối đa đối với xe gửi vé lượt là 24 giờ cho mỗi phiên gửi (trừ trường hợp chủ xe đã đăng ký gửi dài ngày qua ứng dụng).\n2. Quá 72 giờ (3 ngày) kể từ khi vào bãi mà chủ xe không đến lấy xe và không có thông báo trước: Hệ thống kích hoạt cảnh báo, ban quản lý bãi tiến hành khóa bánh xe tại chỗ, lập biên bản ghi nhận hiện trạng và phụ thu phí mở khóa 200.000 VNĐ kèm tiền gửi lũy tiến.\n3. Sau 30 ngày liên tục không có người đến nhận xe và không liên lạc được với chủ sở hữu: Bãi xe sẽ phối hợp với Công an địa phương và cơ quan chức năng lập biên bản xử lý phương tiện vô chủ, kiểm tra số khung số máy và di dời xe về kho chuyên dụng theo quy định pháp luật.",
+    "source": "Quy_dinh_thoi_han_luu_bai_va_xe_vo_chu.pdf",
+    "parking_lot_id": null
+  },
+  {
+    "category": "regulation",
+    "title": "Chính Sách Miễn Phí Vé & Ưu Tiên Cho Phương Tiện Đặc Biệt",
+    "content": "Điều 11 - Quy chế hiện hành của tòa nhà đối với các loại xe ưu tiên được miễn phí vé gửi xe khi vào bãi đỗ:\n1. Các loại phương tiện ưu tiên sau đây được MIỄN PHÍ 100% vé gửi xe khi ra vào bãi đỗ xe tòa nhà:\n- Xe chữa cháy của Cảnh sát Phòng cháy chữa cháy và Cứu nạn cứu hộ đang thực thi nhiệm vụ.\n- Xe cứu thương đang chở bệnh nhân cấp cứu hoặc đi đón bệnh nhân.\n- Xe quân sự, xe công an, xe hộ đê, xe đi làm nhiệm vụ khẩn cấp theo lệnh điều động của Nhà nước.\n- Xe của đoàn xe hộ tống, xe dẫn đường có cờ ưu tiên.\n2. Quy trình kiểm soát tại cổng: Hệ thống ANPR tự động nhận diện biển số đỏ (quân sự), biển số xanh 80 (công vụ) hoặc nhân viên cổng bấm nút ưu tiên để mở barrier khẩn cấp trong vòng 3 giây mà không cần quét thẻ tính tiền.\n3. Ô đỗ ưu tiên: Luôn bố trí tối thiểu 02 ô đỗ khẩn cấp ngay sát cổng ra vào dành riêng cho xe cứu thương và cứu hỏa khi cần tiếp cận tòa nhà.",
+    "source": "Chinh_sach_phuong_tien_uu_tien.pdf",
+    "parking_lot_id": null
+  },
+  {
     "category": "regulation",
     "title": "Quy Chế Xử Lý Tranh Chấp & Hoàn Tiền Khiếu Nại (Dispute Policy)",
     "content": "Điều 5 - Quy trình xử lý khiếu nại và hoàn phí:\n1. Trường hợp cảm biến barie hoặc hệ thống quét biển số (ANPR) gặp sự cố kỹ thuật dẫn đến chậm trễ lúc ra cổng > 10 phút, hệ thống tự động trừ thời gian trễ này khỏi tổng thời gian tính phí.\n2. Khách hàng có quyền tạo yêu cầu Khiếu nại (Dispute Ticket) trên ứng dụng trong vòng 48 giờ kể từ khi kết thúc phiên gửi.\n3. Trợ lý AI Copilot sẽ đối chiếu video log và thời gian thực để đề xuất hoàn tiền 100% phần phí chênh lệch do lỗi hệ thống vào ví IPLMS Wallet trong vòng 15 phút.\n4. Quy trình xử lý khiếu nại trầy xước, va quẹt, vết móp xe: Đối chiếu snapshot camera check-in và check-out. Nếu phát sinh trong bãi do lỗi vận hành, bồi thường theo quy chế. Nếu camera bị che khuất hoặc thiếu chứng cứ, chuyển Quản lý xác minh thủ công trong 24 giờ.",
@@ -39,41 +67,6 @@
     "title": "Khung Quy Định Vận Hành Mỗi Bãi Được Tự Đặt",
     "content": "Điều 10 - Phạm vi chủ bãi được tự quyết:\n- Chủ bãi đặt riêng cho bãi mình: thời gian ân hạn quá giờ, phụ phí quá giờ mỗi giờ, trần phụ phí mỗi lượt, ân hạn và mức phạt nhân viên vào ca trễ.\n- Mọi tham số đều bị kẹp trong khung cứng của nền tảng. Đặt vượt khung thì hệ thống tự kéo về giá trị hợp lệ gần nhất chứ không áp con số vượt trần.\n- Bãi không đặt gì riêng thì chạy theo mặc định nền tảng: ân hạn 15 phút, phụ phí 5.000 VNĐ/giờ, trần 50.000 VNĐ/lượt.\n- Thay đổi quy định chỉ áp dụng cho lượt đặt MỚI. Lượt đã đặt trước đó giữ nguyên điều kiện tại thời điểm đặt.\n- Khách có quyền yêu cầu đối chiếu mức phí đã công bố lúc đặt với mức bị thu lúc ra cổng; lệch nhau thì xử theo Điều 5 (khiếu nại & hoàn tiền).",
     "source": "Quy_dinh_van_hanh_bai_xe_dieu_10.pdf",
-    "parking_lot_id": null
-  },
-  {
-    "category": "regulation",
-    "title": "Quy_dinh_xe_may_2026.docx (Đoạn 1)",
-    "content": "Biểu Phí Gửi Xe Máy & Xe Đạp Điện\n\nBiểu phí gửi xe máy tại toàn bộ hệ thống bãi xe IPLMS:\n\n- Khung giờ ban ngày (06:00 - 22:00): 6.000 VNĐ / lượt (tối đa 4 tiếng), mỗi 4 tiếng tiếp theo cộng 4.000 VNĐ.\n\n- Khung giờ ban đêm (22:00 - 06:00): 15.000 VNĐ / lượt qua đêm.\n\n- Gói gửi xe tháng (Member VIP): 180.000 VNĐ / tháng (được cố định ô đỗ và tự động mở barrier bằng ANPR).",
-    "source": "Quy_dinh_xe_may_2026.docx",
-    "parking_lot_id": null
-  },
-  {
-    "category": "regulation",
-    "title": "Quy_dinh_xe_may_2026.pdf (Đoạn 1)",
-    "content": "BIỂỂU PHÍ GỬỬI XE MÁY & XE ĐẠP ĐIỆN\n==================================================\nBiểểu phí gửửi xe máy tại toàn bộ hệ thốống bãi xe IPLMS:\n- Khung giờ ban ngày (06:00 - 22:00): 6.000 VNĐ / lượt (tốối đa 4 tiếếng), mỗỗi 4 tiếếng\ntiếếp theo cộng 4.000 VNĐ.\n- Khung giờ ban đêm (22:00 - 06:00): 15.000 VNĐ / lượt qua đêm.\n- Gói gửửi xe tháng (Member VIP): 180.000 VNĐ / tháng (được cốố định ô đỗỗ và tự động mở ở\nbarrier bằng ANPR).",
-    "source": "Quy_dinh_xe_may_2026.pdf",
-    "parking_lot_id": null
-  },
-  {
-    "category": "regulation",
-    "title": "kaiwa_n5_khoa_nam.pdf (Đoạn 1)",
-    "content": "日本語にほんご  Kaiwa: 週末しゅうまつ に映画えいが を見み\nに行いこう！\nChủ đề: Hẹn nhau đi xem phim rạp (Khoa & Nam) • Trình độ JLPT N5 Dũng Mori N5 Sơ cấp\nTình huống: Khoa gọi điện thoại rủ Nam đi xem bộ phim hoạt hình đình đám 『Kimetsu no Yaiba』 (Thanh\ngươm diệt quỷ) tại rạp CGV vào cuối tuần. Hai bạn trao đổi về giờ giấc gặp nhau trước rạp, phương tiện di\nchuyển và kế hoạch sau khi xem xong.\nKhoa: もしもし、Namさん？私わたし、Khoaだけど。いま、話はなしても大丈夫だいじょうぶ？\nAlo, Nam hả? Tớ là Khoa đây. Bây giờ cậu nói chuyện được không?\nNam: あ、Khoaさん。うん、大丈夫だいじょうぶだよ。今いまちょうど宿題しゅくだいが終おわったとこ\nろ。どうしたの？\nA, Khoa. Ừ, được chứ. Tớ vừa mới làm xong bài tập. Có chuyện gì thế?\nKhoa: 今週こんしゅうの日曜日にちようび、暇ひま？いっしょに映画えいがを見みに行いかない？\nChủ Nhật tuần này cậu rảnh không? Cùng tớ đi xem phim không?\nNam: それいいね！何なにの映画えいがを見みるの？\nHay đấy! Cậu định xem phim gì thế?\nKhoa: 『鬼滅きめつの刃やいば』だよ。今月こんげつ、ベトナムでとても人気にんきがあるんだ。もう見\nみた？\nPhim \"Thanh gươm diệt quỷ\" đấy. Tháng này ở Việt Nam đang rất hot. Cậu đã xem chưa?\nNam: ううん、まだ見みたことがない。私わたしもすごく見みたい！何時なんじに、どこで会あう？\nChưa, tớ chưa từng xem. Tớ cũng rất muốn xem! Mấy giờ và gặp nhau ở đâu đây?\nKhoa: 映画えいがは夜よるの８時じからだから、中なかに入はいる前まえに、７時じ４５分ふんにCGVの２\n階かいで会あおう。\nPhim chiếu lúc 8 giờ tối, nên trước khi vào trong rạp, mình gặp nhau lúc 7h45 ở tầng 2 CGV nhé.\n1 / 3",
-    "source": "kaiwa_n5_khoa_nam.pdf",
-    "parking_lot_id": null
-  },
-  {
-    "category": "regulation",
-    "title": "kaiwa_n5_khoa_nam.pdf (Đoạn 2)",
-    "content": "xem! Mấy giờ và gặp nhau ở đâu đây?\nKhoa: 映画えいがは夜よるの８時じからだから、中なかに入はいる前まえに、７時じ４５分ふんにCGVの２\n階かいで会あおう。\nPhim chiếu lúc 8 giờ tối, nên trước khi vào trong rạp, mình gặp nhau lúc 7h45 ở tầng 2 CGV nhé.\n1 / 3\n\nNam: CGV映画館えいがかんか……行いったことがないから、着ついたら電話でんわするね。Khoaさ\nんはどうやって行いくの？\nRạp CGV à... Tớ chưa đến bao giờ, nên khi tới nơi tớ sẽ gọi điện nhé. Khoa đi bằng gì đến đấy?\nKhoa: 私わたしはバスで行いくよ。家いえから３０分ぷんぐらいで、１万まんドンだけだからとても安\nやすいよ。Namさんは？\nTớ đi xe buýt. Từ nhà tớ đi mất khoảng 30 phút, lại chỉ có 10.000 VNĐ nên rất rẻ. Còn Nam?\nNam: 私わたしはタクシーで行いく。１０万じゅうまんドンぐらいかかるけど、一番いちばん速はやいから\nね。\nTớ đi taxi. Hết khoảng 100.000 VNĐ nhưng mà nhanh nhất.\nKhoa: そうなんだ。映画えいがを見みた後あとで、お腹なかがすくね。一緒いっしょにラーメンを食たべ\nに行いかない？\nThế à. Sau khi xem phim xong chắc đói bụng đấy, cùng tớ đi ăn ramen không?\nNam: ごめん、最近さいきんダイエット中ちゅうだから、夜よる遅くは食たべないようにしているん\nだ……。\nXin lỗi nha, dạo này tớ đang ăn kiêng nên cố gắng không ăn khuya...\nKhoa: あ、そうか！じゃあ、カフェでお茶ちゃでも飲のもう！それなら大丈夫だいじょうぶ？\nÀ vậy à! Thế thì ghé quán cà phê uống trà nhé! Như thế có ổn không?\nNam: うん、お茶ちゃならいいね！ありがとう。じゃあ、また日曜日にちようびに！\nỪm, uống trà thì được đấy! Cảm ơn cậu. Vậy hẹn gặp lại Chủ Nhật nhé!\nKhoa: うん、また日曜日にちようびの７時じ４５分ふんにね！じゃあね！\nỪ, hẹn Chủ Nhật lúc 7h45 nhé! Tạm biệt!\n2 / 3",
-    "source": "kaiwa_n5_khoa_nam.pdf",
-    "parking_lot_id": null
-  },
-  {
-    "category": "regulation",
-    "title": "kaiwa_n5_khoa_nam.pdf (Đoạn 3)",
-    "content": "không?\nNam: うん、お茶ちゃならいいね！ありがとう。じゃあ、また日曜日にちようびに！\nỪm, uống trà thì được đấy! Cảm ơn cậu. Vậy hẹn gặp lại Chủ Nhật nhé!\nKhoa: うん、また日曜日にちようびの７時じ４５分ふんにね！じゃあね！\nỪ, hẹn Chủ Nhật lúc 7h45 nhé! Tạm biệt!\n2 / 3\n\nTỔNG HỢP NGỮ PHÁP & TỪ VỰNG TRONG BÀI (N5)\nMẫu ngữ pháp / Từ vựng Ví dụ trong bài Ý nghĩa / Ghi chú\nV-る + 前(まえ)に 中に入る前に (Khoa) Trước khi làm hành động gì đó.\nV-た + 後(あと)で 映画を見た後で (Khoa) Sau khi làm hành động gì đó.\nV-たことがある 行ったことがない (Nam) Đã từng / chưa từng làm gì trong quá khứ.\nV-たら 着いたら電話する (Nam) Sau khi / nếu... (điều kiện thuận).\n〜中 (ちゅう) ダイエット中 (Nam) Đang trong quá trình làm gì (ăn kiêng).\n〜なら お茶ならいいね (Nam) Nếu là... thì được (đưa ra sự lựa chọn).\nTừ vựng thời gian\n今週 (tuần này), 今月 (tháng này), 日曜\n日 (Chủ Nhật) Luyện tập kết hợp các mốc thời gian N5.\nPhương tiện & Chi phí\nバス (Xe buýt), タクシー (Taxi), 1万ド\nン, 10万ドン\nĐi bằng phương tiện gì (で) và mức giá (〜ぐ\nらい).\n3 / 3",
-    "source": "kaiwa_n5_khoa_nam.pdf",
     "parking_lot_id": null
   }
 ]

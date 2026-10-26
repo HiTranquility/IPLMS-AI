@@ -1,5 +1,5 @@
 import { MessagesSquare } from 'lucide-react';
-import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/common/Ui/button/Button';
 import { Segmented } from '@/components/common/Ui/button/Segmented';
 import { Badge } from '@/components/common/Ui/data-display/Badge';
@@ -30,9 +30,26 @@ const feedbackOptions = (t: Messages): { value: FeedbackOption; label: string }[
   { value: 'up', label: t.copilot.feedbackUp },
 ];
 
-function CopilotLabPageContent() {
+export interface CopilotLabPageProps {
+  initialMode?: 'chat' | 'review';
+}
+
+function CopilotLabPageContent({ initialMode = 'review' }: CopilotLabPageProps) {
   const { t } = useI18n();
-  const [viewMode, setViewMode] = useState<'chat' | 'review'>('review');
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const isLogs = location.pathname.endsWith('/logs');
+  const isChatRoute = location.pathname.endsWith('/copilot');
+  const viewMode: 'chat' | 'review' = isLogs ? 'review' : (isChatRoute ? 'chat' : initialMode);
+
+  const handleModeChange = (val: string) => {
+    if (val === 'chat') {
+      navigate('/copilot');
+    } else {
+      navigate('/copilot/logs');
+    }
+  };
   const { status, setStatus, feedback, setFeedback, selectedId, setSelectedId, turns, rows, selected, canReview } =
     useCopilotLabPageContext();
 
@@ -49,7 +66,7 @@ function CopilotLabPageContent() {
               { value: 'chat', label: t.copilot.modeChat },
               { value: 'review', label: t.copilot.modeReview },
             ]}
-            onChange={(val) => setViewMode(val as 'chat' | 'review')}
+            onChange={handleModeChange}
           />
         }
       />
@@ -111,10 +128,10 @@ function CopilotLabPageContent() {
   );
 }
 
-export function CopilotLabPage() {
+export function CopilotLabPage({ initialMode = 'review' }: CopilotLabPageProps) {
   return (
     <CopilotLabPageProvider>
-      <CopilotLabPageContent />
+      <CopilotLabPageContent initialMode={initialMode} />
     </CopilotLabPageProvider>
   );
 }
