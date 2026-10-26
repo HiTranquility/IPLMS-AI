@@ -1,4 +1,6 @@
 import {
+  BookOpen,
+  Bot,
   Boxes,
   ClipboardCheck,
   Cpu,
@@ -6,7 +8,6 @@ import {
   FlaskConical,
   Gauge,
   Layers,
-  MessagesSquare,
   ScanEye,
   ScrollText,
   ShieldCheck,
@@ -42,7 +43,9 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'copilot',
     items: [
       { to: '/', label: 'overview', icon: Gauge, permissions: ['ai:metrics:read'], personas: ['analytics'] },
-      { to: '/copilot', label: 'copilotLab', icon: MessagesSquare, permissions: ['ai:chatlog:read'], personas: ['analytics'] },
+      { to: '/copilot', label: 'copilotLab', icon: Bot, permissions: ['ai:chatlog:read'], personas: ['analytics', 'ml'] },
+      { to: '/knowledge', label: 'knowledge', icon: BookOpen, permissions: ['ai:prompt:edit'], personas: ['ml', 'analytics'] },
+      { to: '/copilot/logs', label: 'copilotLogs', icon: ScrollText, permissions: ['ai:chatlog:read'], personas: ['analytics'] },
       { to: '/tools', label: 'tools', icon: FlaskConical, permissions: ['ai:metrics:read', 'ai:prompt:edit'], personas: ['ml', 'analytics'] },
     ],
   },
