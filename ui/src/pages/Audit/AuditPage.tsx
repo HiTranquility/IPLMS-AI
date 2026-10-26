@@ -224,7 +224,7 @@ export function AuditPage() {
 
         {filteredEntries.length > 0 && (
           <div className={table.wrap}>
-            <table className={table.table}>
+            <table className={table.table} aria-label={t.audit.title}>
               <thead>
                 <tr>
                   <th scope="col">{t.audit.time}</th>

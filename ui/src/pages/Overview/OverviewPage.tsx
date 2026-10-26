@@ -96,7 +96,7 @@ export function OverviewPage() {
               <EmptyState title={t.overview.emptyTitle} description={t.overview.emptyDesc} />
             ) : (
               <div className={table.wrap}>
-                <table className={table.table}>
+                <table className={table.table} aria-label={t.overview.byDay}>
                   <thead>
                     <tr>
                       <th scope="col">{t.overview.day}</th>

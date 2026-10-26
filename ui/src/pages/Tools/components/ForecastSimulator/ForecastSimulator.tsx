@@ -700,7 +700,7 @@ export function ForecastSimulator() {
               </p>
             </div>
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-xs)' }}>
+              <table aria-label={t.tools.featureMatrixTitle} style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-xs)' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>
                     <th style={{ padding: '6px' }}>day_of_week</th>
