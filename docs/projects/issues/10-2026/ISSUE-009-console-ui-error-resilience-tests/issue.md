@@ -4,7 +4,8 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🟢 Resolved (Chờ merge PR) |
+| **Trạng thái** | ✅ Done |
+| **Ngày đóng** | 2026-10-25 |
 | **Người phụ trách** | Dương (@23110012) |
 | **Ngày tạo** | 2026-10-24 |
 | **Phạm vi** | `ai/ui` (`ui/src/api/client.test.ts`, `ui/src/pages/Copilot/CopilotLabPage.test.tsx`) |
