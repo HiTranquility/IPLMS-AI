@@ -20,6 +20,7 @@ class PgVectorClient:
         config = get_config()
         self.db_url = db_url or config.llm.database_url
         self.dimensions = config.embedding.dimensions
+        self.allow_no_pgvector = config.embedding.allow_no_pgvector
         self._schema_ready = False
         self._schema_lock = asyncio.Lock()
         self._has_pgvector = True
@@ -95,6 +96,15 @@ class PgVectorClient:
                         register_vector(connection)
                         embedding_col_type = f"vector({self.dimensions})"
                     else:
+                        if not self.allow_no_pgvector:
+                            raise RagPipelineError(
+                                "PostgreSQL thiếu extension pgvector. Dùng container database-vector, "
+                                "hoặc chỉ ở dev đặt AI_EMBEDDING_ALLOW_NO_PGVECTOR=true (ai ADR-0001)."
+                            )
+                        logger.warning(
+                            "Không có pgvector: kho tri thức chạy chế độ mảng DOUBLE PRECISION[] "
+                            "(quét toàn bảng, chỉ dành cho dev)."
+                        )
                         embedding_col_type = "DOUBLE PRECISION[]"
                         cursor.execute(
                             """

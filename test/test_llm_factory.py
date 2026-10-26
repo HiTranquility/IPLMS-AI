@@ -39,6 +39,27 @@ class LlmFactoryTest(unittest.TestCase):
         self.assertEqual(["Xin ", "chào"], asyncio.run(collect()))
         self.assertTrue(self.responses.calls[0]["stream"])
 
+    def test_tao_client_lan_dau_chay_ngoai_event_loop(self):
+        # A-41: _get_client có thể dò llama-server bằng urlopen đồng bộ, không được chặn event loop.
+        import threading
+        from unittest.mock import patch
+
+        factory = LlmFactory()
+        fake = SimpleNamespace(responses=self.responses)
+        seen = {}
+
+        def build():
+            seen["thread"] = threading.get_ident()
+            return fake
+
+        async def run():
+            seen["loop"] = threading.get_ident()
+            return await factory.generate_response("s", "q", "c")
+
+        with patch.object(factory, "_get_client", side_effect=build):
+            self.assertEqual("Câu trả lời có nguồn", asyncio.run(run()))
+        self.assertNotEqual(seen["loop"], seen["thread"])
+
 
 class FakeChat:
     def __init__(self, content):
