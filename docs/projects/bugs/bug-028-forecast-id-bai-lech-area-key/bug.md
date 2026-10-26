@@ -6,6 +6,7 @@
 |---|---|
 | **Trạng thái** | 🆕 New / 🟠 sai số liệu hiển thị, có đường vòng (đọc thẻ `is_fallback` ở API) |
 | **Người báo** | Claude Code, phát hiện khi soạn lộ trình console (SUGGESTION-006 F-1) cùng đợt [ISSUE-019](../../issues/10-2026/ISSUE-019-console-settings-va-don-audit-006/issue.md) |
+| **Ngày báo** | 2026-10-25 |
 | **Môi trường** | local, `develop` + WIP ngày 2026-10-25 |
 | **Người nhận** | |
 | **Hạn** | — |
