@@ -388,7 +388,7 @@ export function ForecastSimulator() {
                       borderRadius: 'var(--radius-sm)',
                       border: '1px solid var(--color-border)',
                       background: dayOfWeek === idx ? 'var(--color-accent)' : 'var(--color-surface)',
-                      color: dayOfWeek === idx ? '#fff' : 'var(--color-text)',
+                      color: dayOfWeek === idx ? 'var(--color-accent-ink)' : 'var(--color-text)',
                       cursor: 'pointer',
                       fontWeight: dayOfWeek === idx ? 600 : 400,
                     }}
@@ -479,7 +479,7 @@ export function ForecastSimulator() {
             <button
               type="button"
               className={styles.testApiBtn}
-              style={{ marginBottom: '8px', background: 'var(--color-accent)', color: '#fff', borderColor: 'var(--color-accent)' }}
+              style={{ marginBottom: '8px', background: 'var(--color-accent)', color: 'var(--color-accent-ink)', borderColor: 'var(--color-accent)' }}
               onClick={() => void runBackendPipeline()}
               disabled={syncingPipeline}
             >

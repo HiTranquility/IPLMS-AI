@@ -749,7 +749,7 @@ export function SettingsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sessionsQuery.data.map((sess) => (
+                    {sessionsQuery.data.map((sess, i) => (
                       <tr key={sess.session_id}>
                         <td>
                           <strong>{sess.display_name}</strong> ({sess.email}){' '}
@@ -767,6 +767,11 @@ export function SettingsPage() {
                             <Button
                               type="button"
                               variant="danger"
+                              aria-label={s.revokeSessionFor(
+                                i + 1,
+                                sess.display_name,
+                                sess.created_at ? fmtDateTime(sess.created_at) : DASH,
+                              )}
                               loading={
                                 revokeSession.isPending &&
                                 revokeSession.variables?.sessionId === sess.session_id

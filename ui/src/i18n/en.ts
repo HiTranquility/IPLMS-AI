@@ -1257,6 +1257,7 @@ export const en: Messages = {
     mfaVerifiedBadge: '2FA TOTP verified',
     mfaPendingBadge: 'Pending MFA',
     revokeSessionBtn: 'Revoke session',
+    revokeSessionFor: (n: number, name: string, at: string) => `Revoke session #${n} of ${name} (signed in ${at})`,
     revokeSessionConfirm: 'Are you sure you want to revoke this session? It will be terminated immediately.',
     revokingSession: 'Revoking...',
     evalCandidatesTitle: 'Real-World Regression Eval Candidates (SUGGESTION-005)',

@@ -108,7 +108,7 @@ export function ReviewPage() {
               padding: '4px 10px',
               borderRadius: 'var(--radius-sm)',
               background: 'var(--color-accent)',
-              color: '#fff',
+              color: 'var(--color-accent-ink)',
               textDecoration: 'none',
               fontWeight: 600,
             }}

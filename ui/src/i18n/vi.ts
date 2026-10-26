@@ -1236,6 +1236,7 @@ export const vi = {
     mfaVerifiedBadge: 'Đã xác thực 2FA TOTP',
     mfaPendingBadge: 'Chờ MFA',
     revokeSessionBtn: 'Thu hồi phiên',
+    revokeSessionFor: (n: number, name: string, at: string) => `Thu hồi phiên #${n} của ${name} (đăng nhập ${at})`,
     revokeSessionConfirm: 'Bạn có chắc chắn muốn thu hồi phiên đăng nhập này không? Phiên sẽ bị vô hiệu hóa ngay lập tức.',
     revokingSession: 'Đang thu hồi...',
     evalCandidatesTitle: 'Kho Ca Kiểm thử Hồi quy từ Thực tế (Eval Candidates — SUGGESTION-005)',
