@@ -52,6 +52,8 @@ class AnprTryOut(BaseModel):
     vehicle_type: Optional[str]
     plate_color: Optional[str]
     latency_ms: Optional[float]
+    crop_image: Optional[str] = None
+    crop_plate_image_url: Optional[str] = None
 
 
 class VerifyMatchIn(BaseModel):
@@ -150,6 +152,8 @@ async def try_anpr(
 ):
     image = await file.read(KNOWLEDGE_MAX_FILE_BYTES + 1)
     result = await console_tools_service.try_anpr(actor, image, lane_id)
+    if result.get("crop_image") and not result.get("crop_plate_image_url"):
+        result["crop_plate_image_url"] = result["crop_image"]
     return BaseResponse.ok([AnprTryOut(**result)], "Kết quả từ engine ANPR đang nạp (ảnh không được lưu).")
 
 
