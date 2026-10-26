@@ -1,5 +1,6 @@
 import { AlertTriangle, KeyRound, LockKeyhole, Moon, ShieldCheck, Sun } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/common/Ui/button/Button';
 import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
 import { TextField } from '@/components/common/Ui/form/Field';
@@ -40,13 +41,15 @@ export function LoginPage() {
   const login = usePasswordLogin();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const location = useLocation();
   const callbackError = loginErrorMessage(new URLSearchParams(window.location.search).get('login_error'), t);
 
   const saveReturnTo = () => {
     const searchParams = new URLSearchParams(window.location.search);
     const returnToParam = searchParams.get('return_to');
-    const currentPath = window.location.pathname + window.location.search;
-    const target = returnToParam || (!currentPath.startsWith('/auth') && window.location.pathname !== '/' ? currentPath : null);
+    // Đường dẫn theo router (đã bỏ basename `/console`): <Navigate> ở Home sẽ tự cộng basename (bug-033).
+    const currentPath = location.pathname + location.search;
+    const target = returnToParam || (!currentPath.startsWith('/auth') && location.pathname !== '/' ? currentPath : null);
     if (target && !target.startsWith('//')) {
       try {
         sessionStorage.setItem('console_return_to', target);
