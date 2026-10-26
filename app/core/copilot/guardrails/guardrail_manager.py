@@ -109,7 +109,7 @@ class GuardrailManager:
         # Đánh giá điểm tương đồng cao nhất
         max_sim = max(float(c.get("similarity", 0.0)) for c in chunks)
         if max_sim < min_similarity:
-            logger.info("Guardrail: Độ tương đồng %f < ngưỡng %f -> Từ chối theo ADR-0008", max_sim, min_similarity)
+            logger.info("Guardrail: Độ tương đồng %f < ngưỡng %f -> Từ chối theo ai ADR-0002", max_sim, min_similarity)
             return GuardrailResult(
                 is_safe=False,
                 risk_type="OUT_OF_SCOPE",
