@@ -11,6 +11,7 @@ import { useSeedDemoBatch } from '@/hooks/mutations/useVisionMutations';
 import { useReviewQueue } from '@/hooks/queries/useVisionQueries';
 import { useI18n } from '@/i18n/I18nProvider';
 import { decideLabel } from '@/services/apiEndpoints/vision.endpoint';
+import { QUALITY_FLAGS, type QualityFlag } from '@/types/vision';
 import { ReviewRow } from './components/ReviewRow';
 import styles from './ReviewPage.module.css';
 
@@ -21,6 +22,7 @@ export function ReviewPage() {
   const seedMutation = useSeedDemoBatch();
   const [isBatchApproving, setIsBatchApproving] = useState(false);
   const [filterMode, setFilterMode] = useState<'ALL' | 'EXACT' | 'CORRECTED'>('ALL');
+  const [flagFilter, setFlagFilter] = useState<QualityFlag | null>(null);
 
   const items = queue.data || [];
   const exactMatches = items.filter(
@@ -29,11 +31,14 @@ export function ReviewPage() {
   const correctedItems = items.filter((item) => item.label.verdict === 'CORRECTED');
 
   const filteredItems = items.filter((item) => {
-    if (filterMode === 'EXACT') {
-      return item.machine_plate && item.confirmed_plate && item.machine_plate === item.confirmed_plate;
+    if (filterMode === 'EXACT' && !(item.machine_plate && item.confirmed_plate && item.machine_plate === item.confirmed_plate)) {
+      return false;
     }
-    if (filterMode === 'CORRECTED') {
-      return item.label.verdict === 'CORRECTED';
+    if (filterMode === 'CORRECTED' && item.label.verdict !== 'CORRECTED') {
+      return false;
+    }
+    if (flagFilter && !(item.label.quality_flags ?? []).includes(flagFilter)) {
+      return false;
     }
     return true;
   });
@@ -188,6 +193,27 @@ export function ReviewPage() {
                 >
                   {t.review.filterCorrected(correctedItems.length)}
                 </Button>
+              </div>
+
+              <div
+                role="group"
+                aria-label={t.label.flagsTitle}
+                style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}
+              >
+                {QUALITY_FLAGS.map((flag) => {
+                  const active = flagFilter === flag;
+                  return (
+                    <Button
+                      key={flag}
+                      variant={active ? 'secondary' : 'ghost'}
+                      size="sm"
+                      aria-pressed={active}
+                      onClick={() => setFlagFilter(active ? null : flag)}
+                    >
+                      {t.label.flags[flag]}
+                    </Button>
+                  );
+                })}
               </div>
 
               {exactMatches.length > 0 && (
