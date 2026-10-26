@@ -6,6 +6,7 @@
 |---|---|
 | **Ngày / Người báo** | 2026-10-24 / Claude Code, lượt kiểm bổ sung của [ISSUE-004](../../issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md) |
 | **Trạng thái** | ✅ Fixed — merge vào develop qua HiTranquility/IPLMS-AI#53 (2026-10-24) / 🟠 |
+| **Ngày đóng** | 2026-10-24 |
 | **Môi trường** | `develop@5f8e753`, UI dev + API giả, Chromium 1243, đo ở theme sáng 1280 và theme tối 768 |
 
 ## Hành vi thực tế

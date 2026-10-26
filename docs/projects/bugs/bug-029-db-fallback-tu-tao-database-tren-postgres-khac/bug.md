@@ -7,6 +7,10 @@
 | **Trạng thái** | 🆕 New / 🟠 có thể ghi dữ liệu nhầm chỗ trên máy dev |
 | **Người báo** | Auditor AUDIT-006 (finding A-23, vòng 1–3); mở hồ sơ trong đợt [ISSUE-019](../../issues/10-2026/ISSUE-019-console-settings-va-don-audit-006/issue.md) |
 | **Môi trường** | local (máy dev có nhiều Postgres); nhánh code áp cho URL của mọi môi trường |
+| **Người nhận** | |
+| **Hạn** | — |
+| **Ưu tiên** | 🟠 |
+| **Ngày đóng** | — |
 
 ## Hành vi thực tế
 

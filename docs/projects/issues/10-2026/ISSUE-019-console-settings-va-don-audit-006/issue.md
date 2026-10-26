@@ -8,6 +8,10 @@
 | **Người phụ trách** | HiTranquility (tích hợp); Claude Code viết phần sửa finding AUDIT-006 |
 | **Phạm vi** | `ai/`: API console (`app/api/rest`, `app/core/console`), config, `app/infra/llm`, `app/infra/database`, `ui/`, test |
 | **Nhánh** | `feature/ISSUE-019-2026-10-console-settings-audit-006` |
+| **Người nhận** | @HiTranquility |
+| **Hạn** | — |
+| **Ưu tiên** | 🟠 |
+| **Ngày đóng** | — |
 
 ## Mục tiêu
 
