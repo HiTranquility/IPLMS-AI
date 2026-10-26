@@ -28,6 +28,7 @@ runs/
 # `data/knowledge/regulations_seed.json` chưa bao giờ nằm trong repo.
 
 data/*
+!data/README.md
 !data/knowledge
 data/knowledge/*
 # Tập vàng làm tay — mất là không dựng lại được, [MUST] version.
