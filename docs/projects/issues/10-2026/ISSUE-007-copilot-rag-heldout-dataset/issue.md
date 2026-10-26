@@ -4,7 +4,8 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🚧 In progress |
+| **Trạng thái** | ✅ Done |
+| **Ngày đóng** | 2026-10-25 |
 | **Người phụ trách** | Dương (@23110012) |
 | **Ngày tạo** | 2026-10-24 |
 | **Phạm vi** | `ai` (`data/knowledge/eval_set_heldout.json`, `app/script/eval_copilot_e2e.py`) |

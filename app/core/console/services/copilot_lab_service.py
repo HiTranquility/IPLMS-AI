@@ -1,14 +1,12 @@
 """Copilot Lab của AI Console: số liệu, lượt chat đã che PII và chấm đúng/sai (ISSUE-126 P1c).
 
-Lượt chat nằm ở `database-vector` (ADR-0049); kết quả chấm nằm ở DB `ai_console` kèm audit.
+Lượt chat nằm ở `database-vector` (ADR-0049); kết quả chấm và ứng viên Eval nằm ở DB `ai_console` kèm audit.
 Tỉ lệ đúng chỉ tính trên các lượt đã được người chấm, không suy ra từ 👍/👎.
 """
 from __future__ import annotations
 
-import json
-import os
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional
 
 from app.config import get_config
@@ -30,22 +28,7 @@ def _days(days: int) -> int:
     return days
 
 
-def _load_candidates(path: str) -> list[dict]:
-    """Đọc ứng viên Eval, bỏ mục quá hạn theo `AI_TELEMETRY_RETENTION_DAYS` như telemetry (A-37)."""
-    if not os.path.isfile(path):
-        return []
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            items = json.load(f) or []
-    except Exception:
-        return []
-    cutoff = (datetime.utcnow() - timedelta(days=get_config().telemetry.retention_days)).isoformat() + "Z"
-    return [x for x in items if str(x.get("promoted_at", "")) >= cutoff]
-
-
 class ConsoleCopilotLabService:
-    candidates_path = "var/eval_candidates.json"
-
     def __init__(self, usage=None, request_log=None, store=None) -> None:
         self.usage = usage or usage_service
         self.request_log = request_log or ai_request_log_store
@@ -108,7 +91,6 @@ class ConsoleCopilotLabService:
             raise ValueError("Không tìm thấy lượt này (có thể đã quá hạn lưu).")
         await self.store.review_turn(turn_id, turn_at, verdict, note, actor.member_id)
 
-
     async def promote_to_eval(
         self,
         actor: ConsoleActor,
@@ -118,10 +100,11 @@ class ConsoleCopilotLabService:
         category: str = "regulation",
         note: str = "",
     ) -> dict:
-        """SUGGESTION-005: Đưa một lượt chat thực tế từ Copilot Lab vào danh sách ứng viên Eval hồi quy.
+        """SUGGESTION-005 / A-37 / A-73: Đưa một lượt chat thực tế từ Copilot Lab vào bảng DB ứng viên Eval.
 
-        File nằm ngoài DB nên chỉ lưu bản đã che PII (cùng `redact` với `ai_request_log`)
-        và cắt theo hạn lưu telemetry (A-37).
+        Lưu bản đã che PII (cùng `redact` với `ai_request_log`) vào bảng `copilot_eval_candidate`
+        trong DB `ai_console`, tự động cắt theo `AI_TELEMETRY_RETENTION_DAYS` và ghi `audit_event`
+        trong cùng transaction. Đánh đổi: biển số trong câu hỏi bị che thành `[BIEN_SO]` để tuân thủ ADR-0049.
         """
         if not (access_policy.can(actor, "ai:label:approve") or access_policy.can(actor, "ai:prompt:edit")):
             access_policy.require(actor, "ai:label:approve")
@@ -135,37 +118,22 @@ class ConsoleCopilotLabService:
         clean_cat = (category or "regulation").strip()[:64] or "regulation"
         clean_note = (note or "").strip()[:500]
 
-        path = self.candidates_path
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        items = _load_candidates(path)
-
-        entry = {
-            "turn_id": turn_id,
-            "query": redact(clean_query),
-            "expected_behavior": expected_behavior,
-            "category": clean_cat,
-            "note": redact(clean_note),
-            "promoted_by": actor.member_id,
-            "promoted_at": datetime.utcnow().isoformat() + "Z",
-        }
-        items = [x for x in items if x.get("turn_id") != turn_id]
-        items.insert(0, entry)
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(items[:200], f, ensure_ascii=False, indent=2)
-
-        await self.store.add_audit(
-            actor.member_id,
-            "copilot.promote_eval",
-            "copilot_turn",
-            turn_id,
-            f"Đưa vào bộ Eval ({expected_behavior} · {clean_cat})",
+        retention_days = get_config().telemetry.retention_days
+        return await self.store.save_eval_candidate(
+            turn_id=turn_id,
+            query=redact(clean_query),
+            expected_behavior=expected_behavior,
+            category=clean_cat,
+            note=redact(clean_note),
+            actor_id=actor.member_id,
+            retention_days=retention_days,
         )
-        return entry
 
     async def list_eval_candidates(self, actor: ConsoleActor) -> list[dict]:
         if not (access_policy.can(actor, "ai:chatlog:read") or access_policy.can(actor, "ai:metrics:read")):
             access_policy.require(actor, "ai:chatlog:read")
-        return _load_candidates(self.candidates_path)
+        retention_days = get_config().telemetry.retention_days
+        return await self.store.list_eval_candidates(retention_days=retention_days)
 
 
 console_copilot_lab_service = ConsoleCopilotLabService()

@@ -104,7 +104,7 @@ def harden_database(admin_url: str, inference_pw: str) -> None:
     a2_tables = ["vision_sample", "vision_crop", "vision_import_cursor", "vision_import_error"]
     sensitive_tables = [
         "console_member", "console_member_role", "console_session", "console_auth_flow",
-        "audit_event", "copilot_turn_review", "vision_label", "vision_snapshot",
+        "audit_event", "copilot_turn_review", "copilot_eval_candidate", "vision_label", "vision_snapshot",
         "model_version", "eval_run"
     ]
 

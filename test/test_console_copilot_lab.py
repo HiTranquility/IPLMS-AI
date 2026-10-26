@@ -1,9 +1,9 @@
-"""Copilot Lab của AI Console: quyền, kiểm đầu vào và chấm lượt trên Postgres thật (ISSUE-126 P1c)."""
+"""Copilot Lab của AI Console: quyền, kiểm đầu vào và chấm lượt trên Postgres thật (ISSUE-126 P1c, A-37)."""
 import asyncio
 import os
 import unittest
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 from app.core.console.dtos import ConsoleActor
@@ -24,6 +24,20 @@ def service(**overrides):
     store = AsyncMock()
     store.get_reviews.return_value = {}
     store.review_stats.return_value = {}
+    store.list_eval_candidates.return_value = []
+
+    async def _fake_save_eval_candidate(**kwargs):
+        return {
+            "turn_id": kwargs["turn_id"],
+            "query": kwargs["query"],
+            "expected_behavior": kwargs["expected_behavior"],
+            "category": kwargs["category"],
+            "note": kwargs["note"],
+            "promoted_by": kwargs["actor_id"],
+            "promoted_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+    store.save_eval_candidate.side_effect = _fake_save_eval_candidate
     usage = AsyncMock()
     deps = {"usage": usage, "request_log": request_log, "store": store, **overrides}
     return ConsoleCopilotLabService(**deps), deps
@@ -78,18 +92,13 @@ class CopilotLabPolicyTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((stats["reviewed"], stats["accuracy"]), (4, 0.75))
 
 
-class EvalCandidateFileTest(unittest.IsolatedAsyncioTestCase):
-    """A-37: file ứng viên Eval chỉ giữ bản đã che PII, cắt theo hạn lưu telemetry."""
+class EvalCandidateServiceTest(unittest.IsolatedAsyncioTestCase):
+    """A-37 / A-73: ứng viên Eval chuyển vào bảng DB qua ConsoleStore, luôn che PII trước khi ghi."""
 
     def setUp(self):
-        import tempfile
-
-        self.tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.tmp.cleanup)
         self.svc, self.deps = service()
-        self.svc.candidates_path = os.path.join(self.tmp.name, "var", "eval_candidates.json")
 
-    async def test_luu_ban_da_che_va_audit_khong_chep_cau_hoi(self):
+    async def test_luu_ban_da_che_pii_qua_store(self):
         entry = await self.svc.promote_to_eval(
             actor("ai_lead"), TURN, "Xe 51H-123.45 của tôi, gọi 0912345678 nhé", note="email a@b.vn",
         )
@@ -97,25 +106,18 @@ class EvalCandidateFileTest(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("0912345678", entry["query"])
         self.assertIn("[BIEN_SO]", entry["query"])
         self.assertNotIn("a@b.vn", entry["note"])
-        with open(self.svc.candidates_path, encoding="utf-8") as f:
-            raw = f.read()
-        self.assertNotIn("51H-123.45", raw)
-        summary = self.deps["store"].add_audit.call_args.args[4]
-        self.assertNotIn("Xe", summary)
-        self.assertNotIn("[BIEN_SO]", summary)
+        call_kwargs = self.deps["store"].save_eval_candidate.call_args.kwargs
+        self.assertEqual(call_kwargs["turn_id"], TURN)
+        self.assertNotIn("51H-123.45", call_kwargs["query"])
+        self.assertNotIn("a@b.vn", call_kwargs["note"])
 
-    async def test_bo_muc_qua_han_luu(self):
-        import json
-
-        os.makedirs(os.path.dirname(self.svc.candidates_path), exist_ok=True)
-        old = {"turn_id": "old", "query": "cũ", "promoted_at": "2000-01-01T00:00:00Z"}
-        with open(self.svc.candidates_path, "w", encoding="utf-8") as f:
-            json.dump([old], f)
-        self.assertEqual(await self.svc.list_eval_candidates(actor("ai_lead")), [])
-        await self.svc.promote_to_eval(actor("ai_lead"), TURN, "phí gửi xe?")
-        with open(self.svc.candidates_path, encoding="utf-8") as f:
-            ids = [x["turn_id"] for x in json.load(f)]
-        self.assertEqual(ids, [TURN])
+    async def test_chan_sai_quyen_va_dau_vao_promote_eval(self):
+        with self.assertRaises(ConsoleAccessDenied):
+            await self.svc.promote_to_eval(actor("ai_annotator"), TURN, "phí gửi xe?")
+        with self.assertRaises(ValueError):
+            await self.svc.promote_to_eval(actor("ai_lead"), "not-a-uuid", "phí gửi xe?")
+        with self.assertRaises(ValueError):
+            await self.svc.promote_to_eval(actor("ai_lead"), TURN, "phí?", expected_behavior="INVALID")
 
 
 @unittest.skipUnless(os.getenv("AI_TEST_DATABASE_URL"), "requires AI_TEST_DATABASE_URL")
@@ -190,6 +192,33 @@ class CopilotLabStoreTest(unittest.TestCase):
         newest = asyncio.run(self.svc.list_turns(reviewer, limit=1))
         older = asyncio.run(self.svc.list_turns(reviewer, before=newest[0]["at"]))
         self.assertEqual(len(older), 2)
+
+    def test_ung_vien_eval_luu_db_che_pii_va_cat_qua_han(self):
+        """A-37 / A-73: ứng viên Eval lưu trong bảng copilot_eval_candidate, tự dọn mục quá hạn và ghi audit."""
+        reviewer = actor("ai_reviewer", member_id=self.reviewer_id)
+        old_turn = str(uuid4())
+        asyncio.run(self.svc.promote_to_eval(reviewer, old_turn, "Câu hỏi cũ"))
+        with self.admin_conn, self.admin_conn.cursor() as cur:
+            cur.execute(
+                f"UPDATE {self.schema}.copilot_eval_candidate "
+                "SET promoted_at = NOW() - INTERVAL '40 days' WHERE turn_id = %s",
+                (old_turn,),
+            )
+
+        entry = asyncio.run(self.svc.promote_to_eval(
+            reviewer, TURN, "Xe 51H-123.45 gọi 0912345678", "ANSWER", "tariff", "email a@b.vn"
+        ))
+        self.assertNotIn("51H-123.45", entry["query"])
+        self.assertIn("[BIEN_SO]", entry["query"])
+        self.assertNotIn("a@b.vn", entry["note"])
+
+        items = asyncio.run(self.svc.list_eval_candidates(reviewer))
+        self.assertEqual([x["turn_id"] for x in items], [TURN])
+
+        audits = [e for e in asyncio.run(self.console.list_audit(10)) if e["action"] == "copilot.promote_eval"]
+        self.assertGreaterEqual(len(audits), 1)
+        self.assertNotIn("51H-123.45", audits[0]["reason"])
+        self.assertNotIn("[BIEN_SO]", audits[0]["reason"])
 
 
 if __name__ == "__main__":
