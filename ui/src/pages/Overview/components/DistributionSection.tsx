@@ -31,7 +31,7 @@ export function DistributionSection({ usage, review }: DistributionSectionProps)
       <div className={styles.card}>
         <div className={styles.cardHeader}>
           <PieChart size={16} className={styles.cardIcon} aria-hidden />
-          <h4 className={styles.cardTitle}>{t.overview.distributionTitle}</h4>
+          <h3 className={styles.cardTitle}>{t.overview.distributionTitle}</h3>
         </div>
 
         <div className={styles.barTrack} aria-hidden>
@@ -92,7 +92,7 @@ export function DistributionSection({ usage, review }: DistributionSectionProps)
       <div className={styles.card}>
         <div className={styles.cardHeader}>
           <ShieldCheck size={16} className={styles.cardIcon} aria-hidden />
-          <h4 className={styles.cardTitle}>{t.overview.ratingsTitle}</h4>
+          <h3 className={styles.cardTitle}>{t.overview.ratingsTitle}</h3>
         </div>
 
         <div className={styles.list}>
@@ -146,7 +146,7 @@ export function DistributionSection({ usage, review }: DistributionSectionProps)
       <div className={styles.card}>
         <div className={styles.cardHeader}>
           <Coins size={16} className={styles.cardIcon} aria-hidden />
-          <h4 className={styles.cardTitle}>{t.overview.tokenCostTitle}</h4>
+          <h3 className={styles.cardTitle}>{t.overview.tokenCostTitle}</h3>
         </div>
 
         <div className={styles.barTrack} aria-hidden>

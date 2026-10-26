@@ -361,7 +361,9 @@ export function SettingsPage() {
                 <Button
                   type="button"
                   variant={comp?.profile === 'safe_4gb' ? 'accent' : 'secondary'}
-                  loading={updateCompute.isPending}
+                  loading={updateCompute.isPending && updateCompute.variables?.preset === 'safe_4gb'}
+                  disabled={updateCompute.isPending}
+                  aria-label={comp?.profile === 'safe_4gb' ? s.activePresetFor(s.presetSafeTitle) : s.applyPresetFor(s.presetSafeTitle)}
                   onClick={() => applyPreset('safe_4gb')}
                 >
                   {comp?.profile === 'safe_4gb' ? s.activePresetBadge : s.applyPresetBtn}
@@ -376,7 +378,9 @@ export function SettingsPage() {
                 <Button
                   type="button"
                   variant={comp?.profile === 'gpu_full' ? 'accent' : 'secondary'}
-                  loading={updateCompute.isPending}
+                  loading={updateCompute.isPending && updateCompute.variables?.preset === 'gpu_full'}
+                  disabled={updateCompute.isPending}
+                  aria-label={comp?.profile === 'gpu_full' ? s.activePresetFor(s.presetGpuTitle) : s.applyPresetFor(s.presetGpuTitle)}
                   onClick={() => applyPreset('gpu_full')}
                 >
                   {comp?.profile === 'gpu_full' ? s.activePresetBadge : s.applyPresetBtn}
@@ -391,7 +395,9 @@ export function SettingsPage() {
                 <Button
                   type="button"
                   variant={comp?.profile === 'cpu_eco' ? 'accent' : 'secondary'}
-                  loading={updateCompute.isPending}
+                  loading={updateCompute.isPending && updateCompute.variables?.preset === 'cpu_eco'}
+                  disabled={updateCompute.isPending}
+                  aria-label={comp?.profile === 'cpu_eco' ? s.activePresetFor(s.presetCpuTitle) : s.applyPresetFor(s.presetCpuTitle)}
                   onClick={() => applyPreset('cpu_eco')}
                 >
                   {comp?.profile === 'cpu_eco' ? s.activePresetBadge : s.applyPresetBtn}
@@ -544,7 +550,7 @@ export function SettingsPage() {
             { engineAction.error && <ErrorBlock error={engineAction.error} />}
 
             <div className={styles.formFooter}>
-              <Button type="submit" variant="primary" loading={updateCompute.isPending}>
+              <Button type="submit" variant="primary" loading={updateCompute.isPending && !updateCompute.variables?.preset} disabled={updateCompute.isPending}>
                 {s.saveComputeBtn}
               </Button>
               {savedCompute && <span className={styles.okBanner}>{s.savedComputeMsg}</span>}

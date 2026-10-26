@@ -671,7 +671,7 @@ export function ForecastSimulator() {
                 <span className={styles.chartBaselineBadge}>{t.tools.backendSyncedBadge}</span>
               )}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(4.5rem, 1fr))', gap: '8px', marginBottom: '16px' }}>
               {weeklyProfile.map((w) => (
                 <div
                   key={w.day}
