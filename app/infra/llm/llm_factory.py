@@ -81,7 +81,7 @@ class LlmFactory:
         provider = getattr(config, "llm_provider", "openai").lower()
 
         # Dùng llama-server khi cấu hình local (hoặc base_url là host.docker.internal không thể truy cập từ host)
-        if (self.provider == "local" or provider == "local") and ("host.docker.internal" in self.base_url or not self.base_url):
+        if self.provider == "local" and ("host.docker.internal" in self.base_url or not self.base_url):
             from app.infra.llm.llama_server_manager import llama_server_manager
             try:
                 llama_server_manager.ensure_server_running()

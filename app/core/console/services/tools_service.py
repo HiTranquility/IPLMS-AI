@@ -198,6 +198,14 @@ class ConsoleToolsService:
         )
         return deleted
 
+    async def document_chunks(
+        self, actor: ConsoleActor, document_id: str, parking_lot_id: Optional[str] = None, version_no: int = 0
+    ) -> dict:
+        access_policy.require(actor, "ai:prompt:edit")
+        return await self._ingestion_service().vector_store.list_document_chunks(
+            document_id, _lot(parking_lot_id), version_no
+        )
+
     async def try_copilot_stream(
         self, actor: ConsoleActor, query: str, parking_lot_id: Optional[str] = None,
         top_k: Optional[int] = None, min_similarity: Optional[float] = None,

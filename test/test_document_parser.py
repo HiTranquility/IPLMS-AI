@@ -194,6 +194,20 @@ class XuLyCachLyTest(unittest.TestCase):
         self.assertGreater(len(ket_qua.text.strip()), 20)
         self.assertGreaterEqual(ket_qua.page_count, 1)
 
+    def test_gioi_han_ocr_toi_da_20_trang(self):
+        from app.core.constants import DOCUMENT_PARSE_TIMEOUT_SECONDS
+        from app.core.knowledge.engines.document_parser import _PDF_OCR_MAX_PAGES
+        self.assertEqual(_PDF_OCR_MAX_PAGES, 20)
+        self.assertEqual(DOCUMENT_PARSE_TIMEOUT_SECONDS, 300.0)
+
+    def test_pdf_can_ocr_vuot_qua_20_trang_thi_bao_loi(self):
+        from unittest.mock import patch
+        from app.core.knowledge.engines.document_parser import _tach_pdf, UnsupportedFormatError
+        with patch("app.core.knowledge.engines.document_parser._run_isolated", return_value=([""] * 21, list(range(21)), [], 21)):
+            with self.assertRaises(UnsupportedFormatError) as cm:
+                _tach_pdf(b"%PDF-1.4 mock")
+            self.assertIn("vượt giới hạn 20 trang", str(cm.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

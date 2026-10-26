@@ -2,6 +2,7 @@
 /** Một tài liệu thật trong kho tri thức (`GET /tools/knowledge/documents`): metadata, không kèm nội dung. */
 export interface SeedDocument {
   id?: string;
+  document_id?: string;
   category: 'regulation' | 'tariff' | 'fine_policy' | 'ev_charging' | string;
   title: string;
   content?: string;

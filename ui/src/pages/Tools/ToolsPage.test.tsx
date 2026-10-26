@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { me, mockApi, ok, renderWithProviders } from '@/test/utils';
+import { KnowledgePage } from '@/pages/Knowledge';
 import { ToolsPage } from './ToolsPage';
 
 const system = {
@@ -30,13 +31,14 @@ describe('ToolsPage', () => {
     const calls = mockApi((url) => {
       if (url.endsWith('/me')) return ok(me({ permissions: ['ai:metrics:read', 'ai:prompt:edit'] }));
       if (url.endsWith('/tools/system')) return ok(system);
+      if (url.endsWith('/tools/knowledge/documents')) return ok({ documents: [] });
       if (url.endsWith('/tools/knowledge')) {
         return ok({ document_id: 'd', status: 'SUCCESS', ok: true, chunk_count: 4, duration_ms: 120, message: 'ok', version_id: 'v', version_no: 1 });
       }
       return undefined;
     });
     const user = userEvent.setup();
-    renderWithProviders(<ToolsPage />);
+    renderWithProviders(<KnowledgePage />);
     const input = await screen.findByLabelText('Tệp PDF, DOCX, TXT hoặc MD (tối đa 8 MB)');
     await user.upload(input, new File(['# Quy chế'], 'quy-che.md', { type: 'text/markdown' }));
     // jsdom coi input file do user-event gán là còn trống (`valueMissing`) nên chặn submit bằng

@@ -45,7 +45,7 @@ export function ChatStudio() {
   const [params, setParams] = useState<PlaygroundParams>({
     temperature: 0.1,
     maxTokens: 512,
-    minSimilarity: 0.72,
+    minSimilarity: 0.35,
     topK: 4,
     parkingLotId: '',
   });
@@ -214,6 +214,14 @@ export function ChatStudio() {
 
       // Kết thúc stream thành công
       const elapsedTotal = Math.round(performance.now() - startTime);
+      const computedLatency = latencyMs || elapsedTotal;
+      const computedOutputTokens = outputTokens || (accumulatedContent ? accumulatedContent.split(/\s+/).filter(Boolean).length : 0);
+      const computedSpeed =
+        speedTokPerSec ||
+        (computedOutputTokens > 0 && computedLatency > 0
+          ? Math.round((computedOutputTokens / (computedLatency / 1000)) * 10) / 10
+          : undefined);
+
       setMessages((prev) =>
         prev.map((m) =>
           m.id === botMessageId
@@ -225,9 +233,9 @@ export function ChatStudio() {
                 guardrailTriggered,
                 confidence,
                 turnId: turnId || undefined,
-                latencyMs: latencyMs || elapsedTotal,
-                // Chỉ số do server đo; không có thì để trống, không ước lượng.
-                speedTokPerSec: speedTokPerSec || undefined,
+                latencyMs: computedLatency,
+                outputTokens: computedOutputTokens || undefined,
+                speedTokPerSec: computedSpeed,
               }
             : m,
         ),

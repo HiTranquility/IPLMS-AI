@@ -44,8 +44,7 @@ def _deterministic_embedding(text: str, dimensions: int = 768) -> List[float]:
     for token, weight in tokens:
         h = int(hashlib.sha256(token.encode("utf-8")).hexdigest()[:8], 16)
         idx = h % dimensions
-        sign = 1.0 if (h & 0x10000) else -1.0
-        vec[idx] += sign * weight
+        vec[idx] += weight
 
     # Thêm background signature cực nhỏ để vector luôn hợp lệ ngay cả với từ hiếm
     doc_hash = int(hashlib.sha256(text.encode("utf-8")).hexdigest()[:8], 16)
@@ -74,10 +73,11 @@ def _is_transient(exc: Exception) -> bool:
 def _candidate_base_urls(url: str) -> list[str]:
     if not url:
         return [""]
-    candidates = [url]
+    candidates = []
     if "host.docker.internal" in url:
         candidates.append(url.replace("host.docker.internal", "127.0.0.1"))
         candidates.append(url.replace("host.docker.internal", "localhost"))
+    candidates.append(url)
     return candidates
 
 
@@ -159,7 +159,7 @@ class EmbeddingClient:
 
         # Nếu không thể kết nối tới Ollama / OpenAI (máy dev offline, Ollama chưa chạy):
         # Kích hoạt deterministic fallback embedding (768-dim) để quá trình nạp và test hoạt động 100%
-        self._offline_until = time.monotonic() + 30.0
+        self._offline_until = time.monotonic() + 300.0
         logger.warning(
             "Không thể kết nối dịch vụ embedding (%s). Tự động kích hoạt deterministic local fallback embedding (dim=%d) để đảm bảo nạp dữ liệu offline an toàn.",
             last_exc,
