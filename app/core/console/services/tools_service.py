@@ -243,12 +243,20 @@ class ConsoleToolsService:
 
         command = RecognizePlateCommand(image_data=image, lane_id=_lot(lane_id))
         result = await asyncio.to_thread(AnprService.recognize_bytes, command, False)
+
+        crop_image_b64 = None
+        crop_bytes = getattr(result, "crop_bytes", None)
+        if crop_bytes:
+            import base64
+            crop_image_b64 = f"data:image/jpeg;base64,{base64.b64encode(crop_bytes).decode('ascii')}"
+
         return {
             "plate_number": result.plate_number,
             "confidence": result.confidence,
             "vehicle_type": result.vehicle_type,
             "plate_color": result.plate_color,
             "latency_ms": round(result.process_time * 1000, 1) if result.process_time is not None else None,
+            "crop_image": crop_image_b64,
         }
 
     async def verify_match(self, actor: ConsoleActor, expected_type: str, current_type: str) -> dict:
