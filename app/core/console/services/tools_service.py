@@ -13,7 +13,12 @@ from typing import Any, Optional
 from uuid import UUID
 
 from app.config import get_config
-from app.config.runtime_override_config import LOCAL_LLM_PROVIDERS, persist_runtime_overrides
+from app.config.runtime_override_config import (
+    LOCAL_LLM_PROVIDERS,
+    persist_runtime_overrides,
+    restore_runtime_fields,
+    snapshot_runtime_fields,
+)
 from app.core.console.dtos import ConsoleActor
 from app.core.console.engines import access_policy
 from app.core.constants import KNOWLEDGE_MAX_FILE_BYTES, SIMILARITY_NOT_MEASURED
@@ -377,11 +382,12 @@ class ConsoleToolsService:
         """Thực thi Pipeline 3 Machine Learning (Lakehouse Parquet -> LightGBM/Prophet Feature Matrix -> Surge Tariff)."""
         access_policy.require(actor, "ai:metrics:read")
 
-        training_data = forecast_service.load_lakehouse_dataset(area_id=area_id)
+        # Nạp lại theo đúng bãi: dataset cache của bãi khác làm sai cờ is_fallback (A-58).
+        training_data = forecast_service.load_lakehouse_dataset(area_id=area_id, force_reload=True)
         weekly_profile = training_data.get("weekly_profile", {})
         lgbm = training_data.get("lightgbm_dataset", {})
-        X_matrix = lgbm.get("X", [])
-        y_vector = lgbm.get("y", [])
+        X_matrix = lgbm.get("features", [])
+        y_vector = lgbm.get("targets", [])
         feature_names = lgbm.get(
             "feature_names",
             [
@@ -414,6 +420,7 @@ class ConsoleToolsService:
         for h in range(24):
             detail = forecast_service.get_projected_occupancy_ratio_detail(area_id, day_of_week, h)
             occ = float(detail["ratio"])
+            is_fallback = is_fallback or bool(detail["is_fallback"])
             mult, _ = forecast_service.calculate_surge_multiplier(occ)
             if occ > peak_occ:
                 peak_occ = occ
@@ -433,7 +440,7 @@ class ConsoleToolsService:
             "stage1_datalake": {
                 "source_path": str(_resolve_default_gold_lake_path()),
                 "is_fallback": is_fallback,
-                "total_records": int(training_data.get("records_count", 168)),
+                "total_records": int(training_data.get("total_records", 0)),
                 "area_ids": training_data.get("area_ids", [area_id]),
                 "weekly_profile": {str(k): v for k, v in weekly_profile.items()},
             },
@@ -446,7 +453,8 @@ class ConsoleToolsService:
             "stage3_inference": {
                 "area_id": area_id,
                 "day_of_week": day_of_week,
-                "model_version": "lightgbm-prophet-v1.4",
+                # Chưa nạp model LightGBM/Prophet nào: ghi đúng phương pháp đang chạy (A-11/12).
+                "model_version": "heuristic-baseline" if is_fallback else "profile-7x24",
                 "is_fallback": is_fallback,
                 "peak_hour": peak_hour,
                 "peak_occupancy_pct": peak_occ,
@@ -506,6 +514,23 @@ class ConsoleToolsService:
         if not (access_policy.can(actor, "ai:prompt:edit") or access_policy.can(actor, "ai:model:evaluate")):
             access_policy.require(actor, "ai:prompt:edit")
         cfg = get_config()
+        snapshot = snapshot_runtime_fields(cfg)
+        try:
+            self._apply_compute(cfg, payload)
+        except Exception:
+            # Ghi file lỗi thì hoàn tác RAM, để API báo lỗi đúng với cấu hình đang chạy (A-53).
+            restore_runtime_fields(cfg, snapshot)
+            raise
+        summary = (
+            f"vision={cfg.vision.device}(onnx={cfg.vision.onnx_enabled}), "
+            f"llm={cfg.llm.llm_provider}(gpu_layers={cfg.llm.local_llm_gpu_layers}, "
+            f"ctx={cfg.llm.local_llm_ctx_size}, threads={cfg.llm.local_llm_threads})"
+        )
+        await self.store.add_audit(actor.member_id, "settings.compute", "runtime_config", "compute", summary)
+        return await self.get_runtime_settings(actor)
+
+    @staticmethod
+    def _apply_compute(cfg, payload: dict[str, Any]) -> None:
         preset = payload.get("preset")
         if preset == "safe_4gb":
             cfg.vision.device = "cpu"
@@ -567,47 +592,45 @@ class ConsoleToolsService:
         if cfg.llm.llm_provider in LOCAL_LLM_PROVIDERS:
             overrides["llm_provider"] = cfg.llm.llm_provider
         persist_runtime_overrides(overrides)
-        summary = (
-            f"vision={cfg.vision.device}(onnx={cfg.vision.onnx_enabled}), "
-            f"llm={cfg.llm.llm_provider}(gpu_layers={cfg.llm.local_llm_gpu_layers}, "
-            f"ctx={cfg.llm.local_llm_ctx_size}, threads={cfg.llm.local_llm_threads})"
-        )
-        await self.store.add_audit(actor.member_id, "settings.compute", "runtime_config", "compute", summary)
-        return await self.get_runtime_settings(actor)
 
     async def update_policy_settings(self, actor: ConsoleActor, payload: dict[str, Any]) -> dict[str, Any]:
         access_policy.require(actor, "ai:policy:threshold")
         cfg = get_config()
-        if "rag_min_similarity" in payload and payload["rag_min_similarity"] is not None:
-            cfg.llm.rag_min_similarity = round(max(0.05, min(0.95, float(payload["rag_min_similarity"]))), 2)
-        if "rag_top_k" in payload and payload["rag_top_k"] is not None:
-            cfg.llm.rag_top_k = max(1, min(20, int(payload["rag_top_k"])))
-        if "llm_timeout_seconds" in payload and payload["llm_timeout_seconds"] is not None:
-            cfg.llm.llm_timeout_seconds = max(5.0, min(300.0, float(payload["llm_timeout_seconds"])))
-        if "llm_max_output_tokens" in payload and payload["llm_max_output_tokens"] is not None:
-            cfg.llm.llm_max_output_tokens = max(128, min(8192, int(payload["llm_max_output_tokens"])))
-        if "vehicle_min_confidence" in payload and payload["vehicle_min_confidence"] is not None:
-            cfg.vision.vehicle_min_confidence = round(max(0.1, min(0.99, float(payload["vehicle_min_confidence"]))), 2)
-        if "default_lane_id" in payload and payload["default_lane_id"]:
-            cfg.vision.lane_id = str(payload["default_lane_id"]).strip()[:64]
-        if "telemetry_enabled" in payload and payload["telemetry_enabled"] is not None:
-            cfg.telemetry.enabled = bool(payload["telemetry_enabled"])
-        if "telemetry_retention_days" in payload and payload["telemetry_retention_days"] is not None:
-            cfg.telemetry.retention_days = max(1, min(365, int(payload["telemetry_retention_days"])))
-        if "vision_retention_days" in payload and payload["vision_retention_days"] is not None:
-            cfg.console.vision_retention_days = max(1, min(365, int(payload["vision_retention_days"])))
+        snapshot = snapshot_runtime_fields(cfg)
+        try:
+            if "rag_min_similarity" in payload and payload["rag_min_similarity"] is not None:
+                cfg.llm.rag_min_similarity = round(max(0.05, min(0.95, float(payload["rag_min_similarity"]))), 2)
+            if "rag_top_k" in payload and payload["rag_top_k"] is not None:
+                cfg.llm.rag_top_k = max(1, min(20, int(payload["rag_top_k"])))
+            if "llm_timeout_seconds" in payload and payload["llm_timeout_seconds"] is not None:
+                cfg.llm.llm_timeout_seconds = max(5.0, min(300.0, float(payload["llm_timeout_seconds"])))
+            if "llm_max_output_tokens" in payload and payload["llm_max_output_tokens"] is not None:
+                cfg.llm.llm_max_output_tokens = max(128, min(8192, int(payload["llm_max_output_tokens"])))
+            if "vehicle_min_confidence" in payload and payload["vehicle_min_confidence"] is not None:
+                cfg.vision.vehicle_min_confidence = round(max(0.1, min(0.99, float(payload["vehicle_min_confidence"]))), 2)
+            if "default_lane_id" in payload and payload["default_lane_id"]:
+                cfg.vision.lane_id = str(payload["default_lane_id"]).strip()[:64]
+            if "telemetry_enabled" in payload and payload["telemetry_enabled"] is not None:
+                cfg.telemetry.enabled = bool(payload["telemetry_enabled"])
+            if "telemetry_retention_days" in payload and payload["telemetry_retention_days"] is not None:
+                cfg.telemetry.retention_days = max(1, min(365, int(payload["telemetry_retention_days"])))
+            if "vision_retention_days" in payload and payload["vision_retention_days"] is not None:
+                cfg.console.vision_retention_days = max(1, min(365, int(payload["vision_retention_days"])))
 
-        persist_runtime_overrides({
-            "rag_min_similarity": cfg.llm.rag_min_similarity,
-            "rag_top_k": cfg.llm.rag_top_k,
-            "llm_timeout_seconds": cfg.llm.llm_timeout_seconds,
-            "llm_max_output_tokens": cfg.llm.llm_max_output_tokens,
-            "vehicle_min_confidence": cfg.vision.vehicle_min_confidence,
-            "default_lane_id": cfg.vision.lane_id,
-            "telemetry_enabled": cfg.telemetry.enabled,
-            "telemetry_retention_days": cfg.telemetry.retention_days,
-            "vision_retention_days": cfg.console.vision_retention_days,
-        })
+            persist_runtime_overrides({
+                "rag_min_similarity": cfg.llm.rag_min_similarity,
+                "rag_top_k": cfg.llm.rag_top_k,
+                "llm_timeout_seconds": cfg.llm.llm_timeout_seconds,
+                "llm_max_output_tokens": cfg.llm.llm_max_output_tokens,
+                "vehicle_min_confidence": cfg.vision.vehicle_min_confidence,
+                "default_lane_id": cfg.vision.lane_id,
+                "telemetry_enabled": cfg.telemetry.enabled,
+                "telemetry_retention_days": cfg.telemetry.retention_days,
+                "vision_retention_days": cfg.console.vision_retention_days,
+            })
+        except Exception:
+            restore_runtime_fields(cfg, snapshot)
+            raise
         summary = (
             f"rag_min_sim={cfg.llm.rag_min_similarity}, top_k={cfg.llm.rag_top_k}, "
             f"vehicle_conf={cfg.vision.vehicle_min_confidence}, lane={cfg.vision.lane_id}; "

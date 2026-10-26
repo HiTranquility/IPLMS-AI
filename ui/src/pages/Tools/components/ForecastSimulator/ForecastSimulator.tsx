@@ -14,7 +14,7 @@ import {
 import { apiClient } from '@/api/client';
 import { SimulatedBanner } from '@/components/common/Ui/feedback/SimulatedBanner';
 import { useI18n } from '@/i18n/I18nProvider';
-import { fmtInt } from '@/utils/format';
+import { DASH, fmtInt } from '@/utils/format';
 import { PARKING_LOTS, resolveLotLabel } from '@/constants/parkingLots';
 import styles from './ForecastSimulator.module.css';
 
@@ -55,7 +55,9 @@ interface PipelineSimulateResponse {
     hourly_predictions: {
       hour_of_day: number;
       predicted_occupancy_pct: number;
-      predicted_vehicles: number;
+      estimated_free_spots: number;
+      surge_multiplier: number;
+      confidence: number;
     }[];
     surge_quote: {
       area_id: string;
@@ -178,7 +180,7 @@ export function ForecastSimulator() {
     setSyncingPipeline(true);
     try {
       const item = await apiClient.postOne<PipelineSimulateResponse>('/tools/forecast/simulate', {
-        area_id: targetLot.toUpperCase(),
+        area_id: targetLot,
         day_of_week: targetDay,
         total_capacity: capacity,
         base_hourly_rate: baseRate,
@@ -275,7 +277,7 @@ export function ForecastSimulator() {
             </div>
             <div>
               <span style={{ color: 'var(--color-muted)' }}>{t.tools.stage1Records} </span>
-              <strong className="num">{pipelineData?.stage1_datalake.total_records ?? 168}</strong>
+              <strong className="num">{pipelineData ? fmtInt(pipelineData.stage1_datalake.total_records) : DASH}</strong>
               <span> (7 × 24h)</span>
             </div>
           </div>
@@ -296,7 +298,7 @@ export function ForecastSimulator() {
             </div>
             <div>
               <span style={{ color: 'var(--color-muted)' }}>{t.tools.stage2Prophet} </span>
-              <strong className="num">{pipelineData?.stage2_features.prophet_points ?? 168}</strong>
+              <strong className="num">{pipelineData ? fmtInt(pipelineData.stage2_features.prophet_points) : DASH}</strong>
               <span> (ds, y)</span>
             </div>
           </div>
@@ -313,7 +315,17 @@ export function ForecastSimulator() {
           <div style={{ fontSize: 'var(--text-xs)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <div>
               <span style={{ color: 'var(--color-muted)' }}>{t.tools.stage3ModelVer} </span>
-              <code>{pipelineData?.stage3_inference.model_version ?? 'lightgbm-prophet-baseline-v1.0'}</code>
+              <code>{pipelineData?.stage3_inference.model_version ?? DASH}</code>
+            </div>
+            <div>
+              <span style={{ color: 'var(--color-muted)' }}>{t.tools.dataSourceLabel} </span>
+              <strong>
+                {!pipelineData
+                  ? t.tools.dataSourceLocalSim
+                  : pipelineData.stage3_inference.is_fallback
+                    ? t.tools.dataSourceBaseline
+                    : t.tools.dataSourceLake}
+              </strong>
             </div>
             <div>
               <span style={{ color: 'var(--color-muted)' }}>{t.tools.stage3Reason} </span>

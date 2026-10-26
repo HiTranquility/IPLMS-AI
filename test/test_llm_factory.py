@@ -79,6 +79,24 @@ class LlmProviderTest(unittest.TestCase):
         self.assertEqual("ollama", client.api_key)
         self.assertTrue(str(client.base_url).rstrip("/").endswith("/v1"))
 
+    def test_ten_model_cau_hinh_va_ten_gguf_tach_nhau(self):
+        # A-40: llm_model là model cấu hình; tên GGUF chỉ dùng khi llama-server đang chạy.
+        import os
+        import tempfile
+
+        from app.config.llm_config import DEFAULT_LOCAL_LLM_MODEL, LlmConfig
+
+        with tempfile.TemporaryDirectory() as tmp:
+            gguf = os.path.join(tmp, "Qwen3.5-4B-Q4_K_M.gguf")
+            open(gguf, "wb").close()
+            cfg = LlmConfig(llm_provider="local", llm_model="qwen3:4b", local_llm_model_path=gguf)
+            self.assertEqual("qwen3:4b", cfg.active_model_name)
+            self.assertEqual("Qwen3.5-4B-Q4_K_M", cfg.local_gguf_model_name)
+        cfg = LlmConfig(llm_provider="ollama", llm_model="gpt-5.6-luna", local_llm_model_path="")
+        self.assertEqual(DEFAULT_LOCAL_LLM_MODEL, cfg.active_model_name)
+        self.assertIsNone(cfg.local_gguf_model_name)
+        self.assertEqual("gpt-5.6-luna", LlmConfig(llm_provider="openai", llm_model="gpt-5.6-luna").active_model_name)
+
     def test_base_url_without_key_uses_placeholder_key(self):
         client = self._factory(base_url="http://localhost:11434/v1")._get_client()
         self.assertEqual("http://localhost:11434/v1", str(client.base_url).rstrip("/"))
