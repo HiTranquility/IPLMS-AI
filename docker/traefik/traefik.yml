@@ -34,6 +34,9 @@ providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
+    # bug-031: socket Docker thấy cả container của project khác (vd eShop gắn
+    # `Host(localhost)`); chỉ nhận container có nhãn của AI.
+    constraints: "Label(`iplms.gateway`, `ai`)"
 
 log:
   level: INFO
