@@ -4,8 +4,11 @@ import {
   Contrast,
   Edit3,
   Eye,
+  Grid,
   Layers,
   RotateCcw,
+  SkipForward,
+  Sun,
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
@@ -25,9 +28,35 @@ export interface LabelWorkspaceProps {
   sample: VisionSample;
   remaining: number;
   onLabeled?: (captureId: string, verdict: LabelVerdict, plateText: string) => void;
+  onSkip?: () => void;
 }
 
-export function LabelWorkspace({ sample, remaining, onLabeled }: LabelWorkspaceProps) {
+const VN_PLATE_REGEX = /^\d{2}[A-Z]{1,2}\d?[-.\s]?\d{3}\.?\d{2}$/;
+
+function normalizeVnPlate(raw: string): string {
+  const clean = raw.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  // Ô tô 1 dòng: 51A88888 -> 51A-888.88
+  const carMatch = clean.match(/^(\d{2}[A-Z]{1,2})(\d{3})(\d{2})$/);
+  if (carMatch) {
+    return `${carMatch[1]}-${carMatch[2]}.${carMatch[3]}`;
+  }
+  // Xe máy 2 dòng: 29B199999 -> 29-B1 999.99
+  const motoMatch = clean.match(/^(\d{2})([A-Z]\d)(\d{3})(\d{2})$/);
+  if (motoMatch) {
+    return `${motoMatch[1]}-${motoMatch[2]} ${motoMatch[3]}.${motoMatch[4]}`;
+  }
+  return raw.toUpperCase().trim();
+}
+
+const CONFUSABLE_PAIRS: Array<[string, string]> = [
+  ['8', 'B'],
+  ['0', 'D'],
+  ['1', 'I'],
+  ['5', 'S'],
+  ['2', 'Z'],
+];
+
+export function LabelWorkspace({ sample, remaining, onLabeled, onSkip }: LabelWorkspaceProps) {
   const { t } = useI18n();
   const w = t.label.workspace;
   const add = useAddLabel();
@@ -35,10 +64,13 @@ export function LabelWorkspace({ sample, remaining, onLabeled }: LabelWorkspaceP
   const [plate, setPlate] = useState('');
   const plateRef = useRef<HTMLInputElement>(null);
 
-  // Bộ điều khiển hiển thị ảnh (Zoom & Filters)
+  // Bộ điều khiển hiển thị ảnh chuyên sâu (Zoom, Rotate, Brightness, Contrast, Invert, Grid)
   const [zoom, setZoom] = useState(1);
+  const [rotation, setRotation] = useState(0);
+  const [brightness, setBrightness] = useState(100);
   const [invert, setInvert] = useState(false);
   const [highContrast, setHighContrast] = useState(false);
+  const [showGrid, setShowGrid] = useState(false);
 
   // Cờ điều kiện ảnh: gửi cùng nhãn, lưu ở vision_label.quality_flags (bug-022)
   const [qualityFlags, setQualityFlags] = useState<QualityFlag[]>([]);
@@ -51,8 +83,11 @@ export function LabelWorkspace({ sample, remaining, onLabeled }: LabelWorkspaceP
 
   const resetViewer = () => {
     setZoom(1);
+    setRotation(0);
+    setBrightness(100);
     setInvert(false);
     setHighContrast(false);
+    setShowGrid(false);
   };
 
   const send = (verdict: LabelVerdict) => {
@@ -76,7 +111,7 @@ export function LabelWorkspace({ sample, remaining, onLabeled }: LabelWorkspaceP
     );
   };
 
-  // Keyboard Shortcuts: 1 đúng · 2 sửa · 3 hỏng · I đảo màu · C tương phản · 0 reset · +/- zoom
+  // Keyboard Shortcuts: 1 đúng · 2 sửa · 3 hỏng · S bỏ qua · I đảo màu · C tương phản · G lưới · 0 reset · +/- zoom
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
@@ -91,12 +126,18 @@ export function LabelWorkspace({ sample, remaining, onLabeled }: LabelWorkspaceP
       } else if (event.key === '3') {
         event.preventDefault();
         send('UNUSABLE');
+      } else if (event.key === 's' || event.key === 'S') {
+        event.preventDefault();
+        onSkip?.();
       } else if (event.key === 'i' || event.key === 'I') {
         event.preventDefault();
         setInvert((v) => !v);
       } else if (event.key === 'c' || event.key === 'C') {
         event.preventDefault();
         setHighContrast((v) => !v);
+      } else if (event.key === 'g' || event.key === 'G') {
+        event.preventDefault();
+        setShowGrid((v) => !v);
       } else if (event.key === '0') {
         event.preventDefault();
         resetViewer();
@@ -126,9 +167,19 @@ export function LabelWorkspace({ sample, remaining, onLabeled }: LabelWorkspaceP
     }
   };
 
+  const swapChar = (a: string, b: string) => {
+    setPlate((prev) => {
+      const base = prev || sample.machine_plate || sample.confirmed_plate || '';
+      if (base.includes(a)) return base.replace(a, b);
+      if (base.includes(b)) return base.replace(b, a);
+      return base;
+    });
+  };
+
   const filterStyle = [
     invert ? 'invert(1)' : '',
-    highContrast ? 'contrast(200%) brightness(115%)' : '',
+    highContrast ? 'contrast(200%)' : '',
+    brightness !== 100 ? `brightness(${brightness}%)` : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -142,25 +193,31 @@ export function LabelWorkspace({ sample, remaining, onLabeled }: LabelWorkspaceP
       ? 'var(--color-warning)'
       : 'var(--color-danger)';
 
+  const isPlateValidVn = plate.trim().length >= 4 && VN_PLATE_REGEX.test(plate.trim());
+
   return (
     <div className={styles.workspaceGrid}>
-      {/* Cột trái: Khung soi ảnh biển số */}
+      {/* Cột trái: Khung soi ảnh biển số chuyên sâu */}
       <section className={styles.viewerCard} aria-label={w.viewerRegion}>
         <div className={styles.viewerHeader}>
           <span>{w.viewerTitle}</span>
-          <span style={{ fontFamily: 'var(--font-mono)' }}>Zoom: {Math.round(zoom * 100)}%</span>
+          <span className={styles.viewerStatsMono}>
+            Zoom: {Math.round(zoom * 100)}% · {rotation}° · {brightness}%
+          </span>
         </div>
 
         <div className={styles.viewerCanvasBox}>
           <div
             className={styles.imageViewport}
             style={{
-              transform: `scale(${zoom})`,
+              transform: `scale(${zoom}) rotate(${rotation}deg)`,
               filter: filterStyle || undefined,
             }}
           >
             <CropImage captureId={sample.capture_id} size="lg" />
           </div>
+
+          {showGrid && <div className={styles.alignmentGrid} aria-hidden />}
 
           {/* Thanh công cụ nổi trên ảnh */}
           <div className={styles.floatingToolbar} role="toolbar" aria-label={w.toolbar}>
@@ -198,6 +255,14 @@ export function LabelWorkspace({ sample, remaining, onLabeled }: LabelWorkspaceP
             </button>
             <button
               type="button"
+              className={`${styles.toolButton} ${showGrid ? styles.toolButtonActive : ''}`}
+              onClick={() => setShowGrid(!showGrid)}
+              title={w.gridOverlay}
+            >
+              <Grid size={14} aria-hidden />
+            </button>
+            <button
+              type="button"
               className={styles.toolButton}
               onClick={resetViewer}
               title={w.reset}
@@ -207,8 +272,38 @@ export function LabelWorkspace({ sample, remaining, onLabeled }: LabelWorkspaceP
           </div>
         </div>
 
+        {/* Thanh trượt tinh chỉnh Góc nghiêng (Deskew) & Độ sáng */}
+        <div className={styles.inspectorSliders}>
+          <label className={styles.sliderControl}>
+            <span className={styles.sliderLabel}>{w.rotateLabel}: {rotation}°</span>
+            <input
+              type="range"
+              min={-15}
+              max={15}
+              step={1}
+              value={rotation}
+              onChange={(e) => setRotation(Number(e.target.value))}
+              className={styles.rangeInput}
+            />
+          </label>
+          <label className={styles.sliderControl}>
+            <span className={styles.sliderLabel}>
+              <Sun size={12} aria-hidden /> {w.brightnessLabel}: {brightness}%
+            </span>
+            <input
+              type="range"
+              min={50}
+              max={160}
+              step={5}
+              value={brightness}
+              onChange={(e) => setBrightness(Number(e.target.value))}
+              className={styles.rangeInput}
+            />
+          </label>
+        </div>
+
         {/* Thông tin metadata kỹ thuật */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 'var(--text-xs)', color: 'var(--color-muted)' }}>
+        <div className={styles.viewerFooter}>
           <span>SHA256: {sample.image_sha256?.slice(0, 12)}...</span>
           <span>{w.queueLeft(remaining)}</span>
         </div>
@@ -223,7 +318,22 @@ export function LabelWorkspace({ sample, remaining, onLabeled }: LabelWorkspaceP
               <Badge tone="accent">{w.staffFixed}</Badge>
             )}
           </div>
-          <Badge tone="neutral">{w.left(remaining)}</Badge>
+          <div className={styles.headerRightActions}>
+            {onSkip && remaining > 1 && (
+              <button
+                type="button"
+                className={styles.skipButton}
+                onClick={onSkip}
+                aria-keyshortcuts="S"
+                title={w.skipTitle}
+              >
+                <SkipForward size={12} aria-hidden />
+                <span>{w.skipSample}</span>
+                <kbd className={styles.kbd} aria-hidden>S</kbd>
+              </button>
+            )}
+            <Badge tone="neutral">{w.left(remaining)}</Badge>
+          </div>
         </div>
 
         {/* Hộp so sánh kết quả đọc máy vs cổng */}
@@ -294,34 +404,37 @@ export function LabelWorkspace({ sample, remaining, onLabeled }: LabelWorkspaceP
           <Button
             variant="primary"
             onClick={() => send('CORRECT')}
+            aria-keyshortcuts="1"
             loading={add.isPending && add.variables?.verdict === 'CORRECT'}
             title={w.correctTitle}
           >
             <Check size={14} aria-hidden />
-            {w.correct100} <kbd className={styles.kbd}>1</kbd>
+            {w.correct100} <kbd className={styles.kbd} aria-hidden>1</kbd>
           </Button>
 
           <Button
             variant="secondary"
             onClick={() => setCorrecting((c) => !c)}
+            aria-keyshortcuts="2"
             title={w.fixTitle}
           >
             <Edit3 size={14} aria-hidden />
-            {t.label.fix} <kbd className={styles.kbd}>2</kbd>
+            {t.label.fix} <kbd className={styles.kbd} aria-hidden>2</kbd>
           </Button>
 
           <Button
             variant="danger"
             onClick={() => send('UNUSABLE')}
+            aria-keyshortcuts="3"
             loading={add.isPending && add.variables?.verdict === 'UNUSABLE'}
             title={w.unusableTitle}
           >
             <AlertTriangle size={14} aria-hidden />
-            {t.label.unusable} <kbd className={styles.kbd}>3</kbd>
+            {t.label.unusable} <kbd className={styles.kbd} aria-hidden>3</kbd>
           </Button>
         </div>
 
-        {/* Form nhập biển số chỉnh sửa */}
+        {/* Form nhập biển số chỉnh sửa kèm trợ lý chuẩn hóa biển số VN */}
         {correcting && (
           <form className={styles.correctionForm} onSubmit={submitCorrection}>
             <TextField
@@ -334,6 +447,54 @@ export function LabelWorkspace({ sample, remaining, onLabeled }: LabelWorkspaceP
               onChange={(e) => setPlate(e.target.value.toUpperCase())}
               placeholder={w.platePlaceholder}
             />
+
+            {plate.trim().length >= 4 && (
+              <span className={isPlateValidVn ? styles.plateValidBadge : styles.plateWarnBadge}>
+                {isPlateValidVn ? w.vnFormatValid : w.vnFormatCustom}
+              </span>
+            )}
+
+            <div className={styles.quickAssistBox}>
+              <span className={styles.quickAssistLabel}>{w.quickSwapTitle}</span>
+              <div className={styles.quickAssistRow}>
+                {sample.confirmed_plate && (
+                  <button
+                    type="button"
+                    className={styles.assistChip}
+                    onClick={() => setPlate(sample.confirmed_plate)}
+                  >
+                    {w.useGatePlateBtn} ({sample.confirmed_plate})
+                  </button>
+                )}
+                {sample.machine_plate && (
+                  <button
+                    type="button"
+                    className={styles.assistChip}
+                    onClick={() => setPlate(sample.machine_plate)}
+                  >
+                    {w.useAiPlateBtn} ({sample.machine_plate})
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={styles.assistChip}
+                  onClick={() => setPlate((p) => normalizeVnPlate(p || sample.machine_plate || ''))}
+                >
+                  {w.autoFormatBtn}
+                </button>
+                {CONFUSABLE_PAIRS.map(([a, b]) => (
+                  <button
+                    key={`${a}-${b}`}
+                    type="button"
+                    className={styles.assistChipMono}
+                    onClick={() => swapChar(a, b)}
+                  >
+                    {a}↔{b}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
               <Button type="submit" variant="accent" loading={add.isPending}>
                 {t.label.saveFix}

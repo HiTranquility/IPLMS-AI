@@ -73,11 +73,18 @@ def _is_transient(exc: Exception) -> bool:
 def _candidate_base_urls(url: str) -> list[str]:
     if not url:
         return [""]
-    candidates = []
+    import os
+    in_docker = os.path.exists("/.dockerenv")
+    if "host.docker.internal" in url and not in_docker:
+        return [
+            url.replace("host.docker.internal", "127.0.0.1"),
+            url.replace("host.docker.internal", "localhost"),
+            url,
+        ]
+    candidates = [url]
     if "host.docker.internal" in url:
         candidates.append(url.replace("host.docker.internal", "127.0.0.1"))
         candidates.append(url.replace("host.docker.internal", "localhost"))
-    candidates.append(url)
     return candidates
 
 

@@ -6,9 +6,8 @@ from pydantic import BaseModel, Field
 
 from app.api.rest.console_access import require_permission
 from app.api.rest.schemas.base_response import BaseResponse
-from app.core.console.dtos import ConsoleActor
-from app.core.console.services import console_copilot_lab_service
-from app.core.copilot.dtos.copilot_dto import UsageSummary
+from app.core.console import ConsoleActor, console_copilot_lab_service
+from app.core.copilot import UsageSummary
 
 router = APIRouter(prefix="/copilot", tags=["AI Console Copilot Lab"])
 
@@ -95,3 +94,35 @@ async def review(
 ) -> BaseResponse[Reviewed]:
     await console_copilot_lab_service.review_turn(actor, turn_id, payload.verdict, payload.note)
     return BaseResponse.ok([Reviewed(turn_id=turn_id, verdict=payload.verdict)], "Đã chấm lượt này.")
+
+
+class PromoteEvalIn(BaseModel):
+    query: str = Field(..., min_length=1, max_length=2000)
+    expected_behavior: Literal["ANSWER", "REFUSE"] = "ANSWER"
+    category: str = Field("regulation", max_length=64)
+    note: str = Field("", max_length=500)
+
+
+@router.post("/turns/{turn_id}/promote-eval", response_model=BaseResponse[dict])
+async def promote_to_eval(
+    turn_id: str,
+    payload: PromoteEvalIn,
+    actor: ConsoleActor = Depends(require_permission("ai:chatlog:read")),
+) -> BaseResponse[dict]:
+    item = await console_copilot_lab_service.promote_to_eval(
+        actor,
+        turn_id=turn_id,
+        query=payload.query,
+        expected_behavior=payload.expected_behavior,
+        category=payload.category,
+        note=payload.note,
+    )
+    return BaseResponse.ok([item], "Đã thêm lượt hỏi đáp vào bộ Eval hồi quy.")
+
+
+@router.get("/eval-candidates", response_model=BaseResponse[dict])
+async def list_eval_candidates(
+    actor: ConsoleActor = Depends(require_permission("ai:chatlog:read")),
+) -> BaseResponse[dict]:
+    items = await console_copilot_lab_service.list_eval_candidates(actor)
+    return BaseResponse.ok(items, "OK")

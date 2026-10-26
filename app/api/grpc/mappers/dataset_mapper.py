@@ -1,3 +1,5 @@
+from app.core.console.dtos import ExportedCapture
+from app.core.dataset.services.evaluation_service import EvaluationSample
 """Map protobuf DatasetService ↔ DTO domain dataset."""
 import json
 from typing import List
@@ -40,7 +42,6 @@ def to_snapshot_samples(message) -> List[SnapshotSample]:
 
 
 def to_evaluation_samples(message):
-    from app.core.dataset.services.evaluation_service import EvaluationSample
 
     return [
         EvaluationSample(sample_id=s.sample_id, image_url=s.image_url, label=s.label)
@@ -71,7 +72,6 @@ def to_snapshot_response(lock: dict):
 
 
 def to_exported_captures(message):
-    from app.core.console.dtos import ExportedCapture
 
     return [
         ExportedCapture(

@@ -5,8 +5,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, File, Query, UploadFile
 
-from app.core.vision.dtos.vision_dto import AnprItem
-from app.core.vision.services.anpr_service import AnprService
+from app.core.vision import AnprItem, AnprService
 from app.api.rest.schemas.base_response import BaseResponse
 
 router = APIRouter(prefix="/anpr", tags=["ANPR"])

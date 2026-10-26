@@ -10,6 +10,7 @@ class ConsoleActor:
 
     member_id: str
     roles: frozenset[str]
+    session_id: str = ""
 
 
 @dataclass(frozen=True)

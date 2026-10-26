@@ -72,13 +72,14 @@
 
 .mainGrid {
   display: grid;
-  grid-template-columns: 1fr;
+  /* minmax(0, …): biểu đồ SVG và tiêu đề không được ép cột rộng hơn màn hẹp (375px). */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-5);
 }
 
 @media (min-width: 64rem) {
   .mainGrid {
-    grid-template-columns: 20rem 1fr;
+    grid-template-columns: 20rem minmax(0, 1fr);
   }
 }
 
@@ -209,14 +210,9 @@
 
 .kpiRow {
   display: grid;
-  grid-template-columns: 1fr;
+  /* Theo bề rộng cột, không theo viewport: ở 1024px cột chỉ ~360px (ISSUE-019 review-2). */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
   gap: var(--space-3);
-}
-
-@media (min-width: 40rem) {
-  .kpiRow {
-    grid-template-columns: repeat(3, 1fr);
-  }
 }
 
 .kpiCard {
@@ -237,6 +233,7 @@
 
 .kpiValueRow {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-2);
 }
@@ -288,6 +285,7 @@
   font-weight: 600;
   color: var(--color-text);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
   margin: 0;

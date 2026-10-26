@@ -104,7 +104,7 @@ class ConsoleVisionLabService:
         note = _reason(note, required=decision == "REJECTED")
         await self.store.decide_label(label_id, actor.member_id, decision, note)
 
-    async def seed_demo_samples(self, actor: ConsoleActor) -> dict[str, int]:
+    async def seed_demo_samples(self, actor: ConsoleActor, reset: bool = False) -> dict[str, int]:
         if not (access_policy.can(actor, "ai:task:label") or access_policy.can(actor, "ai:label:approve") or access_policy.can(actor, "ai:member:manage")):
             raise ConsoleAccessDenied("Bạn không có quyền thực hiện thao tác này.")
         enabled = self._demo_seed_enabled
@@ -118,6 +118,8 @@ class ConsoleVisionLabService:
             image = generate_plate_image(item["plate"], item["type"], item["two_line"])
             samples.append({**item, "image": image, "image_sha256": hashlib.sha256(image).hexdigest()})
         retention = get_config().console.vision_retention_days
+        if reset:
+            return await self.store.seed_demo_samples(actor.member_id, samples, retention, reset=True)
         return await self.store.seed_demo_samples(actor.member_id, samples, retention)
 
     async def list_snapshots(self, actor: ConsoleActor) -> list[dict]:

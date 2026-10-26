@@ -1,6 +1,7 @@
-import json
 """Công cụ thử trong AI Console — thay trang dev `/dashboard` cũ (IPLMS ADR-0050)."""
-from typing import List, Optional
+import json
+from typing import List, Literal, Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -8,8 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.rest.console_access import require_any_permission, require_permission
 from app.api.rest.schemas.base_response import BaseResponse
-from app.core.console.dtos import ConsoleActor
-from app.core.console.services.tools_service import console_tools_service
+from app.core.console import ConsoleActor, console_tools_service
 from app.core.constants import KNOWLEDGE_MAX_FILE_BYTES
 from app.core.copilot.dtos.copilot_dto import CopilotAnswer
 from app.util.logger import logger
@@ -137,6 +137,29 @@ class IngestOut(BaseModel):
     message: str
     version_id: str
     version_no: int
+
+
+class ForecastSimulateIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    area_id: str = Field(default="AREA_CENTRAL_01", min_length=1, max_length=128)
+    day_of_week: int = Field(default=4, ge=0, le=6)
+    total_capacity: int = Field(default=350, ge=10, le=10000)
+    base_hourly_rate: float = Field(default=25000.0, ge=0.0)
+
+
+@router.post("/forecast/simulate", response_model=BaseResponse[dict])
+async def simulate_forecast(
+    payload: ForecastSimulateIn,
+    actor: ConsoleActor = Depends(require_permission("ai:metrics:read")),
+):
+    result = await console_tools_service.simulate_forecast(
+        actor,
+        area_id=payload.area_id,
+        day_of_week=payload.day_of_week,
+        total_capacity=payload.total_capacity,
+        base_hourly_rate=payload.base_hourly_rate,
+    )
+    return BaseResponse.ok([result], "Đã chạy Pipeline 3: Lakehouse Parquet -> LightGBM/Prophet -> Dynamic Surge Tariff.")
 
 
 @router.get("/system", response_model=BaseResponse[SystemCheck])
@@ -269,3 +292,99 @@ async def ingest_draft(
             "data": [out.model_dump()], "code": out.status,
         })
     return BaseResponse.ok([out], "Đã tạo bản nháp — xuất bản vẫn qua cổng đánh giá ở trang Kho tri thức.")
+
+
+class ComputeSettingsIn(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    preset: Optional[str] = Field(None, max_length=32)
+    vision_device: Optional[str] = Field(None, max_length=16)
+    onnx_enabled: Optional[bool] = None
+    vision_warmup_on_start: Optional[bool] = None
+    # Đổi tại chỗ chỉ giữa các engine chạy trên máy; chuyển sang OpenAI (gửi câu hỏi
+    # ra ngoài) và đổi base_url chỉ qua env AI_LLM_PROVIDER / AI_LLM_BASE_URL.
+    llm_provider: Optional[Literal["ollama", "local"]] = None
+    llm_model: Optional[str] = Field(None, max_length=128, pattern=r"^[A-Za-z0-9._:/-]+$")
+    local_llm_gpu_layers: Optional[int] = Field(None, ge=0, le=64)
+    local_llm_ctx_size: Optional[int] = Field(None, ge=512, le=32768)
+    local_llm_threads: Optional[int] = Field(None, ge=1, le=64)
+    local_llm_parallel_slots: Optional[int] = Field(None, ge=1, le=8)
+
+
+class PolicySettingsIn(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    rag_min_similarity: Optional[float] = Field(None, ge=0.05, le=0.95)
+    rag_top_k: Optional[int] = Field(None, ge=1, le=20)
+    llm_timeout_seconds: Optional[float] = Field(None, ge=5.0, le=300.0)
+    llm_max_output_tokens: Optional[int] = Field(None, ge=128, le=8192)
+    vehicle_min_confidence: Optional[float] = Field(None, ge=0.1, le=0.99)
+    default_lane_id: Optional[str] = Field(None, max_length=64)
+    telemetry_enabled: Optional[bool] = None
+    telemetry_retention_days: Optional[int] = Field(None, ge=1, le=365)
+    vision_retention_days: Optional[int] = Field(None, ge=1, le=365)
+    reason: str = Field(..., min_length=3, max_length=500)
+
+
+class EngineActionIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    action: str = Field(..., pattern="^(warmup|unload)$")
+
+
+class RevokeSessionIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: Optional[str] = Field("", max_length=200)
+
+
+@router.get("/settings", response_model=BaseResponse[dict])
+async def get_settings(
+    actor: ConsoleActor = Depends(require_any_permission("ai:metrics:read", "ai:member:manage", "ai:audit:read")),
+):
+    data = await console_tools_service.get_runtime_settings(actor)
+    return BaseResponse.ok([data], "OK")
+
+
+@router.post("/settings/compute", response_model=BaseResponse[dict])
+@router.put("/settings/compute", response_model=BaseResponse[dict])
+async def update_compute_settings(
+    payload: ComputeSettingsIn,
+    actor: ConsoleActor = Depends(require_any_permission("ai:prompt:edit", "ai:model:evaluate")),
+):
+    data = await console_tools_service.update_compute_settings(actor, payload.model_dump(exclude_none=True))
+    return BaseResponse.ok([data], "Đã cập nhật cấu hình phần cứng GPU/CPU & Engine.")
+
+
+@router.post("/settings/policy", response_model=BaseResponse[dict])
+@router.put("/settings/policy", response_model=BaseResponse[dict])
+async def update_policy_settings(
+    payload: PolicySettingsIn,
+    actor: ConsoleActor = Depends(require_permission("ai:policy:threshold")),
+):
+    data = await console_tools_service.update_policy_settings(actor, payload.model_dump(exclude_none=True))
+    return BaseResponse.ok([data], "Đã cập nhật ngưỡng AI & chính sách vận hành.")
+
+
+@router.post("/engines/action", response_model=BaseResponse[dict])
+async def engine_action(
+    payload: EngineActionIn,
+    actor: ConsoleActor = Depends(require_any_permission("ai:model:evaluate", "ai:prompt:edit")),
+):
+    data = await console_tools_service.engine_action(actor, payload.action)
+    msg = "Đã nạp sẵn model Vision vào bộ nhớ." if payload.action == "warmup" else "Đã giải phóng model Vision khỏi RAM/VRAM."
+    return BaseResponse.ok([data], msg)
+
+
+@router.get("/sessions", response_model=BaseResponse[dict])
+async def list_sessions(
+    actor: ConsoleActor = Depends(require_any_permission("ai:metrics:read", "ai:member:manage", "ai:audit:read")),
+):
+    rows = await console_tools_service.list_sessions(actor)
+    return BaseResponse.ok(rows, "OK")
+
+
+@router.post("/sessions/{session_id}/revoke", response_model=BaseResponse[dict])
+async def revoke_session(
+    session_id: UUID,
+    payload: RevokeSessionIn,
+    actor: ConsoleActor = Depends(require_any_permission("ai:metrics:read", "ai:member:manage", "ai:audit:read")),
+):
+    res = await console_tools_service.revoke_session_by_id(actor, str(session_id), payload.reason or "")
+    return BaseResponse.ok([res], "Đã thu hồi phiên đăng nhập.")

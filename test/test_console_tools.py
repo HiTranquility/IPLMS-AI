@@ -195,7 +195,9 @@ class ChatStudioContractTest(unittest.IsolatedAsyncioTestCase):
         async def fake_stream(actor, query, parking_lot_id, **tuning):
             seen.update(tuning)
             yield SimpleNamespace(token="ok", is_finished=True, sources=[], confidence=None, refused=False,
-                                  guardrail_triggered=None, prompt_version="v2", turn_id="t", latency_ms=1.0)
+                                  guardrail_triggered=None, prompt_version="v2", turn_id="t", latency_ms=1.0,
+                                  speed_tok_s=None, input_tokens=None, output_tokens=None,
+                                  context_tokens=None, context_limit=None)
 
         app = FastAPI()
         app.include_router(ctl.router)
@@ -251,6 +253,158 @@ class ConsoleTryNotCountedTest(unittest.TestCase):
             with conn, conn.cursor() as cur:
                 cur.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema)))
             conn.close()
+
+
+
+LEAD = ConsoleActor("m-lead", frozenset({"ai_lead"}))
+ADMIN = ConsoleActor("m-admin", frozenset({"ai_console_admin"}))
+ANNOTATOR = ConsoleActor("m-ann", frozenset({"ai_annotator"}))
+
+
+class ConsoleSettingsAndToolsEndpointTest(unittest.IsolatedAsyncioTestCase):
+    """A-25: Kiểm thử tự động cho các endpoint Settings, Policy, Sessions và gRPC (AUDIT-006)."""
+
+    def setUp(self):
+        # A-44: không ghi var/runtime_settings.json thật, không sửa get_config() dùng chung.
+        import copy
+        import tempfile
+
+        from app.config import get_config
+
+        self._tmp = tempfile.TemporaryDirectory()
+        self._settings_path = os.path.join(self._tmp.name, "runtime_settings.json")
+        cfg = copy.deepcopy(get_config())
+        self._patches = [
+            patch("app.config.runtime_override_config.RUNTIME_SETTINGS_PATH", self._settings_path),
+            patch("app.core.console.services.tools_service.get_config", return_value=cfg),
+        ]
+        for p in self._patches:
+            p.start()
+
+    def tearDown(self):
+        for p in self._patches:
+            p.stop()
+        self._tmp.cleanup()
+
+    async def test_settings_policy_requires_threshold_permission(self):
+        svc, _, _, store = service()
+        # ML Engineer chỉ có ai:prompt:edit, không có ai:policy:threshold -> Bị từ chối (BUG-06)
+        with self.assertRaises(ConsoleAccessDenied):
+            await svc.update_policy_settings(ML, {"rag_min_similarity": 0.6})
+
+        # Lead có quyền ai:policy:threshold -> Cập nhật thành công, lý do vào audit
+        res = await svc.update_policy_settings(LEAD, {"rag_min_similarity": 0.6, "rag_top_k": 7, "reason": "đo held-out"})
+        self.assertIn("policy", res)
+        self.assertEqual("settings.policy", store.add_audit.await_args.args[1])
+        self.assertIn("đo held-out", store.add_audit.await_args.args[4])
+        self.assertTrue(os.path.isfile(self._settings_path))
+
+    async def test_compute_khong_doi_sang_provider_ngoai(self):
+        svc, *_ = service()
+        # A-6/A-38: gửi câu hỏi ra OpenAI chỉ bật qua env, không qua API Settings.
+        with self.assertRaises(ValueError):
+            await svc.update_compute_settings(ML, {"llm_provider": "openai"})
+        res = await svc.update_compute_settings(ML, {"llm_provider": "ollama", "llm_model": "qwen3:4b"})
+        self.assertEqual("ollama", res["compute"]["llm_provider"])
+
+    async def test_ghi_file_loi_thi_hoan_tac_cau_hinh(self):
+        from app.core.console.services import tools_service
+
+        from app.config.runtime_override_config import snapshot_runtime_fields
+
+        svc, *_ = service()
+        cfg = tools_service.get_config()
+        cfg.llm.llm_provider = "ollama"
+        before = snapshot_runtime_fields(cfg)
+        # Lỗi ở chính os.replace (vd Windows khoá file đích) chứ không chỉ ở hàm ghi bị giả lập.
+        with patch("app.config.runtime_override_config.os.replace", side_effect=PermissionError("locked")):
+            with self.assertRaises(PermissionError):
+                await svc.update_policy_settings(LEAD, {"rag_top_k": 19, "reason": "thử lỗi ghi"})
+            with self.assertRaises(PermissionError):
+                await svc.update_compute_settings(ML, {"local_llm_threads": 63, "llm_provider": "local"})
+            with self.assertRaises(PermissionError):
+                await svc.update_compute_settings(ML, {"preset": "cpu_eco"})
+        # A-53: API báo lỗi thì cấu hình đang chạy giữ nguyên, kể cả provider; không để lại tệp tạm.
+        self.assertEqual(before, snapshot_runtime_fields(cfg))
+        self.assertFalse(os.path.exists(self._settings_path + ".tmp"))
+
+    def test_file_override_hong_khong_ap_do_dang(self):
+        import json
+
+        from app.config.runtime_override_config import apply_runtime_overrides
+
+        cfg = SimpleNamespace(llm=SimpleNamespace(rag_top_k=5, rag_min_similarity=0.35), vision=SimpleNamespace(),
+                              telemetry=SimpleNamespace(), console=SimpleNamespace())
+        with open(self._settings_path, "w", encoding="utf-8") as f:
+            json.dump({"rag_top_k": 9, "rag_min_similarity": "không-phải-số"}, f)
+        apply_runtime_overrides(cfg)
+        self.assertEqual(5, cfg.llm.rag_top_k)
+        with open(self._settings_path, "w", encoding="utf-8") as f:
+            json.dump({"rag_top_k": 99, "llm_provider": "openai"}, f)
+        apply_runtime_overrides(cfg)
+        self.assertEqual(20, cfg.llm.rag_top_k)
+        self.assertFalse(hasattr(cfg.llm, "llm_provider"))
+
+    async def test_revoke_active_session_guards(self):
+        svc, _, _, store = service()
+        store.revoke_target_session.return_value = True
+        current_actor = ConsoleActor("m-admin", frozenset({"ai_console_admin"}), session_id="sess-active-01")
+
+        # Cấm tự thu hồi phiên hiện tại đang dùng (BUG-09)
+        with self.assertRaisesRegex(ValueError, "Không thể tự thu hồi phiên đang hoạt động"):
+            await svc.revoke_session_by_id(current_actor, "sess-active-01")
+
+        # Thu hồi phiên khác của người dùng -> Thành công
+        res = await svc.revoke_session_by_id(current_actor, "sess-other-02", "Dọn dẹp phiên cũ")
+        self.assertTrue(res["revoked"])
+
+    async def test_annotator_cannot_access_settings(self):
+        svc, *_ = service()
+        with self.assertRaises(ConsoleAccessDenied):
+            await svc.get_runtime_settings(ANNOTATOR)
+
+    async def test_forecast_simulation_schema_alignment(self):
+        svc, *_ = service()
+        res = await svc.simulate_forecast(ANALYST, area_id="lot_landmark_81", day_of_week=3, total_capacity=300)
+        quote = res["stage3_inference"]["surge_quote"]
+        # Phải có đầy đủ reason_code và occupancy_pct theo đúng hợp đồng UI (BUG-12)
+        self.assertIn("reason_code", quote)
+        self.assertIn("occupancy_pct", quote)
+        self.assertIn("current_occupancy_pct", quote)
+        # A-11/12: hợp đồng giờ khớp kiểu UI, không gắn tên model chưa có.
+        inference = res["stage3_inference"]
+        self.assertEqual(24, len(inference["hourly_predictions"]))
+        self.assertEqual(
+            {"hour_of_day", "predicted_occupancy_pct", "estimated_free_spots", "surge_multiplier", "confidence"},
+            set(inference["hourly_predictions"][0]),
+        )
+        expected = "heuristic-baseline" if inference["is_fallback"] else "profile-7x24"
+        self.assertEqual(expected, inference["model_version"])
+        # Bãi không có trong lake → baseline, và số bản ghi là số thật của dataset (không phải hằng).
+        self.assertTrue(inference["is_fallback"])
+        self.assertGreater(res["stage1_datalake"]["total_records"], 0)
+        self.assertEqual(len(res["stage2_features"]["sample_rows"]) > 0, res["stage2_features"]["total_samples"] > 0)
+
+    async def test_grpc_dataset_handler_exports_without_name_error(self):
+        from unittest.mock import MagicMock
+        from app.api.grpc.handlers.dataset_handler import DatasetHandler
+
+        handler = DatasetHandler()
+        ctx = MagicMock()
+        req_policy = MagicMock()
+        req_policy.model_name = "anpr"
+
+        with patch("app.core.console.services.accept_policy_service.console_accept_policy_service.approved", new_callable=AsyncMock) as mock_approved:
+            mock_approved.return_value = {
+                "id": "pol-1",
+                "model_name": "anpr",
+                "version": 1,
+                "auto_accept_threshold": 0.85,
+                "audit_rate": 0.05,
+                "decided_at": "2026-10-25T00:00:00Z",
+            }
+            res = await handler.GetAcceptPolicy(req_policy, ctx)
+            self.assertIsNotNone(res)
 
 
 if __name__ == "__main__":

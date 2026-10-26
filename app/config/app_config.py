@@ -9,6 +9,7 @@ from app.config.llm_config import LlmConfig
 from app.config.logging_config import LoggingConfig
 from app.config.model_registry_config import ModelRegistryConfig
 from app.config.object_storage_config import ObjectStorageConfig
+from app.config.runtime_override_config import apply_runtime_overrides
 from app.config.server_config import ServerConfig
 from app.config.telemetry_config import TelemetryConfig
 from app.config.vision_config import VisionConfig
@@ -29,6 +30,11 @@ class AppConfig:
         self.eval = EvalConfig()
         self.console = ConsoleConfig()
         self.telemetry = TelemetryConfig()
+        self.reload_runtime_overrides()
+
+    def reload_runtime_overrides(self) -> None:
+        """Áp cấu hình đổi ở trang Settings (var/runtime_settings.json)."""
+        apply_runtime_overrides(self)
 
 
 @lru_cache

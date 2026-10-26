@@ -41,10 +41,11 @@ export function ChatStudioHeader({
           <PanelLeft size={16} />
         </button>
 
-        <div className={styles.modelBadge}>
+        <div className={styles.modelBadge} title={t.copilot.configuredModel(model)}>
           <span className={isStreaming ? styles.statusDotStreaming : styles.statusDot} />
-          <Cpu size={14} />
-          <span>{model}</span>
+          <Cpu size={14} aria-hidden />
+          <span aria-hidden>{model}</span>
+          <span className="visually-hidden">{t.copilot.configuredModel(model)}</span>
         </div>
       </div>
 
