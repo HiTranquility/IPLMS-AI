@@ -2,7 +2,7 @@
 
 > Hồ sơ cha: [ISSUE-019](../issue.md) · Lượt trước: [review-1](review-1.md) (chỉ rà trên API giả, chưa đăng nhập).
 
-**Kết quả một dòng:** Đã đăng nhập console thật bằng mật khẩu và TOTP. Đi qua 11 màn và các tab con ở 375/1024 px, mỗi cỡ cả sáng lẫn tối. Luồng đổi ngưỡng (lý do → `STEP_UP_REQUIRED` → mã TOTP → lưu) chạy đúng. Lượt rà tìm ra 6 lỗi UI và đã sửa hết. Sau khi sửa, mọi màn có `scrollWidth` bằng viewport, 0 node chữ dưới ngưỡng WCAG, 0 control thiếu tên, 0 lỗi console, 0 lỗi 4xx/5xx sau đăng nhập. tsc PASS, vitest 94/94. **REA: BLOCKED** vì ổ C: chỉ còn dưới 3 GB.
+**Kết quả một dòng:** Đã đăng nhập console thật bằng mật khẩu và TOTP. Đi qua 11 màn và các tab con ở 375/1024 px, mỗi cỡ cả sáng lẫn tối. Luồng đổi ngưỡng (lý do → `STEP_UP_REQUIRED` → mã TOTP → lưu) chạy đúng. Lượt rà tìm ra 6 lỗi UI, REA chạy sau thêm 4 điểm a11y (BUG-07…10); đã sửa hết 10. Sau khi sửa, mọi màn có `scrollWidth` bằng viewport, 0 node chữ dưới ngưỡng WCAG, 0 control thiếu tên, 0 lỗi console, 0 lỗi 4xx/5xx sau đăng nhập. tsc PASS, vitest 94/94. REA chạy lại khi ổ C: đủ chỗ: 12 màn, 0 lỗi console/network, 0 control thiếu tên.
 
 ## Sơ đồ
 
@@ -40,6 +40,10 @@ Không vẽ ERD và class diagram: lượt này chỉ sửa giao diện, không 
 | BUG-04 | 🟠 | `/vision/review` (sáng 3.19, tối 2.15) | Link "Sang Dataset & Golden →" có `#fff` cứng trên nền accent | ✅ `ReviewPage.tsx:111` → `var(--color-accent-ink)` |
 | BUG-05 | 🟡 | `/tools` › Dự báo @1024 | Hàng KPI `repeat(3, 1fr)` bật theo viewport ≥ 40rem, nhưng cột thật chỉ rộng ~359px. Ô thứ 3 bị ép còn 92px, mỗi dòng chỉ một chữ ("chưa / có / mô / hình…"). Ảnh: `evidence/review-2-forecast-1024-dark-before.jpg` | ✅ `ForecastSimulator.module.css:214` đổi sang `auto-fit minmax(min(100%, 9rem), 1fr)`; `.kpiValueRow` thêm `flex-wrap`. Đo lại: 2 cột × 173px |
 | BUG-06 | 🟡 | `/settings` › Phiên; `/tools`; `/audit` (sáng) | (a) 29 nút cùng tên "Thu hồi phiên". (b) Hai nhóm "Tất cả" (bộ lọc chế độ xem và bộ lọc danh mục tài liệu) không có ngữ cảnh nhóm. (c) Huy hiệu `info` ("Mời thành viên") đo 4.497:1, sát ngưỡng | ✅ (a) `SettingsPage.tsx:770` thêm `aria-label` gồm số thứ tự, tên người và giờ đăng nhập (khoá i18n `revokeSessionFor` VI+EN). (b) `IngestSection.tsx:376` thêm `role="group"` + `aria-label={t.tools.category}`. (c) `AuditActionBadge.module.css:27` `#2563eb` → `#1d4ed8` (5.83:1) |
+| BUG-07 | 🟡 | `/settings` (3 tab) — REA | Có `tablist`/`tab` nhưng không có `tabpanel`, `aria-controls`, không đổi tab bằng phím mũi tên | ✅ `SettingsPage.tsx`: `id`/`aria-controls`/`tabIndex` lăn, `onKeyDown` ←/→, mỗi tab bọc `role="tabpanel"` + `aria-labelledby` |
+| BUG-08 | 🟡 | `/members` — REA | 2 landmark `complementary` không tên (rail và cột mời/phân vai) | ✅ `AppShell.tsx` `aria-label={t.shell.railLabel}`, `MembersPage.tsx` `aria-label={t.members.sideLabel}` (VI + EN) |
+| BUG-09 | 🟡 | `/vision/label` — REA | Chữ phím tắt trong `<kbd>` gộp vào tên nút ("Đúng 100% 1", "Bỏ qua mẫu này S") | ✅ `<kbd aria-hidden>` + `aria-keyshortcuts` ở `LabelWorkspace.tsx` và `LabelForm.tsx` |
+| BUG-10 | 🟡 | Tổng quan, Thành viên, Kiểm toán, Settings › Phiên, Dự báo — REA | Bảng dữ liệu không có tên | ✅ `aria-label` lấy từ tiêu đề có sẵn: `OverviewPage`, `MembersPage`, `AuditPage`, `SettingsPage` (2 bảng), `ForecastSimulator` |
 
 Phát hiện thêm, đã kiểm và **không phải lỗi**:
 - `/copilot` › Chat có 4 cặp tên trùng ("Đoạn chat mới", và chip câu hỏi mẫu ở hero lẫn ở thanh gợi ý). Mỗi cặp làm cùng một việc nên không gây nhầm cho trình đọc màn hình.
@@ -57,7 +61,6 @@ Ngoài `ai/ui`, chưa sửa (một agent khác đang sửa `app/`):
 | S1 | Gợi ý GPU offload ở Settings ghi "33 = đẩy 100% mô hình Qwen3.5-4B", trong khi model đang cấu hình là `qwen2.5:3b`. Nên lấy tên model từ cấu hình hoặc bỏ tên cụ thể khỏi chuỗi i18n. | Không gây hiểu nhầm. | Nhỏ: chỉ đổi chữ. |
 | S2 | Rà `#fff` / `#ffffff` cứng còn sót trong `ai/ui/src`, rồi thêm một test kiểu `noHardcodedVi.test.ts` cấm màu cứng ngoài các ngoại lệ DESIGN cho phép (nút Google, `AnprSandbox` mô phỏng màu biển số). | BUG-02/03/04 không lặp lại. | Phải giữ danh sách ngoại lệ. |
 | S3 | Đưa script đo (`audit.js`: tràn ngang, WCAG, tên trùng, heading) và helper đăng nhập TOTP vào `script/` như S2 của review-1. | Lần rà sau chỉ cần một lệnh. | Phải bảo trì script. |
-| S4 | Chạy lại REA `inspect_web_page` cho các màn sau đăng nhập khi ổ C: còn ≥ 3 GB: đặt cookie `ai_console_session` qua CDP `Network.setCookie`. | Có thêm cây a11y độc lập với Browser pane. | Chrome headless tốn đĩa. |
 
 ## Đã kiểm thế nào
 
@@ -70,4 +73,4 @@ Ngoài `ai/ui`, chưa sửa (một agent khác đang sửa `app/`):
 | Đo tự động | Script chèn vào trang: `scrollWidth`, phần tử tràn mép phải (bỏ qua phần tử trong vùng cuộn ngang), tỉ lệ WCAG cho mọi node chữ (trộn nền nhiều lớp), tên accessible và tên trùng theo nhóm, heading nhảy cấp, `console.error`. Chạy trên 11 màn, 3 tab Settings, 4 chế độ Công cụ thử, Copilot (nhật ký, chi tiết, chat) × 375/1024 × sáng/tối | Trước: 6 lỗi như bảng Bug. Sau: 0 tràn, 0 tương phản thấp, 0 thiếu tên, 0 lỗi console |
 | Mạng | `read_network_requests` lọc `/console/api` | 0 lỗi 4xx/5xx sau đăng nhập |
 | Test | `npx tsc --noEmit`; `npx vitest run --maxWorkers=1 --no-file-parallelism` | PASS; 94/94 |
-| REA | — | **BLOCKED**: `df` cho ổ C: còn 2.76–2.98 GB, dưới ngưỡng an toàn 3 GB, nên không bật Chrome headless và đường hầm CDP. Đã kiểm: không còn tiến trình Chrome headless, không còn cổng 9222/9229 nào đang nghe |
+| REA | `inspect_web_page` (a11y text + console) × 12 màn sau đăng nhập, Chrome headless CDP 9229 ↔ broker WSL; cộng script CDP đo network/console lúc tải lại | Lượt đầu BLOCKED (ổ C: < 3 GB). Chạy lại khi ổ còn 12 GB: 0 lỗi console, 0 lỗi network (12/12 màn), 0 control thiếu tên, 0 tên trùng, 0 heading nhảy cấp; 4 điểm a11y → BUG-07…10, đã sửa. Đã dọn Chrome, đường hầm, profile tạm; không còn cổng 9222/9229 |
