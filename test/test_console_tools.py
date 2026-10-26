@@ -153,8 +153,8 @@ class ChatStudioContractTest(unittest.IsolatedAsyncioTestCase):
     """ai bug-017: body Chat Studio gửi phải qua được AskIn và tham số phải tới pipeline."""
 
     # Giữ khớp ui/src/pages/Copilot/components/ChatStudio/askContract.ts (ASK_BODY_FIELDS).
-    UI_FIELDS = ("query", "parking_lot_id", "min_similarity", "top_k", "temperature")
-    BODY = {"query": "phí gửi xe?", "parking_lot_id": "", "min_similarity": 0.72, "top_k": 4, "temperature": 0.1}
+    UI_FIELDS = ("query", "parking_lot_id", "min_similarity", "top_k", "temperature", "history")
+    BODY = {"query": "phí gửi xe?", "parking_lot_id": "", "min_similarity": 0.72, "top_k": 4, "temperature": 0.1, "history": None}
 
     def test_askin_nhan_dung_body_cua_chat_studio(self):
         from app.api.rest.routes.console_tools_controller import ASK_BODY_FIELDS, AskIn
@@ -162,9 +162,9 @@ class ChatStudioContractTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(set(self.UI_FIELDS), set(ASK_BODY_FIELDS))
         self.assertEqual(set(ASK_BODY_FIELDS), set(AskIn.model_fields))
         payload = AskIn.model_validate(self.BODY)
-        self.assertEqual({"top_k": 4, "min_similarity": 0.72, "temperature": 0.1}, payload.tuning())
+        self.assertEqual({"top_k": 4, "min_similarity": 0.72, "temperature": 0.1, "history": None}, payload.tuning())
         # Thân cũ hai trường vẫn hợp lệ, tham số thử để None = cấu hình mặc định.
-        self.assertEqual({"top_k": None, "min_similarity": None, "temperature": None},
+        self.assertEqual({"top_k": None, "min_similarity": None, "temperature": None, "history": None},
                          AskIn.model_validate({"query": "x"}).tuning())
 
     def test_askin_chan_gia_tri_ngoai_bien_va_truong_la(self):
@@ -206,7 +206,7 @@ class ChatStudioContractTest(unittest.IsolatedAsyncioTestCase):
             response = TestClient(app).post("/tools/copilot/stream", json=self.BODY)
         self.assertEqual(200, response.status_code, response.text)
         self.assertIn('"token": "ok"', response.text)
-        self.assertEqual({"top_k": 4, "min_similarity": 0.72, "temperature": 0.1}, seen)
+        self.assertEqual({"top_k": 4, "min_similarity": 0.72, "temperature": 0.1, "history": None}, seen)
 
 
 class RagLimitsTest(unittest.TestCase):
@@ -357,6 +357,15 @@ class ConsoleSettingsAndToolsEndpointTest(unittest.IsolatedAsyncioTestCase):
         # Thu hồi phiên khác của người dùng -> Thành công
         res = await svc.revoke_session_by_id(current_actor, "sess-other-02", "Dọn dẹp phiên cũ")
         self.assertTrue(res["revoked"])
+
+    async def test_engine_reload_llm_action(self):
+        svc, _, _, store = service()
+        with patch("app.core.console.services.tools_service._reload_llm", return_value={"status": "reloaded", "model": "test-model"}) as mock_reload:
+            res = await svc.engine_action(ML, "reload_llm")
+            self.assertIn("compute", res)
+            self.assertIn("engines", res)
+            self.assertEqual("engine.reload_llm", store.add_audit.await_args.args[1])
+            mock_reload.assert_called_once()
 
     async def test_annotator_cannot_access_settings(self):
         svc, *_ = service()

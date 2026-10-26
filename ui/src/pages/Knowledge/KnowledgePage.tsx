@@ -11,7 +11,8 @@ import {
   UploadCloud,
   X,
 } from 'lucide-react';
-import { useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from 'react';
+import { useRef, useState, useEffect, type ChangeEvent, type DragEvent, type FormEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/common/Ui/button/Button';
 import { Badge } from '@/components/common/Ui/data-display/Badge';
 import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
@@ -52,6 +53,32 @@ export function KnowledgePage() {
   const [selectedCatFilter, setSelectedCatFilter] = useState('all');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [previewDoc, setPreviewDoc] = useState<SeedDocument | null>(null);
+
+  const [searchParams] = useSearchParams();
+  const targetDocId = searchParams.get('docId');
+  const hasAutoOpenedRef = useRef(false);
+
+  useEffect(() => {
+    if (targetDocId && !hasAutoOpenedRef.current && docsQuery.data && docsQuery.data.length > 0) {
+      const normalized = targetDocId.trim().toLowerCase();
+      const found = docsQuery.data.find((d) => {
+        const dId = (d.id || '').toLowerCase();
+        const dTitle = (d.title || '').toLowerCase();
+        const dSource = (d.source || '').toLowerCase();
+        return (
+          dId === normalized ||
+          dTitle === normalized ||
+          dSource === normalized ||
+          dTitle.includes(normalized) ||
+          dSource.includes(normalized)
+        );
+      });
+      if (found) {
+        hasAutoOpenedRef.current = true;
+        setPreviewDoc(found);
+      }
+    }
+  }, [targetDocId, docsQuery.data]);
 
   // Batch queue state
   const [isBatchIngesting, setIsBatchIngesting] = useState(false);

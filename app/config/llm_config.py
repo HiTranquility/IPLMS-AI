@@ -56,7 +56,13 @@ class LlmConfig(BaseConfig):
 
         Khi llama-server thật sự đang chạy, factory dùng `local_gguf_model_name` thay vào.
         """
-        if self.llm_provider in ("local", "ollama") and (not self.llm_model or self.llm_model in NON_OLLAMA_MODEL_NAMES):
+        if self.llm_provider == "local":
+            if self.local_gguf_model_name:
+                if not self.llm_model or self.llm_model in (DEFAULT_LOCAL_LLM_MODEL, "Qwen3.5-4B-Q4_K_M"):
+                    return self.local_gguf_model_name
+                return self.llm_model
+            return self.llm_model or DEFAULT_LOCAL_LLM_MODEL
+        if self.llm_provider == "ollama" and (not self.llm_model or self.llm_model in NON_OLLAMA_MODEL_NAMES):
             return DEFAULT_LOCAL_LLM_MODEL
         return self.llm_model or DEFAULT_LOCAL_LLM_MODEL
 

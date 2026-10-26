@@ -115,6 +115,66 @@ def _log_guard(rule: str) -> None:
     logger.warning("Copilot output guard blocked answer rule=%s", rule)
 
 
+def _enrich_retrieval_query(query: str, history: Optional[List[Dict[str, Any]]] = None) -> str:
+    """Bổ sung ngữ cảnh từ lịch sử hội thoại gần nhất cho câu truy vấn vector (Multi-turn RAG).
+
+    Khi câu hỏi chứa đại từ chỉ định hoặc quá ngắn (ví dụ: 'bãi xe này ở đâu', 'bãi xe của ai'),
+    hệ thống trích xuất thực thể/từ khóa chủ đạo từ lượt trước (tiêu đề tài liệu, tên bãi xe,
+    địa danh) để vector search tìm đúng đoạn quy chế, vượt qua rào chắn ADR-0008 (>= 0.35).
+    """
+    if not history or not query:
+        return query
+
+    import re
+
+    ANAPHORIC_PATTERNS = [
+        r"\b(này|đó|nó|đấy|kia)\b",
+        r"\b(ở đâu|chỗ nào|địa chỉ|ở vị trí nào)\b",
+        r"\b(của ai|ai là|thuộc ai)\b",
+        r"\b(quy định|quy chế|biểu phí|vé xe)\b",
+        r"\b(chi tiết hơn|cụ thể hơn|nói rõ hơn)\b",
+    ]
+    is_referential = any(re.search(p, query, re.IGNORECASE) for p in ANAPHORIC_PATTERNS)
+    words = [w for w in re.findall(r"\w+", query.lower()) if len(w) >= 2]
+    is_short = len(words) <= 7
+
+    if not (is_referential or is_short):
+        return query
+
+    context_entities: list[str] = []
+    for item in reversed(history[-4:]):
+        content = item.get("content", "")
+        # 1. Tìm tên bãi xe cụ thể trong nội dung hoặc trích dẫn
+        lot_matches = re.findall(r"(?:Bãi\s+xe(?:\s+số)?\s+\w+|Landmark\s*81|Trung\s+tâm\s+Đào\s+tạo|phố\s+Vọng)", content, re.IGNORECASE)
+        for lm in lot_matches:
+            cleaned = lm.strip()
+            if cleaned and not any(cleaned.lower() == e.lower() for e in context_entities):
+                context_entities.append(cleaned)
+
+        if context_entities:
+            break
+
+        # 2. Tìm tên tài liệu nếu không có tên bãi
+        source_matches = re.findall(r"\[(?:Nguồn|Source):\s*([^\]]+)\]", content, re.IGNORECASE)
+        for sm in source_matches:
+            clean_name = re.sub(r"\.(pdf|docx|txt|md)", "", sm, flags=re.IGNORECASE).strip()
+            if clean_name:
+                context_entities.append(clean_name)
+                break
+        if context_entities:
+            break
+
+    if not context_entities:
+        return query
+
+    missing_entities = [e for e in context_entities if e.lower() not in query.lower()]
+    if not missing_entities:
+        return query
+
+    enrichment = " ".join(missing_entities[:3])
+    return f"{enrichment} {query}".strip()
+
+
 class RagPipelineEngine:
     def __init__(self, embedder=None, vector_store=None, llm=None, demo_seed_enabled: bool | None = None) -> None:
         self.embedder = embedder or embedding_client
@@ -283,7 +343,8 @@ class RagPipelineEngine:
             len(query_text),
             bool(parking_lot_id),
         )
-        chunks = await self._grounded_chunks(query_text, parking_lot_id, preview, top_k, min_similarity)
+        retrieval_query = _enrich_retrieval_query(query_text, history)
+        chunks = await self._grounded_chunks(retrieval_query, parking_lot_id, preview, top_k, min_similarity)
         if not chunks:
             return {"answer": NO_CONTEXT_ANSWER, "sources": [], "confidence": 0.0,
                     "status": "NO_CONTEXT", "usage": {}, "model": ""}
@@ -313,6 +374,7 @@ class RagPipelineEngine:
         self, query_text: str, parking_lot_id: str | None = None, preview: bool = False,
         top_k: int | None = None, min_similarity: float | None = None,
         temperature: float | None = None,
+        history: Optional[List[Dict[str, Any]]] = None,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         start_time = time.perf_counter()
         logger.info(
@@ -362,11 +424,12 @@ class RagPipelineEngine:
                 "output_tokens": out_toks,
                 "speed_tok_s": speed_tok_s,
                 "context_tokens": in_toks,
-                "context_limit": 4096,
+                "context_limit": getattr(get_config().llm, "local_llm_ctx_size", 4096),
             }
             return
 
-        chunks = await self._grounded_chunks(query_text, parking_lot_id, preview, top_k, min_similarity)
+        retrieval_query = _enrich_retrieval_query(query_text, history)
+        chunks = await self._grounded_chunks(retrieval_query, parking_lot_id, preview, top_k, min_similarity)
         if not chunks:
             lat = round((time.perf_counter() - start_time) * 1000.0, 2)
             yield {"token": NO_CONTEXT_ANSWER, "is_finished": False, "sources": []}
@@ -389,7 +452,7 @@ class RagPipelineEngine:
 
         # 2. Rào chắn phạm vi & độ tương đồng (Mục 4.2: Scope Filter & ADR-0008)
         guard_scope = guardrail_manager.check_scope_and_chunks(
-            query_text, chunks, self._limits(top_k, min_similarity)[1]
+            retrieval_query, chunks, self._limits(top_k, min_similarity)[1]
         )
         if not guard_scope.is_safe:
             refusal = guard_scope.refusal_message or NO_CONTEXT_ANSWER
@@ -431,7 +494,7 @@ class RagPipelineEngine:
                 "output_tokens": out_toks,
                 "speed_tok_s": speed_tok_s,
                 "context_tokens": in_toks,
-                "context_limit": 4096,
+                "context_limit": getattr(get_config().llm, "local_llm_ctx_size", 4096),
             }
             return
 
@@ -442,7 +505,7 @@ class RagPipelineEngine:
         answer_parts: list[str] = []
         usage: dict = {}
         async for token in output_guard.guard_stream(
-            llm.stream_response(SYSTEM_PROMPT, query_text.strip(), context, **_usage_kw(llm, usage, temperature)),
+            llm.stream_response(SYSTEM_PROMPT, query_text.strip(), context, history=history, **_usage_kw(llm, usage, temperature)),
             context,
             lambda rule: (tripped.append(rule), _log_guard(rule)),
         ):
@@ -470,10 +533,29 @@ class RagPipelineEngine:
         )
 
         final_sources = [] if tripped else (_cited_sources(full_text, chunks) or sources)
+        citations: list[dict[str, Any]] = []
+        if not tripped and chunks:
+            cited_names = set(final_sources)
+            seen_chunk_keys = set()
+            for c in chunks:
+                src = str(c.get("source", "") or c.get("title", ""))
+                cid = str(c.get("chunk_id", "") or "")
+                key = (src, cid or c.get("content", "")[:50])
+                if (src in cited_names or not cited_names) and key not in seen_chunk_keys:
+                    seen_chunk_keys.add(key)
+                    citations.append({
+                        "title": src,
+                        "snippet": str(c.get("content", ""))[:800],
+                        "score": round(float(c.get("similarity", 0.0)), 4),
+                        "chunk_id": cid or None,
+                        "document_id": str(c.get("document_id", "") or ""),
+                    })
+
         yield {
             "token": "",
             "is_finished": True,
             "sources": final_sources,
+            "citations": citations,
             "confidence": _confidence(chunks),
             "refused": bool(tripped),
             "guardrail_triggered": tripped[0] if tripped else None,
@@ -488,7 +570,7 @@ class RagPipelineEngine:
             "output_tokens": out_toks,
             "speed_tok_s": speed_tok_s,
             "context_tokens": in_toks,
-            "context_limit": 4096,
+            "context_limit": getattr(get_config().llm, "local_llm_ctx_size", 4096),
         }
 
 

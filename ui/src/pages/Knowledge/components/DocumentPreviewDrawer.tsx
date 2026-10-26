@@ -116,14 +116,48 @@ export function DocumentPreviewDrawer({ document, onClose }: DocumentPreviewDraw
 
         <div className={styles.body}>
           {isLoading && <Loading label={kp.loadingChunks} />}
-          {error && <ErrorBlock error={error} onRetry={() => void refetch()} />}
+          {error && !document.content && <ErrorBlock error={error} onRetry={() => void refetch()} />}
 
-          {!isLoading && !error && filteredChunks.length === 0 && (
-            <EmptyState
-              icon={<FileText size={32} />}
-              title={kp.emptyChunksTitle}
-              description={searchTerm ? kp.noChunksFound : kp.emptyChunksDesc}
-            />
+          {!isLoading && (!error || document.content) && filteredChunks.length === 0 && (
+            document.content ? (
+              <article className={styles.chunkCard}>
+                <div className={styles.chunkHeader}>
+                  <div className={styles.chunkHeaderLeft}>
+                    <span className={styles.ordinalBadge}>{kp.chunkOrdinal(1)}</span>
+                    <span className={styles.chunkTitle}>
+                      {document.title || kp.defaultChunkTitle}
+                    </span>
+                  </div>
+                  <div className={styles.chunkHeaderRight}>
+                    <span className={styles.charCount}>{kp.chunkLength(document.content.length)}</span>
+                    <button
+                      type="button"
+                      className={styles.copyBtn}
+                      onClick={() => void handleCopyChunk(0, document.content || '')}
+                    >
+                      {copiedOrdinal === 0 ? (
+                        <>
+                          <Check size={12} color="#10b981" />
+                          <span>{kp.copied}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={12} />
+                          <span>{kp.copyChunk}</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <pre className={styles.chunkContent}>{document.content}</pre>
+              </article>
+            ) : (
+              <EmptyState
+                icon={<FileText size={32} />}
+                title={kp.emptyChunksTitle}
+                description={searchTerm ? kp.noChunksFound : kp.emptyChunksDesc}
+              />
+            )
           )}
 
           {!isLoading &&
