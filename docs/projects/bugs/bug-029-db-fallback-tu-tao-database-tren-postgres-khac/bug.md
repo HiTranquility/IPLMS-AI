@@ -6,6 +6,7 @@
 |---|---|
 | **Trạng thái** | 🛠️ Fixing — đã sửa trên nhánh `bugfix/bug-029-2026-10-db-fallback-tu-tao-database`, chờ PR |
 | **Người báo** | Auditor AUDIT-006 (finding A-23, vòng 1–3); mở hồ sơ trong đợt [ISSUE-019](../../issues/10-2026/ISSUE-019-console-settings-va-don-audit-006/issue.md) |
+| **Ngày báo** | 2026-10-25 |
 | **Môi trường** | local (máy dev có nhiều Postgres); nhánh code áp cho URL của mọi môi trường |
 | **Người nhận** | @HiTranquility |
 | **Hạn** | — |
