@@ -161,10 +161,13 @@ export function SettingsPage() {
     setSavedPolicy(true);
   };
 
-  const handleEngine = (action: 'warmup' | 'unload') => {
+  const handleEngine = (action: 'warmup' | 'unload' | 'reload_llm') => {
     setEngineMsg(false);
     engineAction.mutate(action, {
-      onSuccess: () => setEngineMsg(true),
+      onSuccess: () => {
+        setEngineMsg(true);
+        void settingsQuery.refetch();
+      },
     });
   };
 
@@ -488,13 +491,37 @@ export function SettingsPage() {
                 <label className={styles.fieldLabel} htmlFor="llm-model-input">
                   {s.llmModelLabel}
                 </label>
+                {comp?.detected_models && comp.detected_models.length > 0 && (
+                  <select
+                    className={styles.selectInput}
+                    style={{ marginBottom: '8px' }}
+                    value={comp.detected_models.some((m) => m.name === llmModel) ? llmModel : '__custom__'}
+                    onChange={(e) => {
+                      if (e.target.value !== '__custom__') {
+                        setLlmModel(e.target.value);
+                      }
+                    }}
+                    aria-label={s.selectDetectedModel}
+                  >
+                    <option value="" disabled>{s.selectDetectedModel}</option>
+                    {comp.detected_models.map((m) => (
+                      <option key={m.name} value={m.name}>
+                        {m.label}
+                      </option>
+                    ))}
+                    <option value="__custom__">{s.customModelOption}</option>
+                  </select>
+                )}
                 <input
                   id="llm-model-input"
                   type="text"
                   className={styles.selectInput}
                   value={llmModel}
-                  onChange={(e) => setLlmModel(e.target.value)}
-                  placeholder="vd: qwen2.5:0.5b, qwen3:4b, gpt-4o-mini"
+                  onChange={(e) => {
+                    const sanitized = e.target.value.replace(/\s+/g, '-');
+                    setLlmModel(sanitized);
+                  }}
+                  placeholder="vd: Qwen3.5-4B-Q4_K_M, qwen2.5:3b, gpt-4o-mini"
                 />
                 <p className={styles.fieldHint}>
                   {s.llmModelRunning} <strong className={styles.mono}>{comp?.llm_model || DASH}</strong>
@@ -574,7 +601,11 @@ export function SettingsPage() {
               <Button type="submit" variant="primary" loading={updateCompute.isPending && !updateCompute.variables?.preset} disabled={updateCompute.isPending}>
                 {s.saveComputeBtn}
               </Button>
-              {savedCompute && <span className={styles.okBanner}>{s.savedComputeMsg}</span>}
+              {savedCompute && (
+                <span className={styles.okBanner}>
+                  {llmProvider === 'local' ? s.savedComputeWithReloadMsg : s.savedComputeMsg}
+                </span>
+              )}
             </div>
           </form>
         </div>

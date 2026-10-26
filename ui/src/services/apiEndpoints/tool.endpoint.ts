@@ -104,7 +104,7 @@ export function updatePolicySettings(payload: Partial<PolicySettings> & { reason
   return apiClient.postOne<RuntimeSettings>(TOOL_ENDPOINTS.SETTINGS_POLICY, payload);
 }
 
-export function triggerEngineAction(action: 'warmup' | 'unload'): Promise<RuntimeSettings> {
+export function triggerEngineAction(action: 'warmup' | 'unload' | 'reload_llm'): Promise<RuntimeSettings> {
   return apiClient.postOne<RuntimeSettings>(TOOL_ENDPOINTS.ENGINE_ACTION, { action });
 }
 

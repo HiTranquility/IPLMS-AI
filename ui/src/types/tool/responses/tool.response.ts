@@ -56,6 +56,13 @@ export interface HardwareTelemetry {
   vram_free_mb: number | null;
 }
 
+export interface DetectedModelItem {
+  name: string;
+  provider: string;
+  source: string;
+  label: string;
+}
+
 export interface ComputeSettings {
   profile: 'safe_4gb' | 'cpu_eco' | 'gpu_full' | 'custom';
   vision_device: string;
@@ -68,6 +75,7 @@ export interface ComputeSettings {
   local_llm_ctx_size: number;
   local_llm_threads: number;
   local_llm_parallel_slots: number;
+  detected_models?: DetectedModelItem[];
 }
 
 export interface PolicySettings {
