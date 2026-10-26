@@ -10,7 +10,7 @@ describe('request', () => {
     const [write, read] = calls;
     expect((write.init?.headers as Record<string, string>)['X-Console-Request']).toBe('1');
     expect(write.init?.credentials).toBe('same-origin');
-    expect(write.url).toBe('/console/api/members/m/roles/ai_lead');
+    expect(write.url).toBe('/api/members/m/roles/ai_lead');
     expect((read.init?.headers as Record<string, string>)['X-Console-Request']).toBeUndefined();
   });
 

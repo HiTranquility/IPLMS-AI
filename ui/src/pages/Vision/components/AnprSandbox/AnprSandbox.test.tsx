@@ -53,7 +53,7 @@ describe('AnprSandbox Component', () => {
     await user.click(screen.getByRole('button', { name: /Thực Hiện Nhận Diện/ }));
 
     await waitFor(() => expect(screen.getByText('30K-111.22')).toBeTruthy());
-    expect(calls.some((c) => c.url === '/console/api/tools/anpr/recognize')).toBe(true);
+    expect(calls.some((c) => c.url === '/api/tools/anpr/recognize')).toBe(true);
     expect(screen.getByText('Độ tin cậy:').nextElementSibling?.textContent).toBe('—');
   });
 

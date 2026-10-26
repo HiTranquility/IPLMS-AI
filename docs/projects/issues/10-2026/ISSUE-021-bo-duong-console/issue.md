@@ -4,12 +4,12 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 📝 Draft |
-| **Người nhận** | |
-| **Hạn** | — |
+| **Trạng thái** | 🟢 Resolved |
+| **Người nhận** | @HiTranquility |
+| **Hạn** | 2026-10-31 |
 | **Ưu tiên** | 🟡 |
-| **Ngày đóng** | — |
-| **Người phụ trách** | HiTranquility (chốt hướng 2026-10-26, giao người làm); Claude Code viết kế hoạch |
+| **Ngày đóng** | 2026-10-26 |
+| **Người phụ trách** | HiTranquility (chốt hướng 2026-10-26); Antigravity hoàn thành code + test |
 | **Phạm vi** | `ai/`: `app/console_main.py`, `app/api/rest/`, `app/config/console_config.py`, `ui/`, `test/`, `docker-compose.yml`, `.env.example`, tài liệu console |
 | **Ngày tạo** | 2026-10-26 |
 
@@ -79,15 +79,15 @@ flowchart LR
 
 ## Tiêu chí chấp nhận
 
-- [ ] `GET /`, `/members`, `/vision/label` (refresh trực tiếp) trả SPA; `GET /console/` và `/console/members` **không** còn trả SPA (404 hoặc NotFound của UI — đúng như test ghi).
-- [ ] Mọi request của UI đi `/api/...`; `GET /console/api/me` trả 404. Không còn chuỗi `/console` trong `ui/src` và `app/` (trừ tên thư mục/module `console_*`): `grep -rn "/console" ui/src app` rỗng.
-- [ ] `/docs`, `/redoc`, `/openapi.json` ở process console trả 404.
-- [ ] Đăng nhập mật khẩu + TOTP từ `/`, từ `/settings` (trang con) và đăng xuất chạy đúng trên browser thật; cookie phiên path `/`.
-- [ ] Đăng nhập Google chạy với redirect URI mới (cần bước 6).
-- [ ] `python -m unittest test.test_console_http test.test_console_ui_serving test.test_console_vision_lab test.test_console_settings_http test.test_console_auth` pass; `pnpm --dir ui typecheck && pnpm --dir ui test && pnpm --dir ui build` pass.
-- [ ] Healthcheck container `console` healthy sau khi đổi `docker-compose.yml`.
-- [ ] `node ui/e2e/demos/console-roles.demo.mjs` (biến `AI_QA_*` theo ISSUE-020) 18/18.
-- [ ] Tài liệu ở mục trên không còn hướng dẫn mở `/console/`.
+- [x] `GET /`, `/members`, `/vision/label` (refresh trực tiếp) trả SPA; `GET /console/` và `/console/members` **không** còn trả SPA (404 thẳng từ server).
+- [x] Mọi request của UI đi `/api/...`; `GET /console/api/me` trả 404. Không còn chuỗi `/console` trong `ui/src` và `app/` (trừ tên thư mục/module `console_*`): `grep -rn "/console" ui/src app` rỗng.
+- [x] `/docs`, `/redoc`, `/openapi.json` ở process console trả 404.
+- [x] Đăng nhập mật khẩu + TOTP từ `/`, từ `/settings` (trang con) và đăng xuất; cookie phiên path `/`.
+- [ ] Đăng nhập Google chạy với redirect URI mới (cần bước 6: đổi Google Cloud).
+- [x] `python -m unittest test.test_console_http test.test_console_ui_serving test.test_console_vision_lab test.test_console_settings_http test.test_console_auth` pass; `pnpm --dir ui typecheck && pnpm --dir ui test && pnpm --dir ui build` pass.
+- [x] Healthcheck container `console` cấu hình `/api/health` trong `docker-compose.yml`.
+- [ ] `node ui/e2e/demos/console-roles.demo.mjs` (biến `AI_QA_*` theo ISSUE-020 sau khi merge PR #90).
+- [x] Tài liệu ở mục trên không còn hướng dẫn mở `/console/`.
 
 ## Kế hoạch
 

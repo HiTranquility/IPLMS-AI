@@ -298,20 +298,20 @@ class VisionLabFlowTest(unittest.TestCase):
                 patch.object(console_auth_service, "_vault", vault), \
                 patch.object(console_vision_lab_service, "store", self.store):
             c = TestClient(app)
-            c.post("/console/api/auth/password", json={"email": "lead-http@x.vn", "password": "mật-khẩu-đủ-dài-123"}, headers=h)
+            c.post("/api/auth/password", json={"email": "lead-http@x.vn", "password": "mật-khẩu-đủ-dài-123"}, headers=h)
             totp = pyotp.TOTP(secret)
-            self.assertEqual(200, c.post("/console/api/auth/totp", json={"code": totp.now()}, headers=h).status_code)
-            url = f"/console/api/vision/snapshots/{golden['id']}/freeze"
+            self.assertEqual(200, c.post("/api/auth/totp", json={"code": totp.now()}, headers=h).status_code)
+            url = f"/api/vision/snapshots/{golden['id']}/freeze"
             r = c.post(url, json={"reason": "chốt golden"}, headers=h)
             self.assertEqual((401, "STEP_UP_REQUIRED"), (r.status_code, r.json()["code"]))
             # Mã vừa dùng không dùng lại được: lấy mã của bước thời gian kế tiếp.
             import time
             code = totp.at(time.time() + 30)
-            r = c.post("/console/api/auth/step-up", json={"code": code, "reason": "khoá golden"}, headers=h)
+            r = c.post("/api/auth/step-up", json={"code": code, "reason": "khoá golden"}, headers=h)
             self.assertEqual(200, r.status_code, r.text)
             self.assertEqual(200, c.post(url, json={"reason": "chốt golden"}, headers=h).status_code)
             # AI Lead có quyền duyệt nhãn nên xem được ảnh cắt; trả đúng kiểu ảnh, không cache.
-            r = c.get(f"/console/api/vision/samples/{capture_id}/crop")
+            r = c.get(f"/api/vision/samples/{capture_id}/crop")
             self.assertEqual((200, "image/jpeg", "no-store"),
                              (r.status_code, r.headers["content-type"], r.headers["cache-control"]))
 

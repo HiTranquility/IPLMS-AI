@@ -66,17 +66,14 @@ async def _security_headers(request: Request, call_next):
     return response
 
 
-@app.get("/console/api/health", include_in_schema=False)
 @app.get("/api/health", include_in_schema=False)
 def health() -> dict:
     return {"status": "ok"}
 
 
-app.include_router(console_router, prefix="/console/api")
 app.include_router(console_router, prefix="/api")
 
 
-@app.get("/console/api/{_path:path}", include_in_schema=False)
 @app.get("/api/{_path:path}", include_in_schema=False)
 def api_not_found(_path: str) -> JSONResponse:
     # Đường API sai không được rơi xuống SPA và trả HTML 200.
@@ -84,9 +81,7 @@ def api_not_found(_path: str) -> JSONResponse:
 
 
 @app.get("/assets/{path:path}", include_in_schema=False)
-@app.get("/console/assets/{path:path}", include_in_schema=False)
-@app.get("/{_prefix:path}/assets/{path:path}", include_in_schema=False)
-def assets(path: str, _prefix: str = ""):
+def assets(path: str):
     candidate = (UI_DIST / "assets" / path).resolve()
     if candidate.is_file() and candidate.is_relative_to(UI_DIST / "assets"):
         return FileResponse(candidate)
@@ -99,18 +94,18 @@ def assets(path: str, _prefix: str = ""):
 @app.get("/redoc", include_in_schema=False)
 @app.get("/redoc/{_path:path}", include_in_schema=False)
 @app.get("/openapi.json", include_in_schema=False)
-@app.get("/console/docs", include_in_schema=False)
-@app.get("/console/docs/{_path:path}", include_in_schema=False)
-@app.get("/console/redoc", include_in_schema=False)
-@app.get("/console/redoc/{_path:path}", include_in_schema=False)
-@app.get("/console/openapi.json", include_in_schema=False)
 def disabled_docs(_path: str = ""):
     return Response(status_code=404)
 
 
-@app.get("/", include_in_schema=False)
 @app.get("/console", include_in_schema=False)
-@app.get("/console/{path:path}", include_in_schema=False)
+@app.get("/console/{_path:path}", include_in_schema=False)
+def console_deprecated(_path: str = ""):
+    # Bỏ hẳn đường /console (ISSUE-021), trả 404 không phục vụ SPA
+    return Response(status_code=404)
+
+
+@app.get("/", include_in_schema=False)
 @app.get("/{path:path}", include_in_schema=False)
 def ui(path: str = ""):
     """Phục vụ SPA: file tĩnh có thật thì trả file, còn lại trả index.html (route phía client)."""
