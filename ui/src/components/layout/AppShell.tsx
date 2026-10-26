@@ -155,6 +155,7 @@ export function AppShell({ me, children }: AppShellProps) {
       )}
       <aside
         id="console-rail"
+        aria-label={t.shell.railLabel}
         ref={railRef}
         className={[
           styles.rail,

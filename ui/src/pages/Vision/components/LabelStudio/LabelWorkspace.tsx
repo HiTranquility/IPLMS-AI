@@ -324,11 +324,12 @@ export function LabelWorkspace({ sample, remaining, onLabeled, onSkip }: LabelWo
                 type="button"
                 className={styles.skipButton}
                 onClick={onSkip}
+                aria-keyshortcuts="S"
                 title={w.skipTitle}
               >
                 <SkipForward size={12} aria-hidden />
                 <span>{w.skipSample}</span>
-                <kbd className={styles.kbd}>S</kbd>
+                <kbd className={styles.kbd} aria-hidden>S</kbd>
               </button>
             )}
             <Badge tone="neutral">{w.left(remaining)}</Badge>
@@ -403,30 +404,33 @@ export function LabelWorkspace({ sample, remaining, onLabeled, onSkip }: LabelWo
           <Button
             variant="primary"
             onClick={() => send('CORRECT')}
+            aria-keyshortcuts="1"
             loading={add.isPending && add.variables?.verdict === 'CORRECT'}
             title={w.correctTitle}
           >
             <Check size={14} aria-hidden />
-            {w.correct100} <kbd className={styles.kbd}>1</kbd>
+            {w.correct100} <kbd className={styles.kbd} aria-hidden>1</kbd>
           </Button>
 
           <Button
             variant="secondary"
             onClick={() => setCorrecting((c) => !c)}
+            aria-keyshortcuts="2"
             title={w.fixTitle}
           >
             <Edit3 size={14} aria-hidden />
-            {t.label.fix} <kbd className={styles.kbd}>2</kbd>
+            {t.label.fix} <kbd className={styles.kbd} aria-hidden>2</kbd>
           </Button>
 
           <Button
             variant="danger"
             onClick={() => send('UNUSABLE')}
+            aria-keyshortcuts="3"
             loading={add.isPending && add.variables?.verdict === 'UNUSABLE'}
             title={w.unusableTitle}
           >
             <AlertTriangle size={14} aria-hidden />
-            {t.label.unusable} <kbd className={styles.kbd}>3</kbd>
+            {t.label.unusable} <kbd className={styles.kbd} aria-hidden>3</kbd>
           </Button>
         </div>
 

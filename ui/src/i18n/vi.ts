@@ -65,6 +65,7 @@ export const vi = {
   shell: {
     scope: 'Nội bộ · IPLMS',
     navLabel: 'Mục chính',
+    railLabel: 'Thanh điều hướng console',
     noRole: 'Chưa có vai trò nào. Nhờ quản trị console cấp vai trò.',
     rolesNone: 'chưa có vai trò',
     toLight: 'Chuyển giao diện sáng',
@@ -1022,6 +1023,7 @@ export const vi = {
     desc: 'Quyền console nằm ở DB riêng của console. Admin/Moderator của platform không tự có vai trò nào ở đây.',
     status: { INVITED: 'Đã mời', ACTIVE: 'Đang dùng', DISABLED: 'Đã khoá' },
     listLabel: 'Danh sách thành viên',
+    sideLabel: 'Mời và phân vai trò',
     member: 'Thành viên',
     role: 'Vai trò',
     invitedAt: 'Ngày mời',

@@ -34,6 +34,7 @@ import { DASH, fmtDateTime } from '@/utils/format';
 import styles from './SettingsPage.module.css';
 
 type SettingsTab = 'compute' | 'policy' | 'security';
+const TABS: SettingsTab[] = ['compute', 'policy', 'security'];
 
 export function SettingsPage() {
   const { t } = useI18n();
@@ -194,11 +195,25 @@ export function SettingsPage() {
       />
 
       {/* Thanh chuyển Tab */}
-      <div className={styles.tabsBar} role="tablist">
+      <div
+        className={styles.tabsBar}
+        role="tablist"
+        onKeyDown={(e) => {
+          // WAI-ARIA tabs: mũi tên trái/phải chuyển tab và chuyển focus theo.
+          if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+          const step = e.key === 'ArrowRight' ? 1 : -1;
+          const next = TABS[(TABS.indexOf(tab) + step + TABS.length) % TABS.length];
+          setTab(next);
+          document.getElementById(`settings-tab-${next}`)?.focus();
+        }}
+      >
         <button
           type="button"
           role="tab"
+          id="settings-tab-compute"
+          aria-controls="settings-panel-compute"
           aria-selected={tab === 'compute'}
+          tabIndex={tab === 'compute' ? 0 : -1}
           className={`${styles.tabBtn} ${tab === 'compute' ? styles.tabBtnActive : ''}`}
           onClick={() => setTab('compute')}
         >
@@ -208,7 +223,10 @@ export function SettingsPage() {
         <button
           type="button"
           role="tab"
+          id="settings-tab-policy"
+          aria-controls="settings-panel-policy"
           aria-selected={tab === 'policy'}
+          tabIndex={tab === 'policy' ? 0 : -1}
           className={`${styles.tabBtn} ${tab === 'policy' ? styles.tabBtnActive : ''}`}
           onClick={() => setTab('policy')}
         >
@@ -218,7 +236,10 @@ export function SettingsPage() {
         <button
           type="button"
           role="tab"
+          id="settings-tab-security"
+          aria-controls="settings-panel-security"
           aria-selected={tab === 'security'}
+          tabIndex={tab === 'security' ? 0 : -1}
           className={`${styles.tabBtn} ${tab === 'security' ? styles.tabBtnActive : ''}`}
           onClick={() => setTab('security')}
         >
@@ -234,7 +255,7 @@ export function SettingsPage() {
 
       {/* TAB 1: PHẦN CỨNG GPU / CPU / VRAM & ENGINE */}
       {tab === 'compute' && data && (
-        <>
+        <div role="tabpanel" id="settings-panel-compute" aria-labelledby="settings-tab-compute">
           <section className={styles.sectionCard}>
             <div className={styles.sectionHeader}>
               <div>
@@ -556,11 +577,12 @@ export function SettingsPage() {
               {savedCompute && <span className={styles.okBanner}>{s.savedComputeMsg}</span>}
             </div>
           </form>
-        </>
+        </div>
       )}
 
       {/* TAB 2: NGƯỠNG AI, RAG & CHÍNH SÁCH LƯU TRỮ */}
       {tab === 'policy' && data && (
+        <div role="tabpanel" id="settings-panel-policy" aria-labelledby="settings-tab-policy">
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div>
@@ -715,11 +737,12 @@ export function SettingsPage() {
             {savedPolicy && <span className={styles.okBanner}>{s.savedPolicyMsg}</span>}
           </div>
         </section>
+        </div>
       )}
 
       {/* TAB 3: PHIÊN ĐĂNG NHẬP ĐANG HOẠT ĐỘNG & BỘ EVAL HỒI QUY */}
       {tab === 'security' && (
-        <>
+        <div role="tabpanel" id="settings-panel-security" aria-labelledby="settings-tab-security">
           <section className={styles.sectionCard}>
             <div className={styles.sectionHeader}>
               <div>
@@ -738,7 +761,7 @@ export function SettingsPage() {
 
             {sessionsQuery.data && (
               <div className={styles.tableWrap}>
-                <table className={styles.table}>
+                <table className={styles.table} aria-label={s.sessionsTitle}>
                   <thead>
                     <tr>
                       <th>{s.colSessionUser}</th>
@@ -811,7 +834,7 @@ export function SettingsPage() {
 
             {evalCandidatesQuery.data && evalCandidatesQuery.data.length > 0 && (
               <div className={styles.tableWrap}>
-                <table className={styles.table}>
+                <table className={styles.table} aria-label={s.evalCandidatesTitle}>
                   <thead>
                     <tr>
                       <th>{s.colEvalQuery}</th>
@@ -840,7 +863,7 @@ export function SettingsPage() {
               </div>
             )}
           </section>
-        </>
+        </div>
       )}
     </div>
   );

@@ -79,6 +79,7 @@ export const en: Messages = {
   shell: {
     scope: 'Internal · IPLMS',
     navLabel: 'Main',
+    railLabel: 'Console sidebar',
     noRole: 'You have no role yet. Ask a console admin to grant one.',
     rolesNone: 'no role',
     toLight: 'Switch to light theme',
@@ -1043,6 +1044,7 @@ export const en: Messages = {
     desc: 'Console permissions live in the console’s own DB. Platform Admin/Moderator accounts get no role here automatically.',
     status: { INVITED: 'Invited', ACTIVE: 'Active', DISABLED: 'Disabled' },
     listLabel: 'Member list',
+    sideLabel: 'Invite and assign roles',
     member: 'Member',
     role: 'Role',
     invitedAt: 'Invited on',

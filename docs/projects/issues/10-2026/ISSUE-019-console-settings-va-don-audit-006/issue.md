@@ -30,7 +30,7 @@ Hợp thức hoá đợt WIP console ngày 2026-10-25, vốn đã sửa khoảng
 | Việc | Người nhận | Hạn | Ưu tiên | Trạng thái | Ghi chú |
 |---|---|---|---|---|---|
 | Soát PR ISSUE-019: soát lại chéo audit-6 và chạy convention audit cho phần UI của review-2, kiểm UI/UX theo quy trình (375/1024px × sáng/tối, a11y, VI/EN) và đối chiếu đủ conventions (AI_CONVENTIONS, `ui/DESIGN.md`, `check_diff`) | Dương | — | 🟠 | 📝 Đã giao — chưa bắt đầu | Chủ dự án giao 2026-10-26. Ghi kết quả vào `review/audit-6.md`; tài khoản test console tạo theo review-2 |
-| Sửa `docs/projects/KHOA_MODULE_GUIDE.md` cho khớp việc AI không còn tự bật llama-server: `:35`, `:160`, `:240`, `:289-292`, `:535`; cùng `AI_GUIDE.md:315`, `AI_USAGE.md:34`, `:79`, `:102`. Chốt xoá hay giữ `app/infra/llm/llama_server_manager.py` (không còn chỗ gọi) | Khoa | — | 🟡 | 📝 Đã giao — chưa bắt đầu | Từ A-41; `KHOA_MODULE_GUIDE.md` đang có thay đổi chưa commit của phiên khác, sửa sau khi file đó được commit |
+| Sửa `AI_GUIDE.md:315` và `AI_USAGE.md:34`, `:79`, `:102` cho khớp việc AI không còn tự bật llama-server (A-41); cập nhật sổ tay cá nhân `KHOA_MODULE_GUIDE.md` (đã ra khỏi repo từ PR #75: `:35`, `:160`, `:240`, `:289-292`, `:535`); chốt xoá hay giữ `app/infra/llm/llama_server_manager.py` (không còn chỗ gọi) | Khoa | — | 🟡 | 📝 Đã giao — chưa bắt đầu | Từ A-41 |
 
 ## Tiêu chí chấp nhận
 
@@ -39,7 +39,7 @@ Hợp thức hoá đợt WIP console ngày 2026-10-25, vốn đã sửa khoảng
 - [x] Override runtime tách thành `app/config/runtime_override_config.py`, có kẹp biên; file hỏng thì bỏ cả file; test không ghi file thật.
 - [x] A-39 (chủ dự án chọn B): mặc định `llm_provider=ollama`, DESIGN.md / `.env.example` / README Copilot khớp code.
 - [x] `python -m unittest discover -s test`: 554 OK, 34 skip · `npx tsc --noEmit` PASS · vitest 93/93 PASS · `check_diff.py` 0 FAIL.
-- [ ] Kiểm browser các màn sau đăng nhập (Settings với luồng TOTP, Copilot Lab, LabelStudio, Forecast) ở 375/1024 px × sáng/tối. **NOT RUN:** cần tài khoản test có TOTP.
+- [x] Kiểm browser các màn sau đăng nhập (Settings với luồng TOTP, Copilot Lab, LabelStudio, Forecast) ở 375/1024 px × sáng/tối: [review-2](review/review-2.md), 6 lỗi UI đã sửa, [audit-7](review/audit-7.md) ✅. REA sau đăng nhập: 12 màn, 0 lỗi console/network/tên; 4 điểm a11y (BUG-07…10) đã sửa.
 - [x] P2 còn mở được sửa hoặc ghi `Deferred` kèm hồ sơ. A-11/12, A-25, A-40, A-53 đã Verified ở [audit-4](review/audit-4.md). Ngày 2026-10-26 sửa thêm: A-7 (seed bỏ số metrics bịa và bỏ promote, gắn `[DEMO]`, `seed_console_demo.py:552-558`), A-37 (`copilot_lab_service.py`: che PII bằng `redact`, cắt theo hạn lưu telemetry, audit không chép câu hỏi), A-41 (`llm_factory.py:161-165`: dò llama-server qua `asyncio.to_thread`). A-23 chuyển sang [bug-029](../../../bugs/bug-029-db-fallback-tu-tao-database-tren-postgres-khac/bug.md). Kiểm: unittest 569 OK, 34 skip · `check_diff` 0 FAIL. Auditor soát delta: [audit-6](review/audit-6.md) ✅ (mở 4 P3: A-70…A-73). A-7 chưa chạy script trên DB thật.
 - [x] A-22: chủ dự án chọn B (2026-10-26) → [ADR-0001](../../adrs/10-2026/0001-fallback-khong-pgvector-chi-cho-dev.md). Fallback chỉ chạy khi `AI_EMBEDDING_ALLOW_NO_PGVECTOR=true`, mặc định tắt (`pgvector_client.py`, `embedding_config.py`); test `test/test_pgvector_fallback_flag.py` 3/3.
 
