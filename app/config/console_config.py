@@ -20,6 +20,8 @@ class ConsoleConfig(BaseConfig):
     # process nghe 0.0.0.0 nhưng compose chỉ publish ra 127.0.0.1.
     bind_host: str = "127.0.0.1"
     port: int = 8090
+    # Reloader theo dõi file chỉ cho máy dev, bật rõ bằng AI_CONSOLE_RELOAD=true.
+    reload: bool = False
 
     # OAuth client "Web application" tạo trên Google Cloud Console.
     google_client_id: str = ""

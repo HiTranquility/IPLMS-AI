@@ -37,3 +37,8 @@ class EmbeddingConfig(BaseConfig):
 
     # Số lần thử lại khi API lỗi tạm thời (429, 5xx).
     max_retries: int = 3
+
+    # ai ADR-0001: Postgres không có pgvector thì chỉ chạy được khi bật cờ này
+    # (cột DOUBLE PRECISION[] + quét toàn bảng). Chỉ dùng cho dev máy không có
+    # container pgvector. [NEVER] bật ở production.
+    allow_no_pgvector: bool = False

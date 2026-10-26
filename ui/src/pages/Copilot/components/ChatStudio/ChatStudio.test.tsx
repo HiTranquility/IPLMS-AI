@@ -193,4 +193,49 @@ describe('ChatStudio Component', () => {
     await waitFor(() => expect(screen.getByText(/Không nhận được câu trả lời: Dữ liệu gửi lên chưa hợp lệ\./)).toBeTruthy());
     expect(screen.queryByText('Đã xử lý yêu cầu thành công.')).toBeNull();
   });
+
+  it('thanh ngữ cảnh bãi xe cập nhật parking_lot_id trong hợp đồng gửi SSE', async () => {
+    const sse =
+      'data: {"token": "Đã nhận diện", "is_finished": false, "sources": []}\n\n' +
+      'data: {"token": "", "is_finished": true, "sources": [], "confidence": 0.9, "turn_id": "t-lot"}\n\n';
+    const calls = mockStream({ status: 200, body: sse });
+    const user = userEvent.setup();
+    renderWithProviders(<ChatStudio />);
+
+    const lotSelect = screen.getByLabelText('Ngữ cảnh bãi xe');
+    await user.selectOptions(lotSelect, 'lot_central_01');
+
+    await user.click(screen.getAllByText('Biểu phí giữ xe máy qua đêm và ngày lễ')[0]);
+    await user.click(screen.getByRole('button', { name: 'Gửi' }));
+
+    await waitFor(() => expect(calls.some((c) => c.url.endsWith('/tools/copilot/stream'))).toBe(true));
+    const call = calls.find((c) => c.url.endsWith('/tools/copilot/stream'))!;
+    const body = JSON.parse(String(call.init?.body));
+    expect(body.parking_lot_id).toBe('lot_central_01');
+  });
+
+  it('nút thử lại (regenerate) gọi lại stream với câu hỏi trước đó', async () => {
+    let streamCount = 0;
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/tools/copilot/stream')) {
+        streamCount += 1;
+        const sse = `data: {"token": "Lần ${streamCount}", "is_finished": true, "sources": [], "turn_id": "t-${streamCount}"}\n\n`;
+        return new Response(sse, { status: 200 });
+      }
+      return new Response(JSON.stringify({ success: false }), { status: 404 });
+    });
+
+    const user = userEvent.setup();
+    renderWithProviders(<ChatStudio />);
+    await ask(user);
+
+    await waitFor(() => expect(screen.getByText('Lần 1')).toBeTruthy());
+
+    const regenBtn = screen.getByRole('button', { name: 'Thử lại câu trả lời' });
+    await user.click(regenBtn);
+
+    await waitFor(() => expect(screen.getByText('Lần 2')).toBeTruthy());
+    expect(streamCount).toBe(2);
+  });
 });

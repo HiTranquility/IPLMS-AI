@@ -89,7 +89,7 @@ export function OverviewPage() {
           {/* Bảng phân tích chi tiết theo ngày */}
           <section className={styles.tableSection} aria-label={t.overview.byDay}>
             <div className={styles.tableHeader}>
-              <h3 className={styles.tableTitle}>{t.overview.byDay}</h3>
+              <h2 className={styles.tableTitle}>{t.overview.byDay}</h2>
             </div>
 
             {u.days.length === 0 ? (

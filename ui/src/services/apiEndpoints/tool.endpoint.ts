@@ -1,5 +1,14 @@
 import { apiClient } from '../apiClient';
-import type { CopilotAnswer, IngestResult, SeedDocument, SystemCheck } from '@/types/tool';
+import type {
+  ActiveSession,
+  ComputeSettings,
+  CopilotAnswer,
+  IngestResult,
+  PolicySettings,
+  RuntimeSettings,
+  SeedDocument,
+  SystemCheck,
+} from '@/types/tool';
 
 export const TOOL_ENDPOINTS = {
   SYSTEM_CHECK: '/tools/system',
@@ -9,6 +18,12 @@ export const TOOL_ENDPOINTS = {
   INGEST_KNOWLEDGE: '/tools/knowledge',
   KNOWLEDGE_DOCUMENTS: '/tools/knowledge/documents',
   DELETE_KNOWLEDGE_DOCUMENT: (id: string) => `/tools/knowledge/documents/${id}`,
+  SETTINGS: '/tools/settings',
+  SETTINGS_COMPUTE: '/tools/settings/compute',
+  SETTINGS_POLICY: '/tools/settings/policy',
+  ENGINE_ACTION: '/tools/engines/action',
+  SESSIONS: '/tools/sessions',
+  REVOKE_SESSION: (id: string) => `/tools/sessions/${id}/revoke`,
 } as const;
 
 export const getSystemCheck = (): Promise<SystemCheck> =>
@@ -38,10 +53,48 @@ export const deleteKnowledgeDocument = (
   );
 };
 
+export function getRuntimeSettings(): Promise<RuntimeSettings> {
+  return apiClient.getOne<RuntimeSettings>(TOOL_ENDPOINTS.SETTINGS);
+}
+
+export function updateComputeSettings(
+  payload: Partial<ComputeSettings> & { preset?: 'safe_4gb' | 'cpu_eco' | 'gpu_full' },
+): Promise<RuntimeSettings> {
+  return apiClient.postOne<RuntimeSettings>(TOOL_ENDPOINTS.SETTINGS_COMPUTE, payload);
+}
+
+export function updatePolicySettings(payload: Partial<PolicySettings> & { reason: string }): Promise<RuntimeSettings> {
+  return apiClient.postOne<RuntimeSettings>(TOOL_ENDPOINTS.SETTINGS_POLICY, payload);
+}
+
+export function triggerEngineAction(action: 'warmup' | 'unload'): Promise<RuntimeSettings> {
+  return apiClient.postOne<RuntimeSettings>(TOOL_ENDPOINTS.ENGINE_ACTION, { action });
+}
+
+export function getActiveSessions(): Promise<ActiveSession[]> {
+  return apiClient.get<ActiveSession>(TOOL_ENDPOINTS.SESSIONS);
+}
+
+export function revokeActiveSession(
+  sessionId: string,
+  reason = '',
+): Promise<{ session_id: string; revoked: boolean }> {
+  return apiClient.postOne<{ session_id: string; revoked: boolean }>(
+    TOOL_ENDPOINTS.REVOKE_SESSION(sessionId),
+    { reason },
+  );
+}
+
 export const toolApi = {
   systemCheck: getSystemCheck,
   tryCopilot,
   ingestDraft,
   getKnowledgeDocuments,
   deleteKnowledgeDocument,
+  getRuntimeSettings,
+  updateComputeSettings,
+  updatePolicySettings,
+  triggerEngineAction,
+  getActiveSessions,
+  revokeActiveSession,
 };

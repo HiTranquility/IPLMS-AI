@@ -11,6 +11,7 @@ from typing import Any, Callable
 from uuid import uuid4
 
 from app.config import get_config
+from app.infra.database.db_connection import connect_with_fallback
 from app.core.exceptions import ConsoleAuthError, ConsoleStoreError
 
 
@@ -47,7 +48,6 @@ class ConsoleStore:
         if not self.db_url:
             raise ConsoleStoreError("Thiếu AI_CONSOLE_DATABASE_URL cho AI Console.")
         try:
-            from app.infra.database.db_connection import connect_with_fallback
             connection, self.db_url = connect_with_fallback(self.db_url, connect_timeout=3)
             try:
                 with connection:
@@ -550,6 +550,60 @@ class ConsoleStore:
             )
             _audit(cur, None, "system.bootstrap_admin", "member", member_id, "tạo bằng CLI trên AI host")
             return member_id
+
+        return await self._run(work)
+
+
+    async def list_active_sessions(self, member_id: str, include_all: bool = False) -> list[dict[str, Any]]:
+        """Liệt kê các phiên đăng nhập đang hoạt động (chưa bị thu hồi)."""
+        def work(cur):
+            where = "WHERE s.revoked_at IS NULL" if include_all else "WHERE s.revoked_at IS NULL AND s.member_id = %s"
+            params = () if include_all else (member_id,)
+            cur.execute(
+                f"""SELECT s.id::text, s.member_id::text, m.email, m.display_name,
+                           s.created_at, s.last_seen_at, s.mfa_at, s.step_up_at
+                    FROM console_session s
+                    JOIN console_member m ON m.id = s.member_id
+                    {where}
+                    ORDER BY s.last_seen_at DESC, s.created_at DESC
+                    LIMIT 50""",
+                params,
+            )
+            return [
+                {
+                    "session_id": r[0],
+                    "member_id": r[1],
+                    "email": r[2],
+                    "display_name": r[3],
+                    "created_at": r[4].isoformat() if r[4] else None,
+                    "last_seen_at": r[5].isoformat() if r[5] else None,
+                    "mfa_verified": r[6] is not None,
+                    "step_up_at": r[7].isoformat() if r[7] else None,
+                }
+                for r in cur.fetchall()
+            ]
+
+        return await self._run(work)
+
+    async def revoke_target_session(
+        self, session_id: str, actor_id: str, allow_any_member: bool = False, reason: str = "thu hồi phiên từ cài đặt"
+    ) -> bool:
+        """Thu hồi một phiên cụ thể (của chính mình, hoặc của bất kỳ ai nếu là admin/lead)."""
+        def work(cur):
+            if allow_any_member:
+                cur.execute(
+                    "UPDATE console_session SET revoked_at = NOW() WHERE id = %s AND revoked_at IS NULL",
+                    (session_id,),
+                )
+            else:
+                cur.execute(
+                    "UPDATE console_session SET revoked_at = NOW() WHERE id = %s AND member_id = %s AND revoked_at IS NULL",
+                    (session_id, actor_id),
+                )
+            revoked = cur.rowcount > 0
+            if revoked:
+                _audit(cur, actor_id, "session.revoke", "session", session_id, reason)
+            return revoked
 
         return await self._run(work)
 

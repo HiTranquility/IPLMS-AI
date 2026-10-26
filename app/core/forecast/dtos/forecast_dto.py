@@ -1,10 +1,25 @@
 """DTO Domain Forecast — dự báo lấp đầy và đề xuất giá động."""
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
 from app.core.constants import DEFAULT_FORECAST_HOURS
 from app.core.enums import OccupancyStatus
+
+# Biểu đồ phân bổ tỷ lệ lấp đầy chuẩn hóa theo giờ trong ngày cho ngày làm việc (0-4) và cuối tuần (5-6)
+_WEEKDAY_HOURLY_BASELINES: Dict[int, float] = {
+    0: 18.0, 1: 15.0, 2: 12.0, 3: 10.0, 4: 12.0, 5: 20.0,
+    6: 38.0, 7: 68.0, 8: 86.0, 9: 89.0, 10: 84.0, 11: 78.0,
+    12: 74.0, 13: 79.0, 14: 83.0, 15: 85.0, 16: 87.0, 17: 91.0,
+    18: 93.0, 19: 88.0, 20: 76.0, 21: 58.0, 22: 40.0, 23: 25.0,
+}
+
+_WEEKEND_HOURLY_BASELINES: Dict[int, float] = {
+    0: 22.0, 1: 16.0, 2: 12.0, 3: 10.0, 4: 10.0, 5: 14.0,
+    6: 22.0, 7: 35.0, 8: 52.0, 9: 72.0, 10: 82.0, 11: 87.0,
+    12: 85.0, 13: 82.0, 14: 84.0, 15: 88.0, 16: 92.0, 17: 94.0,
+    18: 95.0, 19: 92.0, 20: 85.0, 21: 70.0, 22: 50.0, 23: 32.0,
+}
 
 
 class OccupancyForecastQuery(BaseModel):

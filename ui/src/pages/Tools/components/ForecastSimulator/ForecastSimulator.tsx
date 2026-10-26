@@ -1,16 +1,75 @@
 import { useId, useMemo, useState } from 'react';
 import {
   AlertTriangle,
+  Cpu,
+  Database,
   LineChart,
+  Play,
   Scale,
   ShieldAlert,
   Sliders,
+  Sparkles,
   X,
 } from 'lucide-react';
+import { apiClient } from '@/api/client';
 import { SimulatedBanner } from '@/components/common/Ui/feedback/SimulatedBanner';
 import { useI18n } from '@/i18n/I18nProvider';
-import { fmtInt } from '@/utils/format';
+import { DASH, fmtInt } from '@/utils/format';
+import { PARKING_LOTS, resolveLotLabel } from '@/constants/parkingLots';
 import styles from './ForecastSimulator.module.css';
+
+interface FeatureRow {
+  day_of_week: number;
+  hour_of_day: number;
+  is_weekend: number;
+  total_slots: number;
+  hour_sin: number;
+  hour_cos: number;
+  dow_sin: number;
+  dow_cos: number;
+  occupancy_pct: number;
+}
+
+interface PipelineSimulateResponse {
+  stage1_datalake: {
+    source_path: string;
+    is_fallback: boolean;
+    total_records: number;
+    area_ids: string[];
+    weekly_profile: Record<string, number>;
+  };
+  stage2_features: {
+    feature_names: string[];
+    total_samples: number;
+    prophet_points: number;
+    sample_rows: FeatureRow[];
+  };
+  stage3_inference: {
+    area_id: string;
+    day_of_week: number;
+    model_version: string;
+    is_fallback: boolean;
+    peak_hour: number;
+    peak_occupancy_pct: number;
+    recommended_surge_multiplier: number;
+    hourly_predictions: {
+      hour_of_day: number;
+      predicted_occupancy_pct: number;
+      estimated_free_spots: number;
+      surge_multiplier: number;
+      confidence: number;
+    }[];
+    surge_quote: {
+      area_id: string;
+      occupancy_pct?: number;
+      current_occupancy_pct?: number;
+      surge_multiplier: number;
+      effective_hourly_rate: number;
+      reason_code?: string;
+      reason?: string;
+    };
+  };
+}
 
 // Kịch bản lấp đầy minh hoạ theo giờ (0h–23h), KHÔNG phải dự báo: Forecast server chưa có
 // model (FeatureNotImplemented). UI gắn nhãn MÔ PHỎNG và ghi rõ trên biểu đồ (ai bug-018).
@@ -26,6 +85,14 @@ const LOT_OCCUPANCY_BASELINES: Record<string, number[]> = {
   lot_suburban_hub: [
     22, 16, 12, 10, 15, 30, 65, 92, 94, 85, 70, 62,
     60, 62, 65, 70, 82, 94, 96, 90, 75, 55, 38, 28,
+  ],
+  lot_central_01: [
+    15, 12, 10, 8, 12, 22, 45, 75, 88, 90, 85, 80,
+    78, 80, 82, 86, 88, 92, 94, 85, 70, 52, 35, 20,
+  ],
+  lot_west_gate: [
+    25, 18, 14, 10, 12, 28, 55, 85, 90, 88, 80, 75,
+    72, 75, 80, 84, 88, 90, 92, 84, 68, 50, 36, 26,
   ],
 };
 
@@ -58,15 +125,78 @@ export function ForecastSimulator() {
 
   // Simulation states
   const [lotId, setLotId] = useState<string>('lot_landmark_81');
+  const [dayOfWeek, setDayOfWeek] = useState<number>(4);
   const [capacity, setCapacity] = useState<number>(250);
   const [baseRate, setBaseRate] = useState<number>(35000);
   const [surgeThreshold, setSurgeThreshold] = useState<number>(85);
   const [multiplier, setMultiplier] = useState<number>(1.3);
   const [hoveredHour, setHoveredHour] = useState<number | null>(null);
   const [showSafetyModal, setShowSafetyModal] = useState<boolean>(false);
+  const [pipelineData, setPipelineData] = useState<PipelineSimulateResponse | null>(null);
+  const [syncingPipeline, setSyncingPipeline] = useState<boolean>(false);
 
   // Current series based on selected parking lot
-  const currentBaseline = LOT_OCCUPANCY_BASELINES[lotId] ?? LOT_OCCUPANCY_BASELINES.lot_landmark_81;
+  const currentBaseline = useMemo(() => {
+    if (pipelineData?.stage3_inference?.hourly_predictions?.length === 24) {
+      return pipelineData.stage3_inference.hourly_predictions.map((p) =>
+        Math.round(p.predicted_occupancy_pct),
+      );
+    }
+    return LOT_OCCUPANCY_BASELINES[lotId] ?? LOT_OCCUPANCY_BASELINES.lot_landmark_81;
+  }, [lotId, pipelineData]);
+
+  const computedFeatureRows = useMemo<FeatureRow[]>(() => {
+    if (pipelineData?.stage2_features?.sample_rows?.length) {
+      return pipelineData.stage2_features.sample_rows;
+    }
+    const keyHours = [8, 12, 18, 21];
+    return keyHours.map((h) => ({
+      day_of_week: dayOfWeek,
+      hour_of_day: h,
+      is_weekend: dayOfWeek >= 5 ? 1 : 0,
+      total_slots: capacity,
+      hour_sin: Number(Math.sin((2 * Math.PI * h) / 24).toFixed(4)),
+      hour_cos: Number(Math.cos((2 * Math.PI * h) / 24).toFixed(4)),
+      dow_sin: Number(Math.sin((2 * Math.PI * dayOfWeek) / 7).toFixed(4)),
+      dow_cos: Number(Math.cos((2 * Math.PI * dayOfWeek) / 7).toFixed(4)),
+      occupancy_pct: currentBaseline[h] ?? 50,
+    }));
+  }, [pipelineData, dayOfWeek, capacity, currentBaseline]);
+
+  const weeklyProfile = useMemo(() => {
+    if (pipelineData?.stage1_datalake?.weekly_profile) {
+      return [0, 1, 2, 3, 4, 5, 6].map((d) => ({
+        day: d,
+        avg: pipelineData.stage1_datalake.weekly_profile[String(d)] ?? 60,
+      }));
+    }
+    const baseAvg = [61.2, 62.5, 63.1, 64.0, 68.4, 54.8, 51.6];
+    return baseAvg.map((avg, d) => ({ day: d, avg }));
+  }, [pipelineData]);
+
+  const runBackendPipeline = async (nextDay?: number, nextLot?: string) => {
+    const targetDay = nextDay ?? dayOfWeek;
+    const targetLot = nextLot ?? lotId;
+    setSyncingPipeline(true);
+    try {
+      const item = await apiClient.postOne<PipelineSimulateResponse>('/tools/forecast/simulate', {
+        area_id: targetLot,
+        day_of_week: targetDay,
+        total_capacity: capacity,
+        base_hourly_rate: baseRate,
+      });
+      if (item) {
+        setPipelineData(item);
+        if (item.stage3_inference?.recommended_surge_multiplier >= 1.1) {
+          setMultiplier(item.stage3_inference.recommended_surge_multiplier);
+        }
+      }
+    } catch {
+      // Giữ trạng thái mô phỏng local nếu chưa gọi được
+    } finally {
+      setSyncingPipeline(false);
+    }
+  };
 
   // KPI Calculations
   const peakHoursCount = useMemo(() => {
@@ -109,11 +239,11 @@ export function ForecastSimulator() {
       {/* Banner */}
       <div className={styles.banner}>
         <div className={styles.bannerInfo}>
-          <span className={styles.pipelineTag}>Pipeline 3 · Predictive ML</span>
+          <span className={styles.pipelineTag}>{t.tools.pipeline3Badge}</span>
           <h2 id="forecast-heading" className={styles.title}>
             {t.tools.forecastTitle}
           </h2>
-          <p className={styles.desc}>{t.tools.forecastDesc}</p>
+          <p className={styles.desc}>{t.tools.pipeline3Sub}</p>
         </div>
         <div className={styles.safetyBadge}>
           <AlertTriangle size={14} aria-hidden />
@@ -122,6 +252,92 @@ export function ForecastSimulator() {
       </div>
 
       <SimulatedBanner />
+
+      {/* 3-Stage ML Pipeline Architecture Cards */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gap: 'var(--space-3)',
+          marginBottom: 'var(--space-3)',
+        }}
+      >
+        <div className={styles.controlCard} style={{ padding: 'var(--space-3)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: '6px' }}>
+            <Database size={16} style={{ color: 'var(--color-accent)' }} aria-hidden />
+            <strong style={{ fontSize: 'var(--text-sm)' }}>{t.tools.stage1Title}</strong>
+          </div>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', margin: '0 0 8px' }}>
+            {t.tools.stage1Sub}
+          </p>
+          <div style={{ fontSize: 'var(--text-xs)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div>
+              <span style={{ color: 'var(--color-muted)' }}>{t.tools.stage1Source} </span>
+              <code>{pipelineData?.stage1_datalake.source_path ?? 'analytic/var/datalake/gold/occupancy'}</code>
+            </div>
+            <div>
+              <span style={{ color: 'var(--color-muted)' }}>{t.tools.stage1Records} </span>
+              <strong className="num">{pipelineData ? fmtInt(pipelineData.stage1_datalake.total_records) : DASH}</strong>
+              <span> (7 × 24h)</span>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.controlCard} style={{ padding: 'var(--space-3)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: '6px' }}>
+            <Cpu size={16} style={{ color: 'var(--color-accent)' }} aria-hidden />
+            <strong style={{ fontSize: 'var(--text-sm)' }}>{t.tools.stage2Title}</strong>
+          </div>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', margin: '0 0 8px' }}>
+            {t.tools.stage2Sub}
+          </p>
+          <div style={{ fontSize: 'var(--text-xs)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div>
+              <span style={{ color: 'var(--color-muted)' }}>{t.tools.stage2Features} </span>
+              <code>day_of_week, hour_of_day, is_weekend, total_slots, hour_sin/cos, dow_sin/cos</code>
+            </div>
+            <div>
+              <span style={{ color: 'var(--color-muted)' }}>{t.tools.stage2Prophet} </span>
+              <strong className="num">{pipelineData ? fmtInt(pipelineData.stage2_features.prophet_points) : DASH}</strong>
+              <span> (ds, y)</span>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.controlCard} style={{ padding: 'var(--space-3)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: '6px' }}>
+            <Sparkles size={16} style={{ color: 'var(--color-accent)' }} aria-hidden />
+            <strong style={{ fontSize: 'var(--text-sm)' }}>{t.tools.stage3Title}</strong>
+          </div>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', margin: '0 0 8px' }}>
+            {t.tools.stage3Sub}
+          </p>
+          <div style={{ fontSize: 'var(--text-xs)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div>
+              <span style={{ color: 'var(--color-muted)' }}>{t.tools.stage3ModelVer} </span>
+              <code>{pipelineData?.stage3_inference.model_version ?? DASH}</code>
+            </div>
+            <div>
+              <span style={{ color: 'var(--color-muted)' }}>{t.tools.dataSourceLabel} </span>
+              <strong>
+                {!pipelineData
+                  ? t.tools.dataSourceLocalSim
+                  : pipelineData.stage3_inference.is_fallback
+                    ? t.tools.dataSourceBaseline
+                    : t.tools.dataSourceLake}
+              </strong>
+            </div>
+            <div>
+              <span style={{ color: 'var(--color-muted)' }}>{t.tools.stage3Reason} </span>
+              <code>
+                {pipelineData?.stage3_inference.surge_quote.reason_code ??
+                  pipelineData?.stage3_inference.surge_quote.reason ??
+                  (peakHoursCount > 0 ? 'PEAK_CONGESTION_SURGE_85_PLUS' : 'NORMAL_TARIFF')}
+              </code>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className={styles.mainGrid}>
         {/* Left Column: Simulator Controls */}
@@ -141,12 +357,46 @@ export function ForecastSimulator() {
                 id={selectId}
                 className={styles.selectInput}
                 value={lotId}
-                onChange={(e) => setLotId(e.target.value)}
+                onChange={(e) => {
+                  setLotId(e.target.value);
+                  setPipelineData(null);
+                }}
               >
-                <option value="lot_landmark_81">{t.tools.lotLandmark81}</option>
-                <option value="lot_vincom_center">{t.tools.lotVincomCenter}</option>
-                <option value="lot_suburban_hub">{t.tools.lotSuburbanHub}</option>
+                {PARKING_LOTS.map((lot) => (
+                  <option key={lot.id} value={lot.id}>
+                    {resolveLotLabel(lot, t)}
+                  </option>
+                ))}
               </select>
+            </div>
+
+            {/* Day of Week Selector */}
+            <div className={styles.fieldGroup}>
+              <span className={styles.fieldLabel}>{t.tools.dayLabel}</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                {t.tools.dayNames.map((name, idx) => (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => {
+                      setDayOfWeek(idx);
+                      if (pipelineData) void runBackendPipeline(idx, lotId);
+                    }}
+                    style={{
+                      padding: '4px 8px',
+                      fontSize: 'var(--text-xs)',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid var(--color-border)',
+                      background: dayOfWeek === idx ? 'var(--color-accent)' : 'var(--color-surface)',
+                      color: dayOfWeek === idx ? 'var(--color-accent-ink)' : 'var(--color-text)',
+                      cursor: 'pointer',
+                      fontWeight: dayOfWeek === idx ? 600 : 400,
+                    }}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Capacity Slider */}
@@ -224,6 +474,18 @@ export function ForecastSimulator() {
                 aria-label={t.tools.surgeMultiplier}
               />
             </div>
+
+            {/* Run Pipeline 3 on Backend Button */}
+            <button
+              type="button"
+              className={styles.testApiBtn}
+              style={{ marginBottom: '8px', background: 'var(--color-accent)', color: 'var(--color-accent-ink)', borderColor: 'var(--color-accent)' }}
+              onClick={() => void runBackendPipeline()}
+              disabled={syncingPipeline}
+            >
+              <Play size={14} aria-hidden />
+              <span>{syncingPipeline ? t.tools.syncingBackend : t.tools.syncBackendBtn}</span>
+            </button>
 
             {/* Live API Safety Gate Test Button */}
             <button
@@ -395,6 +657,79 @@ export function ForecastSimulator() {
                 <span className={`${styles.legendColorBox} ${styles.legendColorPeak}`} />
                 <span>{`${t.tools.kpiPeakHours}: ${peakHoursCount}h`}</span>
               </div>
+            </div>
+          </div>
+
+          {/* Weekly Profile & LightGBM 8-Feature Matrix */}
+          <div className={styles.chartCard} style={{ marginTop: 'var(--space-3)' }}>
+            <div className={styles.chartHeader}>
+              <h3 className={styles.chartTitle}>
+                <Database size={16} aria-hidden />
+                <span>{t.tools.weeklyProfileTitle}</span>
+              </h3>
+              {pipelineData && (
+                <span className={styles.chartBaselineBadge}>{t.tools.backendSyncedBadge}</span>
+              )}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(4.5rem, 1fr))', gap: '8px', marginBottom: '16px' }}>
+              {weeklyProfile.map((w) => (
+                <div
+                  key={w.day}
+                  style={{
+                    padding: '8px',
+                    borderRadius: 'var(--radius-sm)',
+                    border: w.day === dayOfWeek ? '1px solid var(--color-accent)' : '1px solid var(--color-border)',
+                    background: w.day === dayOfWeek ? 'var(--color-surface-2, rgba(37,99,235,0.08))' : 'var(--color-surface)',
+                    textAlign: 'center',
+                  }}
+                >
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)' }}>
+                    {t.tools.dayNames[w.day]}
+                  </div>
+                  <strong className="num" style={{ fontSize: 'var(--text-sm)' }}>
+                    {`${w.avg.toFixed(1)}%`}
+                  </strong>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ marginBottom: '6px' }}>
+              <strong style={{ fontSize: 'var(--text-sm)' }}>{t.tools.featureMatrixTitle}</strong>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', margin: '2px 0 8px' }}>
+                {t.tools.featureMatrixSub}
+              </p>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-xs)' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>
+                    <th style={{ padding: '6px' }}>day_of_week</th>
+                    <th style={{ padding: '6px' }}>hour_of_day</th>
+                    <th style={{ padding: '6px' }}>is_weekend</th>
+                    <th style={{ padding: '6px' }}>total_slots</th>
+                    <th style={{ padding: '6px' }}>hour_sin</th>
+                    <th style={{ padding: '6px' }}>hour_cos</th>
+                    <th style={{ padding: '6px' }}>dow_sin</th>
+                    <th style={{ padding: '6px' }}>dow_cos</th>
+                    <th style={{ padding: '6px' }}>y (occ_pct)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {computedFeatureRows.map((row) => (
+                    <tr key={row.hour_of_day} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                      <td className="num" style={{ padding: '6px' }}>{row.day_of_week}</td>
+                      <td className="num" style={{ padding: '6px' }}>{`${row.hour_of_day}:00`}</td>
+                      <td className="num" style={{ padding: '6px' }}>{row.is_weekend}</td>
+                      <td className="num" style={{ padding: '6px' }}>{row.total_slots}</td>
+                      <td className="num" style={{ padding: '6px' }}>{row.hour_sin.toFixed(4)}</td>
+                      <td className="num" style={{ padding: '6px' }}>{row.hour_cos.toFixed(4)}</td>
+                      <td className="num" style={{ padding: '6px' }}>{row.dow_sin.toFixed(4)}</td>
+                      <td className="num" style={{ padding: '6px' }}>{row.dow_cos.toFixed(4)}</td>
+                      <td className="num" style={{ padding: '6px', fontWeight: 600 }}>{`${row.occupancy_pct}%`}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

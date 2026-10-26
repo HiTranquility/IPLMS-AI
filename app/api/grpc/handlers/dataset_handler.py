@@ -17,6 +17,8 @@ from app.api.grpc.mappers.dataset_mapper import (
     to_snapshot_response,
     to_snapshot_samples,
 )
+from app.core.console.services.accept_policy_service import console_accept_policy_service
+from app.core.console.services.vision_import_service import console_vision_import_service
 from app.core.dataset.services import CurationService, SnapshotService, evaluation_service
 from app.util.logger import logger
 
@@ -70,7 +72,6 @@ class DatasetHandler(_pb2_grpc.DatasetServiceServicer):
     async def ExportForConsole(self, request, context):
         # IPLMS ADR-0048 §5 (A2): ghi vào DB `ai_console`. Nhập trễ nạp để process
         # inference không cần cấu hình console khi backend chưa bật kênh xuất.
-        from app.core.console.services.vision_import_service import console_vision_import_service
 
         result = await console_vision_import_service.import_batch(to_exported_captures(request))
         logger.info(
@@ -82,7 +83,6 @@ class DatasetHandler(_pb2_grpc.DatasetServiceServicer):
 
     async def GetAcceptPolicy(self, request, context):
         # IPLMS ADR-0051: backend kéo ngưỡng đã duyệt; chỉ đọc DB `ai_console`.
-        from app.core.console.services.accept_policy_service import console_accept_policy_service
 
         policy = await console_accept_policy_service.approved(request.model_name)
         logger.info(

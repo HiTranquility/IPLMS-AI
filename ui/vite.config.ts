@@ -3,9 +3,9 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
 
-// Hỗ trợ cả root / và /console/ của process `app.console_main`.
+// Hỗ trợ cả root / và các nested routes (/vision/label, /vision/review, /console/*) của `app.console_main`.
 export default defineConfig({
-  base: './',
+  base: '/',
   plugins: [react()],
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   server: {
@@ -23,6 +23,8 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     css: { modules: { classNameStrategy: 'non-scoped' } },
+    maxWorkers: 2,
+    fileParallelism: false,
     execArgv: [
       '--import',
       'data:text/javascript,import zlib from "node:zlib"; if (!zlib.createZstdDecompress) zlib.createZstdDecompress = zlib.createInflate;',
