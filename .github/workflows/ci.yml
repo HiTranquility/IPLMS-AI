@@ -89,7 +89,7 @@ jobs:
 
       # Phiên bản pnpm lấy từ `packageManager` trong ui/package.json.
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           package_json_file: ui/package.json
 
