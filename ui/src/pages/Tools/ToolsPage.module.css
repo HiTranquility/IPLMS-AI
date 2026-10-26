@@ -515,7 +515,7 @@
   font-size: 11px;
   padding: 3px 8px;
   background: var(--color-danger);
-  color: #fff;
+  color: var(--color-primary-contrast);
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;

@@ -373,7 +373,7 @@ export function IngestSection() {
             <span className={styles.docCountBadge}>{docs.length}</span>
           </div>
 
-          <div className={styles.catFilterBar}>
+          <div className={styles.catFilterBar} role="group" aria-label={t.tools.category}>
             {['all', 'regulation', 'tariff', 'fine_policy', 'ev_charging'].map((cat) => (
               <button
                 key={cat}
