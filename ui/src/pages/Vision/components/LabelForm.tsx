@@ -157,14 +157,14 @@ export function LabelForm({ sample, remaining }: LabelFormProps) {
       <p className={styles.question}>{t.label.question}</p>
 
       <div className={styles.actions}>
-        <Button onClick={() => send('CORRECT')} loading={add.isPending && add.variables?.verdict === 'CORRECT'}>
-          {t.label.correct} <kbd className={styles.kbd}>1</kbd>
+        <Button aria-keyshortcuts="1" onClick={() => send('CORRECT')} loading={add.isPending && add.variables?.verdict === 'CORRECT'}>
+          {t.label.correct} <kbd className={styles.kbd} aria-hidden>1</kbd>
         </Button>
-        <Button variant="secondary" onClick={() => setCorrecting(true)}>
-          {t.label.fix} <kbd className={styles.kbd}>2</kbd>
+        <Button variant="secondary" aria-keyshortcuts="2" onClick={() => setCorrecting(true)}>
+          {t.label.fix} <kbd className={styles.kbd} aria-hidden>2</kbd>
         </Button>
-        <Button variant="secondary" onClick={() => send('UNUSABLE')} loading={add.isPending && add.variables?.verdict === 'UNUSABLE'}>
-          {t.label.unusable} <kbd className={styles.kbd}>3</kbd>
+        <Button variant="secondary" aria-keyshortcuts="3" onClick={() => send('UNUSABLE')} loading={add.isPending && add.variables?.verdict === 'UNUSABLE'}>
+          {t.label.unusable} <kbd className={styles.kbd} aria-hidden>3</kbd>
         </Button>
       </div>
 
