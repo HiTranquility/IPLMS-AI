@@ -68,6 +68,7 @@ class LlmFactory:
         self.profile_id = profile["id"] if profile else ""
         self._profile = profile is not None
         self._client = client
+        self._client_lock = asyncio.Lock()
 
     async def for_task(self, task: str) -> "LlmFactory":
         """Read the active revision per request so replicas see activation promptly."""
@@ -162,7 +163,10 @@ class LlmFactory:
         """Bản dùng trong đường async: dò llama-server (urlopen đồng bộ) chạy ngoài event loop (A-41)."""
         if self._client is not None:
             return self._client
-        return await asyncio.to_thread(self._get_client)
+        async with self._client_lock:
+            if self._client is not None:
+                return self._client
+            return await asyncio.to_thread(self._get_client)
 
     @property
     def uses_openai(self) -> bool:
