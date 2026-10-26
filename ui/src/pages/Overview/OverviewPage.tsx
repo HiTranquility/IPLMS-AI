@@ -89,14 +89,14 @@ export function OverviewPage() {
           {/* Bảng phân tích chi tiết theo ngày */}
           <section className={styles.tableSection} aria-label={t.overview.byDay}>
             <div className={styles.tableHeader}>
-              <h3 className={styles.tableTitle}>{t.overview.byDay}</h3>
+              <h2 className={styles.tableTitle}>{t.overview.byDay}</h2>
             </div>
 
             {u.days.length === 0 ? (
               <EmptyState title={t.overview.emptyTitle} description={t.overview.emptyDesc} />
             ) : (
               <div className={table.wrap}>
-                <table className={table.table}>
+                <table className={table.table} aria-label={t.overview.byDay}>
                   <thead>
                     <tr>
                       <th scope="col">{t.overview.day}</th>

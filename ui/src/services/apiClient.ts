@@ -26,7 +26,7 @@ function messageOf(status: number, body: Partial<ApiEnvelope<unknown>> | null): 
   return messages().errors.http(status);
 }
 
-export async function request<T>(path: string, init: { method?: 'GET' | 'POST' | 'DELETE'; body?: unknown } = {}): Promise<T[]> {
+export async function request<T>(path: string, init: { method?: 'GET' | 'POST' | 'PUT' | 'DELETE'; body?: unknown } = {}): Promise<T[]> {
   const method = init.method ?? 'GET';
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (method !== 'GET') {
@@ -64,6 +64,7 @@ export const apiClient = {
   getOne: <T>(path: string) => requestOne<T>(path, { method: 'GET' }),
   post: <T>(path: string, body?: unknown) => request<T>(path, { method: 'POST', body }),
   postOne: <T>(path: string, body?: unknown) => requestOne<T>(path, { method: 'POST', body }),
+  putOne: <T>(path: string, body?: unknown) => requestOne<T>(path, { method: 'PUT', body }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
   deleteOne: <T>(path: string) => requestOne<T>(path, { method: 'DELETE' }),
 };

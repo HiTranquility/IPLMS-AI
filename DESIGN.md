@@ -25,7 +25,7 @@ Nguồn đối chiếu: [REST router](app/api/rest/router.py), [gRPC server](app
 | Develop | [docker-compose.develop.yml](docker-compose.develop.yml) | [traefik.develop.yml](docker/traefik/traefik.develop.yml) | `insecure: true`, sample 1.0; host bind localhost |
 | Production | [docker-compose.production.yml](docker-compose.production.yml) | [traefik.production.yml](docker/traefik/traefik.production.yml) | `insecure: false`, sample 0.1 |
 
-Mỗi static Traefik file là một cấu hình **đầy đủ**, không phải YAML overlay. Compose chọn file source theo môi trường nhưng target luôn `/etc/traefik/traefik.yml`; mount Docker socket kế thừa base. REST `8000`, gRPC `50051`, ping/dashboard `8080`, Prometheus `8082`; metrics và Tempo thuộc mạng nội bộ. Production giữ ping cho healthcheck nhưng không bật API dashboard không xác thực. Tên file `production` không tự cung cấp TLS hay xác thực cho AI: gateway vẫn chỉ bind host localhost, backend gọi mạng nội bộ.
+Mỗi static Traefik file là một cấu hình **đầy đủ**, không phải YAML overlay. Compose chọn file source theo môi trường nhưng target luôn `/etc/traefik/traefik.yml`; mount Docker socket kế thừa base. REST `8000`, gRPC `50051`, ping/dashboard `8080`, Prometheus `8082`; metrics và Tempo thuộc mạng nội bộ. Production giữ ping cho healthcheck nhưng không bật API dashboard không xác thực. Cả 3 file đặt `providers.docker.constraints` theo nhãn `iplms.gateway=ai`: socket Docker thấy mọi container trên máy, nên gateway chỉ nhận container mang nhãn này (bug-031). Traefik tự dò sức khoẻ từng replica mỗi 5 s: `ai-rest` gọi `GET /health`, `ai-grpc` gọi `grpc.health.v1` ngay trên cổng gRPC (`mode=grpc`), nên replica hỏng bị gỡ khỏi vòng chia tải và Prometheus có `traefik_service_server_up` theo từng replica. Tên file `production` không tự cung cấp TLS hay xác thực cho AI: gateway vẫn chỉ bind host localhost, backend gọi mạng nội bộ.
 
 | Ngoại lệ / tên cần phân biệt | Phạm vi và lý do | Khi thay đổi / kết thúc |
 |---|---|---|
@@ -263,9 +263,14 @@ Danh sách biến chuẩn nằm trong `.env.example`:
 | `AI_DEVICE` | `cpu` | `cpu` hoặc `cuda` |
 | `AI_DATABASE_URL` | `postgresql://...` | Kết nối PostgreSQL hỗ trợ pgvector cho Copilot RAG |
 | `AI_DATALAKE_SOURCE_DATABASE_URL` | `postgresql://...` | PostgreSQL nghiệp vụ backend dùng riêng cho export Forecast |
-| `AI_LLM_API_KEY` | *(rỗng)* | OpenAI API key cho Copilot và Embedding |
-| `AI_LLM_MODEL` | `gpt-5.6-luna` | Model LLM sinh câu trả lời |
+| `AI_LLM_API_KEY` | *(rỗng)* | OpenAI API key cho Copilot và Embedding; chỉ bắt buộc khi `AI_LLM_PROVIDER=openai` (thiếu key → `ModelNotLoadedError`) |
+| `AI_LLM_PROVIDER` | `ollama` | `ollama` (Ollama local, không cần key), `local` (llama-server ở `AI_LOCAL_LLM_URL`, không lên thì chuyển sang Ollama) hoặc `openai`. AI **không tự bật** llama-server nữa (đã bỏ `llama_server_manager.ensure_server_running()`, ISSUE-019 A-41): muốn dùng thì chạy server trước; mỗi lần tạo client, `/health` được dò (timeout 0.3 s) ngoài event loop qua `asyncio.to_thread`. Trang Settings chỉ đổi qua lại `ollama`/`local`; `openai` gửi câu hỏi ra ngoài nên chỉ bật qua env |
+| `AI_OLLAMA_URL` | `http://127.0.0.1:11434/v1` | Endpoint Ollama khi `AI_LLM_BASE_URL` rỗng |
+| `AI_LLM_MODEL` | `qwen2.5:0.5b` | Model LLM sinh câu trả lời (vừa VRAM 4 GB); dùng OpenAI thì đặt `gpt-5.6-luna` |
+| `AI_CONSOLE_RELOAD` | `false` | Bật reloader cho `python -m app.console_main` (chỉ máy dev) |
+| `AI_RUNTIME_SETTINGS_PATH` | `ai/var/runtime_settings.json` | File cấu hình đổi ở trang Settings; console áp dụng ngay, inference nạp khi khởi động lại. Chỉ đọc từ biến môi trường thật, không đọc `.env.dev` |
 | `AI_EMBEDDING_MODEL` | `text-embedding-3-small` | Model sinh vector cho tri thức |
+| `AI_EMBEDDING_ALLOW_NO_PGVECTOR` | `false` | Postgres không có pgvector thì dừng với lỗi; `true` (chỉ dev) cho chạy chế độ mảng `DOUBLE PRECISION[]` quét toàn bảng — [ADR-0001](docs/projects/adrs/10-2026/0001-fallback-khong-pgvector-chi-cho-dev.md) |
 | `AI_RAG_TOP_K` | `5` | Số chunk tương đồng lấy từ pgvector |
 | `AI_RAG_MIN_SIMILARITY` | `0.35` | Ngưỡng cosine tối thiểu của nhánh vector, đồng thời là cổng từ chối: đoạn vector tốt nhất dưới ngưỡng → không gọi LLM. Phụ thuộc model embedding (`bge-m3`: 0.55) — bảng ở [core/copilot](app/core/copilot/README.md#cấu-hình) |
 | `AI_DATALAKE_LOCAL_PATH` | `data/datalake` | Workspace raw/manifest/watermark local |

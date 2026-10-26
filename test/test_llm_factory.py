@@ -39,6 +39,27 @@ class LlmFactoryTest(unittest.TestCase):
         self.assertEqual(["Xin ", "chào"], asyncio.run(collect()))
         self.assertTrue(self.responses.calls[0]["stream"])
 
+    def test_tao_client_lan_dau_chay_ngoai_event_loop(self):
+        # A-41: _get_client có thể dò llama-server bằng urlopen đồng bộ, không được chặn event loop.
+        import threading
+        from unittest.mock import patch
+
+        factory = LlmFactory()
+        fake = SimpleNamespace(responses=self.responses)
+        seen = {}
+
+        def build():
+            seen["thread"] = threading.get_ident()
+            return fake
+
+        async def run():
+            seen["loop"] = threading.get_ident()
+            return await factory.generate_response("s", "q", "c")
+
+        with patch.object(factory, "_get_client", side_effect=build):
+            self.assertEqual("Câu trả lời có nguồn", asyncio.run(run()))
+        self.assertNotEqual(seen["loop"], seen["thread"])
+
 
 class FakeChat:
     def __init__(self, content):
@@ -55,17 +76,47 @@ class FakeChat:
 class LlmProviderTest(unittest.TestCase):
     """ISSUE-011: OpenAI hoặc endpoint tương thích (Ollama) chỉ bằng cấu hình."""
 
-    def _factory(self, base_url="", api_key="", client=None):
-        factory = LlmFactory(api_key=api_key, client=client, profile={"provider": "openai", "model": "gpt-5.6-luna", "task": "test", "revision": "1", "timeout_seconds": 60, "max_output_tokens": 1200, "reasoning_effort": "none", "id": "1"})
+    def _factory(self, base_url="", api_key="", client=None, provider="openai"):
+        factory = LlmFactory(api_key=api_key, client=client)
         factory.api_key = api_key
         factory.base_url = base_url
+        factory.provider = provider
         return factory
 
     def test_missing_key_without_base_url_is_precondition_error(self):
         from app.core.exceptions import ModelNotLoadedError
 
+        # Provider OpenAI khai rõ mà thiếu key thì vẫn báo lỗi rõ (ISSUE-011).
         with self.assertRaises(ModelNotLoadedError):
             self._factory()._get_client()
+
+    def test_default_ollama_provider_uses_placeholder_key_without_probe(self):
+        # A-39 (chọn B): mặc định ollama không cần key, không dò llama-server.
+        from unittest.mock import patch
+
+        with patch("urllib.request.urlopen") as urlopen:
+            client = self._factory(provider="ollama")._get_client()
+        urlopen.assert_not_called()
+        self.assertEqual("ollama", client.api_key)
+        self.assertTrue(str(client.base_url).rstrip("/").endswith("/v1"))
+
+    def test_ten_model_cau_hinh_va_ten_gguf_tach_nhau(self):
+        # A-40: llm_model là model cấu hình; tên GGUF chỉ dùng khi llama-server đang chạy.
+        import os
+        import tempfile
+
+        from app.config.llm_config import DEFAULT_LOCAL_LLM_MODEL, LlmConfig
+
+        with tempfile.TemporaryDirectory() as tmp:
+            gguf = os.path.join(tmp, "Qwen3.5-4B-Q4_K_M.gguf")
+            open(gguf, "wb").close()
+            cfg = LlmConfig(llm_provider="local", llm_model="qwen3:4b", local_llm_model_path=gguf)
+            self.assertEqual("qwen3:4b", cfg.active_model_name)
+            self.assertEqual("Qwen3.5-4B-Q4_K_M", cfg.local_gguf_model_name)
+        cfg = LlmConfig(llm_provider="ollama", llm_model="gpt-5.6-luna", local_llm_model_path="")
+        self.assertEqual(DEFAULT_LOCAL_LLM_MODEL, cfg.active_model_name)
+        self.assertIsNone(cfg.local_gguf_model_name)
+        self.assertEqual("gpt-5.6-luna", LlmConfig(llm_provider="openai", llm_model="gpt-5.6-luna").active_model_name)
 
     def test_base_url_without_key_uses_placeholder_key(self):
         client = self._factory(base_url="http://localhost:11434/v1")._get_client()

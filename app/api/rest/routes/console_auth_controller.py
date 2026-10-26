@@ -10,8 +10,7 @@ from app.api.rest.console_access import (
     set_flow_cookie, set_session_cookie,
 )
 from app.api.rest.schemas.base_response import BaseResponse
-from app.core.console.engines import access_policy
-from app.core.console.services import console_auth_service
+from app.core.console import access_policy, console_auth_service
 from app.core.exceptions import ConsoleAuthError
 from app.util.logger import logger
 

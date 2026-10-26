@@ -85,7 +85,7 @@ export function TrendChart({ days }: TrendChartProps) {
     <div className={styles.chartContainer}>
       <div className={styles.header}>
         <div className={styles.titleBox}>
-          <h3 className={styles.title}>{t.overview.chartTitle}</h3>
+          <h2 className={styles.title}>{t.overview.chartTitle}</h2>
           <span className={styles.subtitle}>{t.overview.chartSubtitle}</span>
         </div>
 
