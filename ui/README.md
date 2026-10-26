@@ -10,13 +10,13 @@ Thiết kế, token màu và luật giao diện: [DESIGN.md](DESIGN.md). Phía s
 ```bash
 # trong ai/
 pnpm --dir ui install
-pnpm --dir ui build                      # ra ui/dist; console_main phục vụ tại /console/
+pnpm --dir ui build                      # ra ui/dist; console_main phục vụ tại /
 python -m app.console_main               # hoặc container: xem "Chạy" ở ../README.md (--profile console)
 ```
 
-Mở <http://127.0.0.1:8090/console/>. Container `console` mount `ui/dist` ở chế độ chỉ đọc, nên sửa giao diện xong phải `build` lại rồi tải lại trang.
+Mở <http://127.0.0.1:8090/>. Container `console` mount `ui/dist` ở chế độ chỉ đọc, nên sửa giao diện xong phải `build` lại rồi tải lại trang.
 
-Phát triển có hot reload: để `console_main` chạy (native hoặc container), rồi `pnpm --dir ui dev` → <http://127.0.0.1:5190/>. Vite proxy `/console/api` và `/api` sang `127.0.0.1:8090`; router tự nhận basename `/console` khi URL bắt đầu bằng `/console`.
+Phát triển có hot reload: để `console_main` chạy (native hoặc container), rồi `pnpm --dir ui dev` → <http://127.0.0.1:5190/>. Vite proxy `/api` sang `127.0.0.1:8090`.
 
 Đăng nhập: Google OIDC rồi TOTP; admin khẩn cấp đăng nhập bằng mật khẩu + TOTP. Cách tạo tài khoản test và bảng vai trò: [README của ai](../README.md#tài-khoản-test-ai-console).
 
@@ -33,7 +33,7 @@ Phía API: `python -m unittest test.test_console_copilot_lab test.test_console_u
 
 ## Màn hình
 
-Đường dẫn tính từ `/console`. Mục trên thanh điều hướng hiện theo quyền và theo *không gian làm việc* (persona) chọn ở góc trên, ví dụ Toàn quyền, Kỹ sư ML, Quản trị & Kiểm toán.
+Đường dẫn tính từ gốc `/`. Mục trên thanh điều hướng hiện theo quyền và theo *không gian làm việc* (persona) chọn ở góc trên, ví dụ Toàn quyền, Kỹ sư ML, Quản trị & Kiểm toán.
 
 | Đường dẫn | Quyền | Nội dung |
 |---|---|---|

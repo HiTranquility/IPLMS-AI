@@ -6,7 +6,7 @@ Ba process dùng chung code này, mỗi process một điểm vào:
 |---|---|---|
 | `main.py` | REST FastAPI (inference: ANPR, Copilot, Forecast, health) | 8000, sau gateway |
 | `grpc_server.py` | gRPC cho backend NestJS | 50051, sau gateway |
-| `console_main.py` | AI Console (API `/console/api` + phục vụ `ui/dist`) | 8090, chỉ `127.0.0.1` |
+| `console_main.py` | AI Console (API `/api` + phục vụ `ui/dist`) | 8090, chỉ `127.0.0.1` |
 
 `console_main` **[NEVER]** gắn vào `main.py`: tải của người dùng console không được chạm cổng inference (IPLMS ADR-0048).
 
@@ -25,7 +25,7 @@ Luật import và naming đầy đủ: [AI_CONVENTIONS](../docs/standards/AI_CON
 
 ## `api/`
 
-- `rest/routes/*_controller.py`: router REST, gắn dưới `/api` (và gốc) trong `main.py`. Controller `console_*` gắn dưới `/console/api` trong `console_main.py`.
+- `rest/routes/*_controller.py`: router REST, gắn dưới `/api` (và gốc) trong `main.py`. Controller `console_*` gắn dưới `/api` trong `console_main.py`.
 - `rest/console_access.py`: `require_permission` / `require_any_permission` cho Console; ma trận quyền ở `core/console/engines/access_policy.py`.
 - `grpc/handlers/`: một handler mỗi service proto (vision, copilot, knowledge, dataset, forecast, model_policy, knowledge_eval, health); `mappers/` đổi proto ↔ DTO; `interceptors/` log và map lỗi ra mã gRPC.
 - Stub sinh từ `proto/` nằm ở `api/grpc/generated/` (không commit): `python app/script/compile_proto.py`.

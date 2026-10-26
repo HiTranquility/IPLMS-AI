@@ -1,8 +1,8 @@
 import { messages } from '@/i18n/I18nProvider';
 import type { ApiEnvelope } from '@/types/api';
 
-/** Gọi API console cùng nguồn (/console/api). Cookie phiên httpOnly đi kèm tự động. */
-export const API_BASE = '/console/api';
+/** Gọi API console cùng nguồn (/api). Cookie phiên httpOnly đi kèm tự động. */
+export const API_BASE = '/api';
 
 export class ApiError extends Error {
   readonly status: number;

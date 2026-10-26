@@ -14,7 +14,7 @@ describe('App — cổng phiên và quyền', () => {
   it('chưa đăng nhập thì hiện trang đăng nhập Google', async () => {
     mockApi(() => fail(401, 'UNAUTHENTICATED'));
     renderWithProviders(<App />);
-    expect(await screen.findByRole('link', { name: 'Đăng nhập bằng Google' })).toHaveProperty('href', expect.stringContaining('/console/api/auth/google/start'));
+    expect(await screen.findByRole('link', { name: 'Đăng nhập bằng Google' })).toHaveProperty('href', expect.stringContaining('/api/auth/google/start'));
   });
 
   it('chưa qua TOTP thì chỉ hiện bước xác thực, chưa có nav', async () => {
