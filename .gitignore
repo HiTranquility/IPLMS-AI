@@ -100,3 +100,6 @@ static/original/*
 
 # Stub gRPC sinh từ proto/ai_service.proto — chạy app/scripts/compile_proto.py để tạo lại
 app/api/grpc/generated/
+
+# Sổ tay cá nhân bảo vệ module
+docs/projects/KHOA_MODULE_GUIDE.md
