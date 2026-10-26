@@ -113,7 +113,7 @@ export function DisputeSimulator({ onAskAboutDispute }: DisputeSimulatorProps) {
           <div>
             <h4 className={styles.dsTitle}>{d.title}</h4>
             <span className={styles.dsSub}>
-              {d.sub} • <code>ADR-0008: Bounded Workflow</code>
+              {d.sub} • <code>ai ADR-0003: Bounded Workflow</code>
             </span>
           </div>
         </div>

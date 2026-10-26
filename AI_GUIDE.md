@@ -38,7 +38,7 @@
 | **Năng lực AI (Mục 4.1)** | Tối thiểu 2 năng lực (nhóm 3 người: tối thiểu 3) | **Đáp ứng 5/5 năng lực (A, B, C, D, E)** | RAG, LangGraph Agent, Pydantic DTOs, Vision ANPR + Ingestion, Multi-Agent StateGraph |
 | **Kỹ nghệ AI (Mục 4.2)** | 6 tiêu chuẩn bắt buộc: Model, Prompt, Guardrails, Eval Set, Logging, Fallback | **Đáp ứng 100% chuyên sâu** | Qwen3.5-4B CUDA, PromptManager, 3-layer Guardrails, 25 test cases eval, Telemetry logger, Seed fallback |
 | **Truy xuất yêu cầu (Mục 5.1)** | 8–15 User Stories kèm bảng Traceability Table | **10 User Stories hoàn chỉnh** | Bảng ma trận ánh xạ từ Story $\to$ Endpoint $\to$ File $\to$ Unit Test |
-| **Quyết định kiến trúc (Mục 5.2)** | Tối thiểu 3 ADR (ít nhất 1 về AI) | **3 ADRs chuẩn hóa** | ADR-0008 (Anti-Hallucination), ADR-0009 (CUDA VRAM Budget), ADR-0010 (Human-in-the-loop) |
+| **Quyết định kiến trúc (Mục 5.2)** | Tối thiểu 3 ADR (ít nhất 1 về AI) | **3 ADRs chuẩn hóa** | [ai ADR-0002](docs/projects/adrs/10-2026/0002-tu-choi-khi-thieu-ngu-canh.md) (chống bịa), [ai ADR-0004](docs/projects/adrs/10-2026/0004-llama-server-mot-slot-vua-vram-4gb.md) (VRAM 4 GB), [ai ADR-0003](docs/projects/adrs/10-2026/0003-nguoi-duyet-truoc-khi-xu-ly-tranh-chap.md) (human-in-the-loop) |
 | **Nhật ký AI (Mục 5.3)** | File `AI_USAGE.md` với ít nhất 2 ca lỗi & cách sửa | **Hoàn thành xuất sắc** | Đã tạo `AI_USAGE.md` phân tích sâu lỗi VRAM OOM và lỗi Stopword collision |
 | **Vấn đáp & Live Demo (Mục 10)** | Demo 8p, Live change 10p, Vấn đáp cá nhân 12p | **Có kịch bản phòng thủ** | Mục 8 của hướng dẫn này cung cấp sẵn mã nguồn cho mọi yêu cầu Live Change |
 
@@ -131,7 +131,7 @@ Nhóm hiện thực **toàn bộ 5 năng lực AI** được quy định trong h
   2. Văn bản được tách chunk 400–800 ký tự có độ gối đầu 15% (overlap) để bảo toàn ngữ cảnh điều khoản.
   3. Tìm kiếm ngữ nghĩa bằng pgvector (Cosine Similarity) kết hợp cơ chế fallback đọc từ `data/knowledge/regulations_seed.json` khi chạy offline.
   4. Câu trả lời của LLM bắt buộc có trích dẫn nguồn theo chuẩn `[Nguồn: tên_tài_liệu]`.
-  5. Tuân thủ **ADR-0008**: Khi câu hỏi nằm ngoài phạm vi hoặc không tìm thấy thông tin đủ tin cậy (Confidence $< 0.35$), hệ thống từ chối trả lời thay vì suy đoán sai lệch.
+  5. Tuân thủ **ai ADR-0002**: Khi câu hỏi nằm ngoài phạm vi hoặc không tìm thấy thông tin đủ tin cậy (Confidence $< 0.35$), hệ thống từ chối trả lời thay vì suy đoán sai lệch.
 
 ### 3.2 Năng Lực B: Tool-Using Agent Với Xác Nhận Người Dùng
 - **Hệ thống công cụ nghiệp vụ (3 Tools):**
@@ -183,10 +183,9 @@ Nhóm hiện thực **toàn bộ 5 năng lực AI** được quy định trong h
 
 ### 4.2 Quản lý Prompt có Versioning
 * Hệ thống tách biệt hoàn toàn nội dung prompt khỏi logic code thông qua `PromptManager` (`app/core/copilot/prompts/prompt_manager.py`).
-* Các mẫu prompt được lưu thành file văn bản trong thư mục `data/prompts/` và được theo dõi lịch sử qua Git:
-  - `copilot_rag_system_v1.txt`: Prompt ban đầu (chỉ hướng dẫn trả lời ngắn gọn).
-  - `copilot_rag_system_v2.txt`: Prompt nâng cấp (bổ sung luật trích dẫn nguồn, từ chối câu hỏi ngoài luồng, và lớp phòng hộ chống Prompt Injection).
-* Khi xử lý yêu cầu, hệ thống ghi nhận chính xác mã phiên bản prompt (ví dụ: `v1.1.0`) vào trường telemetry của request.
+* Prompt hệ thống nằm ở [`data/prompts/copilot_rag_system_v2.txt`](data/prompts/copilot_rag_system_v2.txt), theo dõi lịch sử qua Git: chỉ trả lời từ ngữ cảnh, trích nguồn, coi ngữ cảnh là dữ liệu chứ không phải chỉ dẫn (chống prompt injection). `rag_pipeline.py` nạp nó qua `prompt_manager.get_prompt("copilot_rag_system")`; phiên bản mặc định là `default_version` trong `prompt_manager.py`.
+* Mỗi request ghi `prompt_version` = tên file + 8 ký tự hash nội dung (ví dụ `copilot_rag_system_v2#<hash>`) vào telemetry; sửa file mà quên tăng version thì hash vẫn đổi.
+* Thiếu file thì `PromptManager` dùng prompt dự phòng trong code và log ghi `copilot_rag_system_v1_fallback#default`, nên nhìn log là biết.
 
 ### 4.3 Hệ thống Phòng vệ 3 Rủi ro (Guardrails)
 Theo quy định mục 4.2.C, hệ thống xử lý triệt để 3 kịch bản rủi ro:
@@ -198,7 +197,7 @@ Theo quy định mục 4.2.C, hệ thống xử lý triệt để 3 kịch bản
 
 #### Rủi ro 2: Yêu cầu nằm ngoài phạm vi bãi xe (Out of Scope)
 * **Hành vi kiểm thử:** *"Hướng dẫn cách nấu phở bò gia truyền Hà Nội"* hoặc *"Thủ đô của nước Pháp là gì?"*.
-* **Xử lý:** Bộ đối soát ngữ nghĩa phát hiện không có tài liệu quy chuẩn nào đạt ngưỡng tương đồng tối thiểu ($\ge 0.35$). Hệ thống tuân thủ **ADR-0008**, thiết lập `confidence = 0.0` và phản hồi:
+* **Xử lý:** Bộ đối soát ngữ nghĩa phát hiện không có tài liệu quy chuẩn nào đạt ngưỡng tương đồng tối thiểu ($\ge 0.35$). Hệ thống tuân thủ **ai ADR-0002**, thiết lập `confidence = 0.0` và phản hồi:
   > *"Mình chưa tìm thấy thông tin đủ liên quan trong kho tri thức quy chế bãi xe để trả lời chắc chắn. Vui lòng hỏi về biểu phí, PCCC hoặc quy định đỗ xe."*
 
 #### Rủi ro 3: Lỗi dịch vụ AI, Timeout hoặc Output rác
@@ -260,7 +259,7 @@ Mỗi yêu cầu AI đều được module giám sát tự động lưu vết c�
 * **API & Giao Diện Quản Trị Phân Tích (Admin Dashboard & Telemetry):**
   - **Endpoint Backend:** `GET /api/copilot/metrics` cung cấp tổng hợp dữ liệu thời gian thực được tự động bảo toàn qua file `var/log/ai_requests.jsonl` (không bị mất khi restart server).
   - **Giao diện Quản trị Chuyên dụng (Tab 6 - `static/index.html`):**
-    1. **5 Thẻ Chỉ số Cốt lõi (KPI Cards):** Tổng số yêu cầu, Độ trễ trung bình (ms), Tổng token tiêu thụ, Chi phí thực tế ($0 local) kèm ước tính số tiền tiết kiệm so với Cloud GPT-4o, Tỷ lệ kích hoạt phòng hộ an toàn (Refusal Rate - ADR-0008).
+    1. **5 Thẻ Chỉ số Cốt lõi (KPI Cards):** Tổng số yêu cầu, Độ trễ trung bình (ms), Tổng token tiêu thụ, Chi phí thực tế ($0 local) kèm ước tính số tiền tiết kiệm so với Cloud GPT-4o, Tỷ lệ kích hoạt phòng hộ an toàn (Refusal Rate - ai ADR-0002).
     2. **2 Biểu đồ Trực quan hóa (Chart.js):**
        - **Biểu đồ Doughnut (Phân bổ trạng thái):** Phản ánh tỷ lệ `SUCCESS`, `REFUSED`, `FALLBACK`, `ERROR`.
        - **Biểu đồ Cột (Xu hướng độ trễ):** Đo lường chi tiết độ trễ (ms) của 15 yêu cầu gần nhất để phát hiện hiện tượng nghẽn VRAM hoặc chậm trễ suy luận.
@@ -320,19 +319,19 @@ Hệ thống xây dựng **10 User Stories** chuẩn mực kèm ma trận liên 
 
 ## 6. Hồ Sơ Quyết Định Kiến Trúc — Mục 5.2
 
-Hệ thống lưu trữ 3 bản ADR chiến lược minh chứng cho việc thấu hiểu sâu sắc hệ thống:
+Ba ADR dưới đây có file trong repo: [ai ADR-0002](docs/projects/adrs/10-2026/0002-tu-choi-khi-thieu-ngu-canh.md), [ai ADR-0003](docs/projects/adrs/10-2026/0003-nguoi-duyet-truoc-khi-xu-ly-tranh-chap.md), [ai ADR-0004](docs/projects/adrs/10-2026/0004-llama-server-mot-slot-vua-vram-4gb.md). Phần dưới là tóm tắt; file ADR là bản chuẩn.
 
-### ADR-0008: Nguyên Tắc Chống Ảo Giác "Thà Lỗi Hơn Bịa" (Strict Abstention)
+### ai ADR-0002: Nguyên Tắc Chống Ảo Giác "Thà Lỗi Hơn Bịa" (Strict Abstention)
 * **Bối cảnh:** Các mô hình ngôn ngữ lớn thường có xu hướng "bịa đặt" (hallucinate) mức giá hoặc chính sách đền bù khi người dùng hỏi các câu hỏi mơ hồ, dẫn đến rủi ro pháp lý và thiệt hại tài chính cho bãi xe.
 * **Quyết định:** Thiết lập cơ chế kiểm định ngưỡng tin cậy kép. Bất kỳ câu trả lời nào không tìm thấy bằng chứng trong vector store hoặc độ tin cậy $< 0.35$ đều bị ép buộc trả về thông báo từ chối tiêu chuẩn. Không bao giờ cho phép mô hình suy luận tự do ngoài ngữ cảnh.
 * **Hệ quả:** Tỷ lệ ảo giác giảm về **0.0%**. Khách hàng chỉ nhận được câu trả lời khi có căn cứ văn bản rõ ràng.
 
-### ADR-0009: 100% Full GPU Offload Qwen3.5-4B Với Single-Slot KV Cache
+### ai ADR-0004: 100% Full GPU Offload Qwen3.5-4B Với Single-Slot KV Cache
 * **Bối cảnh:** Phần cứng triển khai tại bãi xe là máy trạm trang bị card đồ họa phổ thông NVIDIA GeForce GTX 1650 (4GB VRAM). Khởi chạy mô hình cục bộ thường xuyên gây lỗi tràn bộ nhớ hoặc phải đẩy tính toán sang CPU gây nghẽn cổ chai (>30s).
 * **Quyết định:** Sử dụng `llama-server` tích hợp CUDA 12.4, khóa cố định tham số `-np 1` (đơn slot KV cache) và `-c 4096`. Offload toàn bộ **33/33 layers** của mô hình `Qwen3.5-4B-Q4_K_M` lên VRAM.
 * **Hệ quả:** Hệ thống đạt tốc độ xử lý **2.12 giây** (~21 tokens/s), tiêu tốn đúng **2.93 GB VRAM**, chừa lại hơn **1.15 GB VRAM** bảo đảm pipeline camera ANPR luôn chạy song song mượt mà ở 160ms.
 
-### ADR-0010: Khóa Chặn Phê Duyệt Con Người (Human-in-the-Loop Gate) Cho Agent Khiếu Nại
+### ai ADR-0003: Khóa Chặn Phê Duyệt Con Người (Human-in-the-Loop Gate) Cho Agent Khiếu Nại
 * **Bối cảnh:** Theo mục 4.1.B, mọi hành động thay đổi dữ liệu thực tế do AI đề xuất phải có sự xác nhận của người dùng/quản trị viên trước khi thi hành.
 * **Quyết định:** Xây dựng StateGraph trên LangGraph với điểm ngắt `interrupt` tại node `request_human_review`. AI chỉ đóng vai trò phân tích chứng cứ và soạn thảo khuyến nghị bồi thường; quyền ký duyệt hoàn tiền thuộc về Quản lý bãi xe thông qua Dashboard.
 * **Hệ quả:** Loại bỏ hoàn toàn rủi ro AI tự ý giải ngân tiền bồi thường sai lệch, bảo vệ tài sản doanh nghiệp.
@@ -368,12 +367,12 @@ Tài liệu chi tiết được lưu giữ tại [`AI_USAGE.md`](file:///D:/ai/A
 Giảng viên thường yêu cầu 1 trong 4 thao tác sau:
 
 #### Yêu Cầu 1: "Hãy đổi quy tắc prompt (ví dụ: bắt buộc bot xưng là 'IPLMS Bot' và chào khách hàng)"
-- **File cần sửa:** [`data/prompts/copilot_rag_system_v1.txt`](file:///D:/ai/data/prompts/copilot_rag_system_v1.txt)
+- **File cần sửa:** [`data/prompts/copilot_rag_system_v2.txt`](data/prompts/copilot_rag_system_v2.txt) (thay đổi lớn thì chép thành `_v3.txt` và đổi `default_version` trong `prompt_manager.py`)
 - **Thao tác:** Mở file prompt, thêm vào dòng đầu:
   ```text
   Bạn là IPLMS Bot. Luôn bắt đầu câu trả lời bằng: 'Xin chào quý khách, IPLMS Bot xin giải đáp:'
   ```
-- **Giải thích:** Nhờ kiến trúc `PromptManager` tách biệt, ta chỉ cần sửa file văn bản mà không phải build lại hay khởi động lại server.
+- **Giải thích:** Prompt tách khỏi code nên chỉ sửa file văn bản, không sửa Python. Prompt được nạp một lần lúc khởi động nên phải khởi động lại service (dev compose mount `./data`, không cần build lại image). Đổi prompt thì chạy lại `python -m app.script.redteam_copilot` (IPLMS ADR-0029).
 
 #### Yêu Cầu 2: "Hãy đổi kích thước chunk size của tài liệu RAG từ 500 xuống 300 ký tự"
 - **File cần sửa:** [`app/core/knowledge/services/ingestion_service.py`](file:///D:/ai/app/core/knowledge/services/ingestion_service.py)
@@ -398,7 +397,7 @@ Giảng viên thường yêu cầu 1 trong 4 thao tác sau:
 * **Hỏi:** *"Nếu tôi tắt nguồn mạng internet thì bãi xe có cho xe ra vào được không?"*
   * **Đáp:** *"Dạ hoàn toàn bình thường. Toàn bộ pipeline thị giác ANPR, EasyOCR và mô hình ngôn ngữ lớn Qwen3.5-4B đều chạy 100% offline trên GPU tại chỗ, độc lập hoàn toàn với internet hay các API bên thứ ba."*
 * **Hỏi:** *"Làm sao bạn chứng minh được hệ thống của bạn không bịa đặt thông tin khi khách hỏi?"*
-  * **Đáp:** *"Dạ, hệ thống áp dụng nguyên tắc ADR-0008. Chúng em đã xây dựng bộ kiểm thử `test_rag_rigorous_eval.py` với các câu hỏi bẫy như 'Cách nấu phở bò'. Hệ thống tính toán điểm tương đồng cosine và lọc hư từ; nếu không có chunk nào khớp, điểm tin cậy bị gán về 0.0 và hệ thống dứt khoát từ chối trả lời."*
+  * **Đáp:** *"Dạ, hệ thống áp dụng nguyên tắc ai ADR-0002. Chúng em đã xây dựng bộ kiểm thử `test_rag_rigorous_eval.py` với các câu hỏi bẫy như 'Cách nấu phở bò'. Hệ thống tính toán điểm tương đồng cosine và lọc hư từ; nếu không có chunk nào khớp, điểm tin cậy bị gán về 0.0 và hệ thống dứt khoát từ chối trả lời."*
 
 ---
 

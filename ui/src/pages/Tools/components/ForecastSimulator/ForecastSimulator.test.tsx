@@ -33,7 +33,7 @@ describe('ForecastSimulator Component', () => {
     expect(screen.getByText('23h')).toBeTruthy();
   });
 
-  it('opens and closes ADR-0008 safety gate modal on button click', () => {
+  it('opens and closes the API safety gate modal on button click', () => {
     renderWithProviders(<ForecastSimulator />);
 
     const testApiBtn = screen.getByRole('button', { name: /Kiểm Tra API Thực/i });

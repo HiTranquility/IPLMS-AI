@@ -26,7 +26,7 @@ def _deterministic_embedding(text: str, dimensions: int = 768) -> List[float]:
 
     Giúp môi trường local dev/offline hoạt động 100% không bị chặn bởi ConnectError,
     đồng thời bảo toàn tính tương đồng cosine trong pgvector: văn bản có chung từ khóa
-    trọng tâm sẽ đạt cosine similarity >= 0.35 (đáp ứng ADR-0008), câu hỏi lạc đề trả về ~0.0.
+    trọng tâm sẽ đạt cosine similarity >= 0.35 (đáp ứng ai ADR-0002), câu hỏi lạc đề trả về ~0.0.
     """
     words = re.findall(r"\w+", unicodedata.normalize("NFC", text).lower())
     meaningful = [w for w in words if w not in _STOPWORDS] or words
