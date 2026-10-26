@@ -4,7 +4,7 @@ Mọi hồ sơ của repo con nằm dưới thư mục này, bố cục giống 
 
 ```text
 docs/projects/
-├── BOARD.md                                       # ai nhận việc gì, hạn, tới đâu — một dòng mỗi việc
+├── BOARD.md                                       # sinh từ Meta hồ sơ (script/board_gen.py), không sửa tay — IPLMS ADR-0060
 ├── suggestions/MM-YYYY/SUGGESTION-NNN-slug.md    # đề xuất chỉ trong repo này
 ├── usecases/UC-NNN-slug.md                       # đặc tả cho dev: bảng + sơ đồ sequence/state/ER
 ├── adrs/MM-YYYY/NNNN-slug.md

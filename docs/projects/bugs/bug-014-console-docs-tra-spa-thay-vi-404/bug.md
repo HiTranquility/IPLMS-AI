@@ -6,6 +6,7 @@
 |---|---|
 | **Ngày / Người báo** | 2026-10-23 / Claude Code (phát hiện khi kiểm [bug-013](../bug-013-vision-demo-seed-khong-chan-production/bug.md)) |
 | **Trạng thái** | ✅ Fixed |
+| **Người nhận** | HiTranquility |
 | **Môi trường** | local, `develop@534e0f8` |
 
 ## Hành vi thực tế
