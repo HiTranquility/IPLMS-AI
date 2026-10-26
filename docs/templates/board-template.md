@@ -1,50 +1,19 @@
 # 📋 BOARD — <tên repo>: việc chưa làm, ai nhận, tới đâu
 
 > **Đích:** `docs/projects/BOARD.md` — *một file của repo này, không theo tháng, không có mã* · **Luật chung:** [templates/README](README.md)
-> Bảng trả lời **ai làm gì, hạn bao giờ, đang tới đâu**. Cách làm và bằng chứng nằm trong hồ sơ được trỏ tới, không nằm ở đây.
+> **Không viết tay.** Từ IPLMS ADR-0060, `BOARD.md` sinh từ Meta hồ sơ bằng `python -X utf8 script/board_gen.py`; CI (`.github/workflows/generated-docs.yml`) sinh lại sau mỗi lần merge vào `develop`, PR sửa `BOARD.md` bị `script/check_generated.py` chặn. Repo mới: chép hai script + workflow từ gốc IPLMS, tạo file này chỉ với dòng tiêu đề `#` ở trên (bộ sinh giữ dòng đó), để CI sinh phần còn lại.
 
-## 📌 Meta
+## Bảng lấy dữ liệu từ đâu
 
-| | |
+| Cột BOARD | Lấy từ hồ sơ (bug, ISSUE, CHORE, SUGGESTION; PROB/IDEA/AUDIT/REQ khi có Người nhận hoặc bảng việc) |
 |---|---|
-| **Người giữ bảng** | @username |
-| **Cập nhật lần cuối** | YYYY-MM-DD |
+| Mục 🙋 / 🗓️ / 🚧 / ⏳ / ⛔ / ✅ | **Trạng thái** (đầu dòng 🚧/🛠️ → 🚧, 👀/🔄 → ⏳, "Bị chặn" → ⛔, ✅ → ✅); chưa bắt đầu mà có Người nhận → 🗓️, không có → 🙋 |
+| Người nhận · Hạn · Ưu tiên | Meta **Người nhận**, **Hạn** (`YYYY-MM-DD`), **Ưu tiên** (🔴/🟠/🟡/🟢) |
+| ✅ Xong gần đây | Meta **Ngày đóng**; 20 hồ sơ mới nhất |
+| Nhiều dòng cho một hồ sơ | Mục `## 📋 Việc trên BOARD` trong hồ sơ: `\| Việc \| Người nhận \| Hạn \| Ưu tiên \| Trạng thái \|` |
 
-## 📏 Luật dùng bảng
+## Luật
 
-1. **[NEVER] viết nội dung vào bảng.** Mỗi việc đúng một dòng. Cần hơn một dòng để giải thích → tạo hồ sơ trong repo này (issue / bug / suggestion) trước, rồi ghi vào cột **Hồ sơ**. Việc vặt thì để `—`.
-2. **Việc bắt nguồn từ repo gốc** (IDEA, PROB, bug hay ISSUE xuyên module): ghi mã kèm tên repo, ví dụ `IPLMS IDEA-010`, không dùng link tương đối (repo con clone riêng thì link gãy). Người nhận **không có quyền repo gốc** → mở ISSUE/bug trong repo này, mô tả đủ để làm mà không cần đọc gốc, ghi `Bắt nguồn từ: IPLMS …`, rồi trỏ dòng bảng vào hồ sơ đó.
-3. **Việc chạm nhiều repo:** mỗi repo có phần việc thì có một dòng riêng trong bảng của mình, mô tả đúng phần của repo đó.
-4. **Nhận việc** = chuyển dòng sang 🚧, điền **Người nhận** + **Hạn**. Xong = chuyển xuống ✅ kèm ngày; trạng thái chi tiết vẫn cập nhật trong hồ sơ.
-5. Mục ✅ dọn mỗi đầu tháng — git đã giữ lịch sử.
-6. Ưu tiên: 🔴 hỏng luồng chính / bảo mật / mất dữ liệu · 🟠 sai nhưng có đường vòng, hoặc kiểm thử còn treo · 🟢 dọn dẹp, vận hành nhỏ.
-
-## 🙋 Cần người nhận
-
-| Việc | Hồ sơ | Ưu tiên | Ghi chú |
-|---|---|---|---|
-| | | | |
-
-## 🚧 Đang làm
-
-| Việc | Hồ sơ | Người nhận | Hạn | Tới đâu |
-|---|---|---|---|---|
-| | | | | |
-
-## ⏳ Chờ duyệt
-
-| Việc | Hồ sơ | Người làm | Người duyệt |
-|---|---|---|---|
-| | | | |
-
-## ⛔ Bị chặn
-
-| Việc | Hồ sơ | Chặn bởi |
-|---|---|---|
-| | | |
-
-## ✅ Xong gần đây *(dọn đầu tháng)*
-
-| Việc | Hồ sơ | Người làm | Ngày |
-|---|---|---|---|
-| | | | |
+1. **Mọi dòng có hồ sơ trong chính repo này.** Việc bắt nguồn từ repo gốc → mở ISSUE ở repo này ghi `Bắt nguồn từ: IPLMS …`, mô tả đủ để làm mà không cần đọc gốc; nhiều việc con của cùng một hồ sơ gốc gom vào bảng `📋 Việc trên BOARD` của ISSUE đó.
+2. **Nhận việc** = điền **Người nhận** + **Hạn**, đổi Trạng thái sang 🚧. **Xong** = Trạng thái ✅ + **Ngày đóng**.
+3. Ưu tiên: 🔴 hỏng luồng chính / bảo mật / mất dữ liệu · 🟠 sai nhưng có đường vòng, hoặc kiểm thử còn treo · 🟡 nên làm · 🟢 dọn dẹp, vận hành nhỏ.

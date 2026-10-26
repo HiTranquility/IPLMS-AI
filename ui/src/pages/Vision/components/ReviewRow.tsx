@@ -17,6 +17,12 @@ function proposed(item: ReviewItem): string {
   return DASH;
 }
 
+/** Biển số để đặt tên nút theo dòng; nhãn UNUSABLE không có biển đề xuất thì dùng biển máy đọc (A-64). */
+function rowPlate(item: ReviewItem): string {
+  const plate = proposed(item);
+  return plate && plate !== DASH ? plate : item.machine_plate || item.capture_id;
+}
+
 export function renderPlateDiff(
   gate: string,
   machine: string,
@@ -153,12 +159,18 @@ export function ReviewRow({ item }: ReviewRowProps) {
             <Button
               size="sm"
               loading={decide.isPending}
+              aria-label={t.review.approveFor(rowPlate(item))}
               onClick={() => decide.mutate({ labelId: item.label.id, decision: 'APPROVED', note: '' })}
             >
               <Check size={14} aria-hidden />
               {t.common.approve}
             </Button>
-            <Button size="sm" variant="secondary" onClick={() => setRejecting(true)}>
+            <Button
+              size="sm"
+              variant="secondary"
+              aria-label={t.review.rejectFor(rowPlate(item))}
+              onClick={() => setRejecting(true)}
+            >
               <X size={14} aria-hidden />
               {t.review.rejectOpen}
             </Button>

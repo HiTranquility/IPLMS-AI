@@ -5,6 +5,8 @@
 | | |
 |---|---|
 | **Trạng thái** | 🚧 In progress |
+| **Người nhận** | AI Team |
+| **Hạn** | 2026-10-31 |
 | **Ngày tạo** | 2026-10-22 |
 | **Người phụ trách** | AI Team & HiTranquility |
 | **Phạm vi** | `ai/` (`app/console_main.py`, `ui/`, `app/api/rest/routes/console_tools_controller.py`) |

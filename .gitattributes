@@ -1,3 +1,27 @@
+# Mọi file text lưu LF trong git, kể cả máy Windows core.autocrlf=true/false (IPLMS ADR-0060).
+# Thiếu dòng này thì một máy lưu CRLF là cả file hiện trong diff dù chỉ đổi vài dòng.
+* text=auto eol=lf
+
+# Nhị phân: không đổi xuống dòng, không diff text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+*.docx binary
+*.xlsx binary
+*.pptx binary
+*.zip binary
+*.jar binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
+*.pt binary
+*.onnx binary
+*.mp4 binary
+
 # Tài liệu nhị phân: KHÔNG đổi xuống dòng (autocrlf làm lệch offset xref của PDF → file hỏng).
 *.pdf binary
 *.docx binary

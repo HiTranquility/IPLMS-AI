@@ -47,6 +47,8 @@ export interface AnprRecognizeResult {
   vehicle_type?: string | null;
   plate_color?: string | null;
   latency_ms?: number | null;
+  crop_image?: string | null;
+  crop_plate_image_url?: string | null;
 }
 
 export interface VerifyMatchResult {

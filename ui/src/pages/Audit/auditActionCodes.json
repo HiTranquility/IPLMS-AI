@@ -20,8 +20,15 @@
   "policy.approved": "ml",
   "policy.rejected": "ml",
   "knowledge.ingest_draft": "ml",
+  "knowledge.delete": "ml",
   "vision.demo_seed": "ml",
   "vision.label": "review",
   "vision.review": "review",
-  "copilot.review": "review"
+  "copilot.review": "review",
+  "copilot.promote_eval": "review",
+  "settings.compute": "ml",
+  "settings.policy": "ml",
+  "engine.warmup": "ml",
+  "engine.unload": "ml",
+  "session.revoke": "auth"
 }

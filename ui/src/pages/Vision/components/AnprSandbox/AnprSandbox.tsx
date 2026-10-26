@@ -224,29 +224,12 @@ export function AnprSandbox() {
     setCurrentBlob(file);
     setActivePresetId(null);
     setRecognitionResult(null);
+    setCropImgUrl('');
 
     const reader = new FileReader();
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
       setOriginalImgUrl(dataUrl);
-
-      // Create simulated crop from center
-      const img = new Image();
-      img.onload = () => {
-        const cropCanvas = document.createElement('canvas');
-        const cW = Math.round(img.width * 0.5);
-        const cH = Math.round(img.height * 0.35);
-        const cX = Math.round((img.width - cW) / 2);
-        const cY = Math.round((img.height - cH) / 2);
-        cropCanvas.width = cW;
-        cropCanvas.height = cH;
-        const cropCtx = cropCanvas.getContext('2d');
-        if (cropCtx) {
-          cropCtx.drawImage(img, cX, cY, cW, cH, 0, 0, cW, cH);
-          setCropImgUrl(cropCanvas.toDataURL('image/jpeg'));
-        }
-      };
-      img.src = dataUrl;
     };
     reader.readAsDataURL(file);
   };
@@ -287,12 +270,16 @@ export function AnprSandbox() {
       }
       const item = (await recognizePlate(formData)) as Record<string, unknown>;
       const plate = (item.plate_number ?? item.plate_text ?? item.plate) as string | undefined;
+      const realCrop = (item.crop_image ?? item.crop_plate_image_url) as string | undefined;
+      if (realCrop) {
+        setCropImgUrl(realCrop);
+      }
       setRecognitionResult({
         plateNumber: plate || '—',
         confidence: typeof item.confidence === 'number' ? item.confidence : undefined,
         plateColor: typeof item.plate_color === 'string' ? (item.plate_color.toLowerCase() as PlateColor) : undefined,
         vehicleType: typeof item.vehicle_type === 'string' ? item.vehicle_type : 'unknown',
-        cropPlateImageUrl: (item.crop_plate_image_url as string | undefined) || cropImgUrl,
+        cropPlateImageUrl: realCrop || cropImgUrl,
         originalImageUrl: originalImgUrl,
         eventId: item.event_id as string | undefined,
         timestamp: item.timestamp as string | undefined,
@@ -553,8 +540,12 @@ export function AnprSandbox() {
                       <span>{x.crop}</span>
                     </span>
                     <div className={styles.visualMediaBox}>
-                      {cropImgUrl ? (
-                        <img src={cropImgUrl} alt={x.cropAlt} className={styles.visualImg} />
+                      {recognitionResult?.cropPlateImageUrl || cropImgUrl ? (
+                        <img
+                          src={recognitionResult?.cropPlateImageUrl || cropImgUrl}
+                          alt={x.cropAlt}
+                          className={styles.visualImg}
+                        />
                       ) : (
                         <Scan size={32} className={styles.emptyIcon} />
                       )}

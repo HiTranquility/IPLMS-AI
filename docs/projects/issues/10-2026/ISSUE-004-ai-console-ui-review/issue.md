@@ -5,6 +5,7 @@
 | | |
 |---|---|
 | **Trạng thái** | ✅ Done (chỉ ghi hồ sơ; không sửa code) |
+| **Người nhận** | Claude Code |
 | **Người phụ trách** | Claude Code, theo yêu cầu chủ dự án ngày 2026-10-23 |
 | **Phạm vi** | `ai/ui`, cùng phần API console mà UI gọi (`app/api/rest/routes/console_*`, `app/console_main.py`) |
 | **Nhánh** | `docs/ISSUE-004-2026-10-ai-console-ui-review` |

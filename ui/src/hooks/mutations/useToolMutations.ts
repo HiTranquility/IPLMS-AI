@@ -1,7 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/constants/queryKeys';
-import { deleteKnowledgeDocument, ingestDraft, tryCopilot } from '@/services/apiEndpoints/tool.endpoint';
-import type { TryCopilotRequest } from '@/types/tool';
+import {
+  deleteKnowledgeDocument,
+  ingestDraft,
+  revokeActiveSession,
+  triggerEngineAction,
+  tryCopilot,
+  updateComputeSettings,
+  updatePolicySettings,
+} from '@/services/apiEndpoints/tool.endpoint';
+import { promoteTurnToEval } from '@/services/apiEndpoints/copilot.endpoint';
+import type { ComputeSettings, PolicySettings, TryCopilotRequest } from '@/types/tool';
 
 export function useTryCopilotMutation() {
   const client = useQueryClient();
@@ -38,3 +47,66 @@ export function useDeleteKnowledgeDocumentMutation() {
 export const useTryCopilot = useTryCopilotMutation;
 export const useIngestDraft = useIngestDraftMutation;
 export const useDeleteKnowledgeDocument = useDeleteKnowledgeDocumentMutation;
+
+export function useUpdateComputeSettingsMutation() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Partial<ComputeSettings> & { preset?: 'safe_4gb' | 'cpu_eco' | 'gpu_full' }) =>
+      updateComputeSettings(payload),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: queryKeys.tools.all() });
+      void client.invalidateQueries({ queryKey: queryKeys.audit.list() });
+    },
+  });
+}
+
+export function useUpdatePolicySettingsMutation() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Partial<PolicySettings> & { reason: string }) => updatePolicySettings(payload),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: queryKeys.tools.all() });
+      void client.invalidateQueries({ queryKey: queryKeys.audit.list() });
+    },
+  });
+}
+
+export function useEngineActionMutation() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (action: 'warmup' | 'unload') => triggerEngineAction(action),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: queryKeys.tools.all() });
+      void client.invalidateQueries({ queryKey: queryKeys.audit.list() });
+    },
+  });
+}
+
+export function useRevokeSessionMutation() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sessionId, reason }: { sessionId: string; reason?: string }) =>
+      revokeActiveSession(sessionId, reason),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: queryKeys.tools.sessions() });
+      void client.invalidateQueries({ queryKey: queryKeys.audit.list() });
+    },
+  });
+}
+
+export function usePromoteTurnToEvalMutation() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: promoteTurnToEval,
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: queryKeys.tools.evalCandidates() });
+      void client.invalidateQueries({ queryKey: queryKeys.audit.list() });
+    },
+  });
+}
+
+export const useUpdateComputeSettings = useUpdateComputeSettingsMutation;
+export const useUpdatePolicySettings = useUpdatePolicySettingsMutation;
+export const useEngineAction = useEngineActionMutation;
+export const useRevokeSession = useRevokeSessionMutation;
+export const usePromoteTurnToEval = usePromoteTurnToEvalMutation;

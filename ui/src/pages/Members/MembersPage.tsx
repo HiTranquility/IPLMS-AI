@@ -144,7 +144,7 @@ export function MembersPage() {
 
           {members.data && (
             <div className={table.wrap}>
-              <table className={table.table}>
+              <table className={table.table} aria-label={t.members.listLabel}>
                 <thead>
                   <tr>
                     <th scope="col">{t.members.member}</th>
@@ -215,7 +215,8 @@ export function MembersPage() {
                             type="button"
                             className={styles.manageBtn}
                             onClick={() => handlePickForRole(m.id)}
-                            title={`${t.members.manageRolesAction}: ${m.display_name}`}
+                            title={t.members.manageRolesFor(m.display_name)}
+                            aria-label={t.members.manageRolesFor(m.display_name)}
                           >
                             <Shield size={12} aria-hidden />
                             <span>{t.members.manageRolesAction}</span>
@@ -230,7 +231,7 @@ export function MembersPage() {
           )}
         </section>
 
-        <aside className={styles.side}>
+        <aside className={styles.side} aria-label={t.members.sideLabel}>
           <InviteForm />
           {members.data && me.data && (
             <RoleForm

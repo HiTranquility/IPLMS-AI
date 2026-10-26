@@ -6,6 +6,7 @@ from typing import Any, Callable
 from uuid import uuid4
 
 from app.config import get_config
+from app.infra.database.db_connection import connect_with_fallback
 from app.core.exceptions import KnowledgeGateError, RagPipelineError
 
 
@@ -38,7 +39,6 @@ class ModelPolicyStore:
         if not self.db_url:
             raise RagPipelineError("Thiếu AI_DATABASE_URL để quản trị model.")
         try:
-            from app.infra.database.db_connection import connect_with_fallback
             connection, self.db_url = connect_with_fallback(self.db_url, connect_timeout=3)
             try:
                 with connection:
