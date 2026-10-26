@@ -85,7 +85,8 @@ def api_not_found(_path: str) -> JSONResponse:
 
 @app.get("/assets/{path:path}", include_in_schema=False)
 @app.get("/console/assets/{path:path}", include_in_schema=False)
-def assets(path: str):
+@app.get("/{_prefix:path}/assets/{path:path}", include_in_schema=False)
+def assets(path: str, _prefix: str = ""):
     candidate = (UI_DIST / "assets" / path).resolve()
     if candidate.is_file() and candidate.is_relative_to(UI_DIST / "assets"):
         return FileResponse(candidate)
@@ -119,6 +120,12 @@ def ui(path: str = ""):
             "rồi <code>pnpm --dir ui build</code> trong thư mục ai/.</p>",
             status_code=503,
         )
+    if "/assets/" in f"/{path}":
+        asset_sub = f"/{path}".split("/assets/", 1)[1]
+        asset_candidate = (UI_DIST / "assets" / asset_sub).resolve()
+        if asset_candidate.is_file() and asset_candidate.is_relative_to(UI_DIST / "assets"):
+            return FileResponse(asset_candidate)
+        return JSONResponse(status_code=404, content={"message": "Asset not found"})
     candidate = (UI_DIST / path).resolve()
     if path and candidate.is_file() and candidate.is_relative_to(UI_DIST):
         return FileResponse(candidate)
@@ -129,4 +136,7 @@ if __name__ == "__main__":
     import uvicorn
 
     cfg = get_config().console
-    uvicorn.run(app, host=cfg.bind_host, port=cfg.port)
+    if cfg.reload:
+        uvicorn.run("app.console_main:app", host=cfg.bind_host, port=cfg.port, reload=True)
+    else:
+        uvicorn.run(app, host=cfg.bind_host, port=cfg.port)

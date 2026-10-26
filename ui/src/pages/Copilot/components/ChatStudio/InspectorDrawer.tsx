@@ -1,3 +1,4 @@
+import { PARKING_LOTS, resolveLotLabel } from '@/constants/parkingLots';
 import { Activity, BookOpen, Check, Cpu, Database, GitBranch, Sliders, Sparkles, X } from 'lucide-react';
 import { useI18n } from '@/i18n/I18nProvider';
 import { fmtInt, fmtMs } from '@/utils/format';
@@ -327,7 +328,7 @@ export function InspectorDrawer({
               <input
                 id="param-similarity"
                 type="range"
-                min="0.40"
+                min="0.20"
                 max="0.95"
                 step="0.01"
                 value={params.minSimilarity}
@@ -364,10 +365,11 @@ export function InspectorDrawer({
                 onChange={(e) => setParams((p) => ({ ...p, parkingLotId: e.target.value }))}
               >
                 <option value="">{t.copilot.allLots}</option>
-                <option value="lot_landmark_81">Vincom Landmark 81</option>
-                <option value="lot_vincom_center">{t.copilot.lotVincomDongKhoi}</option>
-                <option value="lot_central_01">{t.copilot.lotCentral}</option>
-                <option value="lot_west_gate">{t.copilot.lotWestGate}</option>
+                {PARKING_LOTS.map((lot) => (
+                  <option key={lot.id} value={lot.id}>
+                    {resolveLotLabel(lot, t)}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

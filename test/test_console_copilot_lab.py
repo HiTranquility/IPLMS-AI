@@ -78,6 +78,46 @@ class CopilotLabPolicyTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((stats["reviewed"], stats["accuracy"]), (4, 0.75))
 
 
+class EvalCandidateFileTest(unittest.IsolatedAsyncioTestCase):
+    """A-37: file ứng viên Eval chỉ giữ bản đã che PII, cắt theo hạn lưu telemetry."""
+
+    def setUp(self):
+        import tempfile
+
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.svc, self.deps = service()
+        self.svc.candidates_path = os.path.join(self.tmp.name, "var", "eval_candidates.json")
+
+    async def test_luu_ban_da_che_va_audit_khong_chep_cau_hoi(self):
+        entry = await self.svc.promote_to_eval(
+            actor("ai_lead"), TURN, "Xe 51H-123.45 của tôi, gọi 0912345678 nhé", note="email a@b.vn",
+        )
+        self.assertNotIn("51H-123.45", entry["query"])
+        self.assertNotIn("0912345678", entry["query"])
+        self.assertIn("[BIEN_SO]", entry["query"])
+        self.assertNotIn("a@b.vn", entry["note"])
+        with open(self.svc.candidates_path, encoding="utf-8") as f:
+            raw = f.read()
+        self.assertNotIn("51H-123.45", raw)
+        summary = self.deps["store"].add_audit.call_args.args[4]
+        self.assertNotIn("Xe", summary)
+        self.assertNotIn("[BIEN_SO]", summary)
+
+    async def test_bo_muc_qua_han_luu(self):
+        import json
+
+        os.makedirs(os.path.dirname(self.svc.candidates_path), exist_ok=True)
+        old = {"turn_id": "old", "query": "cũ", "promoted_at": "2000-01-01T00:00:00Z"}
+        with open(self.svc.candidates_path, "w", encoding="utf-8") as f:
+            json.dump([old], f)
+        self.assertEqual(await self.svc.list_eval_candidates(actor("ai_lead")), [])
+        await self.svc.promote_to_eval(actor("ai_lead"), TURN, "phí gửi xe?")
+        with open(self.svc.candidates_path, encoding="utf-8") as f:
+            ids = [x["turn_id"] for x in json.load(f)]
+        self.assertEqual(ids, [TURN])
+
+
 @unittest.skipUnless(os.getenv("AI_TEST_DATABASE_URL"), "requires AI_TEST_DATABASE_URL")
 class CopilotLabStoreTest(unittest.TestCase):
     def setUp(self):

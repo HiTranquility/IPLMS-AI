@@ -4,9 +4,13 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile
 from app.api.rest.developer_access import require_developer_access
 from pydantic import BaseModel
 
-from app.core.vision.dtos.vision_dto import AnprItem, VehicleMatchQuery, VehicleMatchResult
-from app.core.vision.services.anpr_service import AnprService
-from app.core.vision.services.anti_fraud_service import anti_fraud_service
+from app.core.vision import (
+    AnprItem,
+    AnprService,
+    VehicleMatchQuery,
+    VehicleMatchResult,
+    anti_fraud_service,
+)
 from app.api.rest.schemas.base_response import BaseResponse
 
 router = APIRouter(prefix="/vision", tags=["Developer Vision"], dependencies=[Depends(require_developer_access)])

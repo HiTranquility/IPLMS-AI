@@ -17,8 +17,8 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from app.core.exceptions import DataLakeError
-from app.core.forecast.dtos.forecast_dto import AreaOccupancyTelemetryItem
-from app.core.forecast.services.forecast_service import (
+from app.core.forecast.dtos.forecast_dto import (
+    AreaOccupancyTelemetryItem,
     _WEEKDAY_HOURLY_BASELINES,
     _WEEKEND_HOURLY_BASELINES,
 )

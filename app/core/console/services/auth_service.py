@@ -164,7 +164,7 @@ class ConsoleAuthService:
         await self.store.touch_session(session["session_id"])
         return ConsoleSession(
             session_id=session["session_id"],
-            actor=ConsoleActor(session["member_id"], frozenset(session["roles"])),
+            actor=ConsoleActor(session["member_id"], frozenset(session["roles"]), session_id=session["session_id"]),
             email=session["email"],
             display_name=session["display_name"],
             mfa_done=session["mfa_at"] is not None,

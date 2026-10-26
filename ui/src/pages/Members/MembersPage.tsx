@@ -215,7 +215,8 @@ export function MembersPage() {
                             type="button"
                             className={styles.manageBtn}
                             onClick={() => handlePickForRole(m.id)}
-                            title={`${t.members.manageRolesAction}: ${m.display_name}`}
+                            title={t.members.manageRolesFor(m.display_name)}
+                            aria-label={t.members.manageRolesFor(m.display_name)}
                           >
                             <Shield size={12} aria-hidden />
                             <span>{t.members.manageRolesAction}</span>

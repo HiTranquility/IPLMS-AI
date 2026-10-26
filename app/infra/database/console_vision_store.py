@@ -388,14 +388,17 @@ class ConsoleVisionStore(ConsoleStore):
         return await self._run(work)
 
     async def seed_demo_samples(
-        self, actor_id: str, samples: list[dict[str, Any]], retention_days: int
+        self, actor_id: str, samples: list[dict[str, Any]], retention_days: int, reset: bool = False,
     ) -> dict[str, int]:
         """Ghi mẫu thực hành (dev/sandbox) do service dựng sẵn ảnh; nạp lại không nhân bản."""
         def work(cur):
+            if reset and samples:
+                demo_ids = [item["capture_id"] for item in samples]
+                cur.execute("DELETE FROM vision_label WHERE capture_id = ANY(%s::uuid[])", (demo_ids,))
             # Nhãn mẫu phải của người KHÁC người bấm, nếu không luật bốn mắt khoá nó mãi ở "chờ duyệt".
             cur.execute(
                 """SELECT id::text FROM console_member WHERE status <> 'DISABLED' AND id <> %s
-                   ORDER BY created_at LIMIT 1""",
+                   ORDER BY (id = '44444444-4444-4444-4444-444444444444'::uuid) DESC, created_at LIMIT 1""",
                 (actor_id,),
             )
             row = cur.fetchone()

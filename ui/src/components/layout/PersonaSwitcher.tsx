@@ -10,9 +10,10 @@ import styles from './PersonaSwitcher.module.css';
 
 export interface PersonaSwitcherProps {
   me: Me;
+  collapsed?: boolean;
 }
 
-export function PersonaSwitcher({ me }: PersonaSwitcherProps) {
+export function PersonaSwitcher({ me, collapsed = false }: PersonaSwitcherProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
@@ -45,12 +46,12 @@ export function PersonaSwitcher({ me }: PersonaSwitcherProps) {
   };
 
   return (
-    <div className={styles.wrap}>
+    <div className={`${styles.wrap} ${collapsed ? styles.wrapCollapsed : ''}`}>
       {availableList.length > 1 ? (
         <>
           <button
             type="button"
-            className={styles.selectorButton}
+            className={`${styles.selectorButton} ${collapsed ? styles.selectorButtonCollapsed : ''}`}
             onClick={() => setOpen(!open)}
             aria-expanded={open}
             aria-label={t.workspace.switchPrompt}
@@ -58,12 +59,16 @@ export function PersonaSwitcher({ me }: PersonaSwitcherProps) {
           >
             <div className={styles.currentInfo}>
               <ActiveIcon size={15} className={styles.currentIcon} aria-hidden />
-              <div className={styles.currentText}>
-                <span className={styles.currentLabel}>{t.workspace[activeMeta.titleKey]}</span>
-                <span className={styles.currentBadge}>{activeMeta.badge}</span>
-              </div>
+              {!collapsed && (
+                <div className={styles.currentText}>
+                  <span className={styles.currentLabel}>{t.workspace[activeMeta.titleKey]}</span>
+                  <span className={styles.currentBadge}>{activeMeta.badge}</span>
+                </div>
+              )}
             </div>
-            <ChevronDown size={13} className={`${styles.chevron} ${open ? styles.chevronOpen : ''}`} aria-hidden />
+            {!collapsed && (
+              <ChevronDown size={13} className={`${styles.chevron} ${open ? styles.chevronOpen : ''}`} aria-hidden />
+            )}
           </button>
 
           {open && (
@@ -98,9 +103,12 @@ export function PersonaSwitcher({ me }: PersonaSwitcherProps) {
           )}
         </>
       ) : (
-        <div className={styles.singleBadge}>
+        <div
+          className={`${styles.singleBadge} ${collapsed ? styles.singleBadgeCollapsed : ''}`}
+          title={t.workspace[activeMeta.titleKey]}
+        >
           <ActiveIcon size={14} className={styles.singleBadgeIcon} aria-hidden />
-          <span>{t.workspace[activeMeta.titleKey]}</span>
+          {!collapsed && <span>{t.workspace[activeMeta.titleKey]}</span>}
         </div>
       )}
     </div>

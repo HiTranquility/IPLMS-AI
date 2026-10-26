@@ -118,13 +118,13 @@ describe('I-3 Cross-Role Demo Loop (5 vai trò AI Console)', () => {
 
     expect(await screen.findByText(/Annotator An/)).toBeTruthy();
     // Ca 1: Duyệt hợp lệ (khác người gán)
-    await user.click(screen.getByRole('button', { name: 'Duyệt' }));
+    await user.click(screen.getByRole('button', { name: 'Duyệt nhãn 51A-123.45' }));
     await waitFor(() => expect(calls.some((c) => c.url.endsWith('/decision'))).toBe(true));
     expect(bodyOf(calls, '/decision')).toEqual({ decision: 'APPROVED', note: '' });
 
     // Ca 2: Giả lập vi phạm bốn mắt (cố tự duyệt nhãn chính mình -> 403 FORBIDDEN)
     shouldFailFourEyes = true;
-    await user.click(screen.getByRole('button', { name: 'Duyệt' }));
+    await user.click(screen.getByRole('button', { name: 'Duyệt nhãn 51A-123.45' }));
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toContain('Thao tác này phải do một người khác thực hiện.');
     expect(alert.textContent).toContain('Mã: FORBIDDEN');

@@ -42,8 +42,23 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const callbackError = loginErrorMessage(new URLSearchParams(window.location.search).get('login_error'), t);
 
+  const saveReturnTo = () => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const returnToParam = searchParams.get('return_to');
+    const currentPath = window.location.pathname + window.location.search;
+    const target = returnToParam || (!currentPath.startsWith('/auth') && window.location.pathname !== '/' ? currentPath : null);
+    if (target && !target.startsWith('//')) {
+      try {
+        sessionStorage.setItem('console_return_to', target);
+      } catch {
+        // Storage unavailable fallback
+      }
+    }
+  };
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
+    saveReturnTo();
     login.mutate({ email, password });
   };
 
@@ -91,7 +106,7 @@ export function LoginPage() {
 
           {/* Google Sign-In Action */}
           <div className={styles.actionBlock}>
-            <a className={styles.google} href={AUTH_ENDPOINTS.GOOGLE_START}>
+            <a className={styles.google} href={AUTH_ENDPOINTS.GOOGLE_START} onClick={saveReturnTo}>
               <GoogleIcon />
               <span>{t.login.google}</span>
             </a>
