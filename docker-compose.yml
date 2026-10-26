@@ -38,6 +38,8 @@ services:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
+      # bug-031: gateway chỉ nhận container có nhãn này (providers.docker.constraints).
+      - "iplms.gateway=ai"
       # Traefik tới api qua mạng riêng của stack (ADR-0055).
       - "traefik.docker.network=${COMPOSE_PROJECT_NAME:-iplms-ai-dev}_default"
       # ── REST Routing (:8000) ──
@@ -45,12 +47,22 @@ services:
       - "traefik.http.routers.ai-rest.entrypoints=rest"
       - "traefik.http.routers.ai-rest.service=ai-rest"
       - "traefik.http.services.ai-rest.loadbalancer.server.port=8000"
+      # Traefik tự dò /health từng replica: bỏ replica hỏng sau ~5 s và có metric
+      # traefik_service_server_up theo từng replica cho Grafana.
+      - "traefik.http.services.ai-rest.loadbalancer.healthcheck.path=/health"
+      - "traefik.http.services.ai-rest.loadbalancer.healthcheck.interval=5s"
+      - "traefik.http.services.ai-rest.loadbalancer.healthcheck.timeout=2s"
       # ── gRPC Routing (:50051) with cleartext HTTP/2 (h2c) ──
       - "traefik.http.routers.ai-grpc.rule=PathPrefix(`/`)"
       - "traefik.http.routers.ai-grpc.entrypoints=grpc"
       - "traefik.http.routers.ai-grpc.service=ai-grpc"
       - "traefik.http.services.ai-grpc.loadbalancer.server.port=50051"
       - "traefik.http.services.ai-grpc.loadbalancer.server.scheme=h2c"
+      # Dò grpc.health.v1 (proto/health_service.proto) ngay trên cổng gRPC: bắt được
+      # cả tiến trình gRPC treo, không chỉ REST.
+      - "traefik.http.services.ai-grpc.loadbalancer.healthcheck.mode=grpc"
+      - "traefik.http.services.ai-grpc.loadbalancer.healthcheck.interval=5s"
+      - "traefik.http.services.ai-grpc.loadbalancer.healthcheck.timeout=2s"
     env_file:
       - path: .env.dev
         required: true
