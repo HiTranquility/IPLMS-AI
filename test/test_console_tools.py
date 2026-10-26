@@ -85,7 +85,15 @@ class StudioRealApiTest(unittest.IsolatedAsyncioTestCase):
             out = await svc.try_anpr(ML, b"jpeg-bytes")
         self.assertFalse(run.call_args.args[1])  # persist_files=False
         self.assertEqual({"plate_number": "51A12345", "confidence": 0.71, "vehicle_type": None,
-                          "plate_color": "white", "latency_ms": 123.0}, out)
+                          "plate_color": "white", "latency_ms": 123.0, "crop_image": None}, out)
+
+    async def test_anpr_thu_tra_crop_image_base64_khi_co_crop_bytes(self):
+        svc, *_ = service()
+        fake = SimpleNamespace(plate_number="51A12345", confidence=0.88, vehicle_type="car_sedan",
+                               plate_color="white", process_time=0.05, crop_bytes=b"dummy-crop-jpeg")
+        with patch("app.core.vision.services.anpr_service.AnprService.recognize_bytes", return_value=fake):
+            out = await svc.try_anpr(ML, b"jpeg-bytes")
+        self.assertTrue(out["crop_image"].startswith("data:image/jpeg;base64,"))
 
     async def test_anpr_thu_can_quyen_va_anh_hop_le(self):
         svc, *_ = service()
