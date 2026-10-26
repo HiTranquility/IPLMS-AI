@@ -38,6 +38,7 @@ src/
     {Name}Page.tsx + {Name}Page.module.css + {Name}PageContext.tsx + components/ + index.ts
   test/         setup + helper giả fetch
   utils/        format.ts (số/ngày theo ngôn ngữ), lang.ts, theme.ts
+e2e/demos/      runner chạy tay (Node, không dependency), không thuộc build/vitest — ISSUE-020
 ```
 
 Đặt tên theo khuôn `frontend-store` & `frontend` (`FRONTEND_CONVENTIONS_V2.md`): thư mục page `PascalCase` kèm `index.ts` barrel; mỗi page có `{Name}Page.tsx` (`export default`) + `{Name}Page.module.css` riêng; sub-component tách vào `pages/{Domain}/components/`; page phức tạp có `{Name}PageContext.tsx`; helper `camelCase.ts`.
