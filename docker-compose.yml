@@ -88,10 +88,12 @@ services:
     logging: *default-logging
     environment:
       POSTGRES_USER: ${AI_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${AI_DB_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${AI_DB_PASSWORD:?Thiếu AI_DB_PASSWORD - đặt trong file --env-file (mẫu .env.example)}
       POSTGRES_DB: ${AI_DB_NAME:-iplms_knowledge}
       # DB riêng của AI Console (ADR-0048 §3); trống thì script init bỏ qua.
       AI_CONSOLE_DB_PASSWORD: ${AI_CONSOLE_DB_PASSWORD:-}
+      # Bắt buộc khi đặt AI_CONSOLE_DB_PASSWORD; script init 11 dừng nếu thiếu.
+      AI_INFERENCE_DB_PASSWORD: ${AI_INFERENCE_DB_PASSWORD:-}
     ports:
       # Keep the host port distinct from the backend DB (:5433) and the
       # knowledge-graph dev stack (:5434). Containers still use database-vector:5432.
@@ -128,7 +130,7 @@ services:
       - path: .env.dev
         required: true
     environment:
-      - AI_CONSOLE_DATABASE_URL=postgresql://${AI_DB_USER:-postgres}:${AI_DB_PASSWORD:-***REMOVED***}@database-vector:5432/ai_console
+      - AI_CONSOLE_DATABASE_URL=postgresql://${AI_DB_USER:-postgres}:${AI_DB_PASSWORD:?Thiếu AI_DB_PASSWORD - đặt trong file --env-file (mẫu .env.example)}@database-vector:5432/ai_console
       - AI_CONSOLE_DEMO_SEED_ENABLED=true
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8090/console/api/health')\" || exit 1"]
