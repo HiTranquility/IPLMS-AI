@@ -1,123 +1,103 @@
 # 📋 BOARD — IPLMS-AI: việc chưa làm, ai nhận, tới đâu
 
-> **Đích:** `docs/projects/BOARD.md` — *một file của repo này, không theo tháng, không có mã* · **Mẫu:** [board-template](../templates/board-template.md)
-> Bảng trả lời **ai làm gì, hạn bao giờ, đang tới đâu**. Cách làm và bằng chứng nằm trong hồ sơ được trỏ tới, không nằm ở đây.
-
-## 📌 Meta
-
-| | |
-|---|---|
-| **Người giữ bảng** | Chủ đồ án |
-| **Cập nhật lần cuối** | 2026-10-23 |
-| **Người cập nhật** | Claude Code: thêm 12 dòng 🙋 từ lượt rà `ai/ui` (dòng bug-024/025 thêm ở lượt bổ sung 24/10) ([ISSUE-004](issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md)), có gợi ý người nhận (UI/UX giao Phát), chưa ai nhận |
-
-## 📏 Luật dùng bảng
-
-1. **[NEVER] viết nội dung vào bảng.** Mỗi việc đúng một dòng. Cần hơn một dòng để giải thích → tạo hồ sơ trong repo này (issue / bug / suggestion) trước, rồi ghi vào cột **Hồ sơ**. Việc vặt thì để `—`.
-2. **Việc bắt nguồn từ repo gốc** (IDEA, PROB, bug hay ISSUE xuyên module): ghi mã kèm tên repo, ví dụ `IPLMS IDEA-010`, không dùng link tương đối (repo con clone riêng thì link gãy). Người nhận **không có quyền repo gốc** → mở ISSUE/bug trong repo này, mô tả đủ để làm mà không cần đọc gốc, ghi `Bắt nguồn từ: IPLMS …`, rồi trỏ dòng bảng vào hồ sơ đó.
-3. **Việc chạm nhiều repo:** mỗi repo có phần việc thì có một dòng riêng trong bảng của mình, mô tả đúng phần của repo đó.
-4. **Nhận việc** = chuyển dòng sang 🚧, điền **Người nhận** + **Hạn**. Xong = chuyển xuống ✅ kèm ngày; trạng thái chi tiết vẫn cập nhật trong hồ sơ.
-5. Mục ✅ dọn mỗi đầu tháng — git đã giữ lịch sử.
-6. Ưu tiên (lúc lập bảng 2026-10-04 do AI đề xuất từ mức tác động trong hồ sơ — người giữ bảng sửa lại khi giao): 🔴 hỏng luồng chính / bảo mật / mất dữ liệu · 🟠 sai nhưng có đường vòng, hoặc kiểm thử còn treo · 🟢 dọn dẹp, vận hành nhỏ.
+> **Sinh tự động** bởi `python -X utf8 script/board_gen.py` từ Meta hồ sơ — **[NEVER] sửa tay** (IPLMS ADR-0060). Đổi trạng thái, người nhận, hạn, ưu tiên: sửa Meta của hồ sơ (`Trạng thái`, `Người nhận`, `Hạn`, `Ưu tiên`, `Ngày đóng`) hoặc bảng `## 📋 Việc trên BOARD` trong hồ sơ. CI sinh lại bảng sau mỗi lần merge vào `develop`; xem trước ở máy: `python -X utf8 script/board_gen.py --stdout`.
+> Ưu tiên: 🔴 hỏng luồng chính / bảo mật / mất dữ liệu · 🟠 sai nhưng có đường vòng, hoặc kiểm thử còn treo · 🟡 nên làm · 🟢 dọn dẹp, vận hành nhỏ.
 
 ## 🙋 Cần người nhận
 
-| Việc | Hồ sơ | Ưu tiên | Ghi chú |
+| Việc | Hồ sơ | Ưu tiên | Trạng thái |
 |---|---|---|---|
-| Review trước tích hợp: Hiệu chỉnh biển số mất ký tự | [bug-005](bugs/bug-005-plate-correction-mat-ky-tu/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
-| Review trước tích hợp: Prior loại xe không phải observation | [bug-006](bugs/bug-006-vehicle-prior-gia-lam-observation/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
-| Review trước tích hợp: Dashboard render dữ liệu bằng HTML | [bug-008](bugs/bug-008-dashboard-render-html-khong-escape/bug.md) | 🔴 | Chỉ phát hiện trên khoa-develop9a1aafd, chưa merge |
-| Đo weights ứng viên chưa nạp: nạp theo `artifact_key` trong process đo riêng (module M4) | IPLMS ISSUE-126 phase-6 6.12 | 🟢 | M4 chưa có người |
-| Gỡ cửa hậu `/auth/dev-session` + nút "Truy cập nhanh", đính chính AUDIT-005 | [bug-015](bugs/bug-015-dev-session-cua-hau-dang-nhap/bug.md) | 🔴 | Đề xuất HiTranquility (auth M1), chờ chủ dự án chốt (ISSUE-004 OPEN-04); đã sửa trên nhánh `bugfix/bug-015-2026-10-console-auth-hardening`, còn xoá phiên cũ + đính chính AUDIT-005 |
-| Bỏ mật khẩu mặc định trong `harden_console_db.py`, đổi mật khẩu role `ai_console` | [bug-016](bugs/bug-016-mat-khau-db-console-mac-dinh-trong-code/bug.md) | 🔴 | Đề xuất HiTranquility; đã sửa trên nhánh `bugfix/bug-015-2026-10-console-auth-hardening`, còn đổi mật khẩu ở các môi trường |
-| Gỡ mã TOTP cố định `000000`/`123456` vượt MFA và step-up | [bug-026](bugs/bug-026-ma-totp-co-dinh-vuot-xac-thuc/bug.md) | 🔴 | Đã sửa trên nhánh `bugfix/bug-015-2026-10-console-auth-hardening`; còn rà nhật ký phiên từ 2026-10-21 |
-| UI: gỡ hoặc gắn nhãn MÔ PHỎNG cho 7 chỗ bịa kết quả, chuyển `fetch` thẳng sang `apiEndpoints` | [bug-018](bugs/bug-018-ui-bia-ket-qua-khi-api-loi/bug.md) | 🔴 | Đã sửa + nối API thật (ANPR, Anti-Fraud, tri thức, chẩn đoán) trên `bugfix/bug-017-2026-10-chat-studio-contract`; còn Dispute thật (Dương, ai ISSUE-001) và Forecast (chưa có model) |
-| Chat Studio luôn 422: chốt nhận hay bỏ tham số Playground (Khoa), sửa UI (Phát), test hợp đồng (Dương) | [bug-017](bugs/bug-017-chat-studio-luon-422/bug.md) | 🔴 | OPEN-01 chốt (a) backend nhận tham số; đã sửa trên `bugfix/bug-017-2026-10-chat-studio-contract` |
-| UI: escape CSV audit + từ điển mã hành động khớp server | [bug-019](bugs/bug-019-audit-xuat-csv-khong-escape/bug.md), [bug-020](bugs/bug-020-audit-tu-dien-hanh-dong-lech-server/bug.md) | 🟠 | Đã sửa trên `bugfix/bug-019-2026-10-audit-export-and-actions` |
-| UI: sửa tràn ngang `/tools` ở 768px + contrast token `--color-faded`/accent hai theme | [bug-024](bugs/bug-024-trang-cong-cu-tran-ngang-o-768px/bug.md), [bug-025](bugs/bug-025-mau-chu-faded-va-accent-duoi-nguong-tuong-phan/bug.md) | 🟠 | Đã sửa trên `bugfix/bug-021-2026-10-console-ui-polish` (66 màn: 0 tràn, 0 dưới AA) |
-| UI: bóc i18n còn sót (419 dòng / 47 file) + kiểm tự động | [bug-023](bugs/bug-023-che-do-en-tron-tieng-viet/bug.md) | 🟡 | Đã sửa trên `bugfix/bug-021-2026-10-console-ui-polish` + test chặn chữ viết cứng |
-| UI: trục ngày biểu đồ, cờ ảnh khi gán nhãn, hai chú giải ở Vision | [bug-021](bugs/bug-021-bieu-do-xu-huong-cat-nhan-ngay/bug.md), [bug-022](bugs/bug-022-thuoc-tinh-anh-gan-nhan-khong-luu/bug.md) | 🟡 | Đã sửa trên `bugfix/bug-021-2026-10-console-ui-polish`; OPEN-02 chốt lưu cờ vào DB |
-| UI: sidebar trên màn hẹp + smoke test browser 7 vai × viewport × theme | [SUGGESTION-003](suggestions/10-2026/SUGGESTION-003-rail-thu-gon-tren-man-hep.md), [SUGGESTION-002](suggestions/10-2026/SUGGESTION-002-mock-api-va-ma-tran-browser-cho-ui.md) | 🟡 | SUGGESTION-003 🟢 ACCEPTED và đã làm ở ISSUE-006; SUGGESTION-002 (smoke test ma trận browser) vẫn chờ techlead |
-| Đăng nhập dev theo vai an toàn (gỡ chặn demo I-3) | [SUGGESTION-001](suggestions/10-2026/SUGGESTION-001-dang-nhap-dev-cuc-bo-an-toan.md) | 🟠 | Chờ techlead duyệt; Dương dùng cho demo |
-| Lưu cờ ảnh khi gán nhãn để đo ANPR theo điều kiện | [SUGGESTION-004](suggestions/10-2026/SUGGESTION-004-luu-thuoc-tinh-anh-khi-gan-nhan.md) | 🟢 | Đề xuất Khoa xác nhận, UI Phát |
-| Ca hồi quy và so A/B prompt trong Copilot Lab | [SUGGESTION-005](suggestions/10-2026/SUGGESTION-005-gom-luot-chat-vao-bo-eval.md) | 🟢 | Đề xuất Khoa + Dương (định dạng ca), UI Phát |
+| Forecast Simulator luôn chạy baseline vì id bãi trên UI lệch `area_key` của Gold lake | [bug-028](bugs/bug-028-forecast-id-bai-lech-area-key/bug.md) | 🟠 | 🆕 New / 🟠 sai số liệu hiển thị, có đường vòng (đọc thẻ `is_fallback` ở API) |
+| Fallback kết nối DB sang cổng 5432 rồi tự `CREATE DATABASE` trên một Postgres khác | [bug-029](bugs/bug-029-db-fallback-tu-tao-database-tren-postgres-khac/bug.md) | 🟠 | 🆕 New / 🟠 có thể ghi dữ liệu nhầm chỗ trên máy dev |
+| Phiên "chờ MFA" tồn đọng trong danh sách Phiên đăng nhập | [bug-030](bugs/bug-030-phien-cho-mfa-ton-dong-trong-danh-sach/bug.md) | 🟡 | 🆕 New |
+| Đo weights ứng viên chưa nạp: nạp theo `artifact_key` trong process đo riêng (module M4) | [ISSUE-017](issues/10-2026/ISSUE-017-phan-ai-cua-iplms-issue-126/issue.md) | 🟢 | 🆕 Cần người nhận |
 
-## 🗓️ Dự kiến theo thành viên — chưa nhận việc
+## 🗓️ Đã giao, chưa bắt đầu
 
-Chủ dự án chọn B và yêu cầu hoạch định lại ngày 2026-10-19: **HiTranquility phụ trách phần tổng thể/tích hợp**, Khoa/Dương phụ trách phần AI. **Dự kiến cho** chưa có nghĩa đã bắt đầu. Không chia đều số việc; không tự ấn định hạn tuần hoặc suy ra tiến độ thực tế từ hạn cũ.
-
-Thứ tự là gợi ý trong từng người, sau khi rà việc đang làm và review 🔴 ở mục 🙋. HiTranquility thực hiện nối tiếp theo điều kiện, không phải 7 việc đồng thời. Chuyển dòng sang 🚧 khi xác nhận bắt đầu và hạn. M3/M4 vẫn cần chốt người; Claude Code là tác nhân viết code, không thay người tích hợp.
-
-**Làm rõ theo chủ dự án:** demo liên vai là các vai trên UI của IPLMS-AI, do Dương phụ trách. Thao tác giữa `ui/` và phần API/service trong cùng repo IPLMS-AI vẫn thuộc phạm vi AI. Nếu kịch bản cần sửa code ở repo gốc, backend, frontend, analytic hoặc repo khác, ghi điểm chặn và báo chủ dự án để chốt phần tích hợp với HiTranquility; không tự mở rộng demo.
-
-| Người | Phạm vi phụ trách trong kế hoạch này | Bàn giao / phối hợp |
-|---|---|---|
-| Khoa | ANPR, model và phần M2 Copilot trong `ai/` | Bàn giao kết quả đo, fixture và test AI cho HiTranquility; không tự nhận sửa caller hoặc cấu trúc repo gốc |
-| Dương | RAG/KB, workflow, test AI và demo liên vai trên UI IPLMS-AI | Tự kiểm UI/API trong IPLMS-AI; cần sửa code ngoài repo thì báo chủ dự án; HiTranquility lo phần tích hợp được chốt |
-| HiTranquility | Repo gốc, liên kết thư mục/module, proto chung, CI/stack, tích hợp backend/frontend/analytic | Chủ trì phần tổng thể; hỗ trợ khi demo AI phát sinh điểm chặn ngoài repo và chủ dự án chốt; không nhận thay demo UI của Dương |
-
-| Dự kiến cho | Thứ tự | Việc | Hồ sơ | Ưu tiên | Bắt đầu khi | Đầu ra để duyệt |
-|---|---|---|---|---|---|---|
-| Khoa | 1 | Duyệt phần M2 của cổng từ chối Copilot sau đợt code console | IPLMS ISSUE-126 review-7 OPEN-01; BOARD ✅ ngày 2026-10-18 | 🟠 | Chốt revision cần duyệt với Dương; dành được thời gian sau việc M2 đang nhận | Nhận xét chấp nhận/cần sửa, ghi rõ model, ngưỡng và rủi ro câu có similarity cao; chưa tự thay ngưỡng |
-| Khoa | 2 | Đánh giá & calibration phân bố confidence ANPR theo camera — phần AI | IPLMS PROB-045 | 🟢 | `materialize_dataset` và test-golden được xác minh, có tập theo camera đủ dùng | Báo cáo phân bố/sai số theo camera cho HiTranquility đối chiếu tích hợp; chưa áp ngưỡng khi chưa duyệt |
-| Khoa | 3 | Kiểm và cải thiện mức bám tài liệu của câu trả lời Copilot khi similarity cao | IPLMS ISSUE-126 review-7 S2, BUG-03 | 🟠 | Chốt revision và tập hồi quy với Dương; dùng LLM local và dữ liệu test được phép | Tái hiện TC-12/TC-17/HO-13, lập kiểm chứng câu trả lời bám nguồn; báo trước/sau và tỷ lệ từ chối nhầm trên câu hợp lệ; đề xuất kiểm đầu ra trước khi đổi hành vi mặc định |
-| Khoa | 4 | Benchmark ANPR cold/warm và thời gian từng công đoạn | IPLMS PROB-045 §Baseline và ANPR profiling | 🟠 | Có fixture ảnh AI được phép và model sẵn local; không tải weights mới hoặc restart stack chung | Đo ≥ 3 lượt cold và ≥ 100 lượt warm, p50/p95 và CPU/RAM; tách decode/detect/crop/OCR/classify nơi đo được; lưu phiên bản model, cấu hình và phần cứng để chạy lại |
-| Dương | 1 | Mở rộng bộ held-out Copilot và rà nhãn độc lập | [ISSUE-007](issues/10-2026/ISSUE-007-copilot-rag-heldout-dataset/issue.md) (IPLMS ISSUE-126 review-7 S3) | 🟢 | Xong lượt test KB đang nhận; thống nhất nhãn với Khoa và có người viết câu độc lập | Đã mở rộng lên 32 câu held-out có nhãn/nguồn độc lập tại eval_set_heldout.json; không trùng lặp eval_set; có test kiểm chứng tự động |
-| Dương | 2 | Rà test restart/resume và duyệt sai — phần workflow AI | [ai ISSUE-001](issues/09-2026/ISSUE-001-langgraph-dispute-workflow/issue.md) | 🟠 | Đối chiếu test phase 1–2; dùng fixture evidence theo hợp đồng do HiTranquility đối chiếu với backend | Test local cho restart/resume, thread sai, duyệt lặp; chỉ bổ sung ca thiếu; bàn giao phần cần caller backend cho HiTranquility |
-| Dương | 3 | I-3: demo liên vai trên UI IPLMS-AI bằng `iplms-demo-loop` | IPLMS ISSUE-126; UI và quyền của AI Console | 🟢 | Có tài khoản test theo vai, dữ liệu test AI và môi trường console local; bước thiếu dữ liệu ghi chặn, không tự cấu hình A2/backend | Kịch bản data engineer, annotator, reviewer, ML engineer, lead và các vai liên quan theo quyền hiện có; kiểm UI, lưu/tải lại và từ chối sai quyền trong AI; cần sửa code ngoài IPLMS-AI thì báo chủ dự án |
-| Dương | 4 | Bổ sung test hồi quy quyền 7 vai Console trên UI/API | IPLMS ISSUE-126; `app/core/console/engines/access_policy.py` | 🟠 | Rà test đã có và lập ma trận vai/thao tác; dùng tài khoản hoặc fixture cô lập trong AI | Ma trận đủ 7 vai và quyền hiện có, có test allow/deny cho ca còn thiếu; nút ẩn không thay kiểm API; ghi bằng chứng test tự động, không chỉ checklist demo |
-| Dương | 5 | Bổ sung test hồi quy UI khi API lỗi, timeout hoặc phiên hết hạn | IPLMS ISSUE-126; `ui/README.md` và test UI hiện có | 🟠 | Đối chiếu test đã có; mô phỏng lỗi trong test local của `ai/ui`, không phá môi trường chung | Phủ ca còn thiếu cho 401/403/500/timeout tại màn hình liên quan; không báo lưu thành công giả, xử lý retry/đăng nhập theo luồng hiện có; chạy lại suite UI và ghi kết quả |
-| HiTranquility | 2 | Restart container `ai` trên stack dev, xác nhận gRPC nạp đúng revision | IPLMS bug-006 | 🟠 | Có cửa sổ thao tác stack dùng chung; xác nhận tác động trước khi restart | Endpoint/version và kiểm gRPC/warmup; Khoa hỗ trợ đo ANPR; chuyển từ dòng Khoa hạn cũ 2026-10-14, chưa coi HiTranquility đã bắt đầu |
-| HiTranquility | 4 | Rà revision và tích hợp console/RAG giữa gốc, AI, backend, frontend | IPLMS ISSUE-126 review-7; IPLMS ISSUE-004 | 🟠 | Khoa/Dương bàn giao kết quả AI; kiểm `review-7.md`/`eval_copilot_e2e.py` lệch sau `e616fee`; CI và quyền môi trường sẵn sàng cho phần chạy thật | Bảng revision/gitlink, hợp đồng caller và kết quả E2E RAG; chưa merge/deploy hoặc đổi trạng thái chặn khi chưa có bằng chứng |
-| HiTranquility | 5 | I-2: tổ chức security review AI Console trước buổi bảo vệ | IPLMS ISSUE-126; IPLMS ADR-0048, ADR-0051 | 🟠 | Xác định revision; có tài khoản test và môi trường local cô lập | Checklist đăng nhập/phiên/quyền/PII và bằng chứng từ chối sai quyền; người review độc lập với người viết phần quyền |
-| HiTranquility | 6 | Chốt người phụ trách M3/M4 và thứ tự phối hợp console | IPLMS ISSUE-126 — bảng chia việc M0–M4 | 🟠 | Xác nhận lịch và năng lực của nhóm; có thể chốt sớm để gỡ phụ thuộc cho các việc trước | Người được xác nhận, phạm vi file/module và người duyệt; không mặc định Khoa/Dương nhận phần ngoài AI |
-| HiTranquility | 7 | Điều phối gỡ chặn dữ liệu Forecast F0 với analytic | IPLMS ISSUE-014 F0; IPLMS PROB-039 | 🟢 | Xác định người cung cấp export/capacity; chưa bật model phục vụ | Chốt nguồn dữ liệu, timezone và lịch sử capacity; AI chỉ backtest khi dữ liệu đủ điều kiện |
-
-Kế hoạch mới nhất theo IPLMS REQ-006 F10 / ISSUE-125 review-4: 16 việc dự kiến (Khoa 4, Dương 5, HiTranquility 7), gồm 4 việc kỹ thuật mới thêm. I-3 vẫn thuộc Dương trong IPLMS-AI; các việc tổng thể giữ HiTranquility. Không chạy demo, model, LLM, đổi quyền hoặc thao tác stack trong lượt bổ sung kế hoạch.
+| Việc | Hồ sơ | Người nhận | Hạn | Ưu tiên |
+|---|---|---|---|---|
+| Benchmark ANPR cold/warm và thời gian từng công đoạn | [ISSUE-018](issues/10-2026/ISSUE-018-ke-hoach-theo-thanh-vien/issue.md) | Khoa |  | 🟠 |
+| Bổ sung test hồi quy UI khi API lỗi, timeout hoặc phiên hết hạn | [ISSUE-018](issues/10-2026/ISSUE-018-ke-hoach-theo-thanh-vien/issue.md) | Dương |  | 🟠 |
+| Bổ sung test hồi quy quyền 7 vai Console trên UI/API | [ISSUE-018](issues/10-2026/ISSUE-018-ke-hoach-theo-thanh-vien/issue.md) | Dương |  | 🟠 |
+| Chốt người phụ trách M3/M4 và thứ tự phối hợp console | [ISSUE-018](issues/10-2026/ISSUE-018-ke-hoach-theo-thanh-vien/issue.md) | HiTranquility |  | 🟠 |
+| Duyệt phần M2 của cổng từ chối Copilot sau đợt code console | [ISSUE-018](issues/10-2026/ISSUE-018-ke-hoach-theo-thanh-vien/issue.md) | Khoa |  | 🟠 |
+| I-2: tổ chức security review AI Console trước buổi bảo vệ | [ISSUE-018](issues/10-2026/ISSUE-018-ke-hoach-theo-thanh-vien/issue.md) | HiTranquility |  | 🟠 |
+| Kiểm và cải thiện mức bám tài liệu của câu trả lời Copilot khi similarity cao | [ISSUE-018](issues/10-2026/ISSUE-018-ke-hoach-theo-thanh-vien/issue.md) | Khoa |  | 🟠 |
+| Nâng cấp toàn bộ phần Vision: model + pipeline ANPR (detector, OCR, hậu xử lý biển số) và Vision La… | [ISSUE-018](issues/10-2026/ISSUE-018-ke-hoach-theo-thanh-vien/issue.md) | Dương |  | 🟠 |
+| Restart container `ai` trên stack dev, xác nhận gRPC nạp đúng revision | [ISSUE-018](issues/10-2026/ISSUE-018-ke-hoach-theo-thanh-vien/issue.md) | HiTranquility |  | 🟠 |
+| Rà revision và tích hợp console/RAG giữa gốc, AI, backend, frontend | [ISSUE-018](issues/10-2026/ISSUE-018-ke-hoach-theo-thanh-vien/issue.md) | HiTranquility |  | 🟠 |
+| Soát PR ISSUE-019: soát lại chéo audit-6 và chạy convention audit cho phần UI của review-2, kiểm UI… | [ISSUE-019](issues/10-2026/ISSUE-019-console-settings-va-don-audit-006/issue.md) | Dương |  | 🟠 |
+| Chuyển ứng viên Eval từ `var/eval_candidates.json` vào bảng DB có retention (finding A-37 phần còn … | [ISSUE-018](issues/10-2026/ISSUE-018-ke-hoach-theo-thanh-vien/issue.md) | Dương |  | 🟡 |
+| Seed demo trung thực: bỏ số tự đặt trong lý do đề xuất ngưỡng (`seed_console_demo.py` mục 4, A-71),… | [ISSUE-018](issues/10-2026/ISSUE-018-ke-hoach-theo-thanh-vien/issue.md) | Dương |  | 🟡 |
+| Sửa `AI_GUIDE.md:315` và `AI_USAGE.md:34`, `:79`, `:102` cho khớp việc AI không còn tự bật llama-se… | [ISSUE-019](issues/10-2026/ISSUE-019-console-settings-va-don-audit-006/issue.md) | Khoa |  | 🟡 |
+| I-3: demo liên vai trên UI IPLMS-AI bằng `iplms-demo-loop` | [ISSUE-018](issues/10-2026/ISSUE-018-ke-hoach-theo-thanh-vien/issue.md) | Dương |  | 🟢 |
+| Điều phối gỡ chặn dữ liệu Forecast F0 với analytic | [ISSUE-018](issues/10-2026/ISSUE-018-ke-hoach-theo-thanh-vien/issue.md) | HiTranquility |  | 🟢 |
+| Đánh giá & calibration phân bố confidence ANPR theo camera — phần AI | [ISSUE-018](issues/10-2026/ISSUE-018-ke-hoach-theo-thanh-vien/issue.md) | Khoa |  | 🟢 |
 
 ## 🚧 Đang làm
 
 | Việc | Hồ sơ | Người nhận | Hạn | Tới đâu |
 |---|---|---|---|---|
-| Việc vặt tháng 10 — luật ý tưởng giữa chừng + techlead duyệt (IPLMS ADR-0059) | [CHORE-001](chores/10-2026/CHORE-001-monthly-maintenance/issue.md) | @HiTranquility | 2026-10-31 | 🚧 PR chore tháng mở |
-| Chặn nạp mẫu demo Vision Lab ở production, sửa nạp lại lỗi 500 / nhãn kẹt bốn mắt | [bug-013](bugs/bug-013-vision-demo-seed-khong-chan-production/bug.md) | @HiTranquility | 2026-10-31 | 🚧 Đã sửa, chờ audit vòng 2 + PR vào develop |
-| Định tuyến Root URL và Nâng cấp Copilot Chat Studio 3-Panel | [ISSUE-003](issues/10-2026/ISSUE-003-console-root-routing-copilot-studio/issue.md) | AI Team | 2026-10-31 | 🚧 Đang hoàn thiện UX & sub-components |
-| Làm nốt 1.3 `materialize_dataset` (tải theo manifest + sha256) | IPLMS ISSUE-013 | Khoa | 2026-10-16 | Đang viết CLI & loader từ private storage |
-| Đo ANPR trên test-golden snapshot — phần AI | IPLMS ISSUE-010 | Khoa | 2026-10-17 | Chuẩn bị test suite & dữ liệu snapshot; phần nối backend/operator và đối chiếu chống tráo do HiTranquility tích hợp |
-| AI Console nội bộ: DB riêng, 7 vai trò, đăng nhập Google + TOTP, `ai/ui` | IPLMS ISSUE-126 | Claude Code | — | P1a–P6 + EN (`98c2a88`) + cổng từ chối RAG (`e616fee`) đã code; PR #22, #23 + nhánh xếp chồng chờ CI. Việc còn lại đã tách thành dòng riêng ngày 2026-10-18 |
-| Chạy bộ test Knowledge Base với LLM thật (cần `AI_LLM_API_KEY`) | IPLMS ISSUE-009 | Dương | 2026-10-15 | 299 test unit/mock đã pass; chờ key/ollama chạy live |
-| LangGraph workflow cho Copilot tranh chấp (Phase 3) | [ai ISSUE-001](issues/09-2026/ISSUE-001-langgraph-dispute-workflow/issue.md) (IPLMS ISSUE-005) | Dương | 2026-10-18 | Xong phase 2; đang làm tiếp state interrupt/resume |
-| Nạp liệu tri thức RAG — phần AI | IPLMS ISSUE-004 | Dương | 2026-10-16 | Giữ phần ingest/retrieve và test AI; E2E container, caller backend và nối FE chuyển HiTranquility điều phối |
-| Sửa vi phạm so với AI_CONVENTIONS (bổ sung luật lỗi & test doc) | IPLMS AUDIT-004 | Dương | 2026-10-19 | Đã có báo cáo AUDIT-004; cập nhật doc & gRPC mapping |
-| Hoàn thiện phần AI của `khoa-develop`: lọc thẻ `<think>`, rà `guardrail_manager`/`prompt_manager`/`ai_logger`/`llama_server_manager`, viết lại 3 test không gọi mạng | IPLMS ISSUE-126 review-6 BUG-05 · commit `ff479f9` | Khoa | — | Giữ sửa/test trong AI; HiTranquility phụ trách nối revision/caller và tích hợp tổng thể; giao gốc 2026-10-18 |
-| Xác nhận cột "đã kiểm/sửa" mục 3b `AI_USAGE.md` cho phần mình nhận (đề Final §5.3, thiếu là −10%) | IPLMS ISSUE-126 phase-6 6.6 | Chủ module M1–M4 | — | Mới giao 2026-10-18 |
+| Chạy bộ test Knowledge Base với LLM thật (cần `AI_LLM_API_KEY`) | [ISSUE-013](issues/10-2026/ISSUE-013-phan-ai-cua-iplms-issue-009/issue.md) | Dương | 2026-10-15 | 🚧 299 test unit/mock đã pass; chờ key/ollama chạy live |
+| Nạp liệu tri thức RAG — phần AI | [ISSUE-012](issues/10-2026/ISSUE-012-phan-ai-cua-iplms-issue-004/issue.md) | Dương | 2026-10-16 | 🚧 Giữ phần ingest/retrieve và test AI; E2E container, caller backend và nối FE chuyển HiTranquility… |
+| Làm nốt 1.3 `materialize_dataset` (tải theo manifest + sha256) | [ISSUE-015](issues/10-2026/ISSUE-015-phan-ai-cua-iplms-issue-013/issue.md) | Khoa | 2026-10-16 | 🚧 Đang viết CLI & loader từ private storage |
+| Đo ANPR trên test-golden snapshot — phần AI | [ISSUE-014](issues/10-2026/ISSUE-014-phan-ai-cua-iplms-issue-010/issue.md) | Khoa | 2026-10-17 | 🚧 Chuẩn bị test suite & dữ liệu snapshot; phần nối backend/operator và đối chiếu chống tráo do HiTr… |
+| LangGraph Workflow Cho Copilot Tranh Chấp | [ISSUE-001](issues/09-2026/ISSUE-001-langgraph-dispute-workflow/issue.md) | Dương | 2026-10-18 | 🚧 In Progress (phase 2 complete) |
+| Sửa vi phạm so với AI_CONVENTIONS (bổ sung luật lỗi & test doc) | [ISSUE-011](issues/10-2026/ISSUE-011-phan-ai-cua-iplms-audit-004/issue.md) | Dương | 2026-10-19 | 🚧 Đã có báo cáo AUDIT-004; cập nhật doc & gRPC mapping |
+| Việc vặt tháng 10/2026 | [CHORE-001](chores/10-2026/CHORE-001-monthly-maintenance/issue.md) | @HiTranquility | 2026-10-31 | 🚧 In progress |
+| Định tuyến trực tiếp Root URL và Nâng cấp Copilot Chat Studio 3-Panel | [ISSUE-003](issues/10-2026/ISSUE-003-console-root-routing-copilot-studio/issue.md) | AI Team | 2026-10-31 | 🚧 In progress |
+| Copilot SSE Streaming & Console Telemetry Integration | [ISSUE-002](issues/10-2026/ISSUE-002-copilot-sse-streaming-and-console-telemetry/issue.md) |  |  | 🚧 In progress |
+| Củng cố kết nối DB, quản lý tài liệu tri thức, batch upload và tối ưu phân bổ VRAM 4GB cho Console … | [ISSUE-007](issues/10-2026/ISSUE-007-console-tools-and-knowledge-management/issue.md) |  |  | 🚧 IN PROGRESS |
+| Mở Rộng Bộ Dữ Liệu Held-Out Copilot RAG Lên ≥ 30 Câu Hỏi-Đáp Độc Lập | [ISSUE-007](issues/10-2026/ISSUE-007-copilot-rag-heldout-dataset/issue.md) |  |  | 🚧 In progress |
+| AI Console nội bộ: DB riêng, 7 vai trò, đăng nhập Google + TOTP, `ai/ui` | [ISSUE-017](issues/10-2026/ISSUE-017-phan-ai-cua-iplms-issue-126/issue.md) | Claude Code |  | 🚧 P1a–P6 + EN (`98c2a88`) + cổng từ chối RAG (`e616fee`) đã code; PR #22, #23 + nhánh xếp chồng chờ… |
+| Hoàn thiện phần AI của `khoa-develop`: lọc thẻ `<think>`, rà `guardrail_manager`/`prompt_manager`/`… | [ISSUE-017](issues/10-2026/ISSUE-017-phan-ai-cua-iplms-issue-126/issue.md) | Khoa |  | 🚧 Giữ sửa/test trong AI; HiTranquility phụ trách nối revision/caller và tích hợp tổng thể; giao gốc… |
+| Xác nhận cột "đã kiểm/sửa" mục 3b `AI_USAGE.md` cho phần mình nhận (đề Final §5.3, thiếu là −10%) | [ISSUE-017](issues/10-2026/ISSUE-017-phan-ai-cua-iplms-issue-126/issue.md) | Chủ module M1–M4 |  | 🚧 Mới giao 2026-10-18 |
+| CI unit thiếu runtime dependencies và benchmark fixture bị làm tròn về 0 | [bug-010](bugs/bug-010-ci-fixture-dependencies-va-benchmark-rounding/bug.md) |  |  | 🛠️ Fixing — source/local đã sửa, chờ checkPR / P2 |
 
 ## ⏳ Chờ duyệt
 
-| Việc | Hồ sơ | Người làm | Người duyệt |
+| Việc | Hồ sơ | Người nhận | Tới đâu |
 |---|---|---|---|
-| *(trống)* | | | |
+| Hiệu chỉnh biển số cắt mất ký tự nhưng giữ confidence | [bug-005](bugs/bug-005-plate-correction-mat-ky-tu/bug.md) |  | ✅ Fixed trong nhánh tích hợp — chưa merge / P1 |
+| Không có model vẫn trả loại xe suy từ biển như nhận dạng ảnh | [bug-006](bugs/bug-006-vehicle-prior-gia-lam-observation/bug.md) |  | ✅ Fixed trong nhánh tích hợp — chưa merge / P1 |
+| Dashboard mới render câu hỏi và câu trả lời bằng innerHTML | [bug-008](bugs/bug-008-dashboard-render-html-khong-escape/bug.md) |  | ✅ Fixed trong nhánh tích hợp — chưa merge / P1 |
+| Đăng nhập dev/demo theo vai, cục bộ và an toàn, thay cho `dev-session` | [SUGGESTION-001](suggestions/10-2026/SUGGESTION-001-dang-nhap-dev-cuc-bo-an-toan.md) |  | 🔄 REVIEWING |
+| Lưu thuộc tính ảnh khi gán nhãn để đo ANPR theo điều kiện ảnh | [SUGGESTION-004](suggestions/10-2026/SUGGESTION-004-luu-thuoc-tinh-anh-khi-gan-nhan.md) |  | 🔄 REVIEWING |
+| Đưa lượt chat đã chấm thành ca hồi quy và so A/B phiên bản prompt ngay trong Copilot Lab | [SUGGESTION-005](suggestions/10-2026/SUGGESTION-005-gom-luot-chat-vao-bo-eval.md) |  | 🔄 REVIEWING |
+| Nút nạp mẫu demo Vision Lab không chặn production, nạp lại lỗi 500 và nhãn kẹt bốn mắt | [bug-013](bugs/bug-013-vision-demo-seed-khong-chan-production/bug.md) | @HiTranquility | ✅ Fixed — chờ PR (nhánh `bugfix/bug-013-2026-10-vision-demo-seed-guard`) |
+| Bổ Sung Test Hồi Quy Ma Trận Quyền 7 Vai Trò AI Console & Chặn API Sai Quyền | [ISSUE-008](issues/10-2026/ISSUE-008-console-access-policy-regression-tests/issue.md) |  | 🟢 Resolved (Chờ merge PR) |
+| Bổ Sung Test Hồi Quy UI Khi API Lỗi, Timeout Hoặc Phiên Hết Hạn | [ISSUE-009](issues/10-2026/ISSUE-009-console-ui-error-resilience-tests/issue.md) |  | 🟢 Resolved (Chờ merge PR) |
+| Kịch Bản & Kiểm Chứng Tự Động Demo Liên Vai I-3 Trên UI AI Console | [ISSUE-010](issues/10-2026/ISSUE-010-console-cross-role-demo-loop/issue.md) |  | 🟢 Resolved (Chờ merge PR) |
+| API giả có hợp đồng và smoke test browser 7 vai × 3 viewport × 2 theme cho `ai/ui` | [SUGGESTION-002](suggestions/10-2026/SUGGESTION-002-mock-api-va-ma-tran-browser-cho-ui.md) |  | 🔄 REVIEWING |
+| Generator mới tạo checkpoint ngẫu nhiên vào đường model phục vụ | [bug-009](bugs/bug-009-random-checkpoint-khong-phai-model-da-train/bug.md) |  | ✅ Fixed trong nhánh tích hợp — chưa merge / P2 |
+| Test `publish_scope` dùng fixture `validate` cũ, luôn FAIL khi có Postgres thật | [bug-012](bugs/bug-012-test-publish-concurrency-fixture-cu/bug.md) |  | ✅ Fixed — chờ PR / P3 (chỉ test, không đổi code chạy) |
 
 ## ⛔ Bị chặn
 
-| Việc | Hồ sơ | Chặn bởi |
-|---|---|---|
-| Forecast từ backtest tới phục vụ | IPLMS ISSUE-014 | chưa có export phiên đỗ thật đủ dài + lịch sử capacity (dữ liệu từ analytic) |
-| Merge chuỗi PR AI Console (ai#22, #23 → backend#24 → frontend#20 → gốc + bump gitlink → nhánh xếp chồng) | IPLMS ISSUE-126 review-6 AI-1/AI-2 | GitHub Actions bị từ chối do billing tài khoản |
-| Đăng nhập Google thật cho console | IPLMS ISSUE-126 phase-6 6.2 | chủ đồ án tạo OAuth client trên GCP |
-| Chạy kênh A2 end-to-end trên stack dev (M4) | IPLMS ISSUE-126 phase-6 6.3 | chủ đồ án duyệt chạy migration `1803000000000` + bật `VISION_CONSOLE_EXPORT_*` trên stack dùng chung |
-| Mã QR TOTP ở trang đăng nhập console | IPLMS ISSUE-126 review-6 OPEN-03 | chủ đồ án duyệt cài `segno==1.6.6` |
-
-## ✅ Xong gần đây *(dọn đầu tháng)*
-
-| Việc | Hồ sơ | Người làm | Ngày |
+| Việc | Hồ sơ | Người nhận | Tới đâu |
 |---|---|---|---|
-| Console trả 404 cho /docs, /redoc, /openapi.json (không lộ qua SPA fallback) | [bug-014](bugs/bug-014-console-docs-tra-spa-thay-vi-404/bug.md) | HiTranquility | 2026-10-25 |
-| Rà `ai/ui` bằng REA: 9 bug, 5 suggestion, báo cáo UI/UX + quy chuẩn, gợi ý giao việc | [ISSUE-004](issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md) | Claude Code | 2026-10-23 |
-| Siết quyền DB user `ai_console` cho process inference: chỉ bảng A2 + `accept_policy` + verify fail-closed | IPLMS ADR-0051 §Hệ quả | HiTranquility | 2026-10-22 |
-| Sửa thứ tự ưu tiên proto gốc (`REPO_ROOT / proto`) trong `compile_proto.py` | IPLMS ISSUE-126 review-6 BUG-06 | HiTranquility | 2026-10-22 |
-| Đưa Postgres 16 + pgvector (0.8.6-pg16) vào service job CI Python (`ci.yml`) | IPLMS ISSUE-126 review-6 S3 | HiTranquility | 2026-10-22 |
-| Rà soát và kiểm chứng 3 bug tích hợp (bug-003 Docker context, bug-004 launcher REST/gRPC, bug-007 ingest duration_ms) | [bug-003](bugs/bug-003-docker-context-khong-dong-bo/bug.md), [bug-004](bugs/bug-004-launcher-dev-dung-grpc/bug.md), [bug-007](bugs/bug-007-ingest-response-sai-duration/bug.md) | HiTranquility | 2026-10-22 |
-| Cổng từ chối Copilot (chunk vector tốt nhất < `AI_RAG_MIN_SIMILARITY` → NO_CONTEXT, không gọi LLM) + eval end-to-end + bộ held-out — **merge trước khi Khoa/Dương duyệt** theo quyết định chủ đồ án 2026-10-18; Khoa/Dương cần xem lại sau | IPLMS ISSUE-126 review-7 | Claude Code | 2026-10-18 |
-| Gộp `khoa-develop` (5f24a1f) vào nhánh console, giữ bản develop khi xung đột; bug-011 hết do ADR-0050 bỏ `/api/copilot/ask` | [bug-011](bugs/bug-011-copilot-ask-nhan-api-key-tu-client-va-tra-loi-gia-khi-llm-loi/bug.md) · IPLMS ISSUE-126 | Claude Code | 2026-10-17 |
-| Sửa 4 lỗi sai im lặng (grader tiền, occupancy 0%, seasonal baseline, phân loại xe) + nâng ANPR/keyword/Forecast | bug-001 · IPLMS PROB-045 | Claude | 2026-10-06 |
+| Forecast từ backtest tới phục vụ | [ISSUE-016](issues/10-2026/ISSUE-016-phan-ai-cua-iplms-issue-014/issue.md) |  | ⛔ Bị chặn — chưa có export phiên đỗ thật đủ dài + lịch sử capacity (dữ liệu từ analytic) |
+| Chạy kênh A2 end-to-end trên stack dev (M4) | [ISSUE-017](issues/10-2026/ISSUE-017-phan-ai-cua-iplms-issue-126/issue.md) |  | ⛔ Bị chặn — chủ đồ án duyệt chạy migration `1803000000000` + bật `VISION_CONSOLE_EXPORT_*` trên sta… |
+| Merge chuỗi PR AI Console (ai#22, #23 → backend#24 → frontend#20 → gốc + bump gitlink → nhánh xếp c… | [ISSUE-017](issues/10-2026/ISSUE-017-phan-ai-cua-iplms-issue-126/issue.md) |  | ⛔ Bị chặn — GitHub Actions bị từ chối do billing tài khoản |
+| Mã QR TOTP ở trang đăng nhập console | [ISSUE-017](issues/10-2026/ISSUE-017-phan-ai-cua-iplms-issue-126/issue.md) |  | ⛔ Bị chặn — chủ đồ án duyệt cài `segno==1.6.6` |
+| Đăng nhập Google thật cho console | [ISSUE-017](issues/10-2026/ISSUE-017-phan-ai-cua-iplms-issue-126/issue.md) |  | ⛔ Bị chặn — chủ đồ án tạo OAuth client trên GCP |
+
+## ✅ Xong gần đây (20 hồ sơ có Ngày đóng mới nhất)
+
+| Việc | Hồ sơ | Ngày đóng |
+|---|---|---|
+| Mã TOTP cố định `000000` / `123456` vượt qua xác thực hai lớp và step-up | [bug-026](bugs/bug-026-ma-totp-co-dinh-vuot-xac-thuc/bug.md) | 2026-10-24 |
+| Chữ màu `--color-faded` và chữ màu accent dưới ngưỡng tương phản AA | [bug-025](bugs/bug-025-mau-chu-faded-va-accent-duoi-nguong-tuong-phan/bug.md) | 2026-10-24 |
+| Trang Công cụ thử tràn ngang ở khổ 768px | [bug-024](bugs/bug-024-trang-cong-cu-tran-ngang-o-768px/bug.md) | 2026-10-24 |
+| Chuyển sang EN thì phần lớn màn hình vẫn là tiếng Việt (419 dòng viết cứng trong 47 file) | [bug-023](bugs/bug-023-che-do-en-tron-tieng-viet/bug.md) | 2026-10-24 |
+| Thuộc tính ảnh chọn khi gán nhãn (mờ, chói, nghiêng…) bị bỏ, không gửi lên server | [bug-022](bugs/bug-022-thuoc-tinh-anh-gan-nhan-khong-luu/bug.md) | 2026-10-24 |
+| Trục ngày của biểu đồ Tổng quan Copilot bị cắt còn "Thứ 7", "CN, 1" | [bug-021](bugs/bug-021-bieu-do-xu-huong-cat-nhan-ngay/bug.md) | 2026-10-24 |
+| Trang Nhật ký dùng mã hành động `ai:…` nhưng server ghi `member.invite`, `role.grant:<vai>`…, nên n… | [bug-020](bugs/bug-020-audit-tu-dien-hanh-dong-lech-server/bug.md) | 2026-10-24 |
+| Xuất CSV nhật ký audit không escape: vỡ cột và dính formula injection | [bug-019](bugs/bug-019-audit-xuat-csv-khong-escape/bug.md) | 2026-10-24 |
+| Console hiện kết quả bịa khi API lỗi hoặc không tồn tại (ANPR, tranh chấp, chẩn đoán, model, foreca… | [bug-018](bugs/bug-018-ui-bia-ket-qua-khi-api-loi/bug.md) | 2026-10-24 |
+| Chat Studio gửi tham số mà API không nhận, nên mọi câu hỏi đều nhận 422 | [bug-017](bugs/bug-017-chat-studio-luon-422/bug.md) | 2026-10-24 |
+| `harden_console_db.py` có mật khẩu mặc định thật cho role `ai_console` viết thẳng trong code | [bug-016](bugs/bug-016-mat-khau-db-console-mac-dinh-trong-code/bug.md) | 2026-10-24 |
+| `/auth/dev-session` cấp phiên console bằng token cố định, không cần Google hay TOTP | [bug-015](bugs/bug-015-dev-session-cua-hau-dang-nhap/bug.md) | 2026-10-24 |
+| Sidebar thành ngăn kéo trên màn hẹp và căn hàng form đăng ký model | [ISSUE-006](issues/10-2026/ISSUE-006-console-rail-and-form-align/issue.md) | 2026-10-24 |
+| Chỉnh UI AI Console theo các mục "nên thêm / nên bớt" của lượt rà ISSUE-004 | [ISSUE-005](issues/10-2026/ISSUE-005-console-ui-polish/issue.md) | 2026-10-24 |
+| `/api/copilot/ask` nhận API key từ client và trả "câu trả lời có nguồn" giả khi LLM lỗi | [bug-011](bugs/bug-011-copilot-ask-nhan-api-key-tu-client-va-tra-loi-gia-khi-llm-loi/bug.md) | 2026-10-17 |
