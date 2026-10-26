@@ -137,7 +137,8 @@ def _try_register_vector(conn: Any) -> None:
         reg_vec(conn)
     except Exception:
         # Môi trường PostgreSQL thuần trên Windows không cài extension pgvector C binary:
-        # PgVectorClient sẽ tự động chuyển sang chế độ mảng DOUBLE PRECISION[] thuần SQL.
+        # PgVectorClient chỉ chuyển sang chế độ mảng DOUBLE PRECISION[] khi bật
+        # AI_EMBEDDING_ALLOW_NO_PGVECTOR (ai ADR-0001), không thì báo lỗi.
         conn.rollback()
 
 

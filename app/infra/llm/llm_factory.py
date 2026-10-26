@@ -1,6 +1,7 @@
 """OpenAI Responses API adapter for grounded RAG answers."""
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import Any, AsyncGenerator
 
@@ -157,6 +158,12 @@ class LlmFactory:
         )
         return self._client
 
+    async def _aget_client(self) -> Any:
+        """Bản dùng trong đường async: dò llama-server (urlopen đồng bộ) chạy ngoài event loop (A-41)."""
+        if self._client is not None:
+            return self._client
+        return await asyncio.to_thread(self._get_client)
+
     @property
     def uses_openai(self) -> bool:
         """True khi gọi thẳng OpenAI; endpoint tương thích (Ollama…) thiếu vài tính năng."""
@@ -197,7 +204,7 @@ class LlmFactory:
         """
         config = get_config().llm
         provider = getattr(config, "llm_provider", "local").lower()
-        client = self._get_client()
+        client = await self._aget_client()
         if _should_use_responses_api(client, provider, bool(self.api_key)):
             try:
                 response = await client.responses.create(
@@ -281,7 +288,8 @@ class LlmFactory:
             )
             if self.reasoning_effort != "none":
                 kwargs["reasoning"] = {"effort": self.reasoning_effort}
-            response = await self._get_client().responses.create(**kwargs)
+            client = await self._aget_client()
+            response = await client.responses.create(**kwargs)
             payload = json.loads((response.output_text or "").strip() or "null")
             if not isinstance(payload, dict):
                 raise RagPipelineError("Mô hình không trả về JSON đúng định dạng.")
@@ -315,7 +323,8 @@ class LlmFactory:
         """
         target_model = model or self.model
         try:
-            completion = await self._get_client().chat.completions.create(
+            client = await self._aget_client()
+            completion = await client.chat.completions.create(
                 model=target_model,
                 messages=[
                     {"role": "system", "content": instructions},
@@ -352,7 +361,7 @@ class LlmFactory:
         """Yield only semantic text deltas from a Responses API stream."""
         config = get_config().llm
         provider = getattr(config, "llm_provider", "local").lower()
-        client = self._get_client()
+        client = await self._aget_client()
         if _should_use_responses_api(client, provider, bool(self.api_key)):
             try:
                 stream = await client.responses.create(

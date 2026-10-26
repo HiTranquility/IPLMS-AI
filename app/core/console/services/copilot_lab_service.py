@@ -5,12 +5,16 @@ Tỉ lệ đúng chỉ tính trên các lượt đã được người chấm, k
 """
 from __future__ import annotations
 
+import json
+import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
+from app.config import get_config
 from app.core.console.dtos import ConsoleActor
 from app.core.console.engines import access_policy
+from app.core.copilot.engines.pii_redactor import redact
 from app.core.copilot.services.usage_service import usage_service
 from app.infra.database.ai_request_log_store import ai_request_log_store
 from app.infra.database.console_store import console_store
@@ -26,7 +30,22 @@ def _days(days: int) -> int:
     return days
 
 
+def _load_candidates(path: str) -> list[dict]:
+    """Đọc ứng viên Eval, bỏ mục quá hạn theo `AI_TELEMETRY_RETENTION_DAYS` như telemetry (A-37)."""
+    if not os.path.isfile(path):
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            items = json.load(f) or []
+    except Exception:
+        return []
+    cutoff = (datetime.utcnow() - timedelta(days=get_config().telemetry.retention_days)).isoformat() + "Z"
+    return [x for x in items if str(x.get("promoted_at", "")) >= cutoff]
+
+
 class ConsoleCopilotLabService:
+    candidates_path = "var/eval_candidates.json"
+
     def __init__(self, usage=None, request_log=None, store=None) -> None:
         self.usage = usage or usage_service
         self.request_log = request_log or ai_request_log_store
@@ -99,10 +118,11 @@ class ConsoleCopilotLabService:
         category: str = "regulation",
         note: str = "",
     ) -> dict:
-        """SUGGESTION-005: Đưa một lượt chat thực tế từ Copilot Lab vào danh sách ứng viên Eval hồi quy."""
-        import json
-        import os
+        """SUGGESTION-005: Đưa một lượt chat thực tế từ Copilot Lab vào danh sách ứng viên Eval hồi quy.
 
+        File nằm ngoài DB nên chỉ lưu bản đã che PII (cùng `redact` với `ai_request_log`)
+        và cắt theo hạn lưu telemetry (A-37).
+        """
         if not (access_policy.can(actor, "ai:label:approve") or access_policy.can(actor, "ai:prompt:edit")):
             access_policy.require(actor, "ai:label:approve")
         if not _UUID.match(turn_id or ""):
@@ -115,22 +135,16 @@ class ConsoleCopilotLabService:
         clean_cat = (category or "regulation").strip()[:64] or "regulation"
         clean_note = (note or "").strip()[:500]
 
-        path = "var/eval_candidates.json"
+        path = self.candidates_path
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        items: list[dict] = []
-        if os.path.isfile(path):
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    items = json.load(f) or []
-            except Exception:
-                items = []
+        items = _load_candidates(path)
 
         entry = {
             "turn_id": turn_id,
-            "query": clean_query,
+            "query": redact(clean_query),
             "expected_behavior": expected_behavior,
             "category": clean_cat,
-            "note": clean_note,
+            "note": redact(clean_note),
             "promoted_by": actor.member_id,
             "promoted_at": datetime.utcnow().isoformat() + "Z",
         }
@@ -144,24 +158,14 @@ class ConsoleCopilotLabService:
             "copilot.promote_eval",
             "copilot_turn",
             turn_id,
-            f"Đưa vào bộ Eval ({expected_behavior} · {clean_cat}): {clean_query[:80]}",
+            f"Đưa vào bộ Eval ({expected_behavior} · {clean_cat})",
         )
         return entry
 
     async def list_eval_candidates(self, actor: ConsoleActor) -> list[dict]:
-        import json
-        import os
-
         if not (access_policy.can(actor, "ai:chatlog:read") or access_policy.can(actor, "ai:metrics:read")):
             access_policy.require(actor, "ai:chatlog:read")
-        path = "var/eval_candidates.json"
-        if not os.path.isfile(path):
-            return []
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f) or []
-        except Exception:
-            return []
+        return _load_candidates(self.candidates_path)
 
 
 console_copilot_lab_service = ConsoleCopilotLabService()

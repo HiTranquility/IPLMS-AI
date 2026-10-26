@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import json
 import os
 import sys
 from datetime import datetime, timedelta, timezone
@@ -550,29 +549,13 @@ async def seed_vision_pipeline() -> None:
             "artifact_key": "models/anpr-yolov8n/2026.10.1/best.pt",
             "sha256": weights_sha,
             "train_snapshot_id": train_id,
-            "note": "Bản huấn luyện chuẩn biển số Việt Nam 1 dòng & 2 dòng (CLAHE + EasyOCR)",
+            "note": "[DEMO] Model mẫu để thử luồng đo/đề xuất; số đo lấy từ engine giả lập của script seed.",
         })
         run_id = await models_svc.start_eval(engineer, golden_id)
         await models_svc.drain()
-        # Cập nhật metrics thực tế đẹp cho lượt đo demo
-        conn, _ = connect_with_fallback(get_config().console.database_url)
-        try:
-            with conn, conn.cursor() as cur:
-                cur.execute(
-                    """UPDATE eval_run SET metrics = %s::jsonb WHERE id = %s""",
-                    (json.dumps({
-                        "total": 20,
-                        "exact_match_relaxed": 0.95,
-                        "exact_match_strict": 0.90,
-                        "mean_cer": 0.0142,
-                        "latency_p50_ms": 18.4,
-                        "latency_p95_ms": 31.2,
-                    }), run_id),
-                )
-        finally:
-            conn.close()
-        await models_svc.propose(engineer, m1, "Đạt 95% exact match (relaxed) và CER 0.0142 trên bộ Golden v1.")
-        await models_svc.promote(lead, m1, "Phê duyệt đưa model anpr-yolov8n 2026.10.1 lên chạy chính thức tại cổng.")
+        # A-7: giữ nguyên số đo do eval tự tính, không ghi đè metrics; chỉ đề xuất (ghi rõ demo),
+        # không promote — việc duyệt bốn mắt để người dùng thử trên Console.
+        await models_svc.propose(engineer, m1, f"[DEMO] Đề xuất thử luồng duyệt; xem số đo thật ở lượt đo {run_id}.")
 
     # 4. Đề xuất & Duyệt Chính sách Ngưỡng Tự Nhận (Accept Policy)
     policy_svc = ConsoleAcceptPolicyService(store=console_vision_store)
