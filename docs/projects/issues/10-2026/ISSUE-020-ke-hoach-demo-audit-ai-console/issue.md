@@ -113,6 +113,8 @@ Không vẽ ERD: lượt này không đổi dữ liệu. Không vẽ class diagr
 
 ## Hồ sơ liên quan
 
+- [review-1](review/review-1.md): vòng agent trên browser pane (K1–K4.3) + runner nhiều context `ui/e2e/demos/console-roles.demo.mjs`; mở [bug-033](../../../bugs/bug-033-dang-nhap-tu-goc-console-roi-vao-trang-404/bug.md).
+
 - [ISSUE-010](../ISSUE-010-console-cross-role-demo-loop/issue.md): kịch bản 5 vai Vision (mới kiểm bằng vitest mock). Lượt này đi live.
 - [ISSUE-019](../ISSUE-019-console-settings-va-don-audit-006/issue.md): Settings/TOTP, review-2 (rà browser) và các P3 còn mở.
 - [ISSUE-018](../ISSUE-018-ke-hoach-theo-thanh-vien/issue.md): Dương soát PR / UI-UX / conventions có thể làm người audit nội bộ song song.
