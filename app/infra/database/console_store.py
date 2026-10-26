@@ -148,6 +148,23 @@ class ConsoleStore:
             "CREATE INDEX IF NOT EXISTS ix_copilot_turn_review_turn_at ON copilot_turn_review (turn_at)"
         )
         cur.execute(
+            """CREATE TABLE IF NOT EXISTS copilot_eval_candidate (
+                turn_id UUID PRIMARY KEY,
+                query TEXT NOT NULL,
+                expected_behavior VARCHAR(16) NOT NULL,
+                category VARCHAR(64) NOT NULL,
+                note VARCHAR(500) NOT NULL DEFAULT '',
+                promoted_by UUID REFERENCES console_member(id),
+                promoted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                CONSTRAINT ck_copilot_eval_candidate_behavior CHECK
+                    (expected_behavior IN ('ANSWER', 'REFUSE'))
+            )"""
+        )
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS ix_copilot_eval_candidate_promoted_at "
+            "ON copilot_eval_candidate (promoted_at DESC)"
+        )
+        cur.execute(
             """CREATE TABLE IF NOT EXISTS console_session (
                 id UUID PRIMARY KEY,
                 token_hash CHAR(64) NOT NULL UNIQUE,
@@ -323,6 +340,87 @@ class ConsoleStore:
                 (days,),
             )
             return {verdict: int(n) for verdict, n in cur.fetchall()}
+
+        return await self._run(work)
+
+    async def save_eval_candidate(
+        self,
+        turn_id: str,
+        query: str,
+        expected_behavior: str,
+        category: str,
+        note: str,
+        actor_id: str,
+        retention_days: int = 30,
+    ) -> dict[str, Any]:
+        """Luu ung vien Eval da che PII vao bang DB co retention va ghi audit cung transaction (A-37, A-73)."""
+        def work(cur):
+            cur.execute(
+                "DELETE FROM copilot_eval_candidate WHERE promoted_at < NOW() - make_interval(days => %s)",
+                (retention_days,),
+            )
+            cur.execute(
+                """INSERT INTO copilot_eval_candidate
+                       (turn_id, query, expected_behavior, category, note, promoted_by, promoted_at)
+                   VALUES (%s, %s, %s, %s, %s, %s, NOW())
+                   ON CONFLICT (turn_id) DO UPDATE SET
+                       query = EXCLUDED.query,
+                       expected_behavior = EXCLUDED.expected_behavior,
+                       category = EXCLUDED.category,
+                       note = EXCLUDED.note,
+                       promoted_by = EXCLUDED.promoted_by,
+                       promoted_at = NOW()
+                   RETURNING turn_id::text, query, expected_behavior, category, note, promoted_by::text, promoted_at""",
+                (turn_id, query, expected_behavior, category, note, actor_id),
+            )
+            row = cur.fetchone()
+            _audit(
+                cur,
+                actor_id,
+                "copilot.promote_eval",
+                "copilot_turn",
+                turn_id,
+                f"Đưa vào bộ Eval ({expected_behavior} · {category})",
+            )
+            return {
+                "turn_id": row[0],
+                "query": row[1],
+                "expected_behavior": row[2],
+                "category": row[3],
+                "note": row[4],
+                "promoted_by": row[5] or actor_id,
+                "promoted_at": row[6].isoformat(),
+            }
+
+        return await self._run(work)
+
+    async def list_eval_candidates(self, retention_days: int = 30, limit: int = 200) -> list[dict[str, Any]]:
+        """Doc danh sach ung vien Eval trong han luu telemetry, tu dong don muc qua han (A-37, A-73)."""
+        def work(cur):
+            cur.execute(
+                "DELETE FROM copilot_eval_candidate WHERE promoted_at < NOW() - make_interval(days => %s)",
+                (retention_days,),
+            )
+            cur.execute(
+                """SELECT turn_id::text, query, expected_behavior, category, note,
+                          promoted_by::text, promoted_at
+                   FROM copilot_eval_candidate
+                   ORDER BY promoted_at DESC
+                   LIMIT %s""",
+                (limit,),
+            )
+            return [
+                {
+                    "turn_id": r[0],
+                    "query": r[1],
+                    "expected_behavior": r[2],
+                    "category": r[3],
+                    "note": r[4],
+                    "promoted_by": r[5],
+                    "promoted_at": r[6].isoformat() if r[6] else None,
+                }
+                for r in cur.fetchall()
+            ]
 
         return await self._run(work)
 
