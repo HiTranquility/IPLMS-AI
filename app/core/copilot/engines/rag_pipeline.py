@@ -225,7 +225,7 @@ class RagPipelineEngine:
             raise ValueError("Câu hỏi không được để trống.")
         try:
             vector = await self.embedder.embed_query(query)
-            return await self.vector_store.search_similar_chunks(
+            chunks = await self.vector_store.search_similar_chunks(
                 vector,
                 query_text=query,
                 parking_lot_id=parking_lot_id,
@@ -233,6 +233,12 @@ class RagPipelineEngine:
                 min_similarity=floor,
                 preview=preview,
             )
+            if not chunks:
+                seed_chunks = self._retrieve_from_seed(query, parking_lot_id, k, floor)
+                if seed_chunks:
+                    logger.info("pgvector không có chunk khớp, fallback sang %d seed chunks.", len(seed_chunks))
+                    return seed_chunks
+            return chunks
         except (RagPipelineError, ModelNotLoadedError, EmbeddingError) as exc:
             if not isinstance(self.vector_store, pgvector_client.__class__):
                 raise

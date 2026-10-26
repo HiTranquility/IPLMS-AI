@@ -195,7 +195,9 @@ class ChatStudioContractTest(unittest.IsolatedAsyncioTestCase):
         async def fake_stream(actor, query, parking_lot_id, **tuning):
             seen.update(tuning)
             yield SimpleNamespace(token="ok", is_finished=True, sources=[], confidence=None, refused=False,
-                                  guardrail_triggered=None, prompt_version="v2", turn_id="t", latency_ms=1.0)
+                                  guardrail_triggered=None, prompt_version="v2", turn_id="t", latency_ms=1.0,
+                                  speed_tok_s=None, input_tokens=None, output_tokens=None,
+                                  context_tokens=None, context_limit=None)
 
         app = FastAPI()
         app.include_router(ctl.router)

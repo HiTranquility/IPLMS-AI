@@ -41,7 +41,7 @@ KNOWLEDGE_MAX_FILE_BYTES = 8 * 1024 * 1024
 # 120s vì PDF scan phải OCR: đo 2026-10-08 ~6–15s/trang trên CPU + ~26s nạp model
 # lần đầu → 6 trang (_PDF_OCR_MAX_PAGES) tệ nhất ~116s (bug-026). Giữ < 150s
 # deadline gRPC của backend, < 155s frontend, < 180s nginx — nâng ở đây thì nâng cả chuỗi.
-DOCUMENT_PARSE_TIMEOUT_SECONDS = 120.0
+DOCUMENT_PARSE_TIMEOUT_SECONDS = 300.0
 
 # Riêng bước pypdf đọc lớp chữ PDF (nơi có CVE treo parser) chạy trong process con
 # và bị GIẾT khi quá hạn — timeout ở tầng service chỉ trả lỗi chứ không dừng được

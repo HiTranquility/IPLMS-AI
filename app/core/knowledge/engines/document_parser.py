@@ -38,7 +38,7 @@ from app.infra.ocr.reader import get_easyocr_reader
 from app.util.logger import logger
 
 # Phải OCR xong trong DOCUMENT_PARSE_TIMEOUT_SECONDS kể cả lần đầu nạp model (bug-026).
-_PDF_OCR_MAX_PAGES = 6
+_PDF_OCR_MAX_PAGES = 20
 _PDF_OCR_MAX_PIXELS = 4_000_000
 _PDF_OCR_SCALE = 1.5
 
@@ -144,11 +144,31 @@ def _pdf_text_layer(file_data: bytes) -> Tuple[List[str], List[int], List[str], 
                 "File PDF được đặt mật khẩu nên không đọc được nội dung."
             )
 
+    pdfium_doc = None
+    try:
+        import pypdfium2 as pdfium
+        pdfium_doc = pdfium.PdfDocument(file_data)
+    except Exception:
+        pdfium_doc = None
+
     cac_trang: List[str] = []
     can_ocr: List[int] = []
     for so_trang, trang in enumerate(reader.pages, start=1):
         try:
             noi_dung = trang.extract_text() or ""
+            # Fallback sang pypdfium2 trích xuất text nếu pypdf không lấy được text
+            if len(noi_dung.strip()) < 25 and pdfium_doc is not None:
+                try:
+                    pdfium_page = pdfium_doc[so_trang - 1]
+                    tp = pdfium_page.get_textpage()
+                    pdfium_text = tp.get_text_range() or ""
+                    tp.close()
+                    pdfium_page.close()
+                    if len(pdfium_text.strip()) >= 25:
+                        noi_dung = pdfium_text
+                except Exception:
+                    pass
+
             cac_trang.append(noi_dung)
             if len(noi_dung.strip()) < 25:
                 can_ocr.append(so_trang - 1)
@@ -157,6 +177,13 @@ def _pdf_text_layer(file_data: bytes) -> Tuple[List[str], List[int], List[str], 
             canh_bao.append(f"Trang {so_trang} không đọc được: {exc}")
             cac_trang.append("")
             can_ocr.append(so_trang - 1)
+
+    if pdfium_doc is not None:
+        try:
+            pdfium_doc.close()
+        except Exception:
+            pass
+
     return cac_trang, can_ocr, canh_bao, len(reader.pages)
 
 
