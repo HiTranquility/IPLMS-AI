@@ -498,7 +498,7 @@ export function ForecastSimulator() {
             </button>
           </div>
 
-          {/* ADR-0008 Explanation Card */}
+          {/* Thẻ giải thích "Thà lỗi hơn bịa" */}
           <div className={styles.adrCard}>
             <div className={styles.adrTitle}>
               <Scale size={16} aria-hidden />
@@ -735,7 +735,7 @@ export function ForecastSimulator() {
         </div>
       </div>
 
-      {/* ADR-0008 Gate Check Modal */}
+      {/* Modal kiểm cổng an toàn API */}
       {showSafetyModal && (
         <div className={styles.modalOverlay} role="dialog" aria-modal="true" aria-labelledby="modal-adr-title">
           <div className={styles.modalCard}>

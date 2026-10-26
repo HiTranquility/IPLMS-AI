@@ -26,7 +26,7 @@ def _deterministic_embedding(text: str, dimensions: int = 768) -> List[float]:
 
     Giúp môi trường local dev/offline hoạt động 100% không bị chặn bởi ConnectError,
     đồng thời bảo toàn tính tương đồng cosine trong pgvector: văn bản có chung từ khóa
-    trọng tâm sẽ đạt cosine similarity >= 0.35 (đáp ứng ADR-0008), câu hỏi lạc đề trả về ~0.0.
+    trọng tâm sẽ đạt cosine similarity >= 0.35 (đáp ứng ai ADR-0002), câu hỏi lạc đề trả về ~0.0.
     """
     words = re.findall(r"\w+", unicodedata.normalize("NFC", text).lower())
     meaningful = [w for w in words if w not in _STOPWORDS] or words
@@ -44,8 +44,7 @@ def _deterministic_embedding(text: str, dimensions: int = 768) -> List[float]:
     for token, weight in tokens:
         h = int(hashlib.sha256(token.encode("utf-8")).hexdigest()[:8], 16)
         idx = h % dimensions
-        sign = 1.0 if (h & 0x10000) else -1.0
-        vec[idx] += sign * weight
+        vec[idx] += weight
 
     # Thêm background signature cực nhỏ để vector luôn hợp lệ ngay cả với từ hiếm
     doc_hash = int(hashlib.sha256(text.encode("utf-8")).hexdigest()[:8], 16)
@@ -167,7 +166,7 @@ class EmbeddingClient:
 
         # Nếu không thể kết nối tới Ollama / OpenAI (máy dev offline, Ollama chưa chạy):
         # Kích hoạt deterministic fallback embedding (768-dim) để quá trình nạp và test hoạt động 100%
-        self._offline_until = time.monotonic() + 30.0
+        self._offline_until = time.monotonic() + 300.0
         logger.warning(
             "Không thể kết nối dịch vụ embedding (%s). Tự động kích hoạt deterministic local fallback embedding (dim=%d) để đảm bảo nạp dữ liệu offline an toàn.",
             last_exc,

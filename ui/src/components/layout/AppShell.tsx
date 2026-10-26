@@ -211,7 +211,7 @@ export function AppShell({ me, children }: AppShellProps) {
                       <li key={to}>
                         <NavLink
                           to={to}
-                          end={to === '/' || to === '/vision'}
+                          end={to === '/' || to === '/vision' || to === '/copilot'}
                           className={({ isActive }) =>
                             [
                               styles.link,

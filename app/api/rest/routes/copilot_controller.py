@@ -239,7 +239,7 @@ async def arbitrate_dispute(payload: DisputePayload) -> Dict[str, Any]:
             "success": False,
             "status": "UNIMPLEMENTED",
             "message": str(exc),
-            "safety_rule": "Thà lỗi hơn bịa (ADR-0008): Hệ thống từ chối tự động hoàn tiền khi chưa có model đối chiếu video log và quy chế thật.",
+            "safety_rule": "Thà lỗi hơn bịa (ai ADR-0003): Hệ thống từ chối tự động hoàn tiền khi chưa có model đối chiếu video log và quy chế thật.",
         }
     except Exception as exc:
         return {"success": False, "status": "ERROR", "message": str(exc)}

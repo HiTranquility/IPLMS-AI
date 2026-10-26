@@ -25,6 +25,11 @@ _CLAHE_CLIP_LIMIT = 1.8
 _CLAHE_TILE_GRID = (8, 8)
 _SHARPEN_KERNEL = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
 
+# Ngưỡng chẩn đoán chất lượng ảnh cắt (assess_crop_quality).
+_BLUR_LAPLACIAN_MAX_VAR = 55.0
+_GLARE_PIXEL_RATIO_MIN = 0.18
+_TWO_LINE_ASPECT_RATIO_MIN = 0.52
+
 
 def is_valid_crop(
     crop_img,
@@ -127,10 +132,10 @@ def enhance_yellow_plate(crop: np.ndarray) -> np.ndarray:
     return cv2.cvtColor(enhanced, cv2.COLOR_GRAY2BGR)
 
 
-def deskew_plate(crop: np.ndarray) -> np.ndarray:
-    """Cân chỉnh góc nghiêng (deskewing) cho biển số bị chụp xéo góc (2° - 35°)."""
+def _estimate_skew_angle(crop: np.ndarray) -> float:
+    """Ước lượng góc nghiêng (độ) của vùng biển số chính trong crop."""
     if not isinstance(crop, np.ndarray) or crop.ndim != 3 or crop.shape[2] != 3 or crop.shape[0] < 20 or crop.shape[1] < 40:
-        return crop
+        return 0.0
 
     gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
@@ -138,13 +143,13 @@ def deskew_plate(crop: np.ndarray) -> np.ndarray:
 
     contours, _ = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
-        return crop
+        return 0.0
 
     h, w = crop.shape[:2]
     img_area = w * h
 
     best_cnt = None
-    max_area = 0
+    max_area = 0.0
     for cnt in contours:
         area = cv2.contourArea(cnt)
         if area > max_area and area > 0.12 * img_area:
@@ -152,10 +157,10 @@ def deskew_plate(crop: np.ndarray) -> np.ndarray:
             best_cnt = cnt
 
     if best_cnt is None:
-        return crop
+        return 0.0
 
     rect = cv2.minAreaRect(best_cnt)
-    (cx, cy), (rw, rh), angle = rect
+    (_cx, _cy), (rw, rh), angle = rect
 
     if rw < rh:
         angle = angle + 90.0
@@ -163,8 +168,14 @@ def deskew_plate(crop: np.ndarray) -> np.ndarray:
         angle -= 90.0
     elif angle < -45.0:
         angle += 90.0
+    return float(angle)
 
+
+def deskew_plate(crop: np.ndarray) -> np.ndarray:
+    """Cân chỉnh góc nghiêng (deskewing) cho biển số bị chụp xéo góc (2° - 35°)."""
+    angle = _estimate_skew_angle(crop)
     if 2.0 <= abs(angle) <= 35.0:
+        h, w = crop.shape[:2]
         center = (w / 2.0, h / 2.0)
         M = cv2.getRotationMatrix2D(center, angle, 1.0)
         # Expand the OCR canvas instead of cutting characters at the crop edges.
@@ -181,3 +192,62 @@ def deskew_plate(crop: np.ndarray) -> np.ndarray:
         return rotated
 
     return crop
+
+
+def assess_crop_quality(crop: np.ndarray) -> list[str]:
+    """Chẩn đoán tất định các cờ điều kiện ảnh cắt biển số.
+
+    Trả về danh sách các cờ theo thứ tự chuẩn của Vision Lab:
+    ``blurry``, ``glare``, ``skewed``, ``two_line``.
+    """
+    if not isinstance(crop, np.ndarray) or crop.size == 0 or crop.ndim != 3 or crop.shape[2] != 3:
+        return []
+    h, w = crop.shape[:2]
+    if h < 12 or w < 20:
+        return []
+
+    flags: list[str] = []
+    gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+    lap_var = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+    if lap_var < _BLUR_LAPLACIAN_MAX_VAR:
+        flags.append("blurry")
+
+    hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
+    _h_ch, s_ch, v_ch = cv2.split(hsv)
+    glare_pixels = np.count_nonzero((v_ch >= 245) & (s_ch <= 25))
+    if glare_pixels / float(h * w) >= _GLARE_PIXEL_RATIO_MIN:
+        flags.append("glare")
+
+    angle = _estimate_skew_angle(crop)
+    if 2.0 <= abs(angle) <= 35.0:
+        flags.append("skewed")
+
+    if (h / float(w)) >= _TWO_LINE_ASPECT_RATIO_MIN:
+        flags.append("two_line")
+
+    return flags
+
+
+def suppress_glare_for_ocr(crop: np.ndarray) -> np.ndarray:
+    """Giảm lóa cục bộ (headlight/sun glare) trên bản sao của crop trước khi OCR.
+
+    Cân bằng tương phản cục bộ CLAHE trên kênh L (không gian LAB) rồi nén vùng
+    cháy sáng (L > 200) bằng LUT gamma mềm để khôi phục nét chữ đen quanh vùng
+    chói mà không sửa đổi ảnh gốc ``crop``.
+    """
+    if not isinstance(crop, np.ndarray) or crop.size == 0 or crop.ndim != 3 or crop.shape[2] != 3:
+        return crop
+    lab = cv2.cvtColor(crop, cv2.COLOR_BGR2LAB)
+    l_ch, a_ch, b_ch = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=2.2, tileGridSize=(8, 8))
+    balanced_l = clahe.apply(l_ch)
+    lut = np.array(
+        [
+            int(195 + ((i - 195) / 60.0) ** 1.6 * 30.0) if i > 195 else i
+            for i in range(256)
+        ],
+        dtype=np.uint8,
+    )
+    compressed_l = cv2.LUT(balanced_l, lut)
+    merged = cv2.merge((compressed_l, a_ch, b_ch))
+    return cv2.cvtColor(merged, cv2.COLOR_LAB2BGR)

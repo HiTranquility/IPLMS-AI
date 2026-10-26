@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/constants/queryKeys';
 import {
   getActiveSessions,
+  getDocumentChunks,
   getKnowledgeDocuments,
   getRuntimeSettings,
   getSystemCheck,
@@ -25,6 +26,16 @@ export function useKnowledgeDocumentsQuery(parkingLotId?: string) {
 }
 
 export const useKnowledgeDocuments = useKnowledgeDocumentsQuery;
+
+export function useDocumentChunksQuery(documentId?: string, parkingLotId?: string, versionNo?: number) {
+  return useQuery({
+    queryKey: queryKeys.tools.documentChunks(documentId ?? '', parkingLotId, versionNo),
+    queryFn: () => (documentId ? getDocumentChunks(documentId, parkingLotId, versionNo) : null),
+    enabled: Boolean(documentId),
+  });
+}
+
+export const useDocumentChunks = useDocumentChunksQuery;
 
 export function useRuntimeSettingsQuery() {
   return useQuery({

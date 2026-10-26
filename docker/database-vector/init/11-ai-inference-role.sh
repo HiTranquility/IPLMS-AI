@@ -11,7 +11,7 @@ if [ -z "${AI_CONSOLE_DB_PASSWORD:-}" ]; then
   exit 0
 fi
 
-INFERENCE_PW="${AI_INFERENCE_DB_PASSWORD:-$AI_CONSOLE_DB_PASSWORD}"
+INFERENCE_PW="${AI_INFERENCE_DB_PASSWORD:?Thiếu AI_INFERENCE_DB_PASSWORD (bắt buộc khi bật DB ai_console)}"
 
 psql -v ON_ERROR_STOP=1 -v pw="$INFERENCE_PW" \
   --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<'SQL'

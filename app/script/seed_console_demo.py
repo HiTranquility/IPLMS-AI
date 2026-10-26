@@ -67,7 +67,7 @@ OFFICIAL_DOCS = [
                     "Điều 5 - Quy trình xử lý khiếu nại và hoàn phí:\n"
                     "1. Trường hợp cảm biến barie hoặc hệ thống quét biển số (ANPR) gặp sự cố kỹ thuật dẫn đến chậm trễ lúc ra cổng > 10 phút, hệ thống tự động trừ thời gian trễ này khỏi tổng thời gian tính phí.\n"
                     "2. Khách hàng có quyền tạo yêu cầu Khiếu nại (Dispute Ticket) trên ứng dụng trong vòng 48 giờ kể từ khi kết thúc phiên gửi.\n"
-                    "3. Trợ lý AI Copilot sẽ đối chiếu video log và thời gian thực để đề xuất hoàn tiền 100% phần phí chênh lệch do lỗi hệ thống (tối đa theo thẩm quyền quy định, và bắt buộc có chữ ký xác nhận của Quản lý ca trực theo nguyên tắc tự chủ có giới hạn ADR-0008).\n"
+                    "3. Trợ lý AI Copilot sẽ đối chiếu video log và thời gian thực để đề xuất hoàn tiền 100% phần phí chênh lệch do lỗi hệ thống (tối đa theo thẩm quyền quy định, và bắt buộc có chữ ký xác nhận của Quản lý ca trực theo nguyên tắc tự chủ có giới hạn ai ADR-0003).\n"
                     "4. Quy trình xử lý khiếu nại trầy xước, va quẹt: Đối chiếu ảnh camera check-in và check-out."
                 ),
             },
@@ -319,7 +319,7 @@ async def seed_copilot_telemetry() -> None:
             "lot": "lot_landmark_81",
             "feedback": "DOWN",
             "error_code": "NO_CONTEXT",
-            "review": ("CORRECT", "Câu hỏi ngoài phạm vi kho tri thức, hệ thống từ chối lịch sự theo ADR-0008."),
+            "review": ("CORRECT", "Câu hỏi ngoài phạm vi kho tri thức, hệ thống từ chối lịch sự theo ai ADR-0002."),
         },
         {
             "turn_id": str(uuid5(NAMESPACE_DNS, "turn-demo-08")),
@@ -395,13 +395,39 @@ async def seed_copilot_telemetry() -> None:
     print(f"[Copilot Telemetry] Seeded {summary['total_requests']} turns over 7 days.")
 
 
-async def seed_vision_pipeline() -> None:
-    await console_vision_store.ensure_schema()
+async def seed_vision_pipeline(vision_store=None) -> None:
+    vstore = vision_store or console_vision_store
+    await vstore.ensure_schema()
 
     annotator = ConsoleActor("44444444-4444-4444-4444-444444444444", frozenset({"ai_annotator"}))
     reviewer = ConsoleActor("33333333-3333-3333-3333-333333333333", frozenset({"ai_reviewer"}))
     engineer = ConsoleActor("22222222-2222-2222-2222-222222222222", frozenset({"ai_ml_engineer", "ai_data_engineer"}))
     lead = ConsoleActor("11111111-1111-1111-1111-111111111111", frozenset({"ai_lead"}))
+
+    # Dam bao 4 thanh vien demo ton tai trong console_member khi chay tren DB moi (A-7).
+    demo_members = [
+        (lead.member_id, "demo-lead@iplms.local", "[DEMO] AI Lead", ("ai_lead",)),
+        (engineer.member_id, "demo-ml@iplms.local", "[DEMO] ML Engineer", ("ai_ml_engineer", "ai_data_engineer")),
+        (reviewer.member_id, "demo-reviewer@iplms.local", "[DEMO] Reviewer", ("ai_reviewer",)),
+        (annotator.member_id, "demo-annotator@iplms.local", "[DEMO] Annotator", ("ai_annotator",)),
+    ]
+    conn_m, _ = connect_with_fallback(vstore.db_url or get_config().console.database_url)
+    try:
+        with conn_m, conn_m.cursor() as cur:
+            for mid, email, dname, roles in demo_members:
+                cur.execute(
+                    "INSERT INTO console_member (id, email, display_name, status) "
+                    "VALUES (%s, %s, %s, 'ACTIVE') ON CONFLICT DO NOTHING",
+                    (mid, email, dname),
+                )
+                for r in roles:
+                    cur.execute(
+                        "INSERT INTO console_member_role (member_id, role) "
+                        "SELECT id, %s FROM console_member WHERE id = %s ON CONFLICT DO NOTHING",
+                        (r, mid),
+                    )
+    finally:
+        conn_m.close()
 
     # 1. Tạo 20 mẫu Random Audit đã được gán nhãn & phê duyệt 4-mắt để Tổng quan Vision (/vision)
     # có đầy đủ biểu đồ Độ chính xác thực tế, khoảng tin cậy Wilson 95%, và gợi ý ngưỡng tự nhận!
@@ -454,7 +480,7 @@ async def seed_vision_pipeline() -> None:
         })
         audit_crops[cid] = img
 
-    await console_vision_store.import_batch(
+    await vstore.import_batch(
         audit_samples,
         audit_crops,
         [],
@@ -462,7 +488,7 @@ async def seed_vision_pipeline() -> None:
         90,
     )
 
-    lab = ConsoleVisionLabService(store=console_vision_store, demo_seed_enabled=True)
+    lab = ConsoleVisionLabService(store=vstore, demo_seed_enabled=True)
     for idx, (machine_p, truth_p, _, _, two_line) in enumerate(audit_plates, start=1):
         cid = f"b0000000-0000-4000-8000-{idx:012d}"
         verdict = "CORRECT" if machine_p == truth_p else "CORRECTED"
@@ -474,7 +500,7 @@ async def seed_vision_pipeline() -> None:
             pass
 
     # 2. Tạo Snapshot Golden (15 mẫu đầu) -> Khóa Golden, sau đó tạo Snapshot Train (5 mẫu mới)
-    existing_snaps = await console_vision_store.list_snapshots()
+    existing_snaps = await vstore.list_snapshots()
     golden_id = None
     train_id = None
     for s in existing_snaps:
@@ -518,7 +544,7 @@ async def seed_vision_pipeline() -> None:
             "updated_at": datetime.now(timezone.utc),
         })
         extra_crops[cid] = img
-    await console_vision_store.import_batch(extra_samples, extra_crops, [], None, 90)
+    await vstore.import_batch(extra_samples, extra_crops, [], None, 90)
     for idx in range(21, 25):
         cid = f"b0000000-0000-4000-8000-{idx:012d}"
         try:
@@ -534,14 +560,14 @@ async def seed_vision_pipeline() -> None:
         except Exception:
             pass
 
-    # 3. Đăng ký Model ANPR, chạy Eval trên Golden đã khóa và Promote bản v1.0 lên Production
+    # 3. Đăng ký Model ANPR, chạy Eval trên Golden đã khóa, chỉ đề xuất (demo - A-70)
     weights_sha = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     models_svc = ConsoleModelLabService(
-        store=console_vision_store,
+        store=vstore,
         run=lambda image: {"plate_number": "51A10101", "confidence": 0.94, "process_time": 0.018},
         engine_version=lambda: f"yolo:{weights_sha[:12]}+easyocr:1.7",
     )
-    existing_models = await console_vision_store.list_models()
+    existing_models = await vstore.list_models()
     if not existing_models and golden_id:
         m1 = await models_svc.register(engineer, {
             "name": "anpr-yolov8n",
@@ -557,14 +583,16 @@ async def seed_vision_pipeline() -> None:
         # không promote — việc duyệt bốn mắt để người dùng thử trên Console.
         await models_svc.propose(engineer, m1, f"[DEMO] Đề xuất thử luồng duyệt; xem số đo thật ở lượt đo {run_id}.")
 
-    # 4. Đề xuất & Duyệt Chính sách Ngưỡng Tự Nhận (Accept Policy)
-    policy_svc = ConsoleAcceptPolicyService(store=console_vision_store)
-    existing_policies = await console_vision_store.list_policies()
+    # 4. Đề xuất Chính sách Ngưỡng Tự Nhận (Accept Policy — chỉ đề xuất để thử duyệt bốn mắt trên Console, A-71)
+    policy_svc = ConsoleAcceptPolicyService(store=vstore)
+    existing_policies = await vstore.list_policies()
     if not existing_policies:
-        pol = await policy_svc.propose(
-            engineer, 0.81, 0.05, "100% mẫu có độ tự tin >= 0.81 đều đọc chính xác trên tập kiểm toán ngẫu nhiên."
+        await policy_svc.propose(
+            engineer,
+            0.81,
+            0.05,
+            "[DEMO] Đề xuất thử luồng duyệt chính sách ngưỡng mở cổng 0.81, hậu kiểm 5%.",
         )
-        await policy_svc.decide(lead, pol["id"], "APPROVED", "Đồng ý áp dụng ngưỡng mở cổng tự động 0.81, hậu kiểm 5%.")
 
     # 5. Nạp bộ mẫu thực hành (5 mẫu chờ Gán nhãn ở /vision/label + 2 mẫu chờ Duyệt nhãn ở /vision/review)
     # và thêm 2 mẫu chờ Duyệt nhãn bổ sung để tab Duyệt nhãn có cả Khớp 100% lẫn Đã sửa biển kèm cờ chất lượng ảnh!
@@ -595,9 +623,9 @@ async def seed_vision_pipeline() -> None:
             "updated_at": datetime.now(timezone.utc),
         })
         rev_crops[cid] = img
-    await console_vision_store.import_batch(rev_batch, rev_crops, [], None, 90)
+    await vstore.import_batch(rev_batch, rev_crops, [], None, 90)
     for cid, _, _, _, _, _, verdict, plate_txt, flags in extra_review_samples:
-        conn, _ = connect_with_fallback(get_config().console.database_url)
+        conn, _ = connect_with_fallback(vstore.db_url or get_config().console.database_url)
         try:
             with conn, conn.cursor() as cur:
                 cur.execute("DELETE FROM vision_label WHERE capture_id = %s", (cid,))
