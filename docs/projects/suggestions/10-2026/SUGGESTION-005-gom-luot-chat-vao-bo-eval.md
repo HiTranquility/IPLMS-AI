@@ -5,6 +5,7 @@
 | | |
 |---|---|
 | **Trạng thái** | 🔄 REVIEWING |
+| **Ưu tiên** | 🟢 |
 | **Ngày** | 2026-10-23 |
 | **Người đề xuất** | Claude Code ([ISSUE-004](../../issues/10-2026/ISSUE-004-ai-console-ui-review/issue.md)) |
 | **Techlead duyệt** | @HiTranquility — ⏳ chờ |

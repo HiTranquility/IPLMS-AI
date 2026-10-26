@@ -6,6 +6,8 @@
 |---|---|
 | **Ngày / Người báo** | 2026-10-23 / Claude Code (rà code mới chưa commit trên `develop@534e0f8`) |
 | **Trạng thái** | ✅ Fixed — chờ PR (nhánh `bugfix/bug-013-2026-10-vision-demo-seed-guard`) |
+| **Người nhận** | @HiTranquility |
+| **Hạn** | 2026-10-31 |
 | **Môi trường** | local (code chưa merge) |
 
 ## Hành vi thực tế
