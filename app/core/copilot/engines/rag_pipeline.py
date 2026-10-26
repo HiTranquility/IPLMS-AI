@@ -116,13 +116,14 @@ def _log_guard(rule: str) -> None:
 
 
 class RagPipelineEngine:
-    def __init__(self, embedder=None, vector_store=None, llm=None) -> None:
+    def __init__(self, embedder=None, vector_store=None, llm=None, demo_seed_enabled: bool | None = None) -> None:
         self.embedder = embedder or embedding_client
         self.vector_store = vector_store or pgvector_client
         self.llm = llm or llm_factory
         config = get_config().llm
         self.top_k = config.rag_top_k
         self.min_similarity = config.rag_min_similarity
+        self._demo_seed_enabled = demo_seed_enabled
 
     def _limits(self, top_k: int | None, min_similarity: float | None) -> tuple[int, float]:
         """Tham số thử của console (ai bug-017) chỉ được làm truy xuất CHẶT hơn cấu hình.
@@ -134,6 +135,11 @@ class RagPipelineEngine:
         k = self.top_k if top_k is None else max(1, int(top_k))
         floor = self.min_similarity if min_similarity is None else max(self.min_similarity, float(min_similarity))
         return k, floor
+
+    def _seed_fallback_enabled(self) -> bool:
+        if self._demo_seed_enabled is not None:
+            return self._demo_seed_enabled
+        return get_config().console.demo_seed_enabled
 
     def _retrieve_from_seed(
         self, query: str, parking_lot_id: str | None,
@@ -233,7 +239,9 @@ class RagPipelineEngine:
                 min_similarity=floor,
                 preview=preview,
             )
-            if not chunks:
+            # Seed là quy chế demo dùng chung, chọn theo trùng chữ: ở production
+            # không có chunk thì phải NO_CONTEXT (ADR-0008), chỉ dev/sandbox mới lấp.
+            if not chunks and self._seed_fallback_enabled():
                 seed_chunks = self._retrieve_from_seed(query, parking_lot_id, k, floor)
                 if seed_chunks:
                     logger.info("pgvector không có chunk khớp, fallback sang %d seed chunks.", len(seed_chunks))
