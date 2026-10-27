@@ -4,14 +4,14 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🔄 REVIEWING |
+| **Trạng thái** | 🟢 ACCEPTED |
 | **Người nhận** | @HiTranquility |
 | **Hạn** | 2026-10-31 |
 | **Ưu tiên** | 🟠 |
-| **Ngày đóng** | |
+| **Ngày đóng** | 2026-10-27 |
 | **Ngày** | 2026-10-26 |
 | **Người đề xuất** | Antigravity AI Security Fuzzing Agent |
-| **Techlead duyệt** | @HiTranquility — ⏳ chờ |
+| **Techlead duyệt** | @HiTranquility — 2026-10-27 (duyệt trong phiên, merge qua PR khi CI xanh) |
 | **Làm trước khi duyệt?** | Có — đã thử nghiệm và hoàn tất kiểm chứng trên local |
 | **Phạm vi** | `ai` (`app/api/rest/routes/copilot_controller.py`, `app/core/copilot/engines/output_guard.py`) |
 
@@ -57,5 +57,5 @@
 
 ## Bước tiếp theo
 
-1. Chờ Techlead @HiTranquility xem xét và phản hồi.
+1. Techlead @HiTranquility đã duyệt ngày 2026-10-27.
 2. Bản sửa đã nằm trên nhánh `bugfix/bug-037-2026-10-copilot-prompt-limit-and-guard-obfuscation`, hồ sơ [bug-037](../../bugs/bug-037-copilot-gateway-khong-gioi-han-prompt-va-guard-bi-lach-chu/bug.md). Policy tên nhánh không nhận mã `SUGGESTION`, nên nhánh đặt theo mã bug. Chỉ merge khi đề xuất này 🟢 ACCEPTED và PR được techlead approve.
