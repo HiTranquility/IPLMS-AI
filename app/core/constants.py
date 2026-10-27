@@ -12,6 +12,9 @@ PLATE_MIN_ALPHA = 1
 PLATE_MIN_ALNUM = 6
 # EasyOCR (vi) đọc được chữ có dấu/ký hiệu; biển số chỉ có các ký tự này.
 PLATE_OCR_ALLOWLIST = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-."
+# Trần một ảnh ANPR gửi qua REST (bug-043). Cùng mức 8MB với ANPR thử ở Console;
+# thấp hơn `grpc_max_message_length` (10MB) để ảnh qua REST cũng đi được gRPC.
+ANPR_MAX_IMAGE_BYTES = 8 * 1024 * 1024
 
 # ── Forecast ──────────────────────────────────────────────────────────────────
 FORECAST_SLOT_SECONDS = 1800  # 30 phút
