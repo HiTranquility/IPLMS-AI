@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.api.rest.routes.anpr_controller import router
-from app.core.constants import ANPR_MAX_IMAGE_BYTES
+from app.core.constants import ANPR_MAX_FILES_PER_REQUEST, ANPR_MAX_IMAGE_BYTES
 
 JPEG = b"\xff\xd8\xff\xe0" + b"\x00" * 64
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
@@ -44,6 +44,24 @@ class AnprRestUploadTest(unittest.TestCase):
         self._post(JPEG)
         self._post(PNG, name="x.png", content_type="image/png")
         self.assertEqual(self.seen, [len(JPEG), len(PNG)])
+
+    def _post_many(self, blobs):
+        files = [("files", (f"{i}.jpg", data, "image/jpeg")) for i, data in enumerate(blobs)]
+        return self.client.post("/api/anpr/recognize-many", files=files)
+
+    def test_qua_tran_so_anh_tra_413_va_khong_toi_engine(self):
+        r = self._post_many([JPEG] * (ANPR_MAX_FILES_PER_REQUEST + 1))
+        self.assertEqual(r.status_code, 413)
+        self.assertEqual(self.seen, [])
+
+    def test_mot_anh_hong_cuoi_lo_khong_chay_anh_nao(self):
+        r = self._post_many([JPEG, JPEG, b"not-an-image"])
+        self.assertEqual(r.status_code, 415)
+        self.assertEqual(self.seen, [])
+
+    def test_trong_tran_chay_du_tung_anh(self):
+        self._post_many([JPEG] * ANPR_MAX_FILES_PER_REQUEST)
+        self.assertEqual(len(self.seen), ANPR_MAX_FILES_PER_REQUEST)
 
     def test_loi_engine_khong_lo_message_exception(self):
         body = self._post(JPEG).json()
