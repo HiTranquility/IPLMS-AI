@@ -5,7 +5,7 @@ import { useI18n } from '@/i18n/I18nProvider';
 import { useWorkspaceStore } from '@/stores/useWorkspaceStore';
 import type { Me } from '@/types/auth';
 import type { WorkspacePersona } from '@/types/workspace';
-import { allowed, getAvailablePersonas, NAV_ITEMS, PERSONA_LIST } from './navigation';
+import { allowed, getAvailablePersonas, NAV_ITEMS, PERSONA_LIST, resolvePersona } from './navigation';
 import styles from './PersonaSwitcher.module.css';
 
 export interface PersonaSwitcherProps {
@@ -17,7 +17,7 @@ export function PersonaSwitcher({ me, collapsed = false }: PersonaSwitcherProps)
   const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
-  const { persona, setPersona } = useWorkspaceStore();
+  const { persona, setPersona } = useWorkspaceStore(me.member_id);
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -47,7 +47,7 @@ export function PersonaSwitcher({ me, collapsed = false }: PersonaSwitcherProps)
     [availableIds],
   );
 
-  const activeId = availableIds.includes(persona) ? persona : availableIds[0];
+  const activeId = resolvePersona(me, persona);
   const activeMeta = PERSONA_LIST.find((p) => p.id === activeId) || PERSONA_LIST[0];
   const ActiveIcon = activeMeta.icon;
 

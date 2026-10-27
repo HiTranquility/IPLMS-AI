@@ -98,6 +98,7 @@ export const en: Messages = {
     copilotChat: 'Copilot Chat',
     knowledge: 'Knowledge Base',
     copilotLogs: 'Logs & Review',
+    forecast: 'Forecast & pricing',
     tools: 'Test tools',
     visionOverview: 'Vision overview',
     label: 'Labeling',
