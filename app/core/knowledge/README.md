@@ -14,7 +14,7 @@ backend owner|admin/knowledge-documents (POST, multipart ≤8MB, .pdf/.docx/.txt
             ├─ engines/chunker.chunk_text
             │     cắt theo "Điều/Chương/Mục/Phần N" hoặc heading Markdown; dài quá mới cắt tiếp
             │     theo đoạn văn; ~1500 ký tự, chồng 200, bỏ đoạn <100
-            ├─ engines/injection_scan.find_instructions   mỗi đoạn: câu ra lệnh cho trợ lý AI (bỏ dấu,
+            ├─ guardrails/injection_scan.find_instructions mỗi đoạn: câu ra lệnh cho trợ lý AI (bỏ dấu,
             │     bỏ zero-width) → metadata.injection_flags + cảnh báo trong message; cổng xuất bản chặn (PROB-046)
             ├─ infra/embedding/embedding_client.embed_texts  lô 64, retry 429/5xx
             └─ infra/database/pgvector_client.save_draft_version   MỘT transaction:

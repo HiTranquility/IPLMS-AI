@@ -28,7 +28,7 @@ import re
 
 from app.core.copilot.guardrails.output_guard import GUARD_NOTICE
 from app.core.copilot.engines.rag_pipeline import RagPipelineEngine
-from app.core.knowledge.engines.injection_scan import find_instructions
+from app.core.knowledge.guardrails.injection_scan import find_instructions
 from app.infra.llm.llm_factory import LlmFactory
 
 REAL = {"source": "quy-che-bai-A.pdf", "similarity": 0.9, "content": (
