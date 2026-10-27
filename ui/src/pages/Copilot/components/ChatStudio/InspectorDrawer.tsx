@@ -1,5 +1,6 @@
 import { PARKING_LOTS, resolveLotLabel } from '@/constants/parkingLots';
-import { Activity, BookOpen, Check, Cpu, Database, GitBranch, Sliders, Sparkles, X } from 'lucide-react';
+import { useState } from 'react';
+import { Activity, BookOpen, Check, Copy, Cpu, Database, ExternalLink, GitBranch, MessageSquare, Sliders, Sparkles, X } from 'lucide-react';
 import { useI18n } from '@/i18n/I18nProvider';
 import { fmtInt, fmtMs } from '@/utils/format';
 import { DisputeSimulator } from './DisputeSimulator';
@@ -27,6 +28,8 @@ export interface InspectorDrawerProps {
   onAskAboutDocument?: (doc: SeedDocument) => void;
   onAskAboutDispute?: (summary: string) => void;
   onSelectModelProfile?: (profile: ModelProfilePreset) => void;
+  onViewFullDocument?: (docOrId: string) => void;
+  onAskAboutCitation?: (source: RagSource) => void;
 }
 
 export function InspectorDrawer({
@@ -41,8 +44,22 @@ export function InspectorDrawer({
   onAskAboutDocument,
   onAskAboutDispute,
   onSelectModelProfile,
+  onViewFullDocument,
+  onAskAboutCitation,
 }: InspectorDrawerProps) {
   const { t } = useI18n();
+  const [copiedCitationId, setCopiedCitationId] = useState<string | null>(null);
+
+  const handleCopySnippet = async (source: RagSource) => {
+    const text = source.snippet || source.title;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedCitationId(source.chunkId || source.title);
+      setTimeout(() => setCopiedCitationId(null), 2000);
+    } catch {
+      // Fallback
+    }
+  };
 
   const handleApplyProfile = (profile: ModelProfilePreset) => {
     setParams((prev) => ({
@@ -63,61 +80,64 @@ export function InspectorDrawer({
     >
       {/* Tab Navigation (5 Tabs) */}
       <div className={styles.inspectorTabs}>
-        <button
-          type="button"
-          className={`${styles.inspectorTab} ${activeTab === 'citations' ? styles.inspectorTabActive : ''}`}
-          onClick={() => setActiveTab('citations')}
-          title={t.copilot.tabCitationsTitle}
-        >
-          <BookOpen size={13} />
-          <span>{t.copilot.citationsTitle}</span>
-        </button>
+        <div className={styles.inspectorTabsScroll}>
+          <button
+            type="button"
+            className={`${styles.inspectorTab} ${activeTab === 'citations' ? styles.inspectorTabActive : ''}`}
+            onClick={() => setActiveTab('citations')}
+            title={t.copilot.tabCitationsTitle}
+          >
+            <BookOpen size={13} aria-hidden />
+            <span>{t.copilot.citationsTitle}</span>
+          </button>
 
-        <button
-          type="button"
-          className={`${styles.inspectorTab} ${activeTab === 'knowledge' ? styles.inspectorTabActive : ''}`}
-          onClick={() => setActiveTab('knowledge')}
-          title={t.copilot.tabKnowledgeTitle}
-        >
-          <Database size={13} />
-          <span>{t.copilot.knowledgeTitle}</span>
-        </button>
+          <button
+            type="button"
+            className={`${styles.inspectorTab} ${activeTab === 'knowledge' ? styles.inspectorTabActive : ''}`}
+            onClick={() => setActiveTab('knowledge')}
+            title={t.copilot.tabKnowledgeTitle}
+          >
+            <Database size={13} aria-hidden />
+            <span>{t.copilot.knowledgeTitle}</span>
+          </button>
 
-        <button
-          type="button"
-          className={`${styles.inspectorTab} ${activeTab === 'dispute' ? styles.inspectorTabActive : ''}`}
-          onClick={() => setActiveTab('dispute')}
-          title={t.copilot.tabDisputeTitle}
-        >
-          <GitBranch size={13} />
-          <span>{t.copilot.disputeTitle}</span>
-        </button>
+          <button
+            type="button"
+            className={`${styles.inspectorTab} ${activeTab === 'dispute' ? styles.inspectorTabActive : ''}`}
+            onClick={() => setActiveTab('dispute')}
+            title={t.copilot.tabDisputeTitle}
+          >
+            <GitBranch size={13} aria-hidden />
+            <span>{t.copilot.disputeTitle}</span>
+          </button>
 
-        <button
-          type="button"
-          className={`${styles.inspectorTab} ${activeTab === 'telemetry' ? styles.inspectorTabActive : ''}`}
-          onClick={() => setActiveTab('telemetry')}
-          title={t.copilot.tabTelemetryTitle}
-        >
-          <Activity size={13} />
-          <span>{t.copilot.telemetryTitle}</span>
-        </button>
+          <button
+            type="button"
+            className={`${styles.inspectorTab} ${activeTab === 'telemetry' ? styles.inspectorTabActive : ''}`}
+            onClick={() => setActiveTab('telemetry')}
+            title={t.copilot.tabTelemetryTitle}
+          >
+            <Activity size={13} aria-hidden />
+            <span>{t.copilot.telemetryTitle}</span>
+          </button>
 
-        <button
-          type="button"
-          className={`${styles.inspectorTab} ${activeTab === 'params' ? styles.inspectorTabActive : ''}`}
-          onClick={() => setActiveTab('params')}
-          title={t.copilot.tabParamsTitle}
-        >
-          <Sliders size={13} />
-          <span>{t.copilot.paramsTitle}</span>
-        </button>
+          <button
+            type="button"
+            className={`${styles.inspectorTab} ${activeTab === 'params' ? styles.inspectorTabActive : ''}`}
+            onClick={() => setActiveTab('params')}
+            title={t.copilot.tabParamsTitle}
+          >
+            <Sliders size={13} aria-hidden />
+            <span>{t.copilot.paramsTitle}</span>
+          </button>
+        </div>
 
         <button
           type="button"
           className={styles.inspectorCloseBtn}
           onClick={onClose}
           aria-label={t.copilot.closeInspector}
+          title={t.copilot.closeInspector}
         >
           <X size={14} />
         </button>
@@ -133,16 +153,23 @@ export function InspectorDrawer({
                   const isSelected =
                     selectedCitation?.chunkId === source.chunkId ||
                     selectedCitation?.title === source.title;
+                  const scorePercent = source.score != null ? Math.round(source.score * 100) : null;
                   return (
                     <article
                       key={source.chunkId || idx}
                       className={`${styles.citationCard} ${isSelected ? styles.citationCardActive : ''}`}
                     >
                       <header className={styles.citationCardHeader}>
-                        <span className={styles.citationCardTitle}>{source.title}</span>
-                        {source.score != null && (
-                          <span className={`${styles.citationCardScore} num`}>
-                            {(source.score * 100).toFixed(0)}%
+                        <div className={styles.citationCardTitleGroup}>
+                          <BookOpen size={13} className={styles.citationBookIcon} />
+                          <span className={styles.citationCardTitle}>{source.title}</span>
+                        </div>
+                        {scorePercent != null && (
+                          <span
+                            className={`${styles.citationCardScore} num`}
+                            title={`${t.copilot.citationScoreLabel}: ${scorePercent}%`}
+                          >
+                            {scorePercent}%
                           </span>
                         )}
                       </header>
@@ -158,6 +185,54 @@ export function InspectorDrawer({
                       ) : (
                         <p className={styles.snippetEmpty}>{t.copilot.snippetInPrompt}</p>
                       )}
+
+                      <footer className={styles.citationCardFooter}>
+                        {onViewFullDocument && (
+                          <button
+                            type="button"
+                            className={styles.citationActionBtn}
+                            onClick={() => onViewFullDocument(source.documentId || source.title)}
+                            title={t.copilot.viewFullDocTooltip}
+                            aria-label={t.copilot.viewFull}
+                          >
+                            <ExternalLink size={12} />
+                            <span>{t.copilot.viewFull}</span>
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          className={styles.citationActionBtn}
+                          onClick={() => handleCopySnippet(source)}
+                          title={t.copilot.copySnippet}
+                          aria-label={t.copilot.copySnippet}
+                        >
+                          {copiedCitationId === (source.chunkId || source.title) ? (
+                            <>
+                              <Check size={12} className={styles.successColor} />
+                              <span>{t.copilot.copiedSnippet}</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy size={12} />
+                              <span>{t.copilot.copySnippet}</span>
+                            </>
+                          )}
+                        </button>
+
+                        {onAskAboutCitation && (
+                          <button
+                            type="button"
+                            className={`${styles.citationActionBtn} ${styles.citationAskBtn}`}
+                            onClick={() => onAskAboutCitation(source)}
+                            title={t.copilot.askAboutCitation}
+                            aria-label={t.copilot.askAboutCitation}
+                          >
+                            <MessageSquare size={12} />
+                            <span>{t.copilot.askAboutCitation}</span>
+                          </button>
+                        )}
+                      </footer>
                     </article>
                   );
                 })}
@@ -173,7 +248,11 @@ export function InspectorDrawer({
 
         {/* 2. Tab Kho Tri Thức & Dictionary Explorer */}
         {activeTab === 'knowledge' && (
-          <KnowledgeExplorer onAskAboutDocument={onAskAboutDocument} />
+          <KnowledgeExplorer
+            onAskAboutDocument={onAskAboutDocument}
+            onViewFullDocument={onViewFullDocument ? (doc) => onViewFullDocument(doc.id || doc.title) : undefined}
+            onOpenKnowledgePage={onViewFullDocument ? () => onViewFullDocument('') : undefined}
+          />
         )}
 
         {/* 3. Tab Mô Phỏng Phân Xử LangGraph */}
@@ -196,7 +275,7 @@ export function InspectorDrawer({
                 <div className={styles.metricCard}>
                   <span className={styles.metricLabel}>{t.copilot.tokenSpeed}</span>
                   <span className={`${styles.metricValue} num`}>
-                    {activeMessage.speedTokPerSec != null ? `${activeMessage.speedTokPerSec} t/s` : '—'}
+                    {activeMessage.speedTokPerSec != null ? `${activeMessage.speedTokPerSec} tok/s` : '—'}
                   </span>
                 </div>
 
@@ -218,15 +297,14 @@ export function InspectorDrawer({
                         width: `${Math.min(
                           100,
                           (((activeMessage.inputTokens || 0) + (activeMessage.outputTokens || 0)) /
-                            4096) *
+                            (activeMessage.contextLimit || 4096)) *
                             100,
                         )}%`,
                       }}
                     />
                   </div>
                   <span className={`${styles.contextSubText} num`}>
-                    {fmtInt((activeMessage.inputTokens || 0) + (activeMessage.outputTokens || 0))} /
-                    4,096 tokens
+                    {`${fmtInt((activeMessage.inputTokens || 0) + (activeMessage.outputTokens || 0))} / ${fmtInt(activeMessage.contextLimit || 4096)} tokens`}
                   </span>
                 </div>
 
