@@ -105,6 +105,25 @@ def _log_guard(rule: str) -> None:
     logger.warning("Copilot output guard blocked answer rule=%s", rule)
 
 
+def _check_input(query_text: str, history: Optional[List[Dict[str, Any]]] = None):
+    """Rào chắn đầu vào cho câu hỏi và mọi lượt history client tự khai (ADR-0029, bug-040).
+
+    Với history chỉ chặn PROMPT_INJECTION: lượt cũ rỗng hay ngoài phạm vi (đã bị từ chối
+    trước đó) không phải mối nguy và không được khoá cả cuộc hội thoại.
+    """
+    guard = guardrail_manager.check_input(query_text)
+    if not guard.is_safe:
+        return guard
+    for item in history or []:
+        content = str(item.get("content") or "")
+        if not content.strip():
+            continue
+        turn = guardrail_manager.check_input(content)
+        if turn.risk_type == "PROMPT_INJECTION":
+            return turn
+    return guard
+
+
 def _enrich_retrieval_query(query: str, history: Optional[List[Dict[str, Any]]] = None) -> str:
     """Bổ sung ngữ cảnh từ lịch sử hội thoại gần nhất cho câu truy vấn vector (Multi-turn RAG).
 
@@ -334,6 +353,11 @@ class RagPipelineEngine:
             len(query_text),
             bool(parking_lot_id),
         )
+        guard_in = _check_input(query_text, history)
+        if not guard_in.is_safe:
+            return {"answer": guard_in.refusal_message or NO_CONTEXT_ANSWER, "sources": [],
+                    "confidence": 0.0, "status": "REFUSED", "usage": {}, "model": "",
+                    "guardrail_triggered": guard_in.risk_type}
         retrieval_query = _enrich_retrieval_query(query_text, history)
         chunks = await self._grounded_chunks(retrieval_query, parking_lot_id, preview, top_k, min_similarity)
         if not chunks:
@@ -374,7 +398,7 @@ class RagPipelineEngine:
             bool(parking_lot_id),
         )
         # 1. Rào chắn đầu vào (Mục 4.2: Prompt Injection)
-        guard_in = guardrail_manager.check_input(query_text)
+        guard_in = _check_input(query_text, history)
         if not guard_in.is_safe:
             refusal = guard_in.refusal_message or NO_CONTEXT_ANSWER
             lat = round((time.perf_counter() - start_time) * 1000.0, 2)
