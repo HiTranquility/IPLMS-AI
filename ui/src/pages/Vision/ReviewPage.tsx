@@ -21,6 +21,7 @@ export function ReviewPage() {
   const queryClient = useQueryClient();
   const seedMutation = useSeedDemoBatch();
   const [isBatchApproving, setIsBatchApproving] = useState(false);
+  const [batchError, setBatchError] = useState<unknown>(null);
   const [filterMode, setFilterMode] = useState<'ALL' | 'EXACT' | 'CORRECTED'>('ALL');
   const [flagFilter, setFlagFilter] = useState<QualityFlag | null>(null);
 
@@ -46,14 +47,18 @@ export function ReviewPage() {
   const handleApproveAllExact = async () => {
     if (exactMatches.length === 0 || isBatchApproving) return;
     setIsBatchApproving(true);
+    setBatchError(null);
     try {
       for (const item of exactMatches) {
         // Lý do ghi vào nhật ký kiểm toán phía server (tiếng Việt như mọi lý do khác), không phải chữ hiển thị.
         await decideLabel(item.label.id, 'APPROVED', 'Duyệt nhanh theo lô: Khớp 100%');
       }
-      void queryClient.invalidateQueries({ queryKey: queryKeys.vision.reviewQueue() });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.vision.accuracy() });
+    } catch (error) {
+      setBatchError(error);
     } finally {
+      // Lô đứt giữa chừng thì các nhãn trước đó đã duyệt rồi: luôn làm mới cả nhóm như useVisionMutation.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.vision.all() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.audit.list() });
       setIsBatchApproving(false);
     }
   };
@@ -125,6 +130,7 @@ export function ReviewPage() {
 
       {queue.isPending && <Loading />}
       {queue.error && <ErrorBlock error={queue.error} onRetry={() => void queue.refetch()} />}
+      {batchError != null && <ErrorBlock error={batchError} />}
 
       {items.length === 0 && !queue.isPending && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
