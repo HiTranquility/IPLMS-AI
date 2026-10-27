@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | **ID** | AUDIT-007 |
-| **Trạng thái** | 📋 Đã báo cáo |
+| **Trạng thái** | 🛠️ Đang khắc phục: A1, A2 đã sửa; nhóm B và OPEN-01 còn mở |
 | **Ngày quét** | 2026-10-27 |
 | **Người quét** | Claude Code, một lượt (không chạy auditor độc lập, không có vòng 2) |
 | **Phạm vi (Scope)** | `git diff 24512ba..e732250` trên `ai/` (develop sáng 27/10 → sau PR #106): 91 file code, +4095/−520. Gồm trang Knowledge và RAG đa lượt (#91), ISSUE-021 (#92), bug-033 đến bug-038 |
@@ -81,8 +81,8 @@ grep -n "check_input\|history" app/core/copilot/engines/rag_pipeline.py app/infr
 
 | Mã | Mức | Nội dung | Trạng thái |
 |---|---|---|---|
-| [bug-039](../../bugs/bug-039-trang-knowledge-mau-ghi-cung-vo-tuong-phan-theme-sang/bug.md) | 🟠 | A1: trang Knowledge ghi cứng 110 màu, theme sáng tương phản 1.75–2.56:1 | 🆕 New |
-| [bug-040](../../bugs/bug-040-history-copilot-khong-qua-rao-chan-dau-vao/bug.md) | 🟠 | A2: history Copilot không qua rào chắn đầu vào | 🆕 New |
+| [bug-039](../../bugs/bug-039-trang-knowledge-mau-ghi-cung-vo-tuong-phan-theme-sang/bug.md) | 🟠 | A1: trang Knowledge ghi cứng 110 màu, theme sáng tương phản 1.75–2.56:1 | ✅ Fixed ([PR #109](https://github.com/HiTranquility/IPLMS-AI/pull/109)) |
+| [bug-040](../../bugs/bug-040-history-copilot-khong-qua-rao-chan-dau-vao/bug.md) | 🟠 | A2: history Copilot không qua rào chắn đầu vào | ✅ Fixed ([PR #108](https://github.com/HiTranquility/IPLMS-AI/pull/108)) |
 | OPEN-01 | — | B4: thao tác engine/cấu hình phần cứng có cần step-up không | Chờ techlead |
 | (bug-038 ghi chú) | 🟡 | Hai test `no_context` phụ thuộc `.env.dev` bật demo seed | Chưa mở hồ sơ |
 

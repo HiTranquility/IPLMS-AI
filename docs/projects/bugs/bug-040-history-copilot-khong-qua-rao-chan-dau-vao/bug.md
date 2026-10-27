@@ -4,11 +4,11 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🆕 New |
-| **Người nhận** | |
-| **Hạn** | |
+| **Trạng thái** | ✅ Fixed |
+| **Người nhận** | @HiTranquility |
+| **Hạn** | 2026-10-31 |
 | **Ưu tiên** | 🟠 |
-| **Ngày đóng** | |
+| **Ngày đóng** | 2026-10-27 |
 | **Người báo** | Claude ([AUDIT-007](../../audits/10-2026/AUDIT-007-develop-2026-10-27-console-knowledge-settings.md) A2) |
 | **Ngày báo** | 2026-10-27 |
 | **Môi trường** | develop `e732250` (RAG đa lượt vào qua PR #91) |
@@ -41,3 +41,12 @@ Qua HTTP, cách tái hiện tương đương là `POST /api/tools/copilot/stream
 - Chạy `guardrail_manager.check_input` cho từng `content` trong history. Có lượt không an toàn thì từ chối như `query`, hoặc bỏ lượt đó và ghi log `guardrail_triggered`.
 - Cân nhắc lưu history ở server theo phiên và chỉ nhận id hội thoại từ client. Cách này chặn được lượt `assistant` giả mạo.
 - Thêm test: history chứa câu injection thì trả trạng thái REFUSED. Chạy lại bộ tấn công guard theo ADR-0029.
+
+## Đã sửa
+
+[PR #108](https://github.com/HiTranquility/IPLMS-AI/pull/108), commit `63fa0fa`, merge vào develop ở `20a31ba` (2026-10-27).
+
+- `rag_pipeline.py` thêm helper `_check_input(query_text, history)`, dùng chung cho `query()` và `stream_query()`. Helper kiểm `query_text` như cũ, rồi kiểm từng `content` trong history (mọi role, vì đều do client khai). Gặp `PROMPT_INJECTION` thì trả `REFUSED` kèm `guardrail_triggered`, không retrieval, không gọi LLM. Lượt history rỗng hoặc ngoài phạm vi không bị chặn, để một lượt cũ không khoá cả cuộc hội thoại.
+- `query()` (đường `/api/copilot/ask`, eval) trước đây **không có rào chắn đầu vào nào**, kể cả cho `query_text`. Giờ nó chặn như bản stream, nên câu hỏi lạc đề hoặc có injection trả `REFUSED` thay vì `NO_CONTEXT`.
+- Test `HistoryInputGuardTest` (3 ca) đỏ trước khi sửa, xanh sau khi sửa. `unittest discover` (với `AI_CONSOLE_DEMO_SEED_ENABLED=false`): 597 OK, 36 skip. Riêng các module guard/injection: 81 OK, 1 skip.
+- Chưa chạy `app/script/redteam_copilot.py` vì gọi LLM thật và tốn phí. Guard dựa trên regex, nên injection diễn đạt khác mẫu vẫn có thể lọt qua.
