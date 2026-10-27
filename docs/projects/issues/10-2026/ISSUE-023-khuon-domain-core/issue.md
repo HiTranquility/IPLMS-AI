@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **Trạng thái** | 📝 Draft (chờ bug-042 merge vào `develop`) |
-| **Người nhận** |  |
+| **Người nhận** | @HiTranquility |
 | **Hạn** |  |
 | **Ưu tiên** | 🟡 |
 | **Ngày đóng** |  |
