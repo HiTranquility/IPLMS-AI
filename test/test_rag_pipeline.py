@@ -40,7 +40,7 @@ class FakeLlm:
         self.context = context
         return "Phí là 20.000đ [Nguồn: quy-che.md]"
 
-    async def stream_response(self, system_prompt, user_query, context):
+    async def stream_response(self, system_prompt, user_query, context, history=None):
         self.context = context
         for token in ("Phí ", "20.000đ", " [Nguồn: ", "quy-che.md]"):
             yield token
