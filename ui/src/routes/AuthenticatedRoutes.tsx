@@ -3,7 +3,7 @@ import { PermissionGuard } from '@/components/common/Guard/PermissionGuard';
 import { NotFound } from '@/components/common/Shared/NotFound';
 import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
 import { AppShell } from '@/components/layout/AppShell';
-import { allowed, NAV_ITEMS } from '@/components/layout/navigation';
+import { allowed, NAV_ITEMS, resolvePersona } from '@/components/layout/navigation';
 import { useI18n } from '@/i18n/I18nProvider';
 import { useWorkspaceStore } from '@/stores/useWorkspaceStore';
 import { AuditPage } from '@/pages/Audit/AuditPage';
@@ -14,12 +14,14 @@ import { KnowledgePage } from '@/pages/Knowledge';
 import { SettingsPage } from '@/pages/Settings/SettingsPage';
 import { ToolsPage } from '@/pages/Tools/ToolsPage';
 import { DatasetsPage, LabelPage, ModelsPage, ReviewPage, VisionOverviewPage } from '@/pages/Vision';
+import { ForecastPage } from '@/pages/Forecast';
 import type { Me } from '@/types/auth';
 
 /** Trang chủ = mục đầu tiên vai trò được xem (admin console không có số liệu Copilot). */
 function Home({ me }: { me: Me }) {
   const { t } = useI18n();
-  const { persona } = useWorkspaceStore();
+  const { persona: savedPersona } = useWorkspaceStore(me.member_id);
+  const persona = resolvePersona(me, savedPersona);
 
   const returnTo = typeof window !== 'undefined' ? sessionStorage.getItem('console_return_to') : null;
   if (returnTo) {
@@ -74,6 +76,14 @@ export function AuthenticatedRoutes({ me }: AuthenticatedRoutesProps) {
           element={
             <PermissionGuard me={me} permission="ai:prompt:edit">
               <KnowledgePage />
+            </PermissionGuard>
+          }
+        />
+        <Route
+          path="forecast"
+          element={
+            <PermissionGuard me={me} permission="ai:metrics:read">
+              <ForecastPage />
             </PermissionGuard>
           }
         />
