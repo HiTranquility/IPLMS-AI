@@ -12,7 +12,7 @@ easyocr>=1.7
 ultralytics>=8.3
 onnxruntime>=1.17.0
 pyarrow>=14.0.0
-fastapi>=0.110
+fastapi>=0.162.0
 uvicorn[standard]>=0.27
 python-multipart>=0.0.9
 # Keep generated stubs and the protobuf runtime on the same compatible line.
