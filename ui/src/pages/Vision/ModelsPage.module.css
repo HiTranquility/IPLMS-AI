@@ -19,21 +19,99 @@
   margin: 0;
 }
 
+/* MLOps 4-Step Pipeline Stepper */
+.pipelineCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-surface);
+  border: var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-5);
+}
+
+.pipelineHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pipelineTitle {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-muted);
+}
+
+.stepperGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+}
+
+.stepCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.stepDone {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.stepTop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.stepName {
+  font-weight: 600;
+}
+
+.stepMeta {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.stepLink {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-accent-dark);
+  text-decoration: none;
+  margin-top: var(--space-1);
+}
+
 /* KPI Grid */
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: var(--space-4);
+  margin-bottom: var(--space-5);
 }
 
 @media (max-width: 1100px) {
-  .statsGrid {
+  .statsGrid,
+  .stepperGrid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 600px) {
-  .statsGrid {
+  .statsGrid,
+  .stepperGrid {
     grid-template-columns: 1fr;
   }
 }
@@ -50,6 +128,7 @@
   box-shadow: var(--shadow-sm);
   flex-wrap: wrap;
   gap: var(--space-3);
+  margin-bottom: var(--space-5);
 }
 
 .prodInfo {
@@ -66,11 +145,14 @@
   box-shadow: 0 0 0 3px var(--color-success-soft);
 }
 
-
 .prodName {
   font-size: var(--text-md);
   font-weight: 700;
   color: var(--color-text);
+}
+
+.prodVer {
+  font-weight: 400;
 }
 
 .prodMeta {
@@ -104,7 +186,192 @@
   margin: 0;
 }
 
-/* Form Panel */
+.tableToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--hairline);
+  background: var(--color-surface);
+  flex-wrap: wrap;
+}
+
+.filterPills {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.filterPill {
+  padding: 4px var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-2);
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.filterPillActive {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  border-color: var(--color-primary);
+}
+
+.searchWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 240px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: var(--space-3);
+  color: var(--color-muted);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  height: 32px;
+  padding: 0 var(--space-3) 0 var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: var(--text-xs);
+}
+
+/* Interactive Rows & Inspector */
+.interactiveRow {
+  cursor: pointer;
+}
+
+.interactiveRowActive {
+  background: var(--color-accent-soft);
+}
+
+.colRight {
+  text-align: right;
+}
+
+.boldCell {
+  font-weight: 600;
+}
+
+.strictCell {
+  font-weight: 600;
+  color: var(--color-success);
+}
+
+.rowActions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.inlineBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.inlineBtnAccent {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-dark);
+}
+
+.evalInspector {
+  padding: var(--space-4) var(--space-5);
+  border-top: var(--hairline);
+  background: var(--color-surface-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.evalInspectorHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.evalInspectorTitle {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.evalInspectorGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-3);
+}
+
+.evalStatItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.evalStatLabel {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+.evalStatVal {
+  font-size: var(--text-md);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.evalStatCode {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  word-break: break-all;
+}
+
+.modelPrimary {
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+
+.modelSub {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+.modelTags {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+  flex-wrap: wrap;
+}
+
+/* Form Panel & Presets */
 .panel {
   display: flex;
   flex-direction: column;
@@ -122,6 +389,55 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+.presetBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+}
+
+.presetLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.presetGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.presetChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.presetChipActive,
+.presetChipAccent {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-dark);
 }
 
 .formGrid {
@@ -145,9 +461,9 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 11.5px;
+  font-size: var(--text-xs);
   font-weight: 500;
-  padding: 4px 10px;
+  padding: 4px var(--space-3);
   border-radius: var(--radius-md);
 }
 

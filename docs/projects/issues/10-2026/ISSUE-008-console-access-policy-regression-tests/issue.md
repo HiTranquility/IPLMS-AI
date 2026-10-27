@@ -35,3 +35,7 @@ Bổ sung bộ test hồi quy tự động toàn diện kiểm thử ma trận 7
 - File kiểm thử: `test/test_console_access.py` (26 test cases).
 - Đã kiểm tra tính tuân thủ quy tắc nhánh bằng `script/check_branch_policy.py`: PASS.
 - Đã kiểm tra biên dịch cú pháp toàn bộ `app` và `test`: PASS.
+
+## Definition of Done
+
+- [x] Toàn bộ unit test và kiểm thử tích hợp của hạng mục đạt PASS.

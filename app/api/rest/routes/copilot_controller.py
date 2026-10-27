@@ -3,9 +3,9 @@ import json
 import os
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from fastapi import APIRouter, Query, status
+from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import BaseModel, Field
 
 from app.api.rest.schemas.base_response import BaseResponse
 from app.config import get_config
@@ -33,9 +33,9 @@ def get_seed_path() -> str:
 
 
 class AskPayload(BaseModel):
-    query: str
-    parking_lot_id: Optional[str] = None
-    user_id: Optional[str] = "test-user"
+    query: str = Field(..., min_length=1, max_length=2000)
+    parking_lot_id: Optional[str] = Field(None, max_length=128)
+    user_id: Optional[str] = Field("test-user", max_length=64)
     api_key_override: Optional[str] = None
 
 
@@ -132,9 +132,9 @@ def stream_copilot_post(payload: AskPayload):
 
 @router.get("/stream")
 def stream_copilot_get(
-    query: str,
-    parking_lot_id: Optional[str] = None,
-    user_id: Optional[str] = "test-user",
+    query: str = Query(..., min_length=1, max_length=2000),
+    parking_lot_id: Optional[str] = Query(None, max_length=128),
+    user_id: Optional[str] = Query("test-user", max_length=64),
 ):
     """Stream SSE qua GET request (tương thích EventSource trình duyệt chuẩn)."""
     return _stream_sse_response(
@@ -150,8 +150,8 @@ async def ask_copilot(payload: AskPayload) -> BaseResponse[AskResponse]:
     cfg = get_config()
     api_key = payload.api_key_override or cfg.llm.llm_api_key
 
-    # Nếu có API key hoặc dùng LLM nội bộ (local llama-server), chạy pipeline RAG chuẩn
-    is_local = (cfg.llm.llm_provider == "local")
+    # Nếu có API key hoặc dùng LLM nội bộ (local llama-server / ollama), chạy pipeline RAG chuẩn
+    is_local = cfg.llm.llm_provider in ("local", "ollama") or bool(cfg.llm.llm_base_url)
     if api_key or is_local:
         try:
             req = AskQuestionRequest(
@@ -166,10 +166,10 @@ async def ask_copilot(payload: AskPayload) -> BaseResponse[AskResponse]:
                     sources=ans.sources,
                     confidence=ans.confidence,
                     mode="rag_local" if is_local else "rag_live",
-                    refused=ans.refused,
-                    guardrail_triggered=ans.guardrail_triggered,
+                    refused=getattr(ans, "refused", False),
+                    guardrail_triggered=getattr(ans, "guardrail_triggered", None),
                     prompt_version=ans.prompt_version,
-                    latency_ms=ans.latency_ms,
+                    latency_ms=getattr(ans, "latency_ms", None),
                 )],
                 "Answer generated via local RAG" if is_local else "Answer generated via live RAG"
             )
@@ -223,7 +223,7 @@ async def ask_copilot(payload: AskPayload) -> BaseResponse[AskResponse]:
 
 
 @router.post("/arbitrate-dispute")
-async def arbitrate_dispute(payload: DisputePayload) -> Dict[str, Any]:
+async def arbitrate_dispute(payload: DisputePayload):
     """Kiểm tra chức năng Trọng tài tranh chấp (tuân thủ luật Thà lỗi hơn bịa)."""
     try:
         req = DisputeArbitrationRequest(
@@ -235,14 +235,20 @@ async def arbitrate_dispute(payload: DisputePayload) -> Dict[str, Any]:
         await copilot_service.arbitrate_dispute(req)
         return {"success": True, "verdict": "UNEXPECTED_APPROVED"}
     except FeatureNotImplementedError as exc:
-        return {
-            "success": False,
-            "status": "UNIMPLEMENTED",
-            "message": str(exc),
-            "safety_rule": "Thà lỗi hơn bịa (ADR-0008): Hệ thống từ chối tự động hoàn tiền khi chưa có model đối chiếu video log và quy chế thật.",
-        }
+        return JSONResponse(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            content={
+                "success": False,
+                "status": "UNIMPLEMENTED",
+                "message": str(exc),
+                "safety_rule": "Thà lỗi hơn bịa (ADR-0008): Hệ thống từ chối tự động hoàn tiền khi chưa có model đối chiếu video log và quy chế thật.",
+            },
+        )
     except Exception as exc:
-        return {"success": False, "status": "ERROR", "message": str(exc)}
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"success": False, "status": "ERROR", "message": str(exc)},
+        )
 
 
 @router.post("/dispute-workflow/simulate")

@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
 import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { queryKeys } from '@/constants/queryKeys';
+import { useCan } from '@/hooks/common/useCan';
 import { useSeedDemoBatch } from '@/hooks/mutations/useVisionMutations';
 import { useReviewQueue } from '@/hooks/queries/useVisionQueries';
 import { useI18n } from '@/i18n/I18nProvider';
@@ -19,7 +20,13 @@ export function ReviewPage() {
   const queue = useReviewQueue();
   const queryClient = useQueryClient();
   const seedMutation = useSeedDemoBatch();
+  const canLabel = useCan('ai:task:label');
+  const canSnapshot = useCan('ai:dataset:snapshot');
+  const canEvaluate = useCan('ai:model:evaluate');
+  const canOpenDatasets = canSnapshot || canEvaluate;
+  const canOpenVision = useCan('ai:metrics:read');
   const [isBatchApproving, setIsBatchApproving] = useState(false);
+  const [batchError, setBatchError] = useState<unknown>(null);
   const [filterMode, setFilterMode] = useState<'ALL' | 'EXACT' | 'CORRECTED'>('ALL');
 
   const items = queue.data || [];
@@ -41,14 +48,18 @@ export function ReviewPage() {
   const handleApproveAllExact = async () => {
     if (exactMatches.length === 0 || isBatchApproving) return;
     setIsBatchApproving(true);
+    setBatchError(null);
     try {
       for (const item of exactMatches) {
         // Lý do ghi vào nhật ký kiểm toán phía server (tiếng Việt như mọi lý do khác), không phải chữ hiển thị.
         await decideLabel(item.label.id, 'APPROVED', 'Duyệt nhanh theo lô: Khớp 100%');
       }
-      void queryClient.invalidateQueries({ queryKey: queryKeys.vision.reviewQueue() });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.vision.accuracy() });
+    } catch (error) {
+      setBatchError(error);
     } finally {
+      // Lô đứt giữa chừng thì các nhãn trước đó đã duyệt rồi: luôn làm mới cả nhóm như useVisionMutation.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.vision.all() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.audit.list() });
       setIsBatchApproving(false);
     }
   };
@@ -89,37 +100,56 @@ export function ReviewPage() {
           <span style={{ color: 'var(--color-muted)' }}>{t.review.workflowDesc}</span>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <Link
-            to="/vision/label"
-            style={{
-              padding: '4px 10px',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--color-border)',
-              color: 'var(--color-text)',
-              textDecoration: 'none',
-              fontWeight: 500,
-            }}
-          >
-            {t.review.goToLabel}
-          </Link>
-          <Link
-            to="/vision/datasets"
-            style={{
-              padding: '4px 10px',
-              borderRadius: 'var(--radius-sm)',
-              background: 'var(--color-accent)',
-              color: 'var(--color-accent-ink)',
-              textDecoration: 'none',
-              fontWeight: 600,
-            }}
-          >
-            {t.review.goToDatasets}
-          </Link>
+          {canLabel && (
+            <Link
+              to="/vision/label"
+              style={{
+                padding: '4px 10px',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-text)',
+                textDecoration: 'none',
+                fontWeight: 500,
+              }}
+            >
+              {t.review.goToLabel}
+            </Link>
+          )}
+          {canOpenDatasets ? (
+            <Link
+              to="/vision/datasets"
+              style={{
+                padding: '4px 10px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--color-accent)',
+                color: 'var(--color-accent-ink)',
+                textDecoration: 'none',
+                fontWeight: 600,
+              }}
+            >
+              {t.review.goToDatasets}
+            </Link>
+          ) : canOpenVision ? (
+            <Link
+              to="/vision"
+              style={{
+                padding: '4px 10px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--color-accent)',
+                color: 'var(--color-accent-ink)',
+                textDecoration: 'none',
+                fontWeight: 600,
+              }}
+            >
+              {t.nav.visionOverview} →
+            </Link>
+          ) : null}
         </div>
       </div>
 
       {queue.isPending && <Loading />}
       {queue.error && <ErrorBlock error={queue.error} onRetry={() => void queue.refetch()} />}
+      {batchError != null && <ErrorBlock error={batchError} />}
 
       {items.length === 0 && !queue.isPending && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>

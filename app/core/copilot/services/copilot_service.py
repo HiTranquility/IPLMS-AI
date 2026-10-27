@@ -56,6 +56,7 @@ class CopilotService:
             turn_id=turn_id, task=task, status=result["status"], started=started,
             request=request, result=result, answer=result["answer"],
         ))
+        latency_ms = round((time.monotonic() - started) * 1000.0, 2)
         return CopilotAnswer(
             answer=result["answer"],
             sources=result["sources"],
@@ -63,6 +64,9 @@ class CopilotService:
             model_revision=result.get("model_revision", ""),
             turn_id=turn_id,
             prompt_version=PROMPT_VERSION,
+            refused=(result.get("status") == "REFUSED"),
+            guardrail_triggered=result.get("guardrail_triggered"),
+            latency_ms=latency_ms,
         )
 
     @staticmethod
