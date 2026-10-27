@@ -3,9 +3,9 @@ import json
 import os
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.api.rest.schemas.base_response import BaseResponse
 from app.config import get_config
@@ -33,9 +33,9 @@ def get_seed_path() -> str:
 
 
 class AskPayload(BaseModel):
-    query: str
-    parking_lot_id: Optional[str] = None
-    user_id: Optional[str] = "test-user"
+    query: str = Field(..., min_length=1, max_length=2000)
+    parking_lot_id: Optional[str] = Field(None, max_length=128)
+    user_id: Optional[str] = Field("test-user", max_length=64)
     api_key_override: Optional[str] = None
 
 
@@ -132,9 +132,9 @@ def stream_copilot_post(payload: AskPayload):
 
 @router.get("/stream")
 def stream_copilot_get(
-    query: str,
-    parking_lot_id: Optional[str] = None,
-    user_id: Optional[str] = "test-user",
+    query: str = Query(..., min_length=1, max_length=2000),
+    parking_lot_id: Optional[str] = Query(None, max_length=128),
+    user_id: Optional[str] = Query("test-user", max_length=64),
 ):
     """Stream SSE qua GET request (tương thích EventSource trình duyệt chuẩn)."""
     return _stream_sse_response(

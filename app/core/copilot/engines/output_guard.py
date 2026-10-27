@@ -18,7 +18,13 @@ GUARD_NOTICE = (
     "Bạn xem trực tiếp quy chế của bãi hoặc hỏi nhân viên giúp mình nhé."
 )
 
-_FREE = re.compile(r"miễn\s*phí|\b0\s*(?:đ|đồng|vnđ|vnd)\b", re.IGNORECASE)
+_FREE = re.compile(
+    r"(?:m[\s._-]*i[\s._-]*ễ[\s._-]*n|m[\s._-]*i[\s._-]*e[\s._-]*n)[\s._-]*(?:p[\s._-]*h[\s._-]*í|p[\s._-]*h[\s._-]*i)"
+    r"|\b0\s*(?:đ|đồng|vnđ|vnd)\b"
+    r"|miễn\s*phí"
+    r"|không\s*thu\s*phí",
+    re.IGNORECASE,
+)
 _URL = re.compile(
     r"(?:https?://|www\.)\S+|\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|net|org|vn|me|ly|io|xyz|info|top|link)\b(?:/\S*)?",
     re.IGNORECASE,
