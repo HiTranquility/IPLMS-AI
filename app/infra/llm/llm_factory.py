@@ -92,7 +92,13 @@ class LlmFactory:
 
         # Hỗ trợ Local LLM / Ollama linh hoạt
         active_prov = (self.provider or provider).lower()
-        if active_prov in ("local", "ollama") and ("host.docker.internal" in self.base_url or not self.base_url):
+        is_local_or_default_base = (
+            not self.base_url
+            or "host.docker.internal" in self.base_url
+            or "11434" in self.base_url
+            or active_prov == "local"
+        )
+        if active_prov in ("local", "ollama") and is_local_or_default_base:
             # A. Thử kết nối llama-server nếu đang chạy ở local_llm_url
             local_url = getattr(config, "local_llm_url", "http://127.0.0.1:8005/v1")
             llama_alive = False
@@ -103,8 +109,16 @@ class LlmFactory:
                     health_url = f"{local_url.rstrip('/').removesuffix('/v1')}/health"
                     with urllib.request.urlopen(health_url, timeout=0.3) as r:
                         llama_alive = r.status == 200
-                except Exception:  # noqa: BLE001 — server chưa bật thì chuyển sang Ollama
+                except Exception:  # noqa: BLE001 — server chưa bật thì tự khởi chạy
                     llama_alive = False
+
+                if not llama_alive:
+                    try:
+                        from app.infra.llm.llama_server_manager import llama_server_manager
+                        llama_server_manager.ensure_server_running()
+                        llama_alive = llama_server_manager.is_server_alive()
+                    except Exception as exc:
+                        logger.warning("Không thể tự động kích hoạt llama-server: %s", exc)
 
             if llama_alive:
                 from openai import AsyncOpenAI
@@ -360,7 +374,7 @@ class LlmFactory:
 
     async def stream_response(
         self, system_prompt: str, user_query: str, context: str, usage: dict | None = None,
-        temperature: float | None = None,
+        temperature: float | None = None, history: list[dict] | None = None,
     ) -> AsyncGenerator[str, None]:
         """Yield only semantic text deltas from a Responses API stream."""
         config = get_config().llm
@@ -404,15 +418,20 @@ class LlmFactory:
 
         # Chat completions stream (Local llama-server / Qwen / Ollama)
         try:
+            messages = [{"role": "system", "content": system_prompt}]
+            if history:
+                for h in history[-4:]:
+                    r = h.get("role")
+                    c = (h.get("content") or "").strip()
+                    if r in ("user", "assistant") and c:
+                        messages.append({"role": r, "content": c})
+            messages.append({
+                "role": "user",
+                "content": f"CÂU HỎI CỦA NGƯỜI DÙNG:\n{user_query}\n\nNGỮ CẢNH ĐÃ TRUY XUẤT TỪ KHO TRI THỨC:\n{context}",
+            })
             stream = await client.chat.completions.create(
                 model=self.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {
-                        "role": "user",
-                        "content": f"CÂU HỎI CỦA NGƯỜI DÙNG:\n{user_query}\n\nNGỮ CẢNH ĐÃ TRUY XUẤT TỪ KHO TRI THỨC:\n{context}",
-                    },
-                ],
+                messages=messages,
                 max_tokens=self.max_output_tokens,
                 temperature=0.2 if temperature is None else temperature,
                 stream=True,

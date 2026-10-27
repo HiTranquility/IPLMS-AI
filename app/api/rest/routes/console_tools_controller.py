@@ -1,11 +1,11 @@
 """Công cụ thử trong AI Console — thay trang dev `/dashboard` cũ (IPLMS ADR-0050)."""
 import json
-from typing import List, Literal, Optional
+from typing import Any, List, Literal, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.api.rest.console_access import require_any_permission, require_permission
 from app.api.rest.schemas.base_response import BaseResponse
@@ -106,12 +106,18 @@ class DocumentChunksOut(BaseModel):
 # Hợp đồng body của Chat Studio (ai bug-017). Giữ khớp với
 # ui/src/pages/Copilot/components/ChatStudio/askContract.ts (ASK_BODY_FIELDS);
 # test/test_console_tools.py và ChatStudio.test.tsx đối chiếu danh sách này.
-ASK_BODY_FIELDS = ("query", "parking_lot_id", "min_similarity", "top_k", "temperature")
+ASK_BODY_FIELDS = ("query", "parking_lot_id", "min_similarity", "top_k", "temperature", "history")
 
 
 class DeleteDocOut(BaseModel):
     deleted: int
     document_id: str
+
+
+class ChatMessageIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    role: str = Field(pattern=r"^(user|assistant|system)$")
+    content: str = Field(max_length=4000)
 
 
 class AskIn(BaseModel):
@@ -123,9 +129,15 @@ class AskIn(BaseModel):
     min_similarity: Optional[float] = Field(None, ge=0.0, le=1.0)
     top_k: Optional[int] = Field(None, ge=1, le=10)
     temperature: Optional[float] = Field(None, ge=0.0, le=1.0)
+    history: Optional[List[ChatMessageIn]] = Field(None, max_length=10)
 
     def tuning(self) -> dict:
-        return {"top_k": self.top_k, "min_similarity": self.min_similarity, "temperature": self.temperature}
+        return {
+            "top_k": self.top_k,
+            "min_similarity": self.min_similarity,
+            "temperature": self.temperature,
+            "history": [h.model_dump() for h in self.history] if self.history else None,
+        }
 
 
 class IngestOut(BaseModel):
@@ -229,6 +241,7 @@ async def try_copilot_stream(payload: AskIn, actor: ConsoleActor = Depends(requi
                     "token": chunk.token,
                     "is_finished": chunk.is_finished,
                     "sources": chunk.sources,
+                    "citations": getattr(chunk, "citations", []),
                     "confidence": chunk.confidence,
                     "refused": chunk.refused,
                     "guardrail_triggered": chunk.guardrail_triggered,
@@ -248,6 +261,7 @@ async def try_copilot_stream(payload: AskIn, actor: ConsoleActor = Depends(requi
                 "token": f"\n\n⚠️ Lỗi kết nối mô hình ngôn ngữ (LLM): {exc}",
                 "is_finished": True,
                 "sources": [],
+                "citations": [],
                 "confidence": 0.0,
                 "refused": True,
                 "guardrail_triggered": "connection_error",
@@ -309,6 +323,16 @@ class ComputeSettingsIn(BaseModel):
     local_llm_threads: Optional[int] = Field(None, ge=1, le=64)
     local_llm_parallel_slots: Optional[int] = Field(None, ge=1, le=8)
 
+    @field_validator("llm_model", mode="before")
+    @classmethod
+    def sanitize_llm_model(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            # Tự động chuẩn hóa dấu cách thành dấu gạch ngang (vd 'qwen 3.5 4b' -> 'qwen-3.5-4b')
+            # và loại bỏ khoảng trắng thừa để không bao giờ bị lỗi HTTP 422
+            cleaned = "-".join(v.strip().split())
+            return cleaned or None
+        return v
+
 
 class PolicySettingsIn(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -326,7 +350,7 @@ class PolicySettingsIn(BaseModel):
 
 class EngineActionIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    action: str = Field(..., pattern="^(warmup|unload)$")
+    action: str = Field(..., pattern="^(warmup|unload|reload_llm|restart_llm)$")
 
 
 class RevokeSessionIn(BaseModel):
@@ -368,7 +392,12 @@ async def engine_action(
     actor: ConsoleActor = Depends(require_any_permission("ai:model:evaluate", "ai:prompt:edit")),
 ):
     data = await console_tools_service.engine_action(actor, payload.action)
-    msg = "Đã nạp sẵn model Vision vào bộ nhớ." if payload.action == "warmup" else "Đã giải phóng model Vision khỏi RAM/VRAM."
+    if payload.action == "warmup":
+        msg = "Đã nạp sẵn model Vision vào bộ nhớ."
+    elif payload.action in ("reload_llm", "restart_llm"):
+        msg = "Đã nạp lại mô hình LLM (Hot Reload) thành công."
+    else:
+        msg = "Đã giải phóng model Vision khỏi RAM/VRAM."
     return BaseResponse.ok([data], msg)
 
 

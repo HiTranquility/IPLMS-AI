@@ -74,7 +74,7 @@ export function useUpdatePolicySettingsMutation() {
 export function useEngineActionMutation() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (action: 'warmup' | 'unload') => triggerEngineAction(action),
+    mutationFn: (action: 'warmup' | 'unload' | 'reload_llm') => triggerEngineAction(action),
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: queryKeys.tools.all() });
       void client.invalidateQueries({ queryKey: queryKeys.audit.list() });
