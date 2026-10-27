@@ -6,7 +6,7 @@ hoặc chết, và đó là tín hiệu cần sửa.
 """
 import unittest
 
-from app.core.constants import PLATE_MAX_LENGTH, PLATE_MIN_ALPHA
+from app.core.vision.constants import PLATE_MAX_LENGTH, PLATE_MIN_ALPHA
 from app.core.vision.engines.anpr.plate_text import (
     correct_plate_confusions,
     is_plausible_plate_shape,

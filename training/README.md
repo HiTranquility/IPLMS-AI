@@ -90,7 +90,7 @@ python training/eval_plates.py --label before-B2
 
 Bộ vàng + cách đọc từng chỉ số: [`../data/golden/plates/README.md`](../data/golden/plates/README.md).
 
-**[MUST]** PR nào đụng `anpr_engine.py`, thư mục `engines/anpr/` hoặc đổi `model/artifacts/bootstrap/anpr/best.pt` phải kèm số
+**[MUST]** PR nào đụng thư mục `engines/anpr/` hoặc đổi `model/artifacts/bootstrap/anpr/best.pt` phải kèm số
 **trước và sau** trên cùng bộ vàng. Không có số ⇒ không biết là tốt lên hay tệ đi.
 
 **[GOTCHA]** Chỉ số `exact_match_strict` và `exact_match_relaxed` chênh nhau bao
@@ -112,7 +112,7 @@ CNN này là **bộ phân loại ảnh** — trong dịch vụ nó chỉ dùng l
    Với object storage, đặt `AI_VEHICLE_ARTIFACT_URL`, `AI_VEHICLE_ARTIFACT_SHA256`
    và `AI_VEHICLE_MODEL_VERSION`; URL chỉ là quyền tải ngắn hạn, version + hash
    mới là định danh bền của model.
-Phần nhận diện **biển số** do YOLO+EasyOCR trong [`../app/core/vision/engines/anpr_engine.py`](../app/core/vision/engines/anpr_engine.py) đảm nhiệm (không cần train lại ở đây; weights `best.pt` đã có sẵn).
+Phần nhận diện **biển số** do YOLO+EasyOCR trong [`../app/core/vision/engines/anpr/engine.py`](../app/core/vision/engines/anpr/engine.py) đảm nhiệm (không cần train lại ở đây; weights `best.pt` đã có sẵn).
 
 > **[GOTCHA] Đừng train phân biệt sedan với SUV — lớp dịch vứt bỏ khác biệt đó.**
 > Hai đầu **cố ý** nói hai từ vựng: AI trả nhãn của model, backend sống bằng

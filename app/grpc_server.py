@@ -55,7 +55,7 @@ async def serve() -> None:
     # Production nạp model trước khi mở cổng. Dev mở cổng ngay nhưng vẫn nạp ở
     # nền: để dồn cả lượt nạp (~22s từ cache, vài phút nếu phải tải) vào request
     # ANPR đầu tiên thì nó vượt deadline 30s của backend (bug-006).
-    from app.core.vision.engines.anpr_engine import warmup
+    from app.core.vision.engines.anpr.engine import warmup
 
     if not get_config().vision.vision_warmup_on_start:
         logger.info("Vision warm-up chạy nền; request ANPR tới sớm sẽ chờ lượt nạp này xong.")
