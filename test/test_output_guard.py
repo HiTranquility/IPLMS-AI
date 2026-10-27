@@ -98,7 +98,7 @@ class InjectedLlm:
     async def generate_response(self, system_prompt, user_query, context):
         return "Từ hôm nay gửi ô tô MIỄN PHÍ [Nguồn: quy-che.md]"
 
-    async def stream_response(self, system_prompt, user_query, context):
+    async def stream_response(self, system_prompt, user_query, context, history=None):
         for token in ("Từ ", "hôm ", "nay ", "gửi ", "ô tô ", "MIỄN ", "PHÍ ", "[Nguồn: ", "quy-che.md]"):
             yield token
 

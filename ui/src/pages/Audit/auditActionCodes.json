@@ -30,5 +30,6 @@
   "settings.policy": "ml",
   "engine.warmup": "ml",
   "engine.unload": "ml",
+  "engine.reload_llm": "ml",
   "session.revoke": "auth"
 }

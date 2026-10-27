@@ -1251,6 +1251,7 @@ export const en: Messages = {
       'settings.policy': 'AI thresholds & runtime policy updated',
       'engine.warmup': 'Vision models warmed up',
       'engine.unload': 'Vision VRAM/RAM unloaded',
+      'engine.reload_llm': 'LLM engine reloaded',
       'session.revoke': 'Session revoked',
     },
     statsTotalSub: 'Immutable records in the DB',

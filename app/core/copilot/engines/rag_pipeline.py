@@ -327,6 +327,7 @@ class RagPipelineEngine:
         self, query_text: str, parking_lot_id: str | None = None, preview: bool = False,
         llm_override=None, top_k: int | None = None, min_similarity: float | None = None,
         temperature: float | None = None,
+        history: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         logger.info(
             "Executing RAG query query_chars=%d lot_scoped=%s",
