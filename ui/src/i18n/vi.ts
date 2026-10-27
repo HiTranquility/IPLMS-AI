@@ -1230,6 +1230,7 @@ export const vi = {
       'settings.policy': 'Cập nhật ngưỡng AI & chính sách',
       'engine.warmup': 'Nạp sẵn model Vision',
       'engine.unload': 'Giải phóng VRAM/RAM Vision',
+      'engine.reload_llm': 'Nạp lại engine LLM',
       'session.revoke': 'Thu hồi phiên đăng nhập',
     } as Record<string, string>,
     statsTotalSub: 'Bản ghi bất biến trong DB',
