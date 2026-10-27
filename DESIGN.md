@@ -75,7 +75,7 @@ ai/
 │   │   ├── logging_config.py        #   tên logger · level · format
 │   │   └── app_config.py            #   AppConfig gộp + get_config() (lru_cache)
 │   ├── core/                        # NGHIỆP VỤ — mỗi domain 1 folder
-│   │   ├── vision/                  #   ANPR: engines/anpr_engine.py (façade) + engines/anpr/* · services/
+│   │   ├── vision/                  #   ANPR: engines/anpr/ (engine.py façade + các tầng) · services/
 │   │   ├── dataset/                 #   chọn ảnh cho người gán nhãn + khoá snapshot (ISSUE-010)
 │   │   ├── copilot/                 #   RAG hỏi đáp: engines/rag_pipeline.py · dispute_workflow (chưa nối)
 │   │   ├── knowledge/               #   nạp tài liệu → chunk → embedding → pgvector (bản nháp)

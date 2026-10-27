@@ -3,16 +3,16 @@ from __future__ import annotations
 
 from typing import Any, Awaitable, Callable
 
-from app.core.copilot.engines.dispute_workflow.dependencies import (
+from app.core.copilot.workflows.dispute.dependencies import (
     DisputeWorkflowDependencies,
 )
-from app.core.copilot.engines.dispute_workflow.state import (
+from app.core.copilot.workflows.dispute.state import (
     DisputeWorkflowState,
     assert_json_safe,
     validate_recommendation,
     validate_review,
 )
-from app.core.knowledge.engines.injection_scan import find_instructions
+from app.core.knowledge import find_instructions
 from app.core.exceptions import WorkflowStateError
 
 

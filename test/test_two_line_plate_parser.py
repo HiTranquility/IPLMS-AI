@@ -15,12 +15,12 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 
-from app.core.vision.engines.two_line_plate_parser import (
+from app.core.vision.engines.anpr.two_line_plate_parser import (
     normalize_bottom_line,
     normalize_top_line,
     parse_two_line_vietnam_plate,
 )
-from app.core.vision.engines.anpr_onnx_engine import AnprOnnxEngine
+from app.core.vision.engines.anpr.onnx_engine import AnprOnnxEngine
 
 
 class TwoLinePlateParserTPHCMTest(unittest.TestCase):
@@ -284,7 +284,7 @@ class RunAnprTwoLineIntegrationTest(unittest.TestCase):
 
     def test_run_anpr_integrates_two_line_plate(self):
         import cv2
-        from app.core.vision.engines.anpr_engine import run_anpr
+        from app.core.vision.engines.anpr.engine import run_anpr
 
         dummy_img = np.full((300, 600, 3), 200, dtype=np.uint8)
         ok, buf = cv2.imencode(".jpg", dummy_img)

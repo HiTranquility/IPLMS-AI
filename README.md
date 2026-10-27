@@ -106,11 +106,11 @@ Bảng này chỉ trỏ bằng chứng đang có trong code; phân tích dài v�
 | 4.1-A RAG có nguồn, biết từ chối | [rag_pipeline.py](app/core/copilot/engines/rag_pipeline.py), [copilot/README](app/core/copilot/README.md) | Có; NO_CONTEXT không gọi LLM |
 | 4.1-C Structured output | `LlmFactory.generate_json` ([llm_factory.py](app/infra/llm/llm_factory.py)), dùng ở `knowledge_eval`, `model_policy` | Có |
 | 4.1-D Multimodal | ANPR ảnh ([core/vision](app/core/vision/README.md)), nạp PDF ([core/knowledge](app/core/knowledge/README.md)) | Có |
-| 4.1-B/E Agent, multi-agent | [dispute_workflow](app/core/copilot/engines/dispute_workflow/) (LangGraph) qua `POST /api/copilot/dispute-workflow/simulate` | Chỉ mô phỏng trên dữ liệu mẫu; phân xử thật đang tắt có chủ đích |
-| 4.2 Guardrails | [output_guard.py](app/core/copilot/engines/output_guard.py), [guardrail_manager.py](app/core/copilot/guardrails/guardrail_manager.py), IPLMS ADR-0029 | Có |
+| 4.1-B/E Agent, multi-agent | [workflows/dispute](app/core/copilot/workflows/dispute/) (LangGraph) qua `POST /api/copilot/dispute-workflow/simulate` | Chỉ mô phỏng trên dữ liệu mẫu; phân xử thật đang tắt có chủ đích |
+| 4.2 Guardrails | [output_guard.py](app/core/copilot/guardrails/output_guard.py), [guardrail_manager.py](app/core/copilot/guardrails/guardrail_manager.py), IPLMS ADR-0029 | Có |
 | 4.2 Eval ≥ 20 ca | [eval_set.json](data/knowledge/eval_set.json) (27 ca), [eval_set_heldout.json](data/knowledge/eval_set_heldout.json) (32 ca) | Có |
 | 4.2 Logging, chi phí | [ai_logger.py](app/infra/monitoring/ai_logger.py), bảng `ai_request_log`, trang Tổng quan Console | Có |
-| 4.2 Prompt trong file, có version | [copilot_rag_system_v2.txt](data/prompts/copilot_rag_system_v2.txt), nạp qua [prompt_manager.py](app/core/copilot/prompts/prompt_manager.py); log ghi `prompt_version` = tên file + hash | Có |
+| 4.2 Prompt trong file, có version | [copilot_rag_system/v2.md](data/prompts/copilot_rag_system/v2.md), nạp qua [prompts.py](app/infra/llm/prompts.py) (ADR-0005); log ghi `prompt_version` = tên + version + hash | Có |
 | 5.2 ≥ 3 ADR (1 về AI) | [ai ADR-0002](docs/projects/adrs/10-2026/0002-tu-choi-khi-thieu-ngu-canh.md) (chống bịa), [ai ADR-0003](docs/projects/adrs/10-2026/0003-nguoi-duyet-truoc-khi-xu-ly-tranh-chap.md) (người duyệt tranh chấp), [ai ADR-0004](docs/projects/adrs/10-2026/0004-llama-server-mot-slot-vua-vram-4gb.md) (VRAM 4 GB), [ai ADR-0001](docs/projects/adrs/10-2026/0001-fallback-khong-pgvector-chi-cho-dev.md); IPLMS ADR-0029 (guardrail LLM) | Có |
 | 11 Không secret trong Git | Compose bắt buộc `AI_DB_PASSWORD` (`${…:?}`), mẫu ở [.env.example](.env.example) | Có từ [bug-032](docs/projects/bugs/bug-032-ho-so-final-project-lech-voi-repo/bug.md); mật khẩu mặc định cũ còn trong lịch sử Git, phải đổi ở mọi môi trường |
 | 5.3 AI_USAGE.md | [AI_USAGE.md](AI_USAGE.md) | Có |

@@ -33,7 +33,7 @@ class AnprService:
         tốn I/O trên đường nóng và làm đầy dần ổ đĩa tạm của pod (không có cơ
         chế dọn nào cả).
         """
-        from app.core.vision.engines.anpr_engine import run_anpr
+        from app.core.vision.engines.anpr.engine import run_anpr
 
         result = run_anpr(command.image_data)
         plate_number = result["plate_number"]

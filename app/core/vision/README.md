@@ -15,7 +15,7 @@
 ```text
 vision_handler.RecognizePlate            map proto → RecognizePlateCommand, đẩy sang thread (CPU-bound)
   └─ services/anpr_service.recognize_bytes
-       ├─ engines/anpr_engine.run_anpr   FAÇADE — chỉ điều phối các tầng dưới
+       ├─ engines/anpr/engine.run_anpr  FAÇADE — chỉ điều phối các tầng dưới
        │    ├─ anpr/models.ensure_models_loaded   nạp YOLO + EasyOCR (lazy, khoá luồng)
        │    ├─ anpr/ocr.read_with_confidence      ① OCR CẢ ẢNH → ứng viên "full"
        │    ├─ anpr/detector.detect_plate         ② YOLO → ảnh cắt biển + điểm detector
@@ -34,7 +34,7 @@ vision_handler.RecognizePlate            map proto → RecognizePlateCommand, đ
 
 | File | Việc | Sửa khi |
 |---|---|---|
-| `engines/anpr_engine.py` | Façade `run_anpr`, `warmup` | Đổi thứ tự các bước |
+| `engines/anpr/engine.py` | Façade `run_anpr`, `warmup` | Đổi thứ tự các bước |
 | `engines/anpr/models.py` | Nạp model; `initialized` chỉ bật khi OCR nạp được (bug-006) | Đổi cách nạp/cache |
 | `engines/anpr/detector.py` | YOLO chọn box điểm cao nhất, cắt trong biên ảnh | Train lại `best.pt` |
 | `engines/anpr/preprocess.py` | Ngưỡng ảnh cắt + chuỗi làm nét (hằng số có tên ở đầu file) | Chỉnh theo camera thật |

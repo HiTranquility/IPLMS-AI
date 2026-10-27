@@ -1,13 +1,13 @@
 """Bounded, human-reviewed workflow for parking dispute recommendations."""
 
-from app.core.copilot.engines.dispute_workflow.dependencies import (
+from app.core.copilot.workflows.dispute.dependencies import (
     DisputeWorkflowDependencies,
     EvidenceAnalyzer,
     EvidenceClient,
     PolicyRetriever,
     RecommendationWriter,
 )
-from app.core.copilot.engines.dispute_workflow.fixtures import (
+from app.core.copilot.workflows.dispute.fixtures import (
     STANDARD_BACKEND_EVIDENCE_BUNDLE,
     ContractEvidenceAnalyzer,
     ContractEvidenceClient,
@@ -15,8 +15,8 @@ from app.core.copilot.engines.dispute_workflow.fixtures import (
     ContractRecommendationWriter,
     create_contract_dispute_dependencies,
 )
-from app.core.copilot.engines.dispute_workflow.graph import build_dispute_graph
-from app.core.copilot.engines.dispute_workflow.state import (
+from app.core.copilot.workflows.dispute.graph import build_dispute_graph
+from app.core.copilot.workflows.dispute.state import (
     DisputeWorkflowState,
     make_initial_state,
 )

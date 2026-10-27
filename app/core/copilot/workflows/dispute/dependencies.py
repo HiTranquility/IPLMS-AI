@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from app.core.copilot.engines.dispute_workflow.state import DisputeWorkflowState
+from app.core.copilot.workflows.dispute.state import DisputeWorkflowState
 
 
 class EvidenceClient(Protocol):

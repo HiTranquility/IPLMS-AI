@@ -1,6 +1,6 @@
 """Map message protobuf ↔ DTO Domain Forecast."""
 from app.api.grpc.generated_stubs import get_stub
-from app.core.constants import DEFAULT_FORECAST_HOURS
+from app.core.forecast.constants import DEFAULT_FORECAST_HOURS
 from app.core.forecast.dtos.forecast_dto import (
     OccupancyForecast,
     OccupancyForecastQuery,
