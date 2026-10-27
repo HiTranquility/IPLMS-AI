@@ -4,7 +4,8 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🆕 New |
+| **Trạng thái** | 🛠️ Fixing — đã sửa trên `bugfix/bug-045-2026-10-cors-origin-allowlist` (`f7ff908`), chờ PR |
+| **Người nhận** | @HiTranquility |
 | **Ưu tiên** | 🟠 |
 | **Người báo** | Claude Code, từ [AUDIT-008](../../audits/10-2026/AUDIT-008-loi-vao-inference-rate-limit-upload-cors-grpc.md) A3 |
 | **Ngày báo** | 2026-10-27 |
@@ -40,4 +41,7 @@ Dùng `TestClient` với một app chỉ có `register_cors`:
 
 ## Sửa / kiểm chứng
 
-Chưa sửa. Khi sửa, thêm test: preflight với origin lạ không có header `access-control-allow-origin`; origin trong danh sách vẫn qua. Grep `fetch(`/`axios` trỏ tới `:8000` trong `ui/` và `frontend/` để chắc không màn nào gọi thẳng inference từ trình duyệt.
+- `ServerConfig.cors_allow_origins` (env `AI_CORS_ALLOW_ORIGINS`, CSV, mặc định rỗng) trong `app/config/server_config.py`; ghi vào `.env.example`.
+- `register_cors` (`app/api/rest/middlewares/cors.py`): danh sách rỗng thì không gắn middleware; có danh sách thì chỉ các origin đó, `allow_credentials=False`, chỉ `GET`/`POST`.
+- Đã grep: không màn nào của `ai/ui` hay `frontend/` gọi thẳng `:8000`, nên mặc định rỗng không làm gãy màn nào.
+- Kiểm: `test.test_cors_policy` 3/3 (origin lạ không có header, kể cả khi gửi Cookie; origin trong danh sách được qua, không kèm credentials); `test.test_config` xanh; bộ đầy đủ chỉ còn 7 lỗi có sẵn.

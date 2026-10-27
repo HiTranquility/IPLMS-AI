@@ -4,7 +4,8 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🆕 New |
+| **Trạng thái** | 🛠️ Fixing — đã sửa trên `bugfix/bug-046-2026-10-ai-ingress-concurrency-limit` (`912eb1b`), chờ PR |
+| **Người nhận** | @HiTranquility |
 | **Ưu tiên** | 🟠 |
 | **Người báo** | Claude Code, từ [AUDIT-008](../../audits/10-2026/AUDIT-008-loi-vao-inference-rate-limit-upload-cors-grpc.md) A4 |
 | **Ngày báo** | 2026-10-27 |
@@ -45,4 +46,8 @@ Muốn đo thật thì dùng `ghz` gọi `VisionService` với concurrency 50 tr
 
 ## Sửa / kiểm chứng
 
-Chưa sửa. Khi sửa, thêm test gRPC: chạy song song `maximum_concurrent_rpcs + 1` RPC chậm, RPC dư phải nhận `RESOURCE_EXHAUSTED`. Chạy `docker compose config` để chắc label middleware hợp lệ.
+- `build_server()` tách khỏi `serve()` trong `app/grpc_server.py`: `aio.server(maximum_concurrent_rpcs=AI_GRPC_MAXIMUM_CONCURRENT_RPCS)`, mặc định 50, `ge=1`. Vượt trần thì `RESOURCE_EXHAUSTED` ngay; áp cho cả compose lẫn Helm.
+- `docker-compose.yml`: router `ai-rest` gắn `inFlightReq` (20) + `rateLimit` (30/s, burst 60), chỉnh được qua `AI_GATEWAY_REST_*`. gRPC không gắn middleware vì stream Copilot sống lâu.
+- `DESIGN.md`, `.env.example` ghi trần mới.
+- Kiểm: `test.test_grpc_concurrency_limit` 2/2 (server thật với trần 1: RPC thứ hai nhận `RESOURCE_EXHAUSTED`, RPC đầu vẫn trả `ok`); `docker compose config` hợp lệ, label ra đúng; bộ đầy đủ chỉ còn 7 lỗi có sẵn.
+- Chưa làm: chưa đo tải thật bằng `ghz`; các con số 50/20/30 là ước lượng ban đầu.

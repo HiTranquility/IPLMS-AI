@@ -4,7 +4,8 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🆕 New |
+| **Trạng thái** | 🛠️ Fixing — đã sửa trên `bugfix/bug-044-2026-10-anpr-recognize-many-file-cap` (`2ad639c`), chờ PR |
+| **Người nhận** | @HiTranquility |
 | **Ưu tiên** | 🟠 |
 | **Người báo** | Claude Code, từ [AUDIT-008](../../audits/10-2026/AUDIT-008-loi-vao-inference-rate-limit-upload-cors-grpc.md) A2 |
 | **Ngày báo** | 2026-10-27 |
@@ -38,4 +39,7 @@ Kết quả: `200`, stub được gọi **500 lần**.
 
 ## Sửa / kiểm chứng
 
-Chưa sửa. Khi sửa, thêm test: 11 file → 413, 3 file → 200. Grep caller của `/anpr/recognize-many` trong `backend/`, `frontend/`, `ui/` trước khi quyết định bỏ endpoint.
+- Nhánh **xếp chồng trên bug-043** (cùng hàm, dùng `read_image_upload`): merge bug-043 trước.
+- `ANPR_MAX_FILES_PER_REQUEST = 10` (`app/core/constants.py`); vượt thì **413** trước khi đọc ảnh nào. Mọi ảnh được đọc và kiểm định dạng trước, rồi mới chạy engine (`app/api/rest/routes/anpr_controller.py`).
+- Kiểm: `test.test_anpr_rest_upload` 7/7 (11 ảnh → 413; ảnh hỏng cuối lô → 415 và không ảnh nào tới engine; 10 ảnh → chạy đủ 10).
+- Không tìm thấy caller nào của `/anpr/recognize-many` trong `backend/`, `frontend/`, `ai/ui/`, `mobile/`; endpoint được giữ, chưa bỏ.

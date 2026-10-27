@@ -7,13 +7,13 @@
 | | |
 |---|---|
 | **ID** | AUDIT-008 |
-| **Trạng thái** | 📋 Đã báo cáo: 5 lỗ hổng 🟠 đã mở bug, chưa sửa code |
+| **Trạng thái** | 🛠️ Đang khắc phục: cả 5 lỗ hổng nhóm A đã sửa trên nhánh bugfix riêng (2026-10-27), chờ PR merge rồi chạy lại §5. Nhóm B và OPEN-01 còn mở |
 | **Ngày quét** | 2026-10-27 |
 | **Người quét** | Claude Code, một lượt, theo câu hỏi của @HiTranquility (không có auditor độc lập, không có vòng 2) |
 | **Phạm vi (Scope)** | Process inference của `ai/` trên `develop` `f25b747`: `app/main.py`, `app/api/rest/**` (trừ `console_*`), `app/grpc_server.py`, `app/core/vision/services/anpr_service.py`, `docker-compose*.yml`, `docker/traefik/**`. Thêm đường vào từ ngoài: `backend/src/modules/Parking/controllers/staff/checkin-checkout-operation.controller.ts` và Helm `deployment/helm/iplms` (phần `ai`) |
 | **Không thuộc phạm vi** | AI Console (đã soát ở [AUDIT-005](AUDIT-005-ai-console-security-review.md), [AUDIT-006](AUDIT-006-console-wip-2026-10-25.md), [AUDIT-007](AUDIT-007-develop-2026-10-27-console-knowledge-settings.md)); app mobile; chất lượng model ANPR |
 | **Quy ước đối chiếu** | [AI_CONVENTIONS](../../../standards/AI_CONVENTIONS.md); ghi chú `bug-032` ở `docker-compose.yml:150` và Helm `templates/networkpolicy-ai.yaml` (AI không có xác thực, chỉ được gọi từ backend); OWASP ASVS v4.0.3 V12.1 (giới hạn file upload) và V14.5 (CORS) |
-| **Người/agent sẽ sửa** | Chưa giao |
+| **Người/agent sẽ sửa** | @HiTranquility (Claude Code thực hiện): `bugfix/bug-043…046-2026-10-*` ở ai, `bugfix/bug-019-2026-10-anpr-upload-limits` ở backend |
 | **Tags** | `security`, `rate-limit`, `upload`, `cors`, `grpc`, `gateway`, `dos` |
 
 ---
