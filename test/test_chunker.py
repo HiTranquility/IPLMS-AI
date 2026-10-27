@@ -6,7 +6,7 @@ khoá lại những tính chất mà thuật toán phải giữ.
 """
 import unittest
 
-from app.core.constants import CHUNK_MIN_CHARS
+from app.core.knowledge.constants import CHUNK_MIN_CHARS
 from app.core.knowledge.engines.chunker import chunk_text
 
 QUY_CHE = """Quy chế trông giữ xe ban hành kèm quyết định số 12/2026.

@@ -5,7 +5,7 @@ import asyncio
 import time
 from uuid import uuid4
 
-from app.core.constants import DOCUMENT_PARSE_TIMEOUT_SECONDS
+from app.core.knowledge.constants import DOCUMENT_PARSE_TIMEOUT_SECONDS
 from app.core.enums import IngestStatus
 from app.core.exceptions import (
     DocumentTooLargeError,

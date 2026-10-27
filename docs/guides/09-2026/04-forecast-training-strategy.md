@@ -90,7 +90,7 @@ Hai biên dữ liệu phải giải quyết trước khi train:
 
 ### Bước 1: Chốt bài toán và nhãn
 
-Đề xuất dự báo tỷ lệ chiếm chỗ trung bình mỗi slot 30 phút, horizon 4 giờ → 8 slot, khớp khoảng thời gian trong `ai/app/core/constants.py`. Đây là lựa chọn nhãn cần chốt trước triển khai, không suy ra từ tên field hiện tại.
+Đề xuất dự báo tỷ lệ chiếm chỗ trung bình mỗi slot 30 phút, horizon 4 giờ → 8 slot, khớp khoảng thời gian trong `ai/app/core/forecast/constants.py`. Đây là lựa chọn nhãn cần chốt trước triển khai, không suy ra từ tên field hiện tại.
 
 Với capacity không đổi trong slot: occupancy trung bình = tổng thời gian mỗi xe chiếm chỗ trong slot / (độ dài slot × capacity). Phiên dùng khoảng nửa mở [check-in, check-out) để không đếm xe ở hai phía ranh giới. Nếu capacity thay đổi, chia nhỏ theo mốc thay đổi trước khi tổng hợp; không dùng sức chứa hôm nay cho toàn lịch sử.
 
