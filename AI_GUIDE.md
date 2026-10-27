@@ -284,7 +284,7 @@ Hệ thống xây dựng **10 User Stories** chuẩn mực kèm ma trận liên 
 │ ID    │ User Story Tóm Tắt               │ API / gRPC Endpoint  │ File Mã Nguồn Xử Lý    │ File Kiểm Thử Tự Động│
 ├───────┼──────────────────────────────────┼──────────────────────┼────────────────────────┼──────────────────────┤
 │ US-01 │ Quét biển số xe tự động vào bãi  │ POST /api/anpr/      │ app/core/vision/       │ test/                │
-│       │ với độ trễ < 500ms               │ recognize-plate      │ anpr_engine.py         │ test_anpr_engine.py  │
+│       │ với độ trễ < 500ms               │ recognize-plate      │ anpr/engine.py         │ test_anpr_engine.py  │
 ├───────┼──────────────────────────────────┼──────────────────────┼────────────────────────┼──────────────────────┤
 │ US-02 │ Phân loại phương tiện qua CNN    │ gRPC RecognizePlate  │ app/core/vision/       │ test/                │
 │       │ để áp giá vé tự động             │ (ai_service.proto)   │ vehicle_classifier.py  │ test_vehicle_cls.py  │

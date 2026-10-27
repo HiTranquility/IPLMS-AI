@@ -11,7 +11,7 @@ from unittest.mock import patch
 import cv2
 import numpy as np
 
-from app.core.vision.engines.anpr_engine import run_anpr
+from app.core.vision.engines.anpr.engine import run_anpr
 
 _STATE = "app.core.vision.engines.anpr.models._state"
 
