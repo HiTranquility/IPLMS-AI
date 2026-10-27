@@ -48,7 +48,7 @@ Text gửi LLM cũng phân tán: prompt Copilot nằm ở file có version + has
    Thư mục/file ngoài danh sách thì không được tạo. Cần thêm slot thì sửa ADR này.
 3. **Không thuộc `core/`:**
    - Text gửi LLM (system prompt, khuôn user message, JSON schema output) → `data/prompts/<tên>/vN.md` (+ `user.md`, `schema.json` khi có); loader chuyển từ `core/copilot/prompts/` sang `infra/llm/prompts.py`; bản `vN.md` số lớn nhất được dùng. Telemetry giữ dạng nhãn `<tên>_<version>#<hash8>` để backend đọc `promptVersion` không đổi.
-   - Đọc file / DB / lake → `infra/`. Ngoại lệ tạm: `forecast/engines/parquet_lake_reader.py` trộn I/O Parquet với baseline giờ và map DTO forecast. Chuyển nguyên file thì `infra/` phải import `core.forecast.dtos`, ngược §1. Tách I/O sang `infra/datalake/` là việc tiếp theo, ghi ở ISSUE-023.
+   - Đọc file / DB / lake → `infra/`. Đọc/ghi Parquet occupancy ở `infra/datalake/parquet_occupancy_store.py`; `forecast/engines/parquet_lake_reader.py` chỉ giữ baseline giờ, lọc theo bãi, ma trận train và map DTO, nên `infra/` không import `core.forecast` (tách trong [ISSUE-024](../../issues/10-2026/ISSUE-024-tach-io-parquet-lake-reader/issue.md)).
    - Dữ liệu mẫu, adapter giả → `test/` hoặc `app/script/`. Ngoại lệ: `copilot/workflows/dispute/fixtures.py` là adapter hợp đồng mà endpoint mô phỏng dùng khi chạy thật, vì workflow chưa nối backend (`arbitrate_dispute` vẫn trả `FeatureNotImplementedError`). Nối adapter thật thì chuyển file này đi.
 4. **Dùng chung:** hằng số dùng ≥2 domain giữ ở gốc `core/constants.py`; hằng chỉ một domain dùng chuyển về `<domain>/constants.py`. Ngưỡng riêng của một module (ví dụ `anpr/preprocess.py`) giữ cạnh code dùng nó. Code dùng chung giữa domain thì **ở lại domain sở hữu** và domain khác import qua `__init__` của nó (ví dụ `app.core.knowledge.find_instructions` cho `copilot` dùng), không tạo thư mục chung mới.
    - **Marker nhận diện câu từ chối ở nơi dùng (`knowledge_eval/engines/grader.py`), không ở `copilot/messages.py`.** Lý do: import `app.core.copilot.messages` sẽ chạy `copilot/__init__.py`, kéo theo service, openai, psycopg2, langgraph (~2,3 s), trong khi `grader.py` cố ý chỉ dùng stdlib. Thay vào đó, `test/test_knowledge_eval.py` trói hai bên: đổi `NO_CONTEXT_ANSWER` mà quên marker thì test đỏ.
@@ -96,7 +96,7 @@ Chuyển code theo từng domain trong [ISSUE-023](../../issues/10-2026/ISSUE-02
 
 - Đụng khoảng 60 file (code, test, script, docs). Đã làm cuốn chiếu 5 chặng, mỗi chặng chạy đủ unittest.
 - Nhánh đang mở chạm các file đã chuyển (`llm_factory.py`, `rag_pipeline.py`, `output_guard.py`, `anpr_engine.py`…) phải rebase và đổi đường dẫn import.
-- Còn hai ngoại lệ ghi ở mục 3 (`parquet_lake_reader`, `dispute/fixtures.py`) chờ việc tiếp theo.
+- Còn một ngoại lệ ghi ở mục 3 (`dispute/fixtures.py`) chờ workflow nối backend; `parquet_lake_reader` đã tách I/O trong ISSUE-024.
 
 ## Bằng chứng và liên kết
 
