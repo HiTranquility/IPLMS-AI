@@ -6,7 +6,7 @@
 torch==2.14.1+cpu
 torchvision==0.29.1+cpu
 numpy>=1.24
-pillow>=10.1
+pillow>=13.0.0
 opencv-python-headless>=5.0.0.93
 easyocr>=1.7
 ultralytics>=8.3
