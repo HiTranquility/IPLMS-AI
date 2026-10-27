@@ -3,6 +3,16 @@
 **Course:** New Technologies in Software Engineering · Academic Year 2026–2027  
 **Module Owner:** AI & Computer Vision Engineering Team  
 
+### Chủ module sản phẩm (đề Final §5.4)
+
+| Module | Chủ module | Phạm vi file |
+| :--- | :--- | :--- |
+| **Forecast** — dự báo lấp đầy, giá động, data lake, gateway | Nguyễn Tấn Phát (22110060, nhóm trưởng) | `app/core/forecast/**`, `app/infra/datalake/**`, `training/forecast/**` |
+| **Vision** — ANPR, chấm ứng viên, chống tráo xe, vòng gán nhãn | Đỗ Huỳnh Đại Dương (23110012) | `app/core/vision/**`, `app/core/dataset/**` |
+| **Copilot** — RAG, prompt, guardrail, telemetry, eval | Đỗ Minh Khoa (22110043) | `app/core/copilot/**`, `app/core/knowledge/**`, `app/infra/monitoring/**` |
+
+M1–M4 ở mục 3b là các phần việc của AI Console (ISSUE-126), không phải module sản phẩm; chữ ký duyệt ở đó giữ nguyên như lúc duyệt.
+
 ---
 
 ## 1. Tuyên Bố Liêm Chính Học Thuật (Academic Integrity Declaration)
@@ -57,6 +67,7 @@ Toàn bộ code dưới đây do Claude Code viết theo yêu cầu của chủ 
 | **14** | **Công cụ thử, tri thức & Cài đặt** — `ui/src/pages/Settings/SettingsPage.tsx`, `app/infra/llm/llm_factory.py`, bảng `copilot_eval_candidate`, `app/script/seed_console_demo.py` (ISSUE-007, ISSUE-018, ISSUE-019) | Claude Code / Antigravity | *"Trang Cài đặt phần cứng/policy; lưu ứng viên eval vào DB thay vì file; seed demo"* | Trang Settings, client LLM khởi tạo lười, bảng ứng viên eval, script seed số liệu demo | **Dương (@23110012) kiểm & sửa:** AI khởi tạo `AsyncOpenAI` không khoá → nhiều request đồng thời tạo nhiều client (Ca lỗi 6a) → thêm `asyncio.Lock` (`e7696a2`, `test_llm_factory`); ứng viên eval chuyển từ file JSON sang DB có hạn lưu + che PII (A-37/A-73); seed bỏ số metrics bịa, gắn nhãn `[DEMO]` và không tự promote (A-7/A-70/A-71). |
 | **15** | **Hồi quy quyền 7 vai, lỗi mạng/phiên, luồng liên vai** — `test/test_console_access.py`, `ui/src/api/client.test.ts`, `ui/src/pages/Vision/CrossRoleDemoLoop.test.tsx` (ISSUE-008/009/010) | Claude Code / Antigravity | *"Viết test hồi quy ma trận quyền và test UI khi mạng lỗi/phiên hết hạn"* | Khung test ma trận vai × quyền, mock fetch lỗi | **Dương kiểm & sửa:** `test_console_access.py` đối chiếu trực tiếp với `access_policy` (một nguồn quyền) thay vì bảng do AI tự chép; `client.test.ts` kiểm lỗi 401 giữ đúng `status`/`code` (vd `MFA_REQUIRED`) để UI xử lý phiên; test Python + 96 test Vitest PASS. |
 | **16** | **Pipeline ANPR & Vision Lab 4 mắt** — `app/core/vision/engines/anpr/preprocess.py`, `anpr/plate_text.py`, `anpr_engine.py`, `ui/src/pages/Vision/ReviewPage.tsx` (ISSUE-020) | Antigravity | *"Đánh giá chất lượng ảnh cắt (mờ/chói/nghiêng/2 dòng), giảm chói trước OCR, sửa nhầm ký tự biển 5 số"* | `assess_crop_quality`, `suppress_glare_for_ocr`, `correct_plate_confusions`, `format_vietnam_plate`, chip lọc cờ chất lượng | **Dương kiểm & sửa (Ca lỗi 6b):** bản AI chạy LUT nén sáng rồi mới CLAHE nên CLAHE kéo vùng chói về 255 lại, và bỏ qua bước enhance khi ảnh hợp lệ nhưng chói → đảo thứ tự (CLAHE trước, LUT sau) và thêm điều kiện `glare` vào `should_enhance`; giữ nguyên biển 4 số khi sửa nhầm chữ số. 87/87 test ANPR PASS (`test_anpr_pipeline_upgrade.py`). |
+| **17** | **bug-042: prompt vào image + token Ollama** — `Dockerfile.dockerignore`, `app/infra/llm/llm_factory.py`, `app/script/eval_copilot_e2e.py` | Claude Code | *"Rà báo cáo theo đề §4.2, sửa và đo lại cho chuẩn"* | Mở `ai/data/prompts/*.txt` trong allowlist Docker; chép `prompt_tokens`/`completion_tokens` của Chat Completions vào `usage`; script eval ghi token + độ trễ trung bình | Test hồi quy đỏ trên code cũ, xanh sau sửa (`test_llm_factory`, `test_docker_context`); toàn suite 598 OK. Eval chạy lại local (bge-m3 + qwen2.5:3b). *Chủ Copilot (Khoa) cần duyệt PR.* |
 
 ### Ca lỗi 4 (AI Console): đăng nhập không giới hạn số lần thử sai
 
