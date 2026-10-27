@@ -23,6 +23,9 @@ class ViolationTest(unittest.TestCase):
     def test_free_claim_not_in_context_is_blocked(self):
         self.assertEqual("free_claim", violation("Gửi ô tô MIỄN PHÍ.", CONTEXT))
         self.assertEqual("free_claim", violation("Phí gửi là 0đ.", CONTEXT))
+        self.assertEqual("free_claim", violation("Bãi mở cửa m i ễ n   p h í hôm nay.", CONTEXT))
+        self.assertEqual("free_claim", violation("Mọi xe đều m.i.ễ.n p.h.í.", CONTEXT))
+        self.assertEqual("free_claim", violation("Hôm nay không thu phí gửi ô tô.", CONTEXT))
         self.assertIsNone(violation("Xe đạp miễn phí.", CONTEXT + " Xe đạp miễn phí."))
 
     def test_link_not_in_context_is_blocked(self):
