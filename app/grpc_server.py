@@ -27,6 +27,20 @@ SERVICE_REGISTRY = (
 )
 
 
+def build_server(config) -> aio.Server:
+    # maximum_concurrent_rpcs (bug-046): đầy thì RPC mới nhận RESOURCE_EXHAUSTED ngay
+    # thay vì xếp hàng không trần sau grpc_max_workers luồng. Helm gọi thẳng
+    # ClusterIP, không qua Traefik, nên đây là lớp chặn duy nhất ở mọi môi trường.
+    return aio.server(
+        interceptors=build_interceptors(),
+        options=[
+            ("grpc.max_receive_message_length", config.grpc_max_message_length),
+            ("grpc.max_send_message_length", config.grpc_max_message_length),
+        ],
+        maximum_concurrent_rpcs=config.grpc_maximum_concurrent_rpcs,
+    )
+
+
 async def serve() -> None:
     require_stubs(*(proto for proto, *_ in SERVICE_REGISTRY))
     config = get_config().server
@@ -37,13 +51,7 @@ async def serve() -> None:
         ThreadPoolExecutor(max_workers=config.grpc_max_workers)
     )
 
-    server = aio.server(
-        interceptors=build_interceptors(),
-        options=[
-            ("grpc.max_receive_message_length", config.grpc_max_message_length),
-            ("grpc.max_send_message_length", config.grpc_max_message_length),
-        ],
-    )
+    server = build_server(config)
 
     # Import muộn: handler đụng stub ở module level nên phải chắc stub có sẵn.
     from app.api.grpc import handlers as handler_module
