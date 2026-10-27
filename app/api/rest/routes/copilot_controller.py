@@ -3,8 +3,8 @@ import json
 import os
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, status
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 from app.api.rest.schemas.base_response import BaseResponse
@@ -223,7 +223,7 @@ async def ask_copilot(payload: AskPayload) -> BaseResponse[AskResponse]:
 
 
 @router.post("/arbitrate-dispute")
-async def arbitrate_dispute(payload: DisputePayload) -> Dict[str, Any]:
+async def arbitrate_dispute(payload: DisputePayload):
     """Kiểm tra chức năng Trọng tài tranh chấp (tuân thủ luật Thà lỗi hơn bịa)."""
     try:
         req = DisputeArbitrationRequest(
@@ -235,14 +235,20 @@ async def arbitrate_dispute(payload: DisputePayload) -> Dict[str, Any]:
         await copilot_service.arbitrate_dispute(req)
         return {"success": True, "verdict": "UNEXPECTED_APPROVED"}
     except FeatureNotImplementedError as exc:
-        return {
-            "success": False,
-            "status": "UNIMPLEMENTED",
-            "message": str(exc),
-            "safety_rule": "Thà lỗi hơn bịa (ai ADR-0003): Hệ thống từ chối tự động hoàn tiền khi chưa có model đối chiếu video log và quy chế thật.",
-        }
+        return JSONResponse(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            content={
+                "success": False,
+                "status": "UNIMPLEMENTED",
+                "message": str(exc),
+                "safety_rule": "Thà lỗi hơn bịa (ai ADR-0003): Hệ thống từ chối tự động hoàn tiền khi chưa có model đối chiếu video log và quy chế thật.",
+            },
+        )
     except Exception as exc:
-        return {"success": False, "status": "ERROR", "message": str(exc)}
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"success": False, "status": "ERROR", "message": str(exc)},
+        )
 
 
 @router.post("/dispute-workflow/simulate")
