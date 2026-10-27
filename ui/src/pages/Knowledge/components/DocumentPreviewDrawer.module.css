@@ -1,7 +1,7 @@
 .backdrop {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.65);
+  background-color: var(--color-scrim);
   backdrop-filter: blur(4px);
   z-index: 1000;
   display: flex;
@@ -13,22 +13,22 @@
   width: 680px;
   max-width: 90vw;
   height: 100%;
-  background: var(--bg-surface, #14171f);
-  border-left: 1px solid var(--border-color, #2a2e3d);
+  background: var(--color-surface);
+  border-left: var(--hairline);
   display: flex;
   flex-direction: column;
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-lg);
   animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .header {
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--border-color, #2a2e3d);
+  border-bottom: var(--hairline);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  background: var(--bg-surface-elevated, #1a1e29);
+  background: var(--color-surface-2);
 }
 
 .headerInfo {
@@ -49,7 +49,7 @@
   margin: 0;
   font-size: 1.15rem;
   font-weight: 600;
-  color: var(--text-primary, #f0f2f5);
+  color: var(--color-text);
   word-break: break-word;
 }
 
@@ -58,7 +58,7 @@
   align-items: center;
   gap: 0.75rem;
   font-size: 0.825rem;
-  color: var(--text-secondary, #94a3b8);
+  color: var(--color-muted);
   flex-wrap: wrap;
 }
 
@@ -69,18 +69,18 @@
 }
 
 .codeId {
-  font-family: var(--font-mono, monospace);
-  background: rgba(255, 255, 255, 0.06);
+  font-family: var(--font-mono);
+  background: var(--color-surface-3);
   padding: 0.15rem 0.4rem;
   border-radius: 4px;
-  color: #38bdf8;
+  color: var(--color-info);
   font-size: 0.75rem;
 }
 
 .closeBtn {
   background: transparent;
   border: none;
-  color: var(--text-secondary, #94a3b8);
+  color: var(--color-muted);
   cursor: pointer;
   padding: 0.4rem;
   border-radius: 6px;
@@ -91,14 +91,14 @@
 }
 
 .closeBtn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary, #ffffff);
+  background: var(--color-surface-3);
+  color: var(--color-text);
 }
 
 .filterBar {
   padding: 0.75rem 1.5rem;
-  border-bottom: 1px solid var(--border-color, #2a2e3d);
-  background: rgba(0, 0, 0, 0.15);
+  border-bottom: var(--hairline);
+  background: var(--color-surface-2);
   display: flex;
   gap: 0.75rem;
   align-items: center;
@@ -114,24 +114,24 @@
 .searchIcon {
   position: absolute;
   left: 0.75rem;
-  color: var(--text-secondary, #64748b);
+  color: var(--color-muted);
   pointer-events: none;
 }
 
 .searchInput {
   width: 100%;
   padding: 0.5rem 0.75rem 0.5rem 2.25rem;
-  background: var(--bg-surface, #14171f);
-  border: 1px solid var(--border-color, #2a2e3d);
+  background: var(--color-surface);
+  border: var(--hairline);
   border-radius: 6px;
-  color: var(--text-primary, #f0f2f5);
+  color: var(--color-text);
   font-size: 0.85rem;
   transition: border-color 0.15s ease;
 }
 
 .searchInput:focus {
   outline: none;
-  border-color: var(--primary, #3b82f6);
+  border-color: var(--color-accent);
 }
 
 .body {
@@ -144,8 +144,8 @@
 }
 
 .chunkCard {
-  background: var(--bg-surface-elevated, #1c212d);
-  border: 1px solid var(--border-color, #2a2e3d);
+  background: var(--color-surface-2);
+  border: var(--hairline);
   border-radius: 8px;
   padding: 1rem 1.25rem;
   display: flex;
@@ -155,8 +155,8 @@
 }
 
 .chunkCard:hover {
-  border-color: #3b82f6;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-md);
 }
 
 .chunkHeader {
@@ -164,7 +164,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: var(--hairline);
   padding-bottom: 0.5rem;
 }
 
@@ -176,20 +176,20 @@
 }
 
 .ordinalBadge {
-  background: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
+  background: var(--color-accent-soft);
+  color: var(--color-accent-dark);
   font-size: 0.75rem;
   font-weight: 600;
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  border: 1px solid var(--color-accent);
   white-space: nowrap;
 }
 
 .chunkTitle {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--text-primary, #f1f5f9);
+  color: var(--color-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -203,14 +203,14 @@
 
 .charCount {
   font-size: 0.75rem;
-  color: var(--text-secondary, #64748b);
+  color: var(--color-muted);
   white-space: nowrap;
 }
 
 .copyBtn {
   background: transparent;
-  border: 1px solid var(--border-color, #2a2e3d);
-  color: var(--text-secondary, #94a3b8);
+  border: var(--hairline);
+  color: var(--color-muted);
   font-size: 0.75rem;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
@@ -222,21 +222,21 @@
 }
 
 .copyBtn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-primary, #ffffff);
-  border-color: #475569;
+  background: var(--color-surface-3);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
 }
 
 .chunkContent {
   font-size: 0.85rem;
   line-height: 1.6;
-  color: var(--text-secondary, #cbd5e1);
+  color: var(--color-text);
   white-space: pre-wrap;
   word-break: break-word;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--color-surface);
   padding: 0.75rem 1rem;
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--color-border-subtle);
   max-height: 280px;
   overflow-y: auto;
   font-family: inherit;
@@ -251,4 +251,8 @@
 @keyframes slideInRight {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
+}
+
+.copiedIcon {
+  color: var(--color-success);
 }
