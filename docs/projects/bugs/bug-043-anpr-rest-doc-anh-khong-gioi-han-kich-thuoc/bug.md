@@ -4,7 +4,8 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🆕 New |
+| **Trạng thái** | 🛠️ Fixing — đã sửa trên `bugfix/bug-043-2026-10-anpr-upload-size-limit` (`1ba8c14`), chờ PR |
+| **Người nhận** | @HiTranquility |
 | **Ưu tiên** | 🟠 |
 | **Người báo** | Claude Code, từ [AUDIT-008](../../audits/10-2026/AUDIT-008-loi-vao-inference-rate-limit-upload-cors-grpc.md) A1 + B1 |
 | **Ngày báo** | 2026-10-27 |
@@ -43,4 +44,8 @@ Kết quả: `200`, stub nhận **62 914 560 byte**, message là `Recognition fa
 
 ## Sửa / kiểm chứng
 
-Chưa sửa. Khi sửa, thêm test `unittest` cho ba ca: 60 MB → 413, `text/plain` → 415, JPEG hợp lệ → 200. Sau đó chạy lại lệnh §5 của AUDIT-008.
+- `app/api/rest/image_upload.py` (mới): `read_image_upload` đọc tối đa `ANPR_MAX_IMAGE_BYTES + 1` (8 MB, `app/core/constants.py`), vượt thì **413**; magic byte không phải JPEG/PNG thì **415**. Áp cho `/anpr/recognize`, `/anpr/recognize-many`, `/vision/recognize`.
+- `AnprService.recognize` nhận bytes đã kiểm thay vì `UploadFile` (`app/core/vision/services/anpr_service.py`).
+- `/anpr/recognize` trả `Recognition failed`; chi tiết exception chỉ ghi vào log (`logger.exception`).
+- Kiểm: `python -m unittest test.test_anpr_rest_upload`: 4/4 (60 MB → 413, `text/plain` khai `image/jpeg` → 415, JPEG/PNG → tới engine, message lỗi không chứa chuỗi exception). Bộ đầy đủ 593 test: còn đúng 7 lỗi có sẵn trên `develop` (thiếu stub gRPC trong worktree mới; 2 test RAG `no_context`), không lỗi mới.
+- Chưa làm: chưa thử trên stack dev với model thật.
