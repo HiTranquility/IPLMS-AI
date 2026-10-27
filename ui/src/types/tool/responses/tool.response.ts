@@ -56,26 +56,25 @@ export interface HardwareTelemetry {
   vram_free_mb: number | null;
 }
 
-export interface DetectedModelItem {
-  name: string;
-  provider: string;
-  source: string;
-  label: string;
-}
-
 export interface ComputeSettings {
   profile: 'safe_4gb' | 'cpu_eco' | 'gpu_full' | 'custom';
   vision_device: string;
   vision_resolved_device: string;
   onnx_enabled: boolean;
   vision_warmup_on_start: boolean;
-  llm_provider: string;
-  llm_model: string;
   local_llm_gpu_layers: number;
   local_llm_ctx_size: number;
   local_llm_threads: number;
   local_llm_parallel_slots: number;
-  detected_models?: DetectedModelItem[];
+}
+
+/** Model inference dùng thật cho một tác vụ (ADR-0061 §2): revision ACTIVE, không có thì env. */
+export interface EffectiveModel {
+  task: 'copilot_answer' | 'test_generation' | 'test_judge';
+  provider: string | null;
+  model: string | null;
+  source: 'profile' | 'env' | 'unknown';
+  revision: number | null;
 }
 
 export interface PolicySettings {
@@ -95,6 +94,7 @@ export interface RuntimeSettings {
   compute: ComputeSettings;
   policy: PolicySettings;
   engines: EngineStatus;
+  models: EffectiveModel[];
 }
 
 export interface ActiveSession {
