@@ -12,7 +12,7 @@ from app.core.copilot.workflows.dispute.state import (
     validate_recommendation,
     validate_review,
 )
-from app.core.knowledge.engines.injection_scan import find_instructions
+from app.core.knowledge import find_instructions
 from app.core.exceptions import WorkflowStateError
 
 
