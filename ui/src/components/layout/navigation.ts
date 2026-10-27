@@ -12,12 +12,13 @@ import {
   ScrollText,
   ShieldCheck,
   Tags,
+  TrendingUp,
   Users,
   type LucideIcon,
 } from 'lucide-react';
 import type { Permission } from '@/api/types';
 import type { Messages } from '@/i18n/vi';
-import type { Me } from '@/types/auth';
+import type { Me, Role } from '@/types/auth';
 import type { WorkspacePersona } from '@/types/workspace';
 
 /** Nhãn lấy từ từ điển `nav` theo ngôn ngữ đang dùng. */
@@ -46,6 +47,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: '/copilot', label: 'copilotLab', icon: Bot, permissions: ['ai:chatlog:read'], personas: ['analytics', 'ml'] },
       { to: '/knowledge', label: 'knowledge', icon: BookOpen, permissions: ['ai:prompt:edit'], personas: ['ml', 'analytics'] },
       { to: '/copilot/logs', label: 'copilotLogs', icon: ScrollText, permissions: ['ai:chatlog:read'], personas: ['analytics'] },
+      { to: '/forecast', label: 'forecast', icon: TrendingUp, permissions: ['ai:metrics:read'], personas: ['ml', 'analytics'] },
       { to: '/tools', label: 'tools', icon: FlaskConical, permissions: ['ai:metrics:read', 'ai:prompt:edit'], personas: ['ml', 'analytics'] },
     ],
   },
@@ -98,43 +100,29 @@ export const PERSONA_LIST: PersonaMeta[] = [
   { id: 'analytics', titleKey: 'analytics', descKey: 'analyticsDesc', icon: Gauge, badge: 'Copilot Ops', defaultPath: '/' },
 ];
 
+/**
+ * Vai → không gian làm việc. Quyền từng mục menu vẫn lấy từ `me.permissions`
+ * (ma trận ở `app/core/console/engines/access_policy.py`); bảng này chỉ chia menu theo vai.
+ */
+export const ROLE_WORKSPACES: Record<Role, WorkspacePersona[]> = {
+  ai_console_admin: ['admin'],
+  ai_lead: ['admin', 'ml', 'labeling', 'analytics'],
+  ai_ml_engineer: ['ml'],
+  ai_data_engineer: ['ml'],
+  ai_reviewer: ['labeling', 'analytics'],
+  ai_annotator: ['labeling'],
+  ai_analyst: ['analytics'],
+};
+
 export function getAvailablePersonas(me: Me): WorkspacePersona[] {
-  const isSuper = me.roles.includes('ai_lead') || me.roles.includes('ai_console_admin') || me.roles.length >= 3;
-  const list: WorkspacePersona[] = [];
+  const own = new Set(me.roles.flatMap((role) => ROLE_WORKSPACES[role] ?? []));
+  const list = PERSONA_LIST.map((p) => p.id).filter((id) => id !== 'all' && own.has(id));
+  // Có từ hai không gian trở lên thì thêm "Tất cả"; không có vai nào thì hiện theo quyền.
+  return list.length === 1 ? list : ['all', ...list];
+}
 
-  if (isSuper) {
-    list.push('all');
-  }
-
-  const canAdmin =
-    me.roles.includes('ai_console_admin') ||
-    me.roles.includes('ai_lead') ||
-    me.permissions.includes('ai:member:manage') ||
-    me.permissions.includes('ai:audit:read');
-  if (canAdmin) list.push('admin');
-
-  const canMl =
-    me.roles.includes('ai_ml_engineer') ||
-    me.roles.includes('ai_data_engineer') ||
-    me.roles.includes('ai_lead') ||
-    me.permissions.includes('ai:model:evaluate');
-  if (canMl) list.push('ml');
-
-  const canLabel =
-    me.roles.includes('ai_annotator') ||
-    me.roles.includes('ai_reviewer') ||
-    me.roles.includes('ai_lead') ||
-    me.permissions.includes('ai:task:label') ||
-    me.permissions.includes('ai:label:approve');
-  if (canLabel) list.push('labeling');
-
-  const canAnalytics =
-    me.roles.includes('ai_analyst') ||
-    me.roles.includes('ai_lead') ||
-    me.permissions.includes('ai:metrics:read') ||
-    me.permissions.includes('ai:chatlog:read');
-  if (canAnalytics) list.push('analytics');
-
-  if (list.length === 0) list.push('all');
-  return list;
+/** Không gian dùng thật: đã chọn và còn thuộc tài khoản này, nếu không thì không gian đầu tiên của nó. */
+export function resolvePersona(me: Me, saved: WorkspacePersona | null): WorkspacePersona {
+  const available = getAvailablePersonas(me);
+  return saved && available.includes(saved) ? saved : available[0];
 }
