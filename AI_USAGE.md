@@ -7,7 +7,7 @@
 
 | Module | Chủ module | Phạm vi file |
 | :--- | :--- | :--- |
-| **Forecast** — dự báo lấp đầy, giá động, data lake, gateway | Nguyễn Tấn Phát (22110060, nhóm trưởng) | `app/core/forecast/**`, `app/infra/datalake/**`, `training/forecast/**` |
+| **Hạ tầng & quy trình** — Docker Compose, gateway Traefik, cấu trúc repo, quy trình hồ sơ → nhánh → PR → review → CI; **Forecast** (mới ở mức ý tưởng + prototype, chưa dùng cho sản phẩm) | Nguyễn Tấn Phát (22110060, nhóm trưởng) | `docker-compose*.yml`, `docker/traefik/**`, `.github/workflows/**`, `app/core/forecast/**` (prototype) |
 | **Vision** — ANPR, chấm ứng viên, chống tráo xe, vòng gán nhãn | Đỗ Huỳnh Đại Dương (23110012) | `app/core/vision/**`, `app/core/dataset/**` |
 | **Copilot** — RAG, prompt, guardrail, telemetry, eval | Đỗ Minh Khoa (22110043) | `app/core/copilot/**`, `app/core/knowledge/**`, `app/infra/monitoring/**` |
 
