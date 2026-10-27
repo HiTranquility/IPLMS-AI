@@ -9,7 +9,7 @@ from app.core.forecast.dtos.forecast_dto import (
     TariffRecommendation,
     TariffRecommendationQuery,
 )
-from app.core.forecast.readers.parquet_lake_reader import (
+from app.core.forecast.engines.parquet_lake_reader import (
     ParquetLakeReader,
     _resolve_default_gold_lake_path,
 )

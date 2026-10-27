@@ -7,14 +7,14 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from app.core.copilot.engines.dispute_workflow.dependencies import (
+from app.core.copilot.workflows.dispute.dependencies import (
     DisputeWorkflowDependencies,
     EvidenceAnalyzer,
     EvidenceClient,
     PolicyRetriever,
     RecommendationWriter,
 )
-from app.core.copilot.engines.dispute_workflow.state import DisputeWorkflowState
+from app.core.copilot.workflows.dispute.state import DisputeWorkflowState
 from app.core.exceptions import WorkflowStateError
 
 

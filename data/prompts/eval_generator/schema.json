@@ -1,0 +1,48 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "expected_answer": {
+            "type": "string"
+          },
+          "expected_facts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expected_source": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "fact",
+              "explain",
+              "abstain"
+            ]
+          }
+        },
+        "required": [
+          "question",
+          "expected_answer",
+          "expected_facts",
+          "expected_source",
+          "kind"
+        ]
+      }
+    }
+  },
+  "required": [
+    "cases"
+  ]
+}

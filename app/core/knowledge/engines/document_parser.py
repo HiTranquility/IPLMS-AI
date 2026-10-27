@@ -17,7 +17,7 @@ Ba điều đáng nói về thiết kế ở đây:
 
 [GOTCHA] Trần thời gian parse KHÔNG áp ở đây mà ở tầng service điều phối, vì
 việc canh giờ thuộc về người biết cả lượt nạp kéo dài bao lâu. Xem
-``DOCUMENT_PARSE_TIMEOUT_SECONDS`` trong ``app/core/constants.py``.
+``DOCUMENT_PARSE_TIMEOUT_SECONDS`` trong ``app/core/knowledge/constants.py``.
 """
 import io
 import math
@@ -25,7 +25,8 @@ import multiprocessing
 import os
 from typing import Any, Callable, List, Tuple
 
-from app.core.constants import KNOWLEDGE_MAX_FILE_BYTES, PDF_TEXT_TIMEOUT_SECONDS
+from app.core.constants import KNOWLEDGE_MAX_FILE_BYTES
+from app.core.knowledge.constants import PDF_TEXT_TIMEOUT_SECONDS
 from app.core.enums import DocumentFormat
 from app.core.exceptions import (
     DocumentTooLargeError,

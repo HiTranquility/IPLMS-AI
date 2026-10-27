@@ -6,6 +6,8 @@
     ocr         EasyOCR đọc chữ + điểm tin cậy thật (trọng số độ dài)
     plate_text  luật chuỗi biển số Việt Nam (chuẩn hoá, hợp lệ, khoá so sánh)
     scoring     ghép điểm detector × OCR, chọn ứng viên bằng đồng thuận
+    two_line_plate_parser  ghép biển hai dòng
+    onnx_engine            nhánh ONNX Runtime
 
-`app.core.vision.engines.anpr_engine.run_anpr` là façade phối hợp các tầng này.
+`engine.run_anpr` là façade phối hợp các tầng này.
 """
