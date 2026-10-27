@@ -27,7 +27,7 @@ describe('LabelPage', () => {
     const user = userEvent.setup();
     renderWithProviders(<LabelPage />);
     const img = await screen.findByRole('img', { name: 'Ảnh cắt biển số' });
-    expect(img.getAttribute('src')).toBe(`/console/api/vision/samples/${sample.capture_id}/crop`);
+    expect(img.getAttribute('src')).toBe(`/api/vision/samples/${sample.capture_id}/crop`);
     await user.keyboard('1');
     await waitFor(() => expect(calls.some((c) => c.url.endsWith('/labels'))).toBe(true));
     expect(bodyOf(calls, '/labels')).toEqual({ verdict: 'CORRECT', plate_text: '', quality_flags: [] });

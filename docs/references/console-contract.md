@@ -6,7 +6,7 @@
 
 | Mục | Giá trị | Nguồn |
 |---|---|---|
-| Gốc API | `/console/api` trên process `app.console_main` (`127.0.0.1:8090`) | `app/console_main.py` |
+| Gốc API | `/api` trên process `app.console_main` (`127.0.0.1:8090`) | `app/console_main.py` |
 | Envelope thành công | `{ success: true, total, message, data: [] }` — `data` luôn là mảng | `app/api/rest/schemas/base_response.py` |
 | Envelope lỗi | `{ success: false, total: 0, message, data: [], code }` | `app/console_main.py` `_error` |
 | Phiên | Cookie httpOnly, `SameSite=Strict`, `Secure` theo `AI_CONSOLE_COOKIE_SECURE`; DB giữ SHA-256 của token | `app/api/rest/console_access.py`, `auth_service.py` |
@@ -25,7 +25,7 @@
 | 401 | `NOT_INVITED`, `NOT_CONFIGURED`, `TOTP_INVALID`, `TOTP_NOT_ENROLLED`, `TOTP_ALREADY_ENROLLED`, `TOO_MANY_ATTEMPTS` | Bước đăng nhập |
 | 403 | `FORBIDDEN` | Thiếu quyền, vi phạm bốn mắt, thiếu header CSRF |
 
-Callback Google không trả JSON: chuyển về `/console/?login_error=<code>` (thêm `GOOGLE_DENIED` khi người dùng huỷ ở Google).
+Callback Google không trả JSON: chuyển về `/?login_error=<code>` (thêm `GOOGLE_DENIED` khi người dùng huỷ ở Google).
 
 ## 2. Vai trò và quyền
 
@@ -53,14 +53,14 @@ Một nguồn: `app/core/console/engines/access_policy.py`. Admin/Moderator củ
 
 ## 3. Endpoint
 
-Mọi đường dẫn dưới đây nằm sau `/console/api`.
+Mọi đường dẫn dưới đây nằm sau `/api`.
 
 ### Đăng nhập — `console_auth_controller.py`
 
 | Method | Đường dẫn | Quyền | Body → `data[0]` |
 |---|---|---|---|
 | GET | `/auth/google/start` | — | 302 sang Google (PKCE + nonce), đặt cookie flow |
-| GET | `/auth/google/callback` | — | 302 về `/console/`, đặt cookie phiên |
+| GET | `/auth/google/callback` | — | 302 về `/`, đặt cookie phiên |
 | POST | `/auth/password` | — | `{email, password}` → `{mfa_required: true}` |
 | POST | `/auth/totp/enroll` | phiên | → `{otpauth_uri}` |
 | POST | `/auth/totp` | phiên | `{code}` → `{mfa_required: false}` |

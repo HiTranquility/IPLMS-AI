@@ -27,25 +27,30 @@ class ConsoleUiServingTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_route_phia_client_tra_index_kem_csp(self):
-        r = self.client.get("/console/copilot")
+        r = self.client.get("/copilot")
         self.assertEqual(200, r.status_code)
         self.assertIn("id=root", r.text)
         self.assertIn("script-src 'self'", r.headers["content-security-policy"])
-        self.assertEqual(200, self.client.get("/console/assets/app.js").status_code)
+        self.assertEqual(200, self.client.get("/assets/app.js").status_code)
 
     def test_khong_doc_file_ngoai_dist(self):
-        r = self.client.get("/console/..%2Fsecret.txt")
+        r = self.client.get("/..%2Fsecret.txt")
         self.assertNotIn("không được lộ", r.text)
 
     def test_api_sai_tra_json_404_khong_tra_spa(self):
-        r = self.client.get("/console/api/khong-co")
+        r = self.client.get("/api/khong-co")
         self.assertEqual((404, "NOT_FOUND"), (r.status_code, r.json()["code"]))
 
     def test_chua_build_thi_bao_ro(self):
         with patch("app.console_main.UI_DIST", Path(self.tmp.name) / "missing"):
-            r = self.client.get("/console/")
+            r = self.client.get("/")
         self.assertEqual(503, r.status_code)
         self.assertIn("pnpm --dir ui build", r.text)
+
+    def test_duong_console_cu_tra_404_khong_phuc_vu_spa(self):
+        for path in ("/console", "/console/", "/console/copilot", "/console/assets/app.js", "/console/api/health"):
+            r = self.client.get(path)
+            self.assertEqual(404, r.status_code, f"Expected 404 for {path}, got {r.status_code}")
 
 
 if __name__ == "__main__":

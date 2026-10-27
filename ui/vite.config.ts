@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
 
-// Hỗ trợ cả root / và các nested routes (/vision/label, /vision/review, /console/*) của `app.console_main`.
+// Hỗ trợ root / và các nested routes (/vision/label, /vision/review, ...) của `app.console_main`.
 export default defineConfig({
   base: '/',
   plugins: [react()],
@@ -13,7 +13,6 @@ export default defineConfig({
     port: 5190,
     strictPort: true,
     proxy: {
-      '/console/api': 'http://127.0.0.1:8090',
       '/api': 'http://127.0.0.1:8090',
     },
   },

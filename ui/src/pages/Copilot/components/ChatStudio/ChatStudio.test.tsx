@@ -177,7 +177,7 @@ describe('ChatStudio Component', () => {
 
     await waitFor(() => expect(screen.getByText(/Phí qua đêm 30\.000đ\./)).toBeTruthy());
     const call = calls.find((c) => c.url.endsWith('/tools/copilot/stream'))!;
-    expect(call.url).toBe('/console/api/tools/copilot/stream');
+    expect(call.url).toBe('/api/tools/copilot/stream');
     const body = JSON.parse(String(call.init?.body));
     expect(Object.keys(body).sort()).toEqual([...ASK_BODY_FIELDS].sort());
     expect(body.parking_lot_id).toBeNull();

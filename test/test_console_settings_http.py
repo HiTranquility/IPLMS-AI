@@ -11,7 +11,7 @@ from app.core.console.dtos import ConsoleActor, ConsoleSession
 from app.core.console.services import console_auth_service
 
 H = {"X-Console-Request": "1", "Cookie": f"{SESSION_COOKIE}=tok"}
-BASE = "/console/api/tools"
+BASE = "/api/tools"
 
 
 def _session(roles: tuple[str, ...], fresh_step_up: bool = False) -> ConsoleSession:
