@@ -4,11 +4,11 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🔄 REVIEWING (đã sửa trên nhánh, chạm guard nên chờ techlead duyệt rồi mới merge) |
+| **Trạng thái** | ✅ Fixed |
 | **Người nhận** | @HiTranquility |
 | **Hạn** | 2026-10-31 |
 | **Ưu tiên** | 🟠 |
-| **Ngày đóng** | |
+| **Ngày đóng** | 2026-10-27 |
 | **Người báo** | Antigravity AI Security Fuzzing Agent |
 | **Ngày báo** | 2026-10-26 |
 | **Môi trường** | local / develop |
