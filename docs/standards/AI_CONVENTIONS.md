@@ -2,7 +2,7 @@
 status: canonical
 audience: AI coding agents + developers
 applies-to: `ai/` — Python service (FastAPI REST + gRPC), ANPR · Forecast · Copilot
-verified-against-code: 2026-10-25 — mọi đường dẫn, tên file, hướng import dưới đây đọc trực tiếp từ `ai/app/`
+verified-against-code: 2026-10-27 — §1, §3–§8 đọc trực tiếp từ `ai/app/`; §2 là khuôn đích theo ADR-0005, lệch còn lại theo dõi ở ISSUE-023
 ---
 
 # 🧠 AI Conventions — IPLMS
@@ -15,8 +15,7 @@ Python dùng `snake_case` cho file/hàm, `PascalCase` cho class, `UPPER_SNAKE_CA
 
 Luật viết code cho plane `ai/`. Stack: Python · FastAPI · gRPC · YOLO + EasyOCR · pgvector · Parquet.
 
-> Kiến trúc hiện tại **sạch** — quét ngày 2026-09-11 không thấy vi phạm phân tầng nào.
-> Tài liệu này chốt lại cái đang đúng để nó không trôi, chứ không đề xuất đổi gì.
+> Phân tầng §1 sạch (quét 2026-09-11). Khuôn domain §2 đổi theo [ADR-0005](../projects/adrs/10-2026/0005-khuon-domain-core-ba-thu-muc-va-slot-tuy-chon.md) ngày 2026-10-27; code đang được đưa về khuôn trong [ISSUE-023](../projects/issues/10-2026/ISSUE-023-khuon-domain-core/issue.md), chỗ còn lệch liệt kê ở đó.
 
 ## 1. Ba tầng — và hướng phụ thuộc
 
@@ -28,36 +27,51 @@ api/          ⟶  core/           ⟶  infra/
 | Tầng | Chứa gì | Được import |
 |---|---|---|
 | `app/api/` | gRPC handler · REST route · mapper · schema | `core/` |
-| `app/core/` | `dtos/` `engines/` `services/` theo từng domain | `infra/`, `util/`, `config/` |
-| `app/infra/` | pgvector · Parquet · LLM factory | `config/`, `util/` |
+| `app/core/` | domain theo khuôn §2 | `infra/`, `util/`, `config/`; domain khác chỉ qua `__init__` của nó |
+| `app/infra/` | pgvector · Parquet · LLM factory + loader prompt | `config/`, `util/` |
 
 - **[NEVER]** `app/core/` import `grpc`, `_pb2`, hay `generated_stubs`. Đã kiểm: **0 chỗ vi phạm**. Giữ vậy — core không được biết nó đang được gọi qua giao thức nào.
 - **[NEVER]** `app/api/` import thẳng `engines/`. Đã kiểm: **0 chỗ vi phạm**. Handler/route chỉ gọi `services/`.
 - **[MUST]** `core/*/engines/` được phép gọi `app/infra/` (ví dụ `rag_pipeline.py` → `pgvector_client`, `llm_factory`). Đây là chiều đúng.
 
-## 2. Mỗi domain trong `core/` có đúng ba thư mục
+## 2. Khuôn một domain trong `core/`
 
-Các domain mới **[MUST]** theo khuôn này. Kiểm tra 2026-09-27: `vision`, `forecast`, `copilot`, `knowledge`, `dataset` có đủ ba thư mục; `knowledge_eval` còn thiếu `dtos/` nên đang lệch quy ước. Thêm DTO nghiệp vụ thực khi sửa domain này, không tạo thư mục rỗng chỉ để đạt hình thức.
+Lý do và phương án đã loại: [ADR-0005](../projects/adrs/10-2026/0005-khuon-domain-core-ba-thu-muc-va-slot-tuy-chon.md).
+
+**Domain = bounded context, trùng tên gRPC service:** `vision` · `copilot` · `knowledge` · `knowledge_eval` · `forecast` · `dataset` · `model_policy`, cộng `console` (chỉ REST). Năng lực bên trong (`anpr`, `rag`, `dispute`) là **package con**, không phải domain riêng.
 
 ```text
 app/core/<domain>/
-├── dtos/        kiểu vào/ra của domain
-├── engines/     thuật toán / model thuần
-└── services/    điều phối một lượt use case
+├── __init__.py     public API — api/ và domain khác chỉ import từ đây
+├── dtos/           [bắt buộc] kiểu vào/ra
+├── engines/        [bắt buộc] thuật toán / model thuần; ≥3 file cùng một năng lực → engines/<năng-lực>/ có façade
+├── services/       [bắt buộc] điều phối một lượt use case
+├── workflows/      [tuỳ chọn] đồ thị nhiều bước có checkpoint (LangGraph)
+├── guardrails/     [tuỳ chọn] luật / regex an toàn cho đầu vào–đầu ra
+├── constants.py    [tuỳ chọn] ngưỡng tinh chỉnh chỉ domain này dùng
+└── messages.py     [tuỳ chọn] text hiện cho người dùng + marker nhận diện đi kèm
 ```
 
-| Domain | engines | services |
-|---|---|---|
-| `vision` | `anpr_engine.py` (façade `run_anpr`) + `anpr/` (`models` · `detector` · `preprocess` · `ocr` · `plate_text` · `scoring`) · `vehicle_classifier.py` | `anpr_service.py` · `anti_fraud_service.py` |
-| `forecast` | *(trống — chưa có model qua gate; `occupancy_model.py` đã xoá 2026-09-25)* | `forecast_service.py` |
-| `copilot` | `rag_pipeline.py` | `copilot_service.py` |
-| `knowledge` | `chunker.py` · `document_parser.py` | `ingestion_service.py` |
-| `knowledge_eval` | `case_generator.py` · `gate.py` · `grader.py` · `judge.py` | `eval_service.py` |
-| `model_policy` | `validation.py` | `model_policy_service.py` |
-| `dataset` | `image_quality.py` · `plate_metrics.py` · `sample_selector.py` | `curation_service.py` · `evaluation_service.py` · `snapshot_service.py` |
-| `console` | `access_policy.py` · `session_policy.py` · `totp.py` | `auth_service.py` · `copilot_lab_service.py` · `member_service.py` · `model_lab_service.py` · `tools_service.py` · `vision_lab_service.py` · `vision_import_service.py` · `accept_policy_service.py` |
+- **[NEVER]** tạo thư mục/file ngoài danh sách trên. Cần slot mới thì sửa ADR-0005 trước. `script/check_core_layout.py` kiểm luật này (ISSUE-023).
+- **[NEVER]** tạo thư mục rỗng chỉ để đủ khuôn. Domain chưa có DTO/engine thật thì để trống, thêm khi có.
+- **[MUST]** Câu trả lời mẫu và marker nhận diện nó nằm **cùng** `messages.py`. Code eval/script nhận diện câu từ chối thì import marker, không tự viết regex riêng.
+- **[MUST]** Code dùng chung giữa hai domain ở lại domain sở hữu, domain kia import qua `__init__`. Hằng số dùng ≥2 domain ở gốc `core/constants.py`. Gốc `core/` chỉ có `constants.py` · `enums.py` · `exceptions.py`.
 
-Mỗi domain package (`app/core/<domain>/__init__.py`) xuất public symbol để các tầng `api/` import gọn ở đầu file (`from app.core.<domain> import ...`), không dùng inline import `from app...` trong thân hàm. Ngoại lệ duy nhất: trì hoãn nạp thư viện ML nặng theo §6. Xoá inline import thì phải thêm import ở đầu file (AUDIT-006 A-1: thiếu bước này làm `ExportForConsole`/`GetAcceptPolicy` ném `NameError`).
+### Không thuộc `core/`
+
+| Thứ | Chỗ đúng |
+|---|---|
+| Text gửi LLM: system prompt, khuôn user message, JSON schema output | `data/prompts/<tên>/vN.md` (+ `user.md`, `schema.json`); loader ở `app/infra/llm/` |
+| Đọc file / DB / lake | `app/infra/` |
+| Dữ liệu mẫu, adapter giả | `test/` hoặc `app/script/` |
+
+- **[NEVER]** viết prompt dạng chuỗi trong `.py` (`"""Bạn là…"""`, `INSTRUCTIONS = """…`), kể cả làm fallback. Thiếu file prompt thì khởi động báo lỗi.
+- **[MUST]** Sửa nội dung prompt thì tạo `vN+1.md`, không sửa đè bản đang chạy. Telemetry ghi nhãn `<tên>_<version>#<hash8>`. Backend đọc nhãn này qua `promptVersion`, nên **[NEVER]** đổi dạng nhãn.
+- **[MUST]** Đổi prompt hoặc guardrail thì chạy lại `app/script/redteam_copilot.py` (IPLMS ADR-0029).
+
+### Public API của domain
+
+`app/core/<domain>/__init__.py` xuất public symbol để `api/` import gọn ở đầu file (`from app.core.<domain> import ...`), không dùng inline import `from app...` trong thân hàm. Ngoại lệ duy nhất: trì hoãn nạp thư viện ML nặng theo §6. Xoá inline import thì phải thêm import ở đầu file (AUDIT-006 A-1: thiếu bước này làm `ExportForConsole`/`GetAcceptPolicy` ném `NameError`).
 
 ### Engine ⇄ Service — ranh giới
 
@@ -70,9 +84,6 @@ Mỗi domain package (`app/core/<domain>/__init__.py`) xuất public symbol đ�
 **[GOTCHA]** `knowledge_eval/services/eval_service.py` giữ `_tasks` để task chạy nền không bị thu gom; đây là tham chiếu vòng đời tiến trình, không phải kết quả nghiệp vụ. Kết quả/lượt chạy phải nằm trong DB để replica khác đọc được. Vì vậy dòng **[NEVER]** ở trên áp dụng cho trạng thái **nghiệp vụ**, không cấm tham chiếu task nền có dọn dẹp.
 
 **[MUST]** Engine mới nặng (nạp model) thì viết lazy-load, và đọc kỹ mục §6.
-
-Dùng chung cho mọi domain, đặt ở gốc `app/core/`: `constants.py` · `enums.py` · `exceptions.py`.
-**[NEVER]** khai hằng số dùng-nhiều-domain bên trong một domain.
 
 ## 3. Hai cổng vào, **một** đường nghiệp vụ
 
@@ -106,7 +117,7 @@ api/rest/routes/anpr_controller.py  ─┘
 
 ## 4. Config
 
-`app/config/` chia theo mối quan tâm: `app_config` · `base_config` · `datalake_config` · `llm_config` · `logging_config` · `model_registry_config` · `object_storage_config` · `server_config` · `vision_config`.
+`app/config/` chia theo mối quan tâm, mỗi nhóm một file `<concern>_config.py` (xem thư mục để biết danh sách hiện tại; không liệt kê ở đây vì danh sách cũ đã trôi).
 
 - **[MUST]** đọc config qua `from app.config import get_config`. **[NEVER]** đọc `os.environ` rải rác trong engine/service.
 - **[MUST]** thêm nhóm cấu hình mới = thêm **một file** trong `app/config/`, không nhét vào `app_config.py`.
@@ -143,7 +154,7 @@ docker build ai/                     # ❌ không có proto/ → không sinh đ�
 
 ## 8. `app/script/` — chạy tay, không phải test
 
-`compile_proto.py` (sinh stub) · `grpc_smoke_check.py` (gọi thử 5 gRPC service) · `seed_regulations.py` · `seed_datalake_logs.py`.
+Script vận hành chạy tay: sinh stub (`compile_proto.py`), smoke check, seed, eval, red-team. Script kiểm repo chạy trong CI (như `check_core_layout.py`) nằm ở `script/` ngoài `app/`.
 
 **[NEVER]** đặt pytest ở đây. **[NEVER]** để service runtime import từ `app/script/`.
 
