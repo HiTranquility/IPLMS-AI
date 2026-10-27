@@ -1,5 +1,5 @@
 import { ChevronDown } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useI18n } from '@/i18n/I18nProvider';
 import { useWorkspaceStore } from '@/stores/useWorkspaceStore';
@@ -19,6 +19,27 @@ export function PersonaSwitcher({ me, collapsed = false }: PersonaSwitcherProps)
   const location = useLocation();
   const { persona, setPersona } = useWorkspaceStore();
   const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open]);
 
   const availableIds = useMemo(() => getAvailablePersonas(me), [me]);
   const availableList = useMemo(
@@ -46,7 +67,7 @@ export function PersonaSwitcher({ me, collapsed = false }: PersonaSwitcherProps)
   };
 
   return (
-    <div className={`${styles.wrap} ${collapsed ? styles.wrapCollapsed : ''}`}>
+    <div ref={wrapRef} className={`${styles.wrap} ${collapsed ? styles.wrapCollapsed : ''}`}>
       {availableList.length > 1 ? (
         <>
           <button
@@ -72,9 +93,7 @@ export function PersonaSwitcher({ me, collapsed = false }: PersonaSwitcherProps)
           </button>
 
           {open && (
-            <>
-              <div className={styles.menuBackdrop} onClick={() => setOpen(false)} aria-hidden />
-              <div className={styles.dropdown} role="menu">
+            <div className={styles.dropdown} role="menu">
                 <div className={styles.dropdownHeader}>{t.workspace.title}</div>
                 {availableList.map((item) => {
                   const ItemIcon = item.icon;
@@ -99,7 +118,6 @@ export function PersonaSwitcher({ me, collapsed = false }: PersonaSwitcherProps)
                   );
                 })}
               </div>
-            </>
           )}
         </>
       ) : (
