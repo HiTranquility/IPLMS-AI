@@ -242,7 +242,7 @@ export function KnowledgePage() {
             onClick={() => void docsQuery.refetch()}
             loading={docsQuery.isFetching}
           >
-            <RefreshCw size={15} style={{ marginRight: '0.4rem', verticalAlign: 'middle' }} />
+            <RefreshCw size={15} className={styles.btnIcon} />
             {t.tools.refreshStatus}
           </Button>
         }
@@ -261,7 +261,7 @@ export function KnowledgePage() {
         </div>
 
         <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#10b981' }}>
+          <div className={`${styles.statIcon} ${styles.statIconSuccess}`}>
             <Layers size={22} aria-hidden />
           </div>
           <div className={styles.statDetails}>
@@ -271,12 +271,12 @@ export function KnowledgePage() {
         </div>
 
         <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b' }}>
+          <div className={`${styles.statIcon} ${styles.statIconWarning}`}>
             <Database size={22} aria-hidden />
           </div>
           <div className={styles.statDetails}>
             <span className={styles.statLabel}>{kp.statDbVector}</span>
-            <p className={styles.statValue} style={{ fontSize: '1.05rem', color: '#10b981' }}>
+            <p className={`${styles.statValue} ${styles.statValueCompact}`}>
               pgvector (768 dims)
             </p>
           </div>
@@ -293,7 +293,7 @@ export function KnowledgePage() {
           </h2>
           <p className={styles.sectionDesc}>{kp.uploadDesc}</p>
 
-          <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+          <form onSubmit={onSubmit} className={styles.uploadForm}>
             <TextField
               label={t.tools.documentId}
               value={documentId}
@@ -329,14 +329,14 @@ export function KnowledgePage() {
             {/* Selected File Chips */}
             {files.length > 0 && (
               <div className={styles.fileChipList}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                <div className={styles.fileListHeader}>
+                  <span className={styles.fileCount}>
                     {kp.filesSelected(files.length)}
                   </span>
                   <button
                     type="button"
+                    className={styles.clearAllBtn}
                     onClick={clearAllFiles}
-                    style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer' }}
                   >
                     {kp.clearAll}
                   </button>
@@ -344,9 +344,9 @@ export function KnowledgePage() {
                 {files.map((file, idx) => (
                   <div key={`${file.name}-${idx}`} className={styles.fileChip}>
                     <div className={styles.fileChipName} title={file.name}>
-                      <FileText size={14} color="#60a5fa" />
+                      <FileText size={14} className={styles.fileIcon} />
                       <span>{file.name}</span>
-                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>({formatFileSize(file.size)})</span>
+                      <span className={styles.fileSize}>({formatFileSize(file.size)})</span>
                     </div>
                     <button
                       type="button"
@@ -386,7 +386,7 @@ export function KnowledgePage() {
             {/* Batch Progress Bar */}
             {isBatchIngesting && batchProgress && (
               <div className={styles.progressContainer}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.775rem', color: '#94a3b8' }}>
+                <div className={styles.progressMeta}>
                   <span>{kp.batchIngesting(batchProgress.name)}</span>
                   <span>{batchProgress.current}/{batchProgress.total}</span>
                 </div>
@@ -404,18 +404,18 @@ export function KnowledgePage() {
             {Boolean(batchError) && <ErrorBlock error={batchError} />}
 
             {ingest.data && (
-              <div style={{ padding: '0.75rem', borderRadius: '6px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', fontSize: '0.825rem' }}>
+              <div className={`${styles.notice} ${styles.noticeSuccess}`}>
                 ✓ {kp.singleSuccess(ingest.data.version_no, ingest.data.chunk_count, fmtMs(ingest.data.duration_ms))}
               </div>
             )}
 
             {batchResult && (
-              <div style={{ padding: '0.75rem', borderRadius: '6px', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', color: '#60a5fa', fontSize: '0.825rem' }}>
+              <div className={`${styles.notice} ${styles.noticeInfo}`}>
                 {kp.batchSummary(batchResult.ok, batchResult.fail)}
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+            <div className={styles.formActions}>
               <Button
                 type="submit"
                 variant="primary"
@@ -444,14 +444,14 @@ export function KnowledgePage() {
             <h2 className={styles.sectionTitle}>
               <BookOpen size={18} aria-hidden />
               <span>{kp.docListTitle}</span>
-              <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 'normal' }}>
+              <span className={styles.sectionCount}>
                 {kp.totalDocsCount(filteredDocs.length)}
               </span>
             </h2>
 
-            <div style={{ display: 'flex', gap: '0.75rem', flex: 1, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+            <div className={styles.filterGroup}>
               <div className={styles.searchBox}>
-                <Search size={15} color="#64748b" aria-hidden />
+                <Search size={15} className={styles.searchIcon} aria-hidden />
                 <input
                   type="text"
                   placeholder={kp.searchPlaceholder}
@@ -463,14 +463,7 @@ export function KnowledgePage() {
               <select
                 value={selectedCatFilter}
                 onChange={(e) => setSelectedCatFilter(e.target.value)}
-                style={{
-                  background: 'rgba(0, 0, 0, 0.2)',
-                  border: '1px solid var(--border-color, #2a2e3d)',
-                  borderRadius: '6px',
-                  color: 'var(--text-primary, #f1f5f9)',
-                  padding: '0.4rem 0.6rem',
-                  fontSize: '0.825rem',
-                }}
+                className={styles.categoryFilter}
               >
                 <option value="all">{kp.filterAll}</option>
                 <option value="regulation">{t.tools.catRegulation}</option>
@@ -520,7 +513,6 @@ export function KnowledgePage() {
                               type="button"
                               className={styles.docTitle}
                               onClick={() => setPreviewDoc(doc)}
-                              style={{ background: 'transparent', border: 'none', padding: 0, textAlign: 'left' }}
                             >
                               {doc.title || doc.source}
                             </button>
@@ -536,13 +528,13 @@ export function KnowledgePage() {
                           <span style={{ fontWeight: 600 }}>{fmtInt(doc.chunk_count)}</span>
                         </td>
                         <td>
-                          <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>v{doc.latest_version_no || 1}</span>
+                          <span className={styles.cellMeta}>v{doc.latest_version_no || 1}</span>
                         </td>
                         <td>
                           <Badge tone={statusTone}>{doc.latest_status || 'DRAFT'}</Badge>
                         </td>
                         <td>
-                          <span style={{ fontSize: '0.8rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>
+                          <span className={styles.cellMeta}>
                             {doc.updated_at ? fmtDateTime(doc.updated_at) : '—'}
                           </span>
                         </td>
@@ -559,7 +551,7 @@ export function KnowledgePage() {
                             </button>
 
                             {isConfirming ? (
-                              <div style={{ display: 'inline-flex', gap: '0.3rem', alignItems: 'center' }}>
+                              <div className={styles.confirmGroup}>
                                 <Button
                                   variant="danger"
                                   onClick={() => handleDelete(id)}
