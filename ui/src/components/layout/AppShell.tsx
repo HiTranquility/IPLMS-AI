@@ -11,7 +11,7 @@ import { useWorkspaceStore } from '@/stores/useWorkspaceStore';
 import type { Me } from '@/types/auth';
 import { LanguageSwitch } from './LanguageSwitch';
 import { PersonaSwitcher } from './PersonaSwitcher';
-import { allowed, NAV_GROUPS } from './navigation';
+import { allowed, NAV_GROUPS, resolvePersona } from './navigation';
 import styles from './AppShell.module.css';
 
 export interface AppShellProps {
@@ -28,7 +28,8 @@ export function AppShell({ me, children }: AppShellProps) {
   const { t } = useI18n();
   const logout = useLogout();
   const { theme, toggleTheme } = useThemeStore();
-  const { persona } = useWorkspaceStore();
+  const { persona: savedPersona } = useWorkspaceStore(me.member_id);
+  const persona = resolvePersona(me, savedPersona);
   const location = useLocation();
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);

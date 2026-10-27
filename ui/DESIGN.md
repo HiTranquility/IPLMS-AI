@@ -45,6 +45,23 @@ e2e/demos/      runner chạy tay (Node, không dependency), không thuộc buil
 
 Theo cùng luật `Boundary/`, `Fallback/`, `Guard/`, `Shared/`, `System/`, `Ui/<nhóm>/` của `frontend-store` (IPLMS PAT-006). Primitive chép từ `@iplms/shared` ghi nguồn ở đầu file (`frontend@b4eaa5c`); `Button` bỏ bóng màu và hiệu ứng nhấc nút cho đúng luật "không glow".
 
+## Không gian làm việc theo vai (ai bug-041)
+
+Sidebar hiện mục menu khi vai có **một** trong các quyền của mục, **và** mục thuộc không gian đang chọn. Backend vẫn kiểm quyền mọi request; không gian chỉ chia menu cho gọn.
+
+| Vai | Không gian |
+|---|---|
+| `ai_console_admin` | Quản trị |
+| `ai_lead` | Tất cả, Quản trị, ML Studio, Gán nhãn, Copilot Ops |
+| `ai_ml_engineer`, `ai_data_engineer` | ML Studio |
+| `ai_reviewer` | Gán nhãn, Copilot Ops |
+| `ai_annotator` | Gán nhãn |
+| `ai_analyst` | Copilot Ops |
+
+- Bảng ở `src/components/layout/navigation.ts` (`ROLE_WORKSPACES`). Có từ hai không gian thì thêm "Tất cả"; không có vai nào thì chỉ có "Tất cả" (menu theo quyền).
+- Không gian đã chọn lưu theo `member_id` (`iplms_active_workspace:<member_id>`). Đã lưu mà không còn thuộc tài khoản thì dùng không gian đầu tiên của tài khoản (`resolvePersona`). Không dùng một khoá chung: tài khoản sau sẽ thừa hưởng không gian và bị ẩn menu.
+- Thêm vai hoặc mục menu mới thì sửa bảng này cùng `ROLE_WORKSPACES` và trường `personas` của mục.
+
 ## Thị giác — Graphite & Amber
 
 Cùng **tên** token với 3 app frontend (`--color-bg`, `--color-surface*`, `--color-primary*`, `--color-accent*`, `--color-accent-ink`…), **giá trị** riêng trong `src/index.css`, cố ý khác Emerald (client), Royal Blue (operator), Signal Red (platform) để không ai nhầm console với UI sản phẩm.

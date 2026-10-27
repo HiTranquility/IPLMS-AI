@@ -84,6 +84,7 @@ export const vi = {
     copilotChat: 'Chat Copilot',
     knowledge: 'Quản lý tri thức',
     copilotLogs: 'Nhật ký & Đánh giá',
+    forecast: 'Dự báo & Giá động',
     tools: 'Công cụ thử',
     visionOverview: 'Tổng quan Vision',
     label: 'Gán nhãn',
