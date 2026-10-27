@@ -37,8 +37,12 @@ def _copy_usage(source: Any, target: dict | None) -> None:
     """Chép số token nếu provider có báo; không báo thì để trống, không ước lượng."""
     if target is None or source is None:
         return
-    for field in ("input_tokens", "output_tokens"):
+    # Responses API báo input/output_tokens; Chat Completions (Ollama, llama-server)
+    # báo prompt/completion_tokens (bug-042).
+    for field, alias in (("input_tokens", "prompt_tokens"), ("output_tokens", "completion_tokens")):
         value = getattr(source, field, None)
+        if not isinstance(value, int):
+            value = getattr(source, alias, None)
         if isinstance(value, int):
             target[field] = value
 
@@ -260,6 +264,7 @@ class LlmFactory:
                 max_tokens=self.max_output_tokens,
                 temperature=0.2 if temperature is None else temperature,
             )
+            _copy_usage(getattr(resp, "usage", None), usage)
             raw_answer = (resp.choices[0].message.content or "").strip()
             answer = _strip_thinking_tags(raw_answer)
             if not answer:
