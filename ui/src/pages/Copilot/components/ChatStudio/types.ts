@@ -4,6 +4,7 @@ export interface RagSource {
   title: string;
   score?: number;
   chunkId?: string;
+  documentId?: string;
   snippet?: string;
 }
 
@@ -22,6 +23,8 @@ export interface ChatMessage {
   speedTokPerSec?: number;
   inputTokens?: number;
   outputTokens?: number;
+  contextTokens?: number;
+  contextLimit?: number;
   feedback?: 1 | -1 | null;
   guardrailTriggered?: string;
   isStreaming?: boolean;

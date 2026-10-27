@@ -4,6 +4,7 @@ import {
   Check,
   Copy,
   Database,
+  ExternalLink,
   FileText,
   FileUp,
   Filter,
@@ -25,9 +26,16 @@ import styles from './ChatStudio.module.css';
 export interface KnowledgeExplorerProps {
   onAskAboutDocument?: (doc: SeedDocument) => void;
   onInsertCitation?: (citationText: string) => void;
+  onViewFullDocument?: (doc: SeedDocument) => void;
+  onOpenKnowledgePage?: () => void;
 }
 
-export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: KnowledgeExplorerProps) {
+export function KnowledgeExplorer({
+  onAskAboutDocument,
+  onInsertCitation,
+  onViewFullDocument,
+  onOpenKnowledgePage,
+}: KnowledgeExplorerProps) {
   const { t } = useI18n();
   const k = t.copilot.knowledge;
   const categoryLabels: Record<string, string> = {
@@ -152,6 +160,19 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
         </div>
 
         <div className={styles.keActions}>
+          {onOpenKnowledgePage && (
+            <button
+              type="button"
+              className={styles.keActionBtn}
+              onClick={onOpenKnowledgePage}
+              title={k.openKnowledgePageTitle}
+              aria-label={k.openKnowledgePage}
+            >
+              <ExternalLink size={13} />
+              <span>{k.openKnowledgePage}</span>
+            </button>
+          )}
+
           <button
             type="button"
             className={`${styles.keActionBtn} ${ingestOpen ? styles.keActionBtnActive : ''}`}
@@ -355,13 +376,26 @@ export function KnowledgeExplorer({ onAskAboutDocument, onInsertCitation }: Know
                 </div>
 
                 <footer className={styles.docCardFooter}>
-                  <button
-                    type="button"
-                    className={styles.expandTextBtn}
-                    onClick={() => setExpandedDocId(isExpanded ? null : docId)}
-                  >
-                    {isExpanded ? k.collapse : k.expand}
-                  </button>
+                  {onViewFullDocument ? (
+                    <button
+                      type="button"
+                      className={`${styles.docActionBtn} ${styles.docActionViewBtn}`}
+                      onClick={() => onViewFullDocument(doc)}
+                      title={k.viewFullTitle}
+                      aria-label={k.expand}
+                    >
+                      <ExternalLink size={12} />
+                      <span>{k.expand}</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.expandTextBtn}
+                      onClick={() => setExpandedDocId(isExpanded ? null : docId)}
+                    >
+                      {isExpanded ? k.collapse : k.expand}
+                    </button>
+                  )}
 
                   <div className={styles.docCardActions}>
                     <button

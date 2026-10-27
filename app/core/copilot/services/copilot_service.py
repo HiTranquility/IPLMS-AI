@@ -4,6 +4,7 @@ from typing import Any, AsyncGenerator, Dict
 from uuid import uuid4
 
 from langgraph.checkpoint.memory import InMemorySaver
+from app.config import get_config
 
 from app.core.copilot.dtos.copilot_dto import (
     AnswerChunk,
@@ -87,6 +88,7 @@ class CopilotService:
                     token=chunk["token"],
                     is_finished=finished,
                     sources=chunk.get("sources", []),
+                    citations=chunk.get("citations", []),
                     confidence=chunk.get("confidence"),
                     refused=chunk.get("refused", False),
                     guardrail_triggered=chunk.get("guardrail_triggered"),
@@ -98,7 +100,7 @@ class CopilotService:
                     output_tokens=chunk.get("output_tokens"),
                     speed_tok_s=chunk.get("speed_tok_s"),
                     context_tokens=chunk.get("context_tokens"),
-                    context_limit=chunk.get("context_limit", 4096),
+                    context_limit=chunk.get("context_limit") or getattr(get_config().llm, "local_llm_ctx_size", 4096),
                 )
         except Exception as exc:
             usage_service.record_soon(usage_service.build_entry(

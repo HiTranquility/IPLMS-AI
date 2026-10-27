@@ -4,7 +4,7 @@ Trạng thái: thiết kế hiện hành của P1c (IPLMS ISSUE-126), 2026-10-16
 
 ## Vị trí và ranh giới
 
-- App React độc lập trong repo AI, **không** thuộc monorepo `frontend/` và không import `@iplms/shared`: console chỉ nói chuyện với `app.console_main` cùng nguồn (`/console/api`), không gọi backend NestJS.
+- App React độc lập trong repo AI, **không** thuộc monorepo `frontend/` và không import `@iplms/shared`: console chỉ nói chuyện với `app.console_main` cùng nguồn (`/api`), không gọi backend NestJS.
 - Phiên là cookie httpOnly `SameSite=Strict` do server đặt; UI không đọc/lưu token. Mọi request ghi gửi `X-Console-Request: 1` (chống CSRF, kiểm ở `app/api/rest/console_access.py`).
 - Ẩn nút/menu theo `permissions` của `/me` chỉ là tiện dụng; backend kiểm quyền ở mọi route.
 - Build ra `ui/dist`; `console_main` phục vụ SPA với CSP `default-src 'self'` — không CDN, không font ngoài, không script inline.
@@ -38,6 +38,7 @@ src/
     {Name}Page.tsx + {Name}Page.module.css + {Name}PageContext.tsx + components/ + index.ts
   test/         setup + helper giả fetch
   utils/        format.ts (số/ngày theo ngôn ngữ), lang.ts, theme.ts
+e2e/demos/      runner chạy tay (Node, không dependency), không thuộc build/vitest — ISSUE-020
 ```
 
 Đặt tên theo khuôn `frontend-store` & `frontend` (`FRONTEND_CONVENTIONS_V2.md`): thư mục page `PascalCase` kèm `index.ts` barrel; mỗi page có `{Name}Page.tsx` (`export default`) + `{Name}Page.module.css` riêng; sub-component tách vào `pages/{Domain}/components/`; page phức tạp có `{Name}PageContext.tsx`; helper `camelCase.ts`.
