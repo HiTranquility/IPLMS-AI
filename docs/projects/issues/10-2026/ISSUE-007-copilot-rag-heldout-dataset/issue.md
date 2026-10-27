@@ -33,3 +33,7 @@ Bộ dữ liệu này dùng để:
 2. Xây dựng 16 câu mới (`HO-17` – `HO-32`) độc lập với tập huấn luyện `eval_set.json`.
 3. Viết script kiểm tra schema và phân bố tỷ lệ nhãn `answer` / `refuse`.
 4. Cập nhật `BOARD.md`.
+
+## Definition of Done
+
+- [x] Toàn bộ unit test và kiểm thử tích hợp của hạng mục đạt PASS.

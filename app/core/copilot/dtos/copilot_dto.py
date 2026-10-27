@@ -35,6 +35,9 @@ class CopilotAnswer(BaseModel):
     model_revision: str = ""
     turn_id: str = ""
     prompt_version: str = ""
+    refused: bool = False
+    guardrail_triggered: Optional[str] = None
+    latency_ms: Optional[float] = None
 
 
 class AnswerChunk(BaseModel):

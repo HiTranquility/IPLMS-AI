@@ -1,7 +1,8 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { ReviewItem } from '@/api/types';
-import { me, mockApi, ok, renderWithProviders } from '@/test/utils';
+import { fail, me, mockApi, ok, renderWithProviders } from '@/test/utils';
 import { ReviewPage } from './ReviewPage';
 
 const base: Omit<ReviewItem, 'label' | 'capture_id' | 'machine_plate'> = {
@@ -48,5 +49,34 @@ describe('Tên nút theo dòng ở Duyệt nhãn (ISSUE-019 review-1 BUG-05, aud
     expect(screen.getByRole('button', { name: 'Duyệt nhãn 30A-222.22' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Duyệt nhãn 51A-123.45' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Trả lại nhãn 30A-111.11' })).toBeTruthy();
+  });
+});
+
+describe('Duyệt nhanh theo lô đứt giữa chừng', () => {
+  it('báo lỗi và làm mới hàng đợi, không để dòng đã duyệt nằm lại', async () => {
+    let queueCalls = 0;
+    let decisions = 0;
+    mockApi((url) => {
+      if (url.endsWith('/me')) return ok(me({ permissions: ['ai:metrics:read', 'ai:label:approve'] }));
+      if (url.includes('/vision/reviews')) {
+        queueCalls += 1;
+        return ok(
+          { ...base, capture_id: 'cap-1', machine_plate: '30A-111.11', confirmed_plate: '30A-111.11', label: label('l1', 'CORRECT') },
+          { ...base, capture_id: 'cap-2', machine_plate: '30A-222.22', confirmed_plate: '30A-222.22', label: label('l2', 'CORRECT') },
+        );
+      }
+      if (url.includes('/decision')) {
+        decisions += 1;
+        return decisions === 1 ? ok({ ok: true }) : fail(409, 'CONFLICT', 'Nhãn này đã được duyệt rồi.');
+      }
+      return undefined;
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<ReviewPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Duyệt nhanh 2 mẫu khớp 100%' }));
+
+    expect(await screen.findByText(/đã được duyệt rồi/)).toBeTruthy();
+    await waitFor(() => expect(queueCalls).toBeGreaterThan(1));
   });
 });

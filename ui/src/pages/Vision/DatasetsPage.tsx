@@ -1,5 +1,6 @@
 import { Database, FileCheck, Images, Lock } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Badge } from '@/components/common/Ui/data-display/Badge';
 import table from '@/components/common/Ui/data-display/table.module.css';
 import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
@@ -30,13 +31,14 @@ export function DatasetsPage() {
 
   const rawList: VisionSnapshot[] = snapshots.data || [];
 
-  // 4 Top Metric Cards
+  // 4 Top Metric Cards: Total Snapshots, Locked Golden Sets, Training Sets, Total Samples
   const stats = useMemo(() => {
     const total = rawList.length;
     const golden = rawList.filter((s) => s.kind === 'golden').length;
-    const frozen = rawList.filter((s) => s.frozen_at !== null).length;
+    const train = rawList.filter((s) => s.kind === 'train').length;
+    const frozen = rawList.filter((s) => Boolean(s.frozen_at || (s as { locked_at?: string | null }).locked_at)).length;
     const totalSamples = rawList.reduce((acc, s) => acc + s.sample_count, 0);
-    return { total, golden, frozen, totalSamples };
+    return { total, golden, train, frozen, totalSamples };
   }, [rawList]);
 
   const filteredSnapshots = useMemo(() => {
@@ -61,18 +63,18 @@ export function DatasetsPage() {
           subtext={t.datasets.statTotalSub}
         />
         <MemberStatCard
-          icon={<FileCheck size={22} />}
-          label={t.datasets.statGolden}
-          value={stats.golden}
-          tone="accent"
-          subtext={t.datasets.statGoldenSub(stats.frozen)}
-        />
-        <MemberStatCard
           icon={<Lock size={22} />}
           label={t.datasets.statFrozen}
           value={stats.frozen}
           tone="warning"
-          subtext={t.datasets.statFrozenSub}
+          subtext={t.datasets.statGoldenSub(stats.golden)}
+        />
+        <MemberStatCard
+          icon={<FileCheck size={22} />}
+          label={t.datasets.statTrain}
+          value={stats.train}
+          tone="accent"
+          subtext={t.datasets.statTrainSub}
         />
         <MemberStatCard
           icon={<Images size={22} />}
@@ -99,16 +101,42 @@ export function DatasetsPage() {
         {snapshots.data && snapshots.data.length > 0 && (
           <div className={styles.tableCard}>
             <div className={styles.tableToolbar}>
-              <select
-                className={styles.filterSelect}
-                value={kindFilter}
-                onChange={(e) => setKindFilter(e.target.value as any)}
-                aria-label={t.datasets.filterLabel}
-              >
-                <option value="all">{t.datasets.filterAll}</option>
-                <option value="golden">{t.datasets.filterGolden}</option>
-                <option value="train">{t.datasets.filterTrain}</option>
-              </select>
+              <div className={styles.filterGroup}>
+                <div className={styles.filterTabs} role="group" aria-label={t.datasets.filterLabel}>
+                  <button
+                    type="button"
+                    className={`${styles.filterTab} ${kindFilter === 'all' ? styles.filterTabActive : ''}`}
+                    onClick={() => setKindFilter('all')}
+                  >
+                    {t.datasets.tabAll(stats.total)}
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.filterTab} ${kindFilter === 'golden' ? styles.filterTabActive : ''}`}
+                    onClick={() => setKindFilter('golden')}
+                  >
+                    {t.datasets.tabGolden(stats.golden)}
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.filterTab} ${kindFilter === 'train' ? styles.filterTabActive : ''}`}
+                    onClick={() => setKindFilter('train')}
+                  >
+                    {t.datasets.tabTrain(stats.train)}
+                  </button>
+                </div>
+
+                <select
+                  className={styles.filterSelect}
+                  value={kindFilter}
+                  onChange={(e) => setKindFilter(e.target.value as 'all' | 'golden' | 'train')}
+                  aria-label={t.datasets.filterLabel}
+                >
+                  <option value="all">{t.datasets.filterAll}</option>
+                  <option value="golden">{t.datasets.filterGolden}</option>
+                  <option value="train">{t.datasets.filterTrain}</option>
+                </select>
+              </div>
 
               <span className={styles.tableCount}>
                 {t.datasets.showing(filteredSnapshots.length, rawList.length)}
@@ -124,51 +152,58 @@ export function DatasetsPage() {
                     <th scope="col" className={table.num}>{t.common.sample}</th>
                     <th scope="col">sha256</th>
                     <th scope="col">{t.datasets.createdCol}</th>
-                    <th scope="col" style={{ textAlign: 'right' }}>{t.datasets.frozenCol}</th>
+                    <th scope="col" className={styles.colRight}>{t.datasets.frozenCol}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredSnapshots.map((s) => (
-                    <tr key={s.id}>
-                      <td style={{ fontWeight: 600 }}>{s.name}</td>
-                      <td>
-                        <Badge tone={s.kind === 'golden' ? 'accent' : 'neutral'}>{s.kind}</Badge>
-                      </td>
-                      <td className={table.num}>{fmtInt(s.sample_count)}</td>
-                      <td className={table.mono} title={s.samples_sha256}>
-                        {s.samples_sha256.slice(0, 14)}...
-                      </td>
-                      <td className={table.muted}>
-                        {s.created_by} · {fmtDateTime(s.created_at)}
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        {s.frozen_at ? (
-                          <span
-                            className={table.mono}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 4,
-                              color: 'var(--color-warning)',
-                              fontWeight: 600,
-                            }}
-                          >
-                            <Lock size={12} aria-hidden />
-                            {s.frozen_by} · {fmtDateTime(s.frozen_at)}
-                          </span>
-                        ) : s.kind === 'golden' && canFreeze ? (
-                          <ReasonAction
-                            label={t.datasets.freeze}
-                            variant="accent"
-                            onStepUp={handleStepUp}
-                            onSubmit={(reason) => freeze.mutateAsync({ id: s.id, reason })}
-                          />
-                        ) : (
-                          '—'
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredSnapshots.map((s) => {
+                    const snapId = (s as { snapshot_id?: string }).snapshot_id || s.id;
+                    const lockedAt = s.frozen_at || (s as { locked_at?: string | null }).locked_at;
+                    return (
+                      <tr key={snapId}>
+                        <td className={styles.boldCell}>{s.name}</td>
+                        <td>
+                          <Badge tone={s.kind === 'golden' ? 'accent' : 'neutral'}>{s.kind}</Badge>
+                        </td>
+                        <td className={table.num}>{fmtInt(s.sample_count)}</td>
+                        <td className={table.mono} title={s.samples_sha256}>
+                          {s.samples_sha256.slice(0, 14)}...
+                        </td>
+                        <td className={table.muted}>
+                          {s.created_by} · {fmtDateTime(s.created_at)}
+                        </td>
+                        <td className={styles.colRight}>
+                          {lockedAt ? (
+                            <div className={styles.actionCellGroup}>
+                              <span className={`${table.mono} ${styles.lockedMeta}`}>
+                                <Lock size={12} aria-hidden />
+                                {s.frozen_by ? `${s.frozen_by} · ${fmtDateTime(lockedAt)}` : t.datasets.lockedBadge}
+                              </span>
+                              <Link to={`/vision/models?golden=${snapId}`} className={styles.quickActionLink}>
+                                {t.datasets.evalNowLink}
+                              </Link>
+                            </div>
+                          ) : s.kind === 'golden' && canFreeze ? (
+                            <ReasonAction
+                              label={t.datasets.freeze}
+                              variant="accent"
+                              onStepUp={handleStepUp}
+                              onSubmit={(reason) => freeze.mutateAsync({ id: s.id, reason })}
+                            />
+                          ) : s.kind === 'golden' ? (
+                            <Badge tone="warning">{t.datasets.awaitingLeadFreeze}</Badge>
+                          ) : (
+                            <div className={styles.actionCellGroup}>
+                              <Badge tone="neutral">{t.datasets.trainBadge}</Badge>
+                              <Link to={`/vision/models?train=${snapId}`} className={styles.quickActionLink}>
+                                {t.datasets.registerModelLink}
+                              </Link>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

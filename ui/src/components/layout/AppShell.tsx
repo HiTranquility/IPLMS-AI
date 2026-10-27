@@ -11,7 +11,7 @@ import { useWorkspaceStore } from '@/stores/useWorkspaceStore';
 import type { Me } from '@/types/auth';
 import { LanguageSwitch } from './LanguageSwitch';
 import { PersonaSwitcher } from './PersonaSwitcher';
-import { allowed, NAV_GROUPS } from './navigation';
+import { allowed, getEffectivePersona, NAV_GROUPS } from './navigation';
 import styles from './AppShell.module.css';
 
 export interface AppShellProps {
@@ -28,7 +28,8 @@ export function AppShell({ me, children }: AppShellProps) {
   const { t } = useI18n();
   const logout = useLogout();
   const { theme, toggleTheme } = useThemeStore();
-  const { persona } = useWorkspaceStore();
+  const { persona, setPersona } = useWorkspaceStore();
+  const effectivePersona = getEffectivePersona(me, persona);
   const location = useLocation();
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -113,9 +114,15 @@ export function AppShell({ me, children }: AppShellProps) {
     }
   };
 
+  useEffect(() => {
+    if (effectivePersona !== persona) {
+      setPersona(effectivePersona);
+    }
+  }, [effectivePersona, persona, setPersona]);
+
   const groups = NAV_GROUPS.map((group) => ({
     ...group,
-    items: group.items.filter((item) => allowed(item, me.permissions, persona)),
+    items: group.items.filter((item) => allowed(item, me.permissions, effectivePersona)),
   })).filter((group) => group.items.length > 0);
 
   const formatUserRoles = () => {
@@ -131,6 +138,10 @@ export function AppShell({ me, children }: AppShellProps) {
   };
 
   const isSettingsActive = location.pathname.startsWith('/settings');
+  const canOpenSettings = allowed(
+    { permissions: ['ai:metrics:read', 'ai:member:manage', 'ai:audit:read'] },
+    me.permissions,
+  );
   const isCompact = railCollapsed && !drawerOpen;
 
   return (
@@ -256,16 +267,18 @@ export function AppShell({ me, children }: AppShellProps) {
                 >
                   {theme === 'dark' ? <Sun size={14} aria-hidden /> : <Moon size={14} aria-hidden />}
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={isSettingsActive ? styles.settingsButtonActive : undefined}
-                  onClick={() => navigate('/settings')}
-                  aria-label={t.nav.settings}
-                  title={t.nav.settings}
-                >
-                  <Settings size={14} aria-hidden />
-                </Button>
+                {canOpenSettings && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={isSettingsActive ? styles.settingsButtonActive : undefined}
+                    onClick={() => navigate('/settings')}
+                    aria-label={t.nav.settings}
+                    title={t.nav.settings}
+                  >
+                    <Settings size={14} aria-hidden />
+                  </Button>
+                )}
               </div>
             </div>
             <Button

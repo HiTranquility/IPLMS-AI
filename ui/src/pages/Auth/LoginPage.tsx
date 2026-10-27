@@ -1,5 +1,6 @@
 import { AlertTriangle, KeyRound, LockKeyhole, Moon, ShieldCheck, Sun } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
+import { StarTechBackground } from '@/components/common/Background/StarTechBackground';
 import { Button } from '@/components/common/Ui/button/Button';
 import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
 import { TextField } from '@/components/common/Ui/form/Field';
@@ -64,7 +65,7 @@ export function LoginPage() {
 
   return (
     <div className={styles.page}>
-
+      <StarTechBackground />
       <main className={styles.container}>
         <section className={styles.panel} aria-labelledby="login-title">
           {/* Top Brand / Meta Bar */}

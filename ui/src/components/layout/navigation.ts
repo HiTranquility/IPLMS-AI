@@ -99,10 +99,6 @@ export function getAvailablePersonas(me: Me): WorkspacePersona[] {
   const isSuper = me.roles.includes('ai_lead') || me.roles.includes('ai_console_admin') || me.roles.length >= 3;
   const list: WorkspacePersona[] = [];
 
-  if (isSuper) {
-    list.push('all');
-  }
-
   const canAdmin =
     me.roles.includes('ai_console_admin') ||
     me.roles.includes('ai_lead') ||
@@ -132,6 +128,20 @@ export function getAvailablePersonas(me: Me): WorkspacePersona[] {
     me.permissions.includes('ai:chatlog:read');
   if (canAnalytics) list.push('analytics');
 
+  if (isSuper || list.length > 1) {
+    list.unshift('all');
+  }
+
   if (list.length === 0) list.push('all');
   return list;
+}
+
+export function getEffectivePersona(
+  me: Me,
+  currentPersona: WorkspacePersona,
+): WorkspacePersona {
+  const available = getAvailablePersonas(me);
+  return available.includes(currentPersona)
+    ? currentPersona
+    : (available[0] ?? 'all');
 }

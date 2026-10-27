@@ -1,11 +1,11 @@
 import { ChevronDown } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useI18n } from '@/i18n/I18nProvider';
 import { useWorkspaceStore } from '@/stores/useWorkspaceStore';
 import type { Me } from '@/types/auth';
 import type { WorkspacePersona } from '@/types/workspace';
-import { allowed, getAvailablePersonas, NAV_ITEMS, PERSONA_LIST } from './navigation';
+import { allowed, getAvailablePersonas, getEffectivePersona, NAV_ITEMS, PERSONA_LIST } from './navigation';
 import styles from './PersonaSwitcher.module.css';
 
 export interface PersonaSwitcherProps {
@@ -19,6 +19,27 @@ export function PersonaSwitcher({ me, collapsed = false }: PersonaSwitcherProps)
   const location = useLocation();
   const { persona, setPersona } = useWorkspaceStore();
   const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open]);
 
   const availableIds = useMemo(() => getAvailablePersonas(me), [me]);
   const availableList = useMemo(
@@ -26,9 +47,15 @@ export function PersonaSwitcher({ me, collapsed = false }: PersonaSwitcherProps)
     [availableIds],
   );
 
-  const activeId = availableIds.includes(persona) ? persona : availableIds[0];
+  const activeId = getEffectivePersona(me, persona);
   const activeMeta = PERSONA_LIST.find((p) => p.id === activeId) || PERSONA_LIST[0];
   const ActiveIcon = activeMeta.icon;
+
+  useEffect(() => {
+    if (activeId !== persona) {
+      setPersona(activeId);
+    }
+  }, [activeId, persona, setPersona]);
 
   const handleSelect = (targetId: WorkspacePersona) => {
     setPersona(targetId);
@@ -46,7 +73,7 @@ export function PersonaSwitcher({ me, collapsed = false }: PersonaSwitcherProps)
   };
 
   return (
-    <div className={`${styles.wrap} ${collapsed ? styles.wrapCollapsed : ''}`}>
+    <div ref={wrapRef} className={`${styles.wrap} ${collapsed ? styles.wrapCollapsed : ''}`}>
       {availableList.length > 1 ? (
         <>
           <button
@@ -72,13 +99,11 @@ export function PersonaSwitcher({ me, collapsed = false }: PersonaSwitcherProps)
           </button>
 
           {open && (
-            <>
-              <div className={styles.menuBackdrop} onClick={() => setOpen(false)} aria-hidden />
-              <div className={styles.dropdown} role="menu">
+            <div className={styles.dropdown} role="menu">
                 <div className={styles.dropdownHeader}>{t.workspace.title}</div>
                 {availableList.map((item) => {
                   const ItemIcon = item.icon;
-                  const isCurrent = item.id === persona;
+                  const isCurrent = item.id === activeId;
                   return (
                     <button
                       key={item.id}
@@ -99,7 +124,6 @@ export function PersonaSwitcher({ me, collapsed = false }: PersonaSwitcherProps)
                   );
                 })}
               </div>
-            </>
           )}
         </>
       ) : (

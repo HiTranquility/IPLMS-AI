@@ -30,3 +30,7 @@ Bổ sung bộ test hồi quy tự động cho giao diện AI Console (`ai/ui`) 
 - Đã bổ sung 4 test cases vào `ui/src/api/client.test.ts` (tổng 7/7 pass).
 - Đã bổ sung 3 test cases vào `ui/src/pages/Copilot/CopilotLabPage.test.tsx` (tổng 6/6 pass).
 - Đã kiểm tra `script/check_branch_policy.py`: PASS.
+
+## Definition of Done
+
+- [x] Toàn bộ unit test và kiểm thử tích hợp của hạng mục đạt PASS.
