@@ -137,7 +137,7 @@ export function DocumentPreviewDrawer({ document, onClose }: DocumentPreviewDraw
                     >
                       {copiedOrdinal === 0 ? (
                         <>
-                          <Check size={12} color="#10b981" />
+                          <Check size={12} className={styles.copiedIcon} />
                           <span>{kp.copied}</span>
                         </>
                       ) : (
@@ -180,7 +180,7 @@ export function DocumentPreviewDrawer({ document, onClose }: DocumentPreviewDraw
                     >
                       {copiedOrdinal === chunk.ordinal ? (
                         <>
-                          <Check size={12} color="#10b981" />
+                          <Check size={12} className={styles.copiedIcon} />
                           <span>{kp.copied}</span>
                         </>
                       ) : (
