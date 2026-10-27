@@ -5,8 +5,10 @@ from typing import List, Optional
 
 from fastapi import APIRouter, File, Query, UploadFile
 
+from app.api.rest.image_upload import read_image_upload
 from app.core.vision import AnprItem, AnprService
 from app.api.rest.schemas.base_response import BaseResponse
+from app.util.logger import logger
 
 router = APIRouter(prefix="/anpr", tags=["ANPR"])
 
@@ -18,10 +20,13 @@ async def recognize(
     file: UploadFile = File(...),
     lane_id: Optional[str] = Query(None),
 ) -> AnprResponse:
+    image_bytes = await read_image_upload(file)
     try:
-        result = await AnprService.recognize(file, lane_id=lane_id)
-    except Exception as exc:
-        return AnprResponse.fail(f"Recognition failed: {exc}")
+        result = await AnprService.recognize(image_bytes, lane_id=lane_id)
+    except Exception:
+        # Chi tiết chỉ vào log: message exception có thể lộ đường dẫn/tên model (bug-043).
+        logger.exception("ANPR REST recognize failed")
+        return AnprResponse.fail("Recognition failed")
     return AnprResponse.ok([AnprItem.from_result(result)], "Recognized")
 
 
@@ -35,9 +40,11 @@ async def recognize_many(
 
     items: List[AnprItem] = []
     for file in files:
+        image_bytes = await read_image_upload(file)
         try:
-            result = await AnprService.recognize(file, lane_id=lane_id)
+            result = await AnprService.recognize(image_bytes, lane_id=lane_id)
         except Exception:
+            logger.exception("ANPR REST recognize-many item failed")
             continue
         items.append(AnprItem.from_result(result))
 

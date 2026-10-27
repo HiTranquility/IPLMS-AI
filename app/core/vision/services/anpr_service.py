@@ -13,9 +13,8 @@ from app.util.generate_url import generate_cropped_image_url, generate_original_
 
 class AnprService:
     @staticmethod
-    async def recognize(file, lane_id: Optional[str] = None) -> PlateResult:
-        """Đường REST: nhận UploadFile rồi uỷ cho `recognize_bytes`."""
-        image_bytes = await file.read()
+    async def recognize(image_bytes: bytes, lane_id: Optional[str] = None) -> PlateResult:
+        """Đường REST: nhận bytes đã qua `read_image_upload` (giới hạn byte, định dạng) rồi uỷ cho `recognize_bytes`."""
         command = RecognizePlateCommand(image_data=image_bytes, lane_id=lane_id)
         # YOLO + OCR là CPU-bound — đừng chẹn event loop của FastAPI.
         return await asyncio.to_thread(AnprService.recognize_bytes, command, True)
