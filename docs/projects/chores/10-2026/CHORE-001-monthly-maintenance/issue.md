@@ -20,6 +20,7 @@
 | 3 | BOARD: chuyển bug-015…026 và SUGGESTION-003 (đã merge #50–#55) từ 🙋 xuống ✅, theo `check_drift.py` của gốc | ai ISSUE-004 review-2 | (commit nhánh `chore/CHORE-001-2026-10-board-sweep`) |
 | 4 | Xác nhận mục 3b `AI_USAGE.md` phần Chủ M2 (Telemetry Copilot `ai_request_log_store.py`, `usage_service.py`) và cập nhật `BOARD.md` tiến độ của Dương (@23110012) | IPLMS ISSUE-126 phase-6 6.6 | (commit này) |
 | 5 | Viết lại `README.md` (chạy, biến môi trường không giá trị, tài khoản test, đối chiếu đề Final Project) và `ui/README.md` (màn hình hiện tại, cấu trúc `src/`); thêm README cho `app/`, `test/`, `data/`, `docker/`, `script/`. Lỗ hổng so với đề ghi ở bug-032 | `docs/references/final-project-assignment-guidelines.md` §9 | (commit này) |
+| 6 | Audit một lượt phần vào develop ngày 27/10 ([AUDIT-007](../../../audits/10-2026/AUDIT-007-develop-2026-10-27-console-knowledge-settings.md)) và mở hồ sơ [bug-039](../../../bugs/bug-039-trang-knowledge-mau-ghi-cung-vo-tuong-phan-theme-sang/bug.md), [bug-040](../../../bugs/bug-040-history-copilot-khong-qua-rao-chan-dau-vao/bug.md). Chỉ ghi hồ sơ, việc sửa đi nhánh bugfix riêng | AUDIT-007 | (commit này) |
 
 ## Tiêu chí chấp nhận
 
