@@ -9,6 +9,7 @@ from app.core.copilot.dtos.copilot_dto import (
     UsageSummary,
     tuning_kwargs,
 )
+from app.core.copilot.guardrails.pii_redactor import redact
 from app.core.copilot.services.copilot_service import CopilotService, copilot_service
 from app.core.copilot.services.usage_service import CopilotUsageService, usage_service
 
@@ -26,6 +27,7 @@ __all__ = [
     "UsageSummary",
     "copilot_service",
     "copilot_usage_service",
+    "redact",
     "tuning_kwargs",
     "usage_service",
 ]

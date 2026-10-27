@@ -46,7 +46,7 @@ Khi User đưa vào **bất kỳ ý tưởng (Idea), vấn đề mới (Problem)
 - Python: FastAPI + gRPC cho ANPR, Forecast, Copilot/RAG; huấn luyện ở `training/`, notebook ở `notebook/`.
 - Quy ước: [AI_CONVENTIONS](docs/standards/AI_CONVENTIONS.md). Hợp đồng ANPR lấy từ tài liệu này, proto và code; skill `anpr-pipeline` ở repo gốc là bản cũ viết cho C#.
 - Mở 1–2 file cùng loại trong cùng thư mục và theo đúng cách đang làm trước khi viết mới.
-- Tính năng gọi LLM theo [ADR-0029](../docs/projects/adrs/10-2026/0029-nguyen-tac-guardrail-llm.md) ở repo gốc: LLM không cầm quyền, đầu vào độc mặc định, đầu ra qua kiểm tất định (`app/core/copilot/engines/output_guard.py`), đổi prompt/guard phải chạy lại bộ tấn công.
+- Tính năng gọi LLM theo [ADR-0029](../docs/projects/adrs/10-2026/0029-nguyen-tac-guardrail-llm.md) ở repo gốc: LLM không cầm quyền, đầu vào độc mặc định, đầu ra qua kiểm tất định (`app/core/copilot/guardrails/output_guard.py`), đổi prompt/guard phải chạy lại bộ tấn công.
 
 ## Kiểm chứng
 

@@ -8,7 +8,7 @@
 !ai/static/cropped/.gitkeep
 !ai/static/original/.gitkeep
 !ai/data/knowledge/*.json
-!ai/data/prompts/*.txt
+!ai/data/prompts/**
 !proto/*.proto
 **/__pycache__/**
 **/*.py[cod]
