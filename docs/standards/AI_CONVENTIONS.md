@@ -15,7 +15,7 @@ Python dùng `snake_case` cho file/hàm, `PascalCase` cho class, `UPPER_SNAKE_CA
 
 Luật viết code cho plane `ai/`. Stack: Python · FastAPI · gRPC · YOLO + EasyOCR · pgvector · Parquet.
 
-> Phân tầng §1 sạch (quét 2026-09-11). Khuôn domain §2 đổi theo [ADR-0005](../projects/adrs/10-2026/0005-khuon-domain-core-ba-thu-muc-va-slot-tuy-chon.md) ngày 2026-10-27; code đưa về khuôn trong [ISSUE-023](../projects/issues/10-2026/ISSUE-023-khuon-domain-core/issue.md) (2026-10-28), hai ngoại lệ tạm ghi trong bảng "Không thuộc `core/`".
+> Phân tầng §1 sạch (quét 2026-09-11). Khuôn domain §2 đổi theo [ADR-0005](../projects/adrs/10-2026/0005-khuon-domain-core-ba-thu-muc-va-slot-tuy-chon.md) ngày 2026-10-27; code đưa về khuôn trong [ISSUE-023](../projects/issues/10-2026/ISSUE-023-khuon-domain-core/issue.md) (2026-10-28); ngoại lệ còn lại ghi trong bảng "Không thuộc `core/`".
 
 ## 1. Ba tầng — và hướng phụ thuộc
 
@@ -64,7 +64,7 @@ app/core/<domain>/
 | Thứ | Chỗ đúng |
 |---|---|
 | Text gửi LLM: system prompt, khuôn user message, JSON schema output | `data/prompts/<tên>/vN.md` (+ `user.md`, `schema.json`), nạp qua `prompt_store` (`app/infra/llm/prompts.py`) |
-| Đọc file / DB / lake | `app/infra/` (ngoại lệ tạm: `forecast/engines/parquet_lake_reader.py`, xem ADR-0005 mục 3) |
+| Đọc file / DB / lake | `app/infra/` (Parquet occupancy: `infra/datalake/parquet_occupancy_store.py`) |
 | Dữ liệu mẫu, adapter giả | `test/` hoặc `app/script/` (ngoại lệ: `copilot/workflows/dispute/fixtures.py` khi workflow chưa nối backend) |
 
 Hiện có: `copilot_rag_system` (Copilot), `eval_judge`, `eval_generator` (knowledge_eval).
