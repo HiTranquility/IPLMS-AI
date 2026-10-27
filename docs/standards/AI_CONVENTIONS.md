@@ -2,7 +2,7 @@
 status: canonical
 audience: AI coding agents + developers
 applies-to: `ai/` — Python service (FastAPI REST + gRPC), ANPR · Forecast · Copilot
-verified-against-code: 2026-10-27 — §1, §3–§8 đọc trực tiếp từ `ai/app/`; §2 là khuôn đích theo ADR-0005, lệch còn lại theo dõi ở ISSUE-023
+verified-against-code: 2026-10-28 — đọc trực tiếp từ `ai/app/`; §2 kiểm bằng `script/check_core_layout.py` (0 lệch)
 ---
 
 # 🧠 AI Conventions — IPLMS
@@ -15,7 +15,7 @@ Python dùng `snake_case` cho file/hàm, `PascalCase` cho class, `UPPER_SNAKE_CA
 
 Luật viết code cho plane `ai/`. Stack: Python · FastAPI · gRPC · YOLO + EasyOCR · pgvector · Parquet.
 
-> Phân tầng §1 sạch (quét 2026-09-11). Khuôn domain §2 đổi theo [ADR-0005](../projects/adrs/10-2026/0005-khuon-domain-core-ba-thu-muc-va-slot-tuy-chon.md) ngày 2026-10-27; code đang được đưa về khuôn trong [ISSUE-023](../projects/issues/10-2026/ISSUE-023-khuon-domain-core/issue.md), chỗ còn lệch liệt kê ở đó.
+> Phân tầng §1 sạch (quét 2026-09-11). Khuôn domain §2 đổi theo [ADR-0005](../projects/adrs/10-2026/0005-khuon-domain-core-ba-thu-muc-va-slot-tuy-chon.md) ngày 2026-10-27; code đưa về khuôn trong [ISSUE-023](../projects/issues/10-2026/ISSUE-023-khuon-domain-core/issue.md) (2026-10-28), hai ngoại lệ tạm ghi trong bảng "Không thuộc `core/`".
 
 ## 1. Ba tầng — và hướng phụ thuộc
 
@@ -48,25 +48,29 @@ app/core/<domain>/
 ├── services/       [bắt buộc] điều phối một lượt use case
 ├── workflows/      [tuỳ chọn] đồ thị nhiều bước có checkpoint (LangGraph)
 ├── guardrails/     [tuỳ chọn] luật / regex an toàn cho đầu vào–đầu ra
-├── constants.py    [tuỳ chọn] ngưỡng tinh chỉnh chỉ domain này dùng
-└── messages.py     [tuỳ chọn] text hiện cho người dùng + marker nhận diện đi kèm
+├── constants.py    [tuỳ chọn] hằng số chỉ domain này dùng
+├── messages.py     [tuỳ chọn] text hiện cho người dùng
+└── README.md       [tuỳ chọn] sơ đồ và mô tả domain
 ```
 
-- **[NEVER]** tạo thư mục/file ngoài danh sách trên. Cần slot mới thì sửa ADR-0005 trước. `script/check_core_layout.py` kiểm luật này (ISSUE-023).
+- **[NEVER]** tạo thư mục/file ngoài danh sách trên. Cần slot mới thì sửa ADR-0005 trước. CI chạy `script/check_core_layout.py` để kiểm.
 - **[NEVER]** tạo thư mục rỗng chỉ để đủ khuôn. Domain chưa có DTO/engine thật thì để trống, thêm khi có.
-- **[MUST]** Câu trả lời mẫu và marker nhận diện nó nằm **cùng** `messages.py`. Code eval/script nhận diện câu từ chối thì import marker, không tự viết regex riêng.
-- **[MUST]** Code dùng chung giữa hai domain ở lại domain sở hữu, domain kia import qua `__init__`. Hằng số dùng ≥2 domain ở gốc `core/constants.py`. Gốc `core/` chỉ có `constants.py` · `enums.py` · `exceptions.py`.
+- **[MUST]** Hằng số dùng ≥2 domain ở gốc `core/constants.py`; hằng chỉ một domain dùng ở `<domain>/constants.py`; ngưỡng riêng một module giữ cạnh code dùng nó. Gốc `core/` chỉ có `constants.py` · `enums.py` · `exceptions.py`.
+- **[MUST]** Code dùng chung giữa hai domain ở lại domain sở hữu, domain kia import qua `__init__`.
+- **[GOTCHA]** Import bất kỳ module nào trong một domain (kể cả `messages.py`) là chạy `__init__.py` của domain đó, kéo cả service và thư viện nặng (copilot ~2,3 s). Module cần nhẹ (như `knowledge_eval/engines/grader.py`, chỉ dùng stdlib) thì không import chéo domain. Muốn ràng buộc thì dùng test hợp đồng. Ví dụ: marker câu từ chối ở `grader.py`, và `test_knowledge_eval.py` kiểm nó nhận ra `copilot.messages.NO_CONTEXT_ANSWER`.
 
 ### Không thuộc `core/`
 
 | Thứ | Chỗ đúng |
 |---|---|
-| Text gửi LLM: system prompt, khuôn user message, JSON schema output | `data/prompts/<tên>/vN.md` (+ `user.md`, `schema.json`); loader ở `app/infra/llm/` |
-| Đọc file / DB / lake | `app/infra/` |
-| Dữ liệu mẫu, adapter giả | `test/` hoặc `app/script/` |
+| Text gửi LLM: system prompt, khuôn user message, JSON schema output | `data/prompts/<tên>/vN.md` (+ `user.md`, `schema.json`), nạp qua `prompt_store` (`app/infra/llm/prompts.py`) |
+| Đọc file / DB / lake | `app/infra/` (ngoại lệ tạm: `forecast/engines/parquet_lake_reader.py`, xem ADR-0005 mục 3) |
+| Dữ liệu mẫu, adapter giả | `test/` hoặc `app/script/` (ngoại lệ: `copilot/workflows/dispute/fixtures.py` khi workflow chưa nối backend) |
+
+Hiện có: `copilot_rag_system` (Copilot), `eval_judge`, `eval_generator` (knowledge_eval).
 
 - **[NEVER]** viết prompt dạng chuỗi trong `.py` (`"""Bạn là…"""`, `INSTRUCTIONS = """…`), kể cả làm fallback. Thiếu file prompt thì khởi động báo lỗi.
-- **[MUST]** Sửa nội dung prompt thì tạo `vN+1.md`, không sửa đè bản đang chạy. Telemetry ghi nhãn `<tên>_<version>#<hash8>`. Backend đọc nhãn này qua `promptVersion`, nên **[NEVER]** đổi dạng nhãn.
+- **[MUST]** Sửa nội dung prompt thì tạo `vN+1.md` (bản số lớn nhất tự được dùng), không sửa đè bản đang chạy. Telemetry ghi nhãn `<tên>_<version>#<hash8>`. Backend đọc nhãn này qua `promptVersion`, nên **[NEVER]** đổi dạng nhãn.
 - **[MUST]** Đổi prompt hoặc guardrail thì chạy lại `app/script/redteam_copilot.py` (IPLMS ADR-0029).
 
 ### Public API của domain

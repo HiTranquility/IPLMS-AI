@@ -77,6 +77,12 @@ jobs:
       - name: Compile Python sources
         run: python -m compileall -q app model training test
 
+      # ADR-0005: khuôn domain app/core/ và không có prompt viết cứng.
+      - name: Check core layout
+        run: |
+          python -B -m unittest discover -s script -p test_check_core_layout.py
+          python -X utf8 script/check_core_layout.py
+
   ui:
     name: Build AI Console UI
     runs-on: ubuntu-latest
