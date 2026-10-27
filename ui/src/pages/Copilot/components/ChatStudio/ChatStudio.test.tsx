@@ -51,11 +51,11 @@ describe('ChatStudio Component', () => {
     const inspectorToggle = screen.getByRole('button', { name: 'Mở ngăn kéo kiểm định' });
     await user.click(inspectorToggle);
 
-    expect(screen.getByText('Trích dẫn RAG')).toBeTruthy();
+    expect(screen.getByText('Trích dẫn')).toBeTruthy();
     expect(screen.getByText('Kho tri thức')).toBeTruthy();
-    expect(screen.getByText('Mô phỏng phân xử')).toBeTruthy();
-    expect(screen.getByText('Chỉ số thực thi')).toBeTruthy();
-    expect(screen.getByText('Tham số thử nghiệm')).toBeTruthy();
+    expect(screen.getByText('Phân xử')).toBeTruthy();
+    expect(screen.getByText('Chỉ số')).toBeTruthy();
+    expect(screen.getByText('Tham số')).toBeTruthy();
   });
 
   // ai bug-018: danh sách lấy từ route thật /tools/knowledge/documents; lỗi thì báo lỗi, không hiện văn bản mẫu.
@@ -102,7 +102,7 @@ describe('ChatStudio Component', () => {
     const user = userEvent.setup();
     renderWithProviders(<ChatStudio />);
     await user.click(screen.getByRole('button', { name: 'Mở ngăn kéo kiểm định' }));
-    await user.click(screen.getByText('Mô phỏng phân xử'));
+    await user.click(screen.getByText('Phân xử'));
 
     expect(screen.getByText('Phân Xử Tranh Chấp (LangGraph)')).toBeTruthy();
     expect(screen.getByText('MÔ PHỎNG')).toBeTruthy();
@@ -129,7 +129,7 @@ describe('ChatStudio Component', () => {
     const user = userEvent.setup();
     renderWithProviders(<ChatStudio />);
     await user.click(screen.getByRole('button', { name: 'Mở ngăn kéo kiểm định' }));
-    await user.click(screen.getByText('Mô phỏng phân xử'));
+    await user.click(screen.getByText('Phân xử'));
     await user.click(screen.getByRole('button', { name: /Chạy Mô Phỏng LangGraph/ }));
 
     await waitFor(() => expect(screen.getByText(/load_evidence/)).toBeTruthy());
@@ -146,7 +146,7 @@ describe('ChatStudio Component', () => {
     await user.click(screen.getByRole('button', { name: 'Mở ngăn kéo kiểm định' }));
 
     // Click tab Tham số thử nghiệm
-    await user.click(screen.getByText('Tham số thử nghiệm'));
+    await user.click(screen.getByText('Tham số'));
 
     expect(screen.getByText(/Gợi ý cấu hình Model/)).toBeTruthy();
     expect(screen.getByText('Gemma 2B')).toBeTruthy();
@@ -177,7 +177,7 @@ describe('ChatStudio Component', () => {
 
     await waitFor(() => expect(screen.getByText(/Phí qua đêm 30\.000đ\./)).toBeTruthy());
     const call = calls.find((c) => c.url.endsWith('/tools/copilot/stream'))!;
-    expect(call.url).toBe('/console/api/tools/copilot/stream');
+    expect(call.url).toBe('/api/tools/copilot/stream');
     const body = JSON.parse(String(call.init?.body));
     expect(Object.keys(body).sort()).toEqual([...ASK_BODY_FIELDS].sort());
     expect(body.parking_lot_id).toBeNull();

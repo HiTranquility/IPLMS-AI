@@ -20,11 +20,12 @@ class AskQuestionRequest(BaseModel):
     top_k: Optional[int] = None
     min_similarity: Optional[float] = None
     temperature: Optional[float] = None
+    history: Optional[List[dict]] = None
 
 
 def tuning_kwargs(request: "AskQuestionRequest") -> dict:
     """Chỉ những tham số thử đã đặt, để caller cũ và pipeline giả trong test giữ chữ ký."""
-    names = ("top_k", "min_similarity", "temperature")
+    names = ("top_k", "min_similarity", "temperature", "history")
     return {name: getattr(request, name) for name in names if getattr(request, name, None) is not None}
 
 
@@ -41,6 +42,7 @@ class AnswerChunk(BaseModel):
     token: str
     is_finished: bool
     sources: List[str] = Field(default_factory=list)
+    citations: List[dict] = Field(default_factory=list)
     confidence: Optional[float] = None
     refused: bool = False
     guardrail_triggered: Optional[str] = None
@@ -52,7 +54,7 @@ class AnswerChunk(BaseModel):
     output_tokens: Optional[int] = None
     speed_tok_s: Optional[float] = None
     context_tokens: Optional[int] = None
-    context_limit: Optional[int] = 4096
+    context_limit: Optional[int] = None
 
 
 class DisputeArbitrationRequest(BaseModel):

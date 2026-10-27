@@ -26,7 +26,7 @@ class ConsoleConfig(BaseConfig):
     # OAuth client "Web application" tạo trên Google Cloud Console.
     google_client_id: str = ""
     google_client_secret: str = ""
-    google_redirect_uri: str = "http://localhost:8090/console/api/auth/google/callback"
+    google_redirect_uri: str = "http://localhost:8090/api/auth/google/callback"
 
     # Khoá Fernet mã hoá secret TOTP trong DB; sinh bằng
     # `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`.

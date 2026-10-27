@@ -289,7 +289,7 @@ export function ChatMessageBubble({
               )}
               {message.speedTokPerSec != null && (
                 <span className="num" title={t.copilot.speedTitle}>
-                  {message.speedTokPerSec} t/s
+                  {message.speedTokPerSec} tok/s
                 </span>
               )}
               {message.outputTokens != null && (

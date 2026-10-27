@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSystemCheck } from '@/hooks/queries/useToolQueries';
 import { useI18n } from '@/i18n/I18nProvider';
 import { API_BASE, ApiError } from '@/services/apiClient';
@@ -23,6 +24,7 @@ import styles from './ChatStudio.module.css';
 export function ChatStudio() {
   const { t } = useI18n();
   const c = t.copilot;
+  const navigate = useNavigate();
   const presets: PromptPreset[] = [
     { id: 'p1', category: c.p1Category, title: c.p1Title, query: c.p1Query },
     { id: 'p2', category: c.p2Category, title: c.p2Title, query: c.p2Query },
@@ -124,12 +126,22 @@ export function ChatStudio() {
     let inputTokens = 0;
     let outputTokens = 0;
     let speedTokPerSec = 0;
+    let contextTokens = 0;
+    let contextLimit = 4096;
     let refused = false;
     let guardrailTriggered: string | undefined;
     let confidence: number | undefined;
     let turnId = '';
 
     try {
+      const history = messages
+        .filter((m) => !m.isStreaming && m.content)
+        .slice(-4)
+        .map((m) => ({
+          role: m.role,
+          content: m.content.slice(0, 1000),
+        }));
+
       const response = await fetch(`${API_BASE}${TOOL_ENDPOINTS.TRY_COPILOT_STREAM}`, {
         method: 'POST',
         credentials: 'same-origin',
@@ -137,7 +149,7 @@ export function ChatStudio() {
           'Content-Type': 'application/json',
           'X-Console-Request': '1',
         },
-        body: JSON.stringify(buildAskBody(query, params)),
+        body: JSON.stringify(buildAskBody(query, params, history)),
         signal: controller.signal,
       });
 
@@ -178,7 +190,15 @@ export function ChatStudio() {
 
               // Trường SSE theo console_tools_controller.try_copilot_stream.
               if (typeof parsed.token === 'string') accumulatedContent += parsed.token;
-              if (Array.isArray(parsed.sources) && parsed.sources.length > 0) {
+              if (Array.isArray(parsed.citations) && parsed.citations.length > 0) {
+                ragSourcesExtracted = parsed.citations.map((item: any) => ({
+                  title: item.title || '',
+                  score: typeof item.score === 'number' ? item.score : undefined,
+                  chunkId: item.chunk_id || item.chunkId || undefined,
+                  documentId: item.document_id || item.documentId || undefined,
+                  snippet: item.snippet || undefined,
+                }));
+              } else if (Array.isArray(parsed.sources) && parsed.sources.length > 0) {
                 ragSourcesExtracted = parsed.sources.map((title: string) => ({ title }));
               }
               if (parsed.refused) refused = true;
@@ -191,6 +211,8 @@ export function ChatStudio() {
               if (parsed.input_tokens) inputTokens = parsed.input_tokens;
               if (parsed.output_tokens) outputTokens = parsed.output_tokens;
               if (parsed.speed_tok_s) speedTokPerSec = parsed.speed_tok_s;
+              if (parsed.context_tokens) contextTokens = parsed.context_tokens;
+              if (parsed.context_limit) contextLimit = parsed.context_limit;
 
               setMessages((prev) =>
                 prev.map((m) =>
@@ -204,6 +226,8 @@ export function ChatStudio() {
                         inputTokens: inputTokens || m.inputTokens,
                         outputTokens: outputTokens || m.outputTokens,
                         speedTokPerSec: speedTokPerSec || m.speedTokPerSec,
+                        contextTokens: contextTokens || m.contextTokens,
+                        contextLimit: contextLimit || m.contextLimit,
                       }
                     : m,
                 ),
@@ -239,6 +263,8 @@ export function ChatStudio() {
                 latencyMs: computedLatency,
                 outputTokens: computedOutputTokens || undefined,
                 speedTokPerSec: computedSpeed,
+                contextTokens: contextTokens || m.contextTokens,
+                contextLimit: contextLimit || m.contextLimit,
                 userQuery: query,
               }
             : m,
@@ -324,6 +350,17 @@ export function ChatStudio() {
 
   const handleAskAboutDocument = (doc: SeedDocument) => {
     const prompt = c.askAboutDoc(doc.title);
+    setInputQuery(prompt);
+    inputRef.current?.focus();
+  };
+
+  const handleViewFullDocument = (docOrId: SeedDocument | string) => {
+    const docId = typeof docOrId === 'string' ? docOrId : (docOrId.id || docOrId.title);
+    navigate(`/knowledge?docId=${encodeURIComponent(docId)}`);
+  };
+
+  const handleAskAboutCitation = (source: RagSource) => {
+    const prompt = c.askAboutCitationPrompt(source.title);
     setInputQuery(prompt);
     inputRef.current?.focus();
   };
@@ -454,6 +491,8 @@ export function ChatStudio() {
           selectedCitation={selectedCitation}
           onAskAboutDocument={handleAskAboutDocument}
           onAskAboutDispute={handleAskAboutDispute}
+          onViewFullDocument={handleViewFullDocument}
+          onAskAboutCitation={handleAskAboutCitation}
         />
       </div>
     </div>

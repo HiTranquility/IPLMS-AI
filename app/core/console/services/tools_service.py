@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import importlib.metadata
+import json
 import os
 from typing import Any, Optional
 from uuid import UUID
@@ -28,6 +29,7 @@ from app.core.forecast import _resolve_default_gold_lake_path, forecast_service
 from app.core.knowledge.dtos.knowledge_dto import IngestDocumentCommand
 from app.core.vision import AnprService, RecognizePlateCommand, VehicleMatchQuery, anti_fraud_service
 from app.infra.database.console_store import console_store
+from app.util.logger import logger
 
 CONSOLE_TRY_TASK = "console_try"
 # Ảnh thử ANPR trên console: cùng trần với tệp tri thức, đủ cho ảnh camera cổng.
@@ -51,6 +53,7 @@ def _engine_status(vision) -> dict[str, Any]:
     loaded_yolo = loaded_ocr = None
     try:
         # Chỉ lazy-import adapter chứa trọng số nặng YOLO/EasyOCR để không ép nạp PyTorch khi khởi động.
+        cfg = get_config()
         from app.core.vision.engines.anpr import models as anpr_models
 
         loaded_yolo = anpr_models.yolo_model() is not None
@@ -192,6 +195,104 @@ def _detect_compute_profile(cfg) -> str:
     return "custom"
 
 
+def _reload_llm(cfg) -> dict[str, Any]:
+    """Khởi động lại / nạp lại mô hình LLM theo cấu hình hiện thời."""
+    prov = getattr(cfg.llm, "llm_provider", "local")
+    if prov == "local":
+        from app.infra.llm.llama_server_manager import llama_server_manager
+        return llama_server_manager.restart_server(cfg)
+    elif prov == "ollama":
+        import urllib.request
+        base = getattr(cfg.llm, "ollama_url", "http://127.0.0.1:11434/v1").rstrip("/")
+        api_base = base[:-3] if base.endswith("/v1") else base
+        generate_url = f"{api_base}/api/generate"
+        model_name = getattr(cfg.llm, "active_model_name", "qwen2.5:0.5b")
+        req_data = json.dumps({"model": model_name, "keep_alive": "5m"}).encode("utf-8")
+        req = urllib.request.Request(
+            generate_url,
+            data=req_data,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=10.0) as resp:
+                return {"status": "ok", "provider": "ollama", "model": model_name}
+        except Exception as e:
+            return {"status": "warning", "provider": "ollama", "model": model_name, "message": str(e)}
+    return {"status": "noop", "provider": prov}
+
+
+def _detect_available_models(cfg) -> list[dict[str, Any]]:
+    """Dò tìm các mô hình LLM có sẵn trên máy dev: file GGUF, llama-server hoặc Ollama."""
+    models: list[dict[str, Any]] = []
+    seen = set()
+
+    # 1. Quét các file GGUF trong thư mục model/checkpoint/llm/
+    try:
+        from pathlib import Path
+        repo_root = Path(__file__).resolve().parents[4]
+        gguf_dir = repo_root / "model" / "checkpoint" / "llm"
+        if gguf_dir.is_dir():
+            for p in sorted(gguf_dir.glob("*.gguf")):
+                name = p.stem
+                if name not in seen:
+                    seen.add(name)
+                    size_mb = round(p.stat().st_size / (1024 * 1024), 1)
+                    size_str = f"{round(size_mb / 1024, 2)} GB" if size_mb > 1024 else f"{size_mb} MB"
+                    models.append({
+                        "name": name,
+                        "provider": "local",
+                        "source": "gguf_file",
+                        "label": f"{name} ({size_str} - GGUF Local)",
+                    })
+    except Exception:
+        pass
+
+    # 2. Dò llama-server nếu đang chạy
+    try:
+        local_url = getattr(cfg.llm, "local_llm_url", "http://127.0.0.1:8005/v1")
+        models_url = f"{local_url.rstrip('/')}/models"
+        import urllib.request
+        with urllib.request.urlopen(models_url, timeout=0.3) as r:
+            if r.status == 200:
+                data = json.loads(r.read().decode())
+                for m in data.get("data", []):
+                    m_id = m.get("id")
+                    if m_id and m_id not in seen:
+                        seen.add(m_id)
+                        models.append({
+                            "name": m_id,
+                            "provider": "local",
+                            "source": "llama_server",
+                            "label": f"{m_id} (llama-server CUDA)",
+                        })
+    except Exception:
+        pass
+
+    # 3. Dò Ollama nếu đang chạy
+    try:
+        ollama_url = getattr(cfg.llm, "ollama_url", "http://127.0.0.1:11434/v1")
+        tags_url = f"{ollama_url.rstrip('/').removesuffix('/v1')}/api/tags"
+        import urllib.request
+        with urllib.request.urlopen(tags_url, timeout=0.3) as r:
+            if r.status == 200:
+                data = json.loads(r.read().decode())
+                for m in data.get("models", []):
+                    m_name = m.get("name")
+                    if m_name and m_name not in seen:
+                        seen.add(m_name)
+                        models.append({
+                            "name": m_name,
+                            "provider": "ollama",
+                            "source": "ollama_tag",
+                            "label": f"{m_name} (Ollama Local)",
+                        })
+    except Exception:
+        pass
+
+    return models
+
+
 class ConsoleToolsService:
     def __init__(self, store=None, copilot=None, ingestion=None) -> None:
         self.store = store or console_store
@@ -320,7 +421,7 @@ class ConsoleToolsService:
     async def try_copilot_stream(
         self, actor: ConsoleActor, query: str, parking_lot_id: Optional[str] = None,
         top_k: Optional[int] = None, min_similarity: Optional[float] = None,
-        temperature: Optional[float] = None,
+        temperature: Optional[float] = None, history: Optional[List[dict]] = None,
     ):
         # Tham số thử chỉ dùng được với quyền sửa prompt, cùng quyền của cả lượt thử.
         access_policy.require(actor, "ai:prompt:edit")
@@ -331,6 +432,7 @@ class ConsoleToolsService:
             query=query, user_id=actor.member_id, user_role="console",
             parking_lot_id=_lot(parking_lot_id), preview=True,
             top_k=top_k, min_similarity=min_similarity, temperature=temperature,
+            history=history,
         )
         async for chunk in self.copilot.stream_answer(request):
             yield chunk
@@ -338,7 +440,7 @@ class ConsoleToolsService:
     async def try_copilot(
         self, actor: ConsoleActor, query: str, parking_lot_id: Optional[str] = None,
         top_k: Optional[int] = None, min_similarity: Optional[float] = None,
-        temperature: Optional[float] = None,
+        temperature: Optional[float] = None, history: Optional[List[dict]] = None,
     ) -> CopilotAnswer:
         access_policy.require(actor, "ai:prompt:edit")
         query = (query or "").strip()
@@ -348,6 +450,7 @@ class ConsoleToolsService:
             query=query, user_id=actor.member_id, user_role="console",
             parking_lot_id=_lot(parking_lot_id), preview=True,
             top_k=top_k, min_similarity=min_similarity, temperature=temperature,
+            history=history,
         )
         return await self.copilot.ask_question(request, task=CONSOLE_TRY_TASK)
 
@@ -511,6 +614,7 @@ class ConsoleToolsService:
                 "local_llm_ctx_size": int(cfg.llm.local_llm_ctx_size),
                 "local_llm_threads": int(cfg.llm.local_llm_threads),
                 "local_llm_parallel_slots": int(cfg.llm.local_llm_parallel_slots),
+                "detected_models": await asyncio.to_thread(_detect_available_models, cfg),
             },
             "policy": {
                 "rag_min_similarity": float(cfg.llm.rag_min_similarity),
@@ -543,6 +647,22 @@ class ConsoleToolsService:
             f"ctx={cfg.llm.local_llm_ctx_size}, threads={cfg.llm.local_llm_threads})"
         )
         await self.store.add_audit(actor.member_id, "settings.compute", "runtime_config", "compute", summary)
+
+        # Tự động Hot Reload mô hình LLM nếu có thay đổi thông số phần cứng LLM
+        llm_changed = any(
+            k in payload and payload[k] is not None
+            for k in (
+                "llm_model", "local_llm_gpu_layers", "local_llm_ctx_size",
+                "local_llm_threads", "local_llm_parallel_slots", "llm_provider",
+                "preset",
+            )
+        )
+        if llm_changed and cfg.llm.llm_provider in LOCAL_LLM_PROVIDERS:
+            try:
+                await asyncio.to_thread(_reload_llm, cfg)
+            except Exception as exc:
+                logger.warning("Không thể tự động nạp lại LLM sau khi lưu cấu hình: %s", exc)
+
         return await self.get_runtime_settings(actor)
 
     @staticmethod
@@ -658,6 +778,7 @@ class ConsoleToolsService:
     async def engine_action(self, actor: ConsoleActor, action: str) -> dict[str, Any]:
         if not (access_policy.can(actor, "ai:model:evaluate") or access_policy.can(actor, "ai:prompt:edit")):
             access_policy.require(actor, "ai:model:evaluate")
+        cfg = get_config()
         from app.core.vision.engines.anpr import models as anpr_models
 
         if action == "unload":
@@ -672,8 +793,14 @@ class ConsoleToolsService:
                 actor.member_id, "engine.warmup", "vision_engine", "anpr",
                 f"Nạp sẵn model Vision (ready={ok})",
             )
+        elif action in ("reload_llm", "restart_llm"):
+            res = await asyncio.to_thread(_reload_llm, cfg)
+            await self.store.add_audit(
+                actor.member_id, "engine.reload_llm", "llm_engine", getattr(cfg.llm, "llm_provider", "local"),
+                f"Nạp lại mô hình LLM ({res.get('model', 'OK')})",
+            )
         else:
-            raise ValueError("Hành động engine chỉ nhận 'warmup' hoặc 'unload'.")
+            raise ValueError("Hành động engine chỉ nhận 'warmup', 'unload' hoặc 'reload_llm'.")
         return await self.get_runtime_settings(actor)
 
     async def list_sessions(self, actor: ConsoleActor) -> list[dict[str, Any]]:

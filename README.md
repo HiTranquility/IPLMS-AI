@@ -42,7 +42,7 @@ docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod
 | `8000` | REST qua gateway (`GET /health`, `/api/anpr`, `/api/copilot`, …) |
 | `50051` | gRPC qua gateway (h2c), backend gọi bằng alias `ai-gateway` trên mạng chung |
 | `8080` | Traefik dashboard — chỉ develop: <http://127.0.0.1:8080/dashboard/> |
-| `8090` | AI Console: <http://127.0.0.1:8090/console/> (profile `console`) |
+| `8090` | AI Console: <http://127.0.0.1:8090/> (profile `console`) |
 | `5435` | pgvector `database-vector` khi chạy Python native |
 
 Chạy native không qua Docker (REST + gRPC, không đụng container dùng chung): `./start-dev.ps1` hoặc `./start-dev.sh`, cần `.venv` đã cài `requirements.txt`; chuẩn bị môi trường bằng `./setup-dev.ps1` / `./setup-dev.sh`.
@@ -70,7 +70,7 @@ Repo **không** seed sẵn tài khoản kèm mật khẩu. Đăng nhập Console
    ```bash
    python -m app.script.console_admin --email <email> --display-name "<tên>"
    ```
-2. Đăng nhập bằng admin đó, vào **Thành viên** (`/console/members`) mời tài khoản Google của từng người và cấp vai trò (bắt buộc ghi lý do, không tự cấp cho mình).
+2. Đăng nhập bằng admin đó, vào **Thành viên** (`/members`) mời tài khoản Google của từng người và cấp vai trò (bắt buộc ghi lý do, không tự cấp cho mình).
 3. Dữ liệu mẫu cho demo (chỉ chạy được khi `AI_CONSOLE_DEMO_SEED_ENABLED=true`): `python -m app.script.seed_console_demo`.
 
 | Vai trò | Dùng để thử |
