@@ -15,6 +15,9 @@ PLATE_OCR_ALLOWLIST = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-."
 # Trần một ảnh ANPR gửi qua REST (bug-043). Cùng mức 8MB với ANPR thử ở Console;
 # thấp hơn `grpc_max_message_length` (10MB) để ảnh qua REST cũng đi được gRPC.
 ANPR_MAX_IMAGE_BYTES = 8 * 1024 * 1024
+# Trần số ảnh mỗi request `/anpr/recognize-many` (bug-044): mỗi ảnh chạy YOLO + OCR
+# tuần tự trên CPU dùng chung với đường nóng gRPC.
+ANPR_MAX_FILES_PER_REQUEST = 10
 
 # ── Forecast ──────────────────────────────────────────────────────────────────
 FORECAST_SLOT_SECONDS = 1800  # 30 phút
