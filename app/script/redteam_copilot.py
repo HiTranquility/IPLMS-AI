@@ -26,7 +26,7 @@ import asyncio
 import json
 import re
 
-from app.core.copilot.engines.output_guard import GUARD_NOTICE
+from app.core.copilot.guardrails.output_guard import GUARD_NOTICE
 from app.core.copilot.engines.rag_pipeline import RagPipelineEngine
 from app.core.knowledge.engines.injection_scan import find_instructions
 from app.infra.llm.llm_factory import LlmFactory

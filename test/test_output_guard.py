@@ -1,7 +1,7 @@
 import asyncio
 import unittest
 
-from app.core.copilot.engines.output_guard import GUARD_NOTICE, guard_stream, violation
+from app.core.copilot.guardrails.output_guard import GUARD_NOTICE, guard_stream, violation
 from app.core.copilot.engines.rag_pipeline import RagPipelineEngine
 
 CONTEXT = (
