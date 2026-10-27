@@ -4,7 +4,7 @@ Trạng thái: thiết kế hiện hành của P1c (IPLMS ISSUE-126), 2026-10-16
 
 ## Vị trí và ranh giới
 
-- App React độc lập trong repo AI, **không** thuộc monorepo `frontend/` và không import `@iplms/shared`: console chỉ nói chuyện với `app.console_main` cùng nguồn (`/console/api`), không gọi backend NestJS.
+- App React độc lập trong repo AI, **không** thuộc monorepo `frontend/` và không import `@iplms/shared`: console chỉ nói chuyện với `app.console_main` cùng nguồn (`/api`), không gọi backend NestJS.
 - Phiên là cookie httpOnly `SameSite=Strict` do server đặt; UI không đọc/lưu token. Mọi request ghi gửi `X-Console-Request: 1` (chống CSRF, kiểm ở `app/api/rest/console_access.py`).
 - Ẩn nút/menu theo `permissions` của `/me` chỉ là tiện dụng; backend kiểm quyền ở mọi route.
 - Build ra `ui/dist`; `console_main` phục vụ SPA với CSP `default-src 'self'` — không CDN, không font ngoài, không script inline.

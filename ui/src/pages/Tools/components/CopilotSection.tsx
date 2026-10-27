@@ -8,6 +8,7 @@ import { SelectField, TextArea, TextField } from '@/components/common/Ui/form/Fi
 import { useI18n } from '@/i18n/I18nProvider';
 import { fmtPercent } from '@/utils/format';
 import { FormattedAnswer } from '@/components/common/Ui/data-display/FormattedAnswer';
+import { API_BASE } from '@/services/apiClient';
 import styles from '../ToolsPage.module.css';
 
 interface StreamState {
@@ -69,7 +70,7 @@ export function CopilotSection() {
     let tokenChunksReceived = 0;
 
     try {
-      const response = await fetch('/console/api/tools/copilot/stream', {
+      const response = await fetch(`${API_BASE}/tools/copilot/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

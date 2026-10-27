@@ -133,7 +133,7 @@ services:
       - AI_CONSOLE_DATABASE_URL=postgresql://${AI_DB_USER:-postgres}:${AI_DB_PASSWORD:?Thiếu AI_DB_PASSWORD - đặt trong file --env-file (mẫu .env.example)}@database-vector:5432/ai_console
       - AI_CONSOLE_DEMO_SEED_ENABLED=true
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8090/console/api/health')\" || exit 1"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8090/api/health')\" || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 3

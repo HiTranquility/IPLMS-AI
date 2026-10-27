@@ -58,7 +58,6 @@ def set_session_cookie(response: Response, raw: str) -> None:
 
 def clear_session_cookie(response: Response) -> None:
     response.delete_cookie(SESSION_COOKIE, path="/")
-    response.delete_cookie(SESSION_COOKIE, path="/console")
 
 
 def set_flow_cookie(response: Response, browser: str) -> None:
@@ -71,4 +70,3 @@ def set_flow_cookie(response: Response, browser: str) -> None:
 
 def clear_flow_cookie(response: Response) -> None:
     response.delete_cookie(FLOW_COOKIE, path="/")
-    response.delete_cookie(FLOW_COOKIE, path="/console")
