@@ -14,7 +14,7 @@ if _AI_DIR not in sys.path:
 
 from fastapi.testclient import TestClient
 
-from app.core.constants import DEFAULT_FORECAST_HOURS
+from app.core.forecast.constants import DEFAULT_FORECAST_HOURS
 from app.core.enums import OccupancyStatus
 from app.core.forecast.dtos.forecast_dto import (
     AreaOccupancyTelemetryItem,
