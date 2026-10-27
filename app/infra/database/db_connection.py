@@ -187,8 +187,8 @@ def connect_with_fallback(
             if cand_url != db_url:
                 logger.info(
                     "Database Fallback: Chuyển hướng kết nối thành công từ %s sang %s",
-                    urllib.parse.urlsplit(db_url).netloc,
-                    urllib.parse.urlsplit(cand_url).netloc,
+                    _redact_url(db_url),
+                    _redact_url(cand_url),
                 )
             return conn, cand_url
         except Exception as exc:
@@ -197,4 +197,4 @@ def connect_with_fallback(
 
     if last_exc:
         raise last_exc
-    raise psycopg2.OperationalError(f"Không thể kết nối tới bất kỳ ứng viên nào của DB: {candidates}")
+    raise psycopg2.OperationalError(f"Không thể kết nối tới bất kỳ ứng viên nào của DB: {[_redact_url(c) for c in candidates]}")
