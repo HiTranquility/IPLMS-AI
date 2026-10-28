@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 import time
-from typing import Any, AsyncGenerator, Dict, Iterable
+from typing import Any, AsyncGenerator, Dict, Iterable, List, Optional
 
 from app.config import get_config
 from app.core.copilot.guardrails import guardrail_manager, output_guard

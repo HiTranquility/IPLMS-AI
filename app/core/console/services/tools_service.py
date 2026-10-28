@@ -10,7 +10,7 @@ import asyncio
 import importlib.metadata
 import json
 import os
-from typing import Any, Optional
+from typing import Any, List, Optional
 from uuid import UUID
 
 from app.config import get_config
