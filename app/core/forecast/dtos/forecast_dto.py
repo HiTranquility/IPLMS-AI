@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel
 
 from app.core.forecast.constants import DEFAULT_FORECAST_HOURS
-from app.core.enums import OccupancyStatus
+from app.core.enums import ForecastDataSource, OccupancyStatus
 
 # Biểu đồ phân bổ tỷ lệ lấp đầy chuẩn hóa theo giờ trong ngày cho ngày làm việc (0-4) và cuối tuần (5-6)
 _WEEKDAY_HOURLY_BASELINES: Dict[int, float] = {
@@ -45,12 +45,16 @@ class OccupancyForecast(BaseModel):
     parking_lot_id: str
     slots: List[ForecastSlot]
     confidence_score: float
+    data_source: ForecastDataSource = ForecastDataSource.HEURISTIC_BASELINE
+    is_fallback: bool = True
 
 
 class TariffRecommendation(BaseModel):
     parking_lot_id: str
     recommended_multiplier: float
     reason: str
+    data_source: ForecastDataSource = ForecastDataSource.HEURISTIC_BASELINE
+    is_fallback: bool = True
 
 
 class AreaOccupancyTelemetryItem(BaseModel):
@@ -75,7 +79,7 @@ class AreaOccupancyForecastResult(BaseModel):
     estimated_free_spots: int
     confidence_score: float
     slots: List[ForecastSlot] = []
-    data_source: str = "heuristic_baseline"
+    data_source: ForecastDataSource = ForecastDataSource.HEURISTIC_BASELINE
     is_fallback: bool = False
 
 
@@ -87,6 +91,6 @@ class SurgeMultiplierResult(BaseModel):
     base_hourly_rate: float
     adjusted_hourly_rate: float
     reason: str
-    data_source: str = "heuristic_baseline"
+    data_source: ForecastDataSource = ForecastDataSource.HEURISTIC_BASELINE
     is_fallback: bool = False
 
