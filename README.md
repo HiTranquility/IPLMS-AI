@@ -91,6 +91,7 @@ Ma trận quyền đầy đủ: [access_policy.py](app/core/console/engines/acce
 python -m unittest discover -s test -t .        # unit test Python (cần đủ requirements; dễ nhất là chạy trong image iplms-ai)
 python -m app.script.eval_ai_engineering        # bộ eval RAG theo §4.2 (data/knowledge/eval_set*.json)
 python -m app.script.redteam_copilot            # bộ tấn công prompt injection / ngoài phạm vi
+python -m app.script.redteam_agent --attacker-model qwen2.5:3b   # sinh biến thể tấn công, đo tỉ lệ lọt (ISSUE-026)
 pnpm --dir ui typecheck && pnpm --dir ui test   # AI Console
 python -m training.readiness --scope vision     # model đủ điều kiện phục vụ chưa
 ```
