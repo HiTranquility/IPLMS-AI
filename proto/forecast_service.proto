@@ -22,6 +22,15 @@ enum OccupancyStatus {
   CRITICAL = 4;
 }
 
+// Nguồn số của kết quả forecast — từ vựng do AI service sở hữu (IPLMS REQ-022 F2).
+// UNSPECIFIED = AI service cũ chưa gửi; bên nhận coi như HEURISTIC_BASELINE.
+enum ForecastDataSource {
+  FORECAST_DATA_SOURCE_UNSPECIFIED = 0;
+  LAKEHOUSE_PARQUET = 1;   // hồ sơ lấp đầy từ Gold lake
+  CLICKHOUSE_MARTS = 2;    // telemetry từ ClickHouse marts
+  HEURISTIC_BASELINE = 3;  // đường cong chung theo giờ, bãi không có dữ liệu
+}
+
 message OccupancyForecastRequest {
   string parking_lot_id = 1;
   int64 target_timestamp = 2;
@@ -39,6 +48,8 @@ message OccupancyForecastResponse {
   string parking_lot_id = 1;
   repeated ForecastSlot slots = 2;
   double confidence_score = 3;
+  ForecastDataSource data_source = 4;
+  bool is_fallback = 5;              // true khi có khung giờ dùng baseline, không có dữ liệu bãi
 }
 
 message TariffRecommendationRequest {
@@ -50,4 +61,6 @@ message TariffRecommendationResponse {
   string parking_lot_id = 1;
   double recommended_multiplier = 2; // e.g. 1.2 (+20%) hoặc 0.8 (-20%)
   string reason = 3;                 // Lý do đề xuất (dựa trên % lấp đầy dự kiến)
+  ForecastDataSource data_source = 4;
+  bool is_fallback = 5;
 }
