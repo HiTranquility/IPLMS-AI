@@ -19,6 +19,14 @@ class ServerConfig(BaseConfig):
     # Ảnh cổng đi thẳng trong message → phải khớp AI_GRPC_MAX_MESSAGE_MB bên NestJS.
     grpc_max_message_length: int = _10_MB
     fastapi_port: int = 8000
+    # Origin trình duyệt được gọi REST inference, phân tách bằng dấu phẩy (bug-045).
+    # Mặc định rỗng: backend gọi server-to-server, không trình duyệt nào gọi thẳng :8000.
+    # [NEVER] đặt "*": AI không có xác thực nên mọi trang web sẽ đọc được phản hồi.
+    cors_allow_origins: str = ""
+
+    @property
+    def cors_allow_origin_list(self) -> List[str]:
+        return [origin.strip() for origin in self.cors_allow_origins.split(",") if origin.strip()]
 
     # Bật route chẩn đoán Vision local (`/api/vision/*`, chỉ loopback). Tên giữ nguyên để
     # không đổi biến môi trường; trang `/dashboard` cũ đã dời vào AI Console (IPLMS ADR-0050).
