@@ -13,9 +13,10 @@ import {
 } from 'lucide-react';
 import { apiClient } from '@/api/client';
 import { SimulatedBanner } from '@/components/common/Ui/feedback/SimulatedBanner';
+import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
 import { useI18n } from '@/i18n/I18nProvider';
 import { DASH, fmtInt } from '@/utils/format';
-import { PARKING_LOTS, resolveLotLabel } from '@/constants/parkingLots';
+import { useForecastAreas } from '@/hooks/queries';
 import styles from './ForecastSimulator.module.css';
 
 interface FeatureRow {
@@ -73,28 +74,11 @@ interface PipelineSimulateResponse {
 
 // Kịch bản lấp đầy minh hoạ theo giờ (0h–23h), KHÔNG phải dự báo: Forecast server chưa có
 // model (FeatureNotImplemented). UI gắn nhãn MÔ PHỎNG và ghi rõ trên biểu đồ (ai bug-018).
-const LOT_OCCUPANCY_BASELINES: Record<string, number[]> = {
-  lot_landmark_81: [
-    18, 15, 12, 10, 12, 20, 38, 68, 86, 89, 84, 78,
-    74, 79, 83, 85, 87, 91, 93, 88, 76, 58, 40, 25,
-  ],
-  lot_vincom_center: [
-    12, 10, 8, 8, 10, 15, 25, 55, 75, 86, 92, 94,
-    90, 88, 84, 85, 89, 93, 95, 94, 88, 72, 45, 22,
-  ],
-  lot_suburban_hub: [
-    22, 16, 12, 10, 15, 30, 65, 92, 94, 85, 70, 62,
-    60, 62, 65, 70, 82, 94, 96, 90, 75, 55, 38, 28,
-  ],
-  lot_central_01: [
-    15, 12, 10, 8, 12, 22, 45, 75, 88, 90, 85, 80,
-    78, 80, 82, 86, 88, 92, 94, 85, 70, 52, 35, 20,
-  ],
-  lot_west_gate: [
-    25, 18, 14, 10, 12, 28, 55, 85, 90, 88, 80, 75,
-    72, 75, 80, 84, 88, 90, 92, 84, 68, 50, 36, 26,
-  ],
-};
+// Bãi lấy từ Gold lake nên không còn đường cong riêng theo id cứng (ai bug-028).
+const ILLUSTRATIVE_CURVE: number[] = [
+  18, 15, 12, 10, 12, 20, 38, 68, 86, 89, 84, 78,
+  74, 79, 83, 85, 87, 91, 93, 88, 76, 58, 40, 25,
+];
 
 const CHART_W = 600;
 const CHART_H = 220;
@@ -124,7 +108,11 @@ export function ForecastSimulator() {
   const selectId = useId();
 
   // Simulation states
-  const [lotId, setLotId] = useState<string>('lot_landmark_81');
+  // Chỉ chọn được bãi có trong Gold lake: id cứng cũ không khớp `area_key` nên luôn rơi baseline (ai bug-028).
+  const lakeAreasQuery = useForecastAreas();
+  const lakeAreas = lakeAreasQuery.data?.areas ?? [];
+  const [pickedLot, setLotId] = useState<string>('');
+  const lotId = pickedLot || (lakeAreas[0]?.area_id ?? '');
   const [dayOfWeek, setDayOfWeek] = useState<number>(4);
   const [capacity, setCapacity] = useState<number>(250);
   const [baseRate, setBaseRate] = useState<number>(35000);
@@ -142,8 +130,8 @@ export function ForecastSimulator() {
         Math.round(p.predicted_occupancy_pct),
       );
     }
-    return LOT_OCCUPANCY_BASELINES[lotId] ?? LOT_OCCUPANCY_BASELINES.lot_landmark_81;
-  }, [lotId, pipelineData]);
+    return ILLUSTRATIVE_CURVE;
+  }, [pipelineData]);
 
   const computedFeatureRows = useMemo<FeatureRow[]>(() => {
     if (pipelineData?.stage2_features?.sample_rows?.length) {
@@ -177,6 +165,7 @@ export function ForecastSimulator() {
   const runBackendPipeline = async (nextDay?: number, nextLot?: string) => {
     const targetDay = nextDay ?? dayOfWeek;
     const targetLot = nextLot ?? lotId;
+    if (!targetLot) return;
     setSyncingPipeline(true);
     try {
       const item = await apiClient.postOne<PipelineSimulateResponse>('/tools/forecast/simulate', {
@@ -362,12 +351,24 @@ export function ForecastSimulator() {
                   setPipelineData(null);
                 }}
               >
-                {PARKING_LOTS.map((lot) => (
-                  <option key={lot.id} value={lot.id}>
-                    {resolveLotLabel(lot, t)}
+                {lakeAreas.length === 0 && (
+                  <option value="" disabled>
+                    {lakeAreasQuery.isLoading
+                      ? t.feedback.loading
+                      : lakeAreasQuery.isError
+                        ? t.feedback.loadFailed
+                        : t.tools.lakeAreasEmpty}
+                  </option>
+                )}
+                {lakeAreas.map((area) => (
+                  <option key={area.area_id} value={area.area_id}>
+                    {t.tools.lakeAreaOption(area.area_id, area.records)}
                   </option>
                 ))}
               </select>
+              {lakeAreasQuery.isError && (
+                <ErrorBlock error={lakeAreasQuery.error} onRetry={() => void lakeAreasQuery.refetch()} />
+              )}
             </div>
 
             {/* Day of Week Selector */}
@@ -481,7 +482,7 @@ export function ForecastSimulator() {
               className={styles.testApiBtn}
               style={{ marginBottom: '8px', background: 'var(--color-accent)', color: 'var(--color-accent-ink)', borderColor: 'var(--color-accent)' }}
               onClick={() => void runBackendPipeline()}
-              disabled={syncingPipeline}
+              disabled={syncingPipeline || !lotId}
             >
               <Play size={14} aria-hidden />
               <span>{syncingPipeline ? t.tools.syncingBackend : t.tools.syncBackendBtn}</span>
