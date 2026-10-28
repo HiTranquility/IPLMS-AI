@@ -121,7 +121,8 @@ class ModelPolicyStore:
                         base_url VARCHAR(500) NOT NULL,
                         secret_env_name VARCHAR(64),
                         status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
-                        replaces_id UUID REFERENCES ai_model_connections(id) ON DELETE RESTRICT,
+                        replaces_id UUID CONSTRAINT fk_ai_model_connections_replaces
+                            REFERENCES ai_model_connections(id) ON DELETE RESTRICT,
                         created_by VARCHAR(100) NOT NULL,
                         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                         disabled_by VARCHAR(100),
