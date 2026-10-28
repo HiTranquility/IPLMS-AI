@@ -115,3 +115,7 @@ class ConsoleAccessDenied(AiServiceError):
 
 class ConsoleStoreError(AiServiceError):
     """Thao tác với DB ``ai_console`` bị từ chối hoặc không truy cập được DB."""
+
+
+class ConsoleRateLimited(AiServiceError):
+    """Thành viên console gọi một thao tác quá số lần cho phép trong cửa sổ thời gian."""
