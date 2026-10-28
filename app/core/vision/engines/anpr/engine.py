@@ -46,6 +46,22 @@ def get_anpr_detector() -> AnprOnnxEngine:
 __all__ = ["run_anpr", "warmup", "AnprOnnxEngine", "parse_two_line_vietnam_plate"]
 
 
+def _crop_bbox(crop: np.ndarray, img: np.ndarray) -> Optional[List[int]]:
+    """Toạ độ `[x1, y1, x2, y2]` của ảnh cắt trong ảnh gốc.
+
+    Cả hai detector trả ảnh cắt là một lát (view) của ảnh gốc, nên toạ độ suy được
+    từ độ lệch bộ nhớ mà không phải đổi chữ ký `detect_plate`. Không phải view
+    (detector khác về sau) thì trả None thay vì đoán.
+    """
+    if crop.base is None or not np.shares_memory(crop, img):
+        return None
+    offset = crop.__array_interface__["data"][0] - img.__array_interface__["data"][0]
+    y, rem = divmod(offset, img.strides[0])
+    x = rem // img.strides[1]
+    h, w = crop.shape[:2]
+    return [int(x), int(y), int(x + w), int(y + h)]
+
+
 def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
     """Chạy full pipeline ANPR trên raw bytes ảnh.
 
@@ -171,4 +187,6 @@ def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
         # No detector crop means no observed plate background. Never infer from vehicle paint.
         "plate_color": detect_plate_color(plate_crop) if plate_crop is not None else None,
         "quality_flags": crop_quality_flags,
+        # Vị trí biển trong khung hình — đọc clip dùng để gộp frame cùng một xe (REQ-021 F2).
+        "plate_bbox": _crop_bbox(plate_crop, img_cv) if plate_crop is not None else None,
     }
