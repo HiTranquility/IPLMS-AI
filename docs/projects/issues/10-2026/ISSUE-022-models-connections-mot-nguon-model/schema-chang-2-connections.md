@@ -100,7 +100,7 @@ Thực thể đổi ở chặng này: chỉ thêm `ai_model_connections`. Cột 
 | *(chặng 3)* `idx_ai_model_profiles_connection` | `ai_model_profiles(connection_id)` | B-tree | Q4 (kiểm còn dùng), FK | Thêm cùng cột ở chặng 3 |
 
 Q1 không có index riêng: < 100 dòng, quét tuần tự rẻ hơn index.
-FK cố ý không index: `replaces_id` — bảng < 100 dòng và không bao giờ `DELETE` dòng cha, nên không có quét khi xoá/khoá.
+FK `fk_ai_model_connections_replaces` cố ý không index: `replaces_id` — bảng < 100 dòng và không bao giờ `DELETE` dòng cha, nên không có quét khi xoá/khoá.
 
 ## 5. Vòng đời
 
@@ -145,10 +145,10 @@ DDL ở `app/infra/database/model_policy_store.py` (`ensure_schema`), khớp m�
 
 | Kiểm | Kết quả |
 |---|---|
-| `ensure_schema()` chạy hai lần trên Postgres local riêng, lần hai không lỗi (idempotent) | **BLOCKED** — Docker Desktop không khởi động được từ phiên agent; test `ConnectionDatabaseTest.test_schema_idempotent_va_khop_ban_chot` đã viết, skip khi thiếu `AI_TEST_DATABASE_URL` |
-| `information_schema` + `pg_indexes` khớp mục 3–4 | **BLOCKED** — cùng test trên |
-| Check constraint từ chối: provider lạ, `base_url` không phải http(s), tên secret sai, `DISABLED` thiếu `disabled_at`, `ACTIVE` có `disabled_at`, thử thiếu `last_test_ok`, latency âm, mã lỗi lạ; trùng tên ACTIVE; sửa bản đã tắt | **BLOCKED** — `test_check_constraint_chan_du_lieu_sai`, `test_vong_doi_tao_sua_tat_thu` |
-| `EXPLAIN` Q3 dùng `uq_ai_model_connections_active_name` | **BLOCKED** — `test_explain_q3_dung_unique_partial` |
+| `ensure_schema()` chạy hai lần trên Postgres local riêng, lần hai không lỗi (idempotent) | **PASS** — `ConnectionDatabaseTest.test_schema_idempotent_va_khop_ban_chot` — container `pgvector/pgvector:pg16` tạm (cổng 55432, không volume, xoá sau khi chạy), 2026-10-28 |
+| `information_schema` + `pg_indexes` khớp mục 3–4 | **PASS** — cùng test trên + `\d ai_model_connections`: 16 cột, PK, `uq_ai_model_connections_active_name` partial, 8 check, `fk_ai_model_connections_replaces` (RESTRICT) |
+| Check constraint từ chối: provider lạ, `base_url` không phải http(s), tên secret sai, `DISABLED` thiếu `disabled_at`, `ACTIVE` có `disabled_at`, thử thiếu `last_test_ok`, latency âm, mã lỗi lạ; trùng tên ACTIVE; sửa bản đã tắt | **PASS** — `test_check_constraint_chan_du_lieu_sai`, `test_vong_doi_tao_sua_tat_thu` |
+| `EXPLAIN` Q3 dùng `uq_ai_model_connections_active_name` | **PASS** — `test_explain_q3_dung_unique_partial` |
 | Test SSRF: metadata/link-local literal kể cả khi allowlist; DNS trả IP link-local → chặn trước khi mở socket; redirect 302 sang metadata không được theo; host ngoài allowlist; URL có user/pass/query; `::ffff:169.254.169.254` | **PASS** — `GuardTest`, `ProbeTest` (HTTP server thật trên loopback) |
 | Rate limit: lần thử thứ 11 trong 60 s → 429 `RATE_LIMITED` qua route thật | **PASS** — `RateLimiterTest`, `HttpTest.test_quyen_va_429` |
 | Timeout: server chậm → `timeout` ≤ timeout + 1 s; probe treo → route vẫn trả | **PASS** — `test_qua_thoi_gian`, `test_probe_treo_thi_tra_timeout` |
