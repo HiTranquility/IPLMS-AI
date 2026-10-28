@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🚧 In progress — chặng 1 (X2) xong code + test, chờ review/PR; chặng 2–4 chưa làm |
+| **Trạng thái** | 🚧 In progress — chặng 1 (X2) PR #119; chặng 2 code + test xong, chưa chạy test DB thật; chặng 3–4 chưa làm |
 | **Người nhận** | @HiTranquility |
 | **Hạn** | |
 | **Ưu tiên** | 🔴 |
@@ -30,9 +30,18 @@
 - [x] UI Settings: bỏ ô chọn provider/model và danh sách model dò được; thêm bảng chỉ-đọc "Model đang chạy theo tác vụ" (VI/EN).
 - [ ] Kiểm trên stack dev thật (browser): kích hoạt một revision ở platform → Settings và Copilot Lab hiện đúng revision đó — **chưa chạy**, xem Bàn giao.
 
-### Chặng 2–4 (chưa làm)
+### Chặng 2 — Connections
 
-- [ ] **Chặng 2 — Connections:** bảng `ai_model_connections` ở `ai-db` (ERD + index qua IPLMS REQ-018 trước khi viết migration), API tạo/tắt, thử kết nối có allowlist host, chặn link-local/metadata, timeout 10 s, ≤ 10 lần/phút/thành viên (ADR-0061 §6–7).
+- [x] ERD + thuộc tính + index chốt trước khi viết DDL: [schema-chang-2-connections.md](schema-chang-2-connections.md) — ✅ @HiTranquility 2026-10-28, nguyên đề xuất Q-A…Q-F.
+- [x] Bảng `ai_model_connections` + `uq_ai_model_connections_active_name` trong `ModelPolicyStore.ensure_schema()`; store tạo/sửa (bản mới + `replaces_id`)/tắt/ghi kết quả thử (`app/infra/database/model_policy_store.py`).
+- [x] API `GET/POST /api/models/connections`, `POST …/{id}/disable`, `POST …/{id}/test`, `POST …/test` (bản nháp, không ghi `ai-db`) — `app/api/rest/routes/console_model_controller.py`; xem `ai:metrics:read`, ghi/thử `ai:model:propose`; mỗi thao tác ghi `audit_event` (`model.connection_create|disable|test`).
+- [x] Chống SSRF: allowlist `AI_CONSOLE_MODEL_CONNECTION_HOSTS`, luôn chặn link-local/metadata sau khi phân giải DNS, nối thẳng IP đã kiểm, không theo redirect, đọc ≤ 1 MiB (`app/core/console/guardrails/model_endpoint.py`, `app/infra/llm/connection_probe.py`); timeout 10 s; 10 lần/phút/thành viên → 429 (`app/core/console/engines/rate_limiter.py`).
+- [x] Secret: chỉ lưu tên biến, phải có tiền tố `AI_LLM_KEY_` hoặc nằm trong `AI_CONSOLE_MODEL_SECRET_NAMES` (Q-B).
+- [ ] Test DB thật (`ConnectionDatabaseTest`, 4 test) — **BLOCKED**: Docker Desktop không khởi động được từ phiên agent; chạy lại khi có `AI_TEST_DATABASE_URL`.
+- [ ] UI trang Models & Connections — chưa làm (gộp vào chặng 3 cùng revision).
+
+### Chặng 3–4 (chưa làm)
+
 - [ ] **Chặng 3 — Revision trong console:** trang Models & Connections tạo/thử/so sánh/quay về; quyền `ai:model:activate` (cấp `ai_lead`, step-up); bốn mắt cho `copilot_answer` (ADR-0061 §3, §5).
 - [ ] **Chặng 4 — Platform chỉ đọc:** cờ console quản lý model; bật thì API ghi backend trả 409, platform hiện model đang dùng + link sang console (ADR-0061 §4).
 
@@ -54,11 +63,22 @@
 | `ui`: `npx vite build` | PASS |
 | Browser trên stack dev | NOT RUN — console cần Google OIDC + TOTP và phải chạy từ thư mục gốc, không từ worktree |
 
+## Kiểm chứng chặng 2 (2026-10-28)
+
+| Lệnh | Kết quả |
+|---|---|
+| `python -m unittest test.test_console_model_connections` | PASS — 32 test, 4 skip (test DB thật thiếu `AI_TEST_DATABASE_URL`) |
+| `python -m unittest discover -s test -t .` | 638 test, **2 FAIL có sẵn** (bug-047), 40 skip |
+| `python script/check_core_layout.py` | 0 lệch (thêm slot `console/guardrails/`) |
+| `ui`: `npx tsc --noEmit`, `npx vitest run src/pages/Audit` | PASS (mã audit mới có trong `auditActionCodes.json` + i18n VI/EN) |
+| Test DB thật | **BLOCKED** — xem trên |
+
 ## Bàn giao
 
 - **Đổi hành vi cần biết:** máy nào đang dùng Settings để chọn `ollama`/`local` hoặc tên model thì sau khi merge sẽ về giá trị env (`AI_LLM_PROVIDER`, `AI_LLM_MODEL`). Muốn đổi model thì tạo và kích hoạt revision (tạm thời ở trang Hồ sơ model AI của platform cho tới chặng 3).
 - **Dead code có sẵn, không đụng:** khoá i18n `settings.providerLocal` đã không được dùng từ trước.
-- **Làm tiếp từ:** chặng 2 — thiết kế bảng `ai_model_connections` theo IPLMS REQ-018, chờ chủ dự án xác nhận ERD.
+- **Làm tiếp từ:** chạy `ConnectionDatabaseTest` trên Postgres riêng (`AI_TEST_DATABASE_URL`), rồi chặng 3 (revision gắn `connection_id` + trang Models & Connections).
+- **Cấu hình mới:** `AI_CONSOLE_MODEL_CONNECTION_HOSTS` rỗng = chặn hết; máy dev cần đặt (mẫu ở `.env.example`).
 
 ## Hồ sơ liên quan
 
