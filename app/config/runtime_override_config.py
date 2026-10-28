@@ -25,12 +25,12 @@ def _clamp(cast: Callable[[Any], Any], lo, hi) -> Callable[[Any], Any]:
 
 
 # khoá file → (nhóm config, thuộc tính, ép kiểu + kẹp biên giống DTO ở console_tools_controller)
+# Không có llm_provider/llm_model: model theo tác vụ là revision ở ai-db (IPLMS ADR-0061 §2);
+# file cũ còn hai khoá này thì bị bỏ qua, env là dự phòng.
 _FIELDS: dict[str, tuple[str, str, Callable[[Any], Any]]] = {
     "vision_device": ("vision", "device", lambda v: v if v in ("auto", "cuda", "cpu") else "auto"),
     "onnx_enabled": ("vision", "onnx_enabled", bool),
     "vision_warmup_on_start": ("vision", "vision_warmup_on_start", bool),
-    "llm_provider": ("llm", "llm_provider", lambda v: v if v in LOCAL_LLM_PROVIDERS else None),
-    "llm_model": ("llm", "llm_model", lambda v: str(v)[:128] or None),
     "local_llm_gpu_layers": ("llm", "local_llm_gpu_layers", _clamp(int, 0, 64)),
     "local_llm_ctx_size": ("llm", "local_llm_ctx_size", _clamp(int, 512, 32768)),
     "local_llm_threads": ("llm", "local_llm_threads", _clamp(int, 1, 64)),

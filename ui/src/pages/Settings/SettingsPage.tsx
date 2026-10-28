@@ -60,13 +60,12 @@ export function SettingsPage() {
   const comp = data?.compute;
   const pol = data?.policy;
   const eng = data?.engines;
+  const copilotModel = data?.models.find((m) => m.task === 'copilot_answer');
 
   // Compute state
   const [visionDevice, setVisionDevice] = useState('auto');
   const [onnxEnabled, setOnnxEnabled] = useState(true);
   const [warmupOnStart, setWarmupOnStart] = useState(true);
-  const [llmProvider, setLlmProvider] = useState('ollama');
-  const [llmModel, setLlmModel] = useState('qwen2.5:0.5b');
   const [gpuLayers, setGpuLayers] = useState(33);
   const [cpuThreads, setCpuThreads] = useState(4);
   const [ctxSize, setCtxSize] = useState(4096);
@@ -88,8 +87,6 @@ export function SettingsPage() {
       setVisionDevice(comp.vision_device);
       setOnnxEnabled(comp.onnx_enabled);
       setWarmupOnStart(comp.vision_warmup_on_start);
-      setLlmProvider(comp.llm_provider);
-      if (comp.llm_model) setLlmModel(comp.llm_model);
       setGpuLayers(comp.local_llm_gpu_layers);
       setCpuThreads(comp.local_llm_threads);
       setCtxSize(comp.local_llm_ctx_size);
@@ -129,9 +126,6 @@ export function SettingsPage() {
         vision_device: visionDevice,
         onnx_enabled: onnxEnabled,
         vision_warmup_on_start: warmupOnStart,
-        // OpenAI chỉ bật qua env; API chỉ nhận ollama/local (A-54).
-        ...(llmProvider === 'ollama' || llmProvider === 'local' ? { llm_provider: llmProvider } : {}),
-        llm_model: llmModel,
         local_llm_gpu_layers: gpuLayers,
         local_llm_threads: cpuThreads,
         local_llm_ctx_size: ctxSize,
@@ -433,6 +427,45 @@ export function SettingsPage() {
             </div>
           </section>
 
+          {/* Chỉ xem: model inference dùng thật theo tác vụ (REQ-020 X2, ADR-0061 §2) */}
+          <section className={styles.sectionCard}>
+            <div className={styles.sectionHeader}>
+              <div>
+                <h2 className={styles.sectionTitle}>
+                  <Layers size={18} aria-hidden />
+                  <span>{s.modelsRunningTitle}</span>
+                </h2>
+                <p className={styles.sectionSub}>{s.modelsRunningHint}</p>
+              </div>
+            </div>
+            <div className={styles.tableWrap}>
+              <table className={styles.table} aria-label={s.modelsRunningTitle}>
+                <thead>
+                  <tr>
+                    <th>{s.colModelTask}</th>
+                    <th>{s.colModelProvider}</th>
+                    <th>{s.colModelName}</th>
+                    <th>{s.colModelSource}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data?.models.map((m) => (
+                    <tr key={m.task}>
+                      <td>{s.modelTasks[m.task]}</td>
+                      <td className={styles.mono}>{m.provider ?? DASH}</td>
+                      <td className={styles.mono}>{m.model ?? DASH}</td>
+                      <td>
+                        {m.source === 'profile' && <Badge tone="success">{s.modelSourceProfile(m.revision)}</Badge>}
+                        {m.source === 'env' && <Badge tone="neutral">{s.modelSourceEnv}</Badge>}
+                        {m.source === 'unknown' && <Badge tone="warning">{s.modelSourceUnknown}</Badge>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
           {/* Form tinh chỉnh chuyên sâu GPU / CPU */}
           <form className={styles.sectionCard} onSubmit={submitCompute}>
             <h2 className={styles.sectionTitle}>
@@ -471,64 +504,6 @@ export function SettingsPage() {
                   />
                   <span>{s.warmupOnStartLabel}</span>
                 </label>
-              </div>
-
-              <div className={styles.fieldBlock}>
-                <label className={styles.fieldLabel} htmlFor="llm-provider-select">
-                  {s.llmProviderLabel}
-                </label>
-                <select
-                  id="llm-provider-select"
-                  className={styles.selectInput}
-                  value={llmProvider}
-                  onChange={(e) => setLlmProvider(e.target.value)}
-                >
-                  <option value="ollama">Ollama Local (127.0.0.1:11434)</option>
-                  <option value="local">Local llama-server (127.0.0.1:8005)</option>
-                  <option value="openai" disabled>{s.providerOpenai}</option>
-                </select>
-                <p className={styles.fieldHint}>{s.providerOpenaiEnvOnly}</p>
-              </div>
-
-              <div className={styles.fieldBlock}>
-                <label className={styles.fieldLabel} htmlFor="llm-model-input">
-                  {s.llmModelLabel}
-                </label>
-                {comp?.detected_models && comp.detected_models.length > 0 && (
-                  <select
-                    className={styles.selectInput}
-                    style={{ marginBottom: '8px' }}
-                    value={comp.detected_models.some((m) => m.name === llmModel) ? llmModel : '__custom__'}
-                    onChange={(e) => {
-                      if (e.target.value !== '__custom__') {
-                        setLlmModel(e.target.value);
-                      }
-                    }}
-                    aria-label={s.selectDetectedModel}
-                  >
-                    <option value="" disabled>{s.selectDetectedModel}</option>
-                    {comp.detected_models.map((m) => (
-                      <option key={m.name} value={m.name}>
-                        {m.label}
-                      </option>
-                    ))}
-                    <option value="__custom__">{s.customModelOption}</option>
-                  </select>
-                )}
-                <input
-                  id="llm-model-input"
-                  type="text"
-                  className={styles.selectInput}
-                  value={llmModel}
-                  onChange={(e) => {
-                    const sanitized = e.target.value.replace(/\s+/g, '-');
-                    setLlmModel(sanitized);
-                  }}
-                  placeholder="vd: Qwen3.5-4B-Q4_K_M, qwen2.5:3b, gpt-4o-mini"
-                />
-                <p className={styles.fieldHint}>
-                  {s.llmModelRunning} <strong className={styles.mono}>{comp?.llm_model || DASH}</strong>
-                </p>
               </div>
 
               <div className={styles.fieldBlock}>
@@ -606,7 +581,7 @@ export function SettingsPage() {
               </Button>
               {savedCompute && (
                 <span className={styles.okBanner}>
-                  {llmProvider === 'local' ? s.savedComputeWithReloadMsg : s.savedComputeMsg}
+                  {copilotModel?.provider === 'local' ? s.savedComputeWithReloadMsg : s.savedComputeMsg}
                 </span>
               )}
             </div>

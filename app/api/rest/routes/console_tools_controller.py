@@ -6,7 +6,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.api.rest.console_access import require_any_permission, require_permission
 from app.api.rest.schemas.base_response import BaseResponse
@@ -347,24 +347,19 @@ class ComputeSettingsIn(BaseModel):
     vision_device: Optional[str] = Field(None, max_length=16)
     onnx_enabled: Optional[bool] = None
     vision_warmup_on_start: Optional[bool] = None
-    # Đổi tại chỗ chỉ giữa các engine chạy trên máy; chuyển sang OpenAI (gửi câu hỏi
-    # ra ngoài) và đổi base_url chỉ qua env AI_LLM_PROVIDER / AI_LLM_BASE_URL.
-    llm_provider: Optional[Literal["ollama", "local"]] = None
-    llm_model: Optional[str] = Field(None, max_length=128, pattern=r"^[A-Za-z0-9._:/-]+$")
     local_llm_gpu_layers: Optional[int] = Field(None, ge=0, le=64)
     local_llm_ctx_size: Optional[int] = Field(None, ge=512, le=32768)
     local_llm_threads: Optional[int] = Field(None, ge=1, le=64)
     local_llm_parallel_slots: Optional[int] = Field(None, ge=1, le=8)
 
-    @field_validator("llm_model", mode="before")
+    @model_validator(mode="before")
     @classmethod
-    def sanitize_llm_model(cls, v: Any) -> Any:
-        if isinstance(v, str):
-            # Tự động chuẩn hóa dấu cách thành dấu gạch ngang (vd 'qwen 3.5 4b' -> 'qwen-3.5-4b')
-            # và loại bỏ khoảng trắng thừa để không bao giờ bị lỗi HTTP 422
-            cleaned = "-".join(v.strip().split())
-            return cleaned or None
-        return v
+    def reject_model_fields(cls, data: Any) -> Any:
+        # extra="ignore" sẽ nuốt im hai trường này và báo lưu thành công mà không có tác dụng
+        # (REQ-020 X2); model theo tác vụ đổi bằng revision ở Models & Connections (ADR-0061 §2).
+        if isinstance(data, dict) and ({"llm_provider", "llm_model"} & data.keys()):
+            raise ValueError("Đổi provider/model ở trang Models & Connections, không ở Settings.")
+        return data
 
 
 class PolicySettingsIn(BaseModel):
