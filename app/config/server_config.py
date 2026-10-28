@@ -1,4 +1,6 @@
 """Cấu hình 2 transport: gRPC server (backend NestJS gọi vào) và FastAPI REST."""
+from typing import List
+
 from pydantic import Field
 from pydantic_settings import SettingsConfigDict
 
