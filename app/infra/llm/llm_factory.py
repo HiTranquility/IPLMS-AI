@@ -8,6 +8,7 @@ from typing import Any, AsyncGenerator
 from app.config import get_config
 from app.config.llm_config import DEFAULT_LOCAL_LLM_MODEL, NON_OLLAMA_MODEL_NAMES
 from app.core.exceptions import ModelConfigurationError, ModelNotLoadedError, RagPipelineError
+from app.infra.llm.prompts import prompt_store
 from app.util.logger import logger
 
 try:
@@ -28,6 +29,11 @@ def _should_use_responses_api(client: Any, provider: str, has_api_key: bool) -> 
     return provider not in ("local", "ollama") and has_api_key
 
 
+def _user_message(user_query: str, context: str) -> str:
+    """Khuôn user message của Copilot, một nguồn ở `data/prompts/copilot_rag_system/user.md`."""
+    return prompt_store.user_template("copilot_rag_system").format(question=user_query, context=context)
+
+
 def _strip_thinking_tags(text: str) -> str:
     import re
     return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
@@ -37,8 +43,12 @@ def _copy_usage(source: Any, target: dict | None) -> None:
     """Chép số token nếu provider có báo; không báo thì để trống, không ước lượng."""
     if target is None or source is None:
         return
-    for field in ("input_tokens", "output_tokens"):
+    # Responses API báo input/output_tokens; Chat Completions (Ollama, llama-server)
+    # báo prompt/completion_tokens (bug-042).
+    for field, alias in (("input_tokens", "prompt_tokens"), ("output_tokens", "completion_tokens")):
         value = getattr(source, field, None)
+        if not isinstance(value, int):
+            value = getattr(source, alias, None)
         if isinstance(value, int):
             target[field] = value
 
@@ -193,12 +203,7 @@ class LlmFactory:
         request = {
             "model": self.model,
             "instructions": system_prompt,
-            "input": (
-                "CÂU HỎI CỦA NGƯỜI DÙNG:\n"
-                f"{user_query}\n\n"
-                "NGỮ CẢNH ĐÃ TRUY XUẤT TỪ KHO TRI THỨC:\n"
-                f"{context}"
-            ),
+            "input": _user_message(user_query, context),
             "max_output_tokens": self.max_output_tokens,
             # Nội dung quy chế/phiên gửi có thể nhạy cảm; không lưu response ở
             # phía provider trừ khi có quyết định governance riêng.
@@ -254,12 +259,13 @@ class LlmFactory:
                     {"role": "system", "content": system_prompt},
                     {
                         "role": "user",
-                        "content": f"CÂU HỎI CỦA NGƯỜI DÙNG:\n{user_query}\n\nNGỮ CẢNH ĐÃ TRUY XUẤT TỪ KHO TRI THỨC:\n{context}",
+                        "content": _user_message(user_query, context),
                     },
                 ],
                 max_tokens=self.max_output_tokens,
                 temperature=0.2 if temperature is None else temperature,
             )
+            _copy_usage(getattr(resp, "usage", None), usage)
             raw_answer = (resp.choices[0].message.content or "").strip()
             answer = _strip_thinking_tags(raw_answer)
             if not answer:
@@ -427,7 +433,7 @@ class LlmFactory:
                         messages.append({"role": r, "content": c})
             messages.append({
                 "role": "user",
-                "content": f"CÂU HỎI CỦA NGƯỜI DÙNG:\n{user_query}\n\nNGỮ CẢNH ĐÃ TRUY XUẤT TỪ KHO TRI THỨC:\n{context}",
+                "content": _user_message(user_query, context),
             })
             stream = await client.chat.completions.create(
                 model=self.model,

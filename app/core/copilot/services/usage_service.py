@@ -14,7 +14,7 @@ from typing import Any, Optional
 
 from app.config import get_config
 from app.core.copilot.dtos.copilot_dto import AskQuestionRequest, UsageDay, UsageSummary
-from app.core.copilot.engines.pii_redactor import redact
+from app.core.copilot.guardrails.pii_redactor import redact
 from app.core.copilot.engines.rag_pipeline import PROMPT_VERSION, TOOLS
 from app.infra.database.ai_request_log_store import ai_request_log_store
 from app.util.logger import logger

@@ -21,7 +21,7 @@ os.makedirs(os.path.join(STATIC_DIR, "original"), exist_ok=True)
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     """Load vision dependencies before the REST service accepts ANPR traffic."""
-    from app.core.vision.engines.anpr_engine import warmup
+    from app.core.vision.engines.anpr.engine import warmup
 
     if not get_config().vision.vision_warmup_on_start:
         # Dev: serve immediately, load in the background (bug-006).

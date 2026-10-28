@@ -1,14 +1,16 @@
 """Công cụ thử trong AI Console — thay trang dev `/dashboard` cũ (IPLMS ADR-0050)."""
 import json
+import time
 from typing import Any, List, Literal, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.api.rest.console_access import require_any_permission, require_permission
 from app.api.rest.schemas.base_response import BaseResponse
+from app.config import get_config
 from app.core.console import ConsoleActor, console_tools_service
 from app.core.constants import KNOWLEDGE_MAX_FILE_BYTES
 from app.core.copilot.dtos.copilot_dto import CopilotAnswer
@@ -55,6 +57,23 @@ class AnprTryOut(BaseModel):
     latency_ms: Optional[float]
     crop_image: Optional[str] = None
     crop_plate_image_url: Optional[str] = None
+
+
+class ClipEventOut(BaseModel):
+    plate_number: str
+    confidence: float
+    best_time_s: float
+    start_time_s: float
+    end_time_s: float
+    frame_count: int
+    crop_image: Optional[str] = None
+
+
+class AnprClipOut(BaseModel):
+    sampled_frames: int
+    plate_reads: int
+    latency_ms: float
+    events: List[ClipEventOut]
 
 
 class VerifyMatchIn(BaseModel):
@@ -192,6 +211,20 @@ async def try_anpr(
     return BaseResponse.ok([AnprTryOut(**result)], "Kết quả từ engine ANPR đang nạp (ảnh không được lưu).")
 
 
+@router.post("/anpr/recognize-clip", response_model=BaseResponse[AnprClipOut])
+async def try_anpr_clip(
+    file: UploadFile = File(...),
+    mode: Literal["interval", "motion"] = Form("interval"),
+    actor: ConsoleActor = Depends(require_permission("ai:model:evaluate")),
+):
+    # Đọc tối đa giới hạn + 1 byte: đủ để service báo "vượt dung lượng" mà không nạp cả file lớn.
+    clip = await file.read(get_config().vision.clip_max_bytes + 1)
+    started = time.perf_counter()
+    result = await console_tools_service.try_anpr_clip(actor, clip, file.content_type or "", mode == "motion")
+    result["latency_ms"] = round((time.perf_counter() - started) * 1000, 1)
+    return BaseResponse.ok([AnprClipOut(**result)], "Kết quả đọc clip (clip không được lưu).")
+
+
 @router.post("/vision/verify-match", response_model=BaseResponse[VerifyMatchOut])
 async def verify_match(payload: VerifyMatchIn, actor: ConsoleActor = Depends(require_permission("ai:model:evaluate"))):
     result = await console_tools_service.verify_match(
@@ -314,24 +347,19 @@ class ComputeSettingsIn(BaseModel):
     vision_device: Optional[str] = Field(None, max_length=16)
     onnx_enabled: Optional[bool] = None
     vision_warmup_on_start: Optional[bool] = None
-    # Đổi tại chỗ chỉ giữa các engine chạy trên máy; chuyển sang OpenAI (gửi câu hỏi
-    # ra ngoài) và đổi base_url chỉ qua env AI_LLM_PROVIDER / AI_LLM_BASE_URL.
-    llm_provider: Optional[Literal["ollama", "local"]] = None
-    llm_model: Optional[str] = Field(None, max_length=128, pattern=r"^[A-Za-z0-9._:/-]+$")
     local_llm_gpu_layers: Optional[int] = Field(None, ge=0, le=64)
     local_llm_ctx_size: Optional[int] = Field(None, ge=512, le=32768)
     local_llm_threads: Optional[int] = Field(None, ge=1, le=64)
     local_llm_parallel_slots: Optional[int] = Field(None, ge=1, le=8)
 
-    @field_validator("llm_model", mode="before")
+    @model_validator(mode="before")
     @classmethod
-    def sanitize_llm_model(cls, v: Any) -> Any:
-        if isinstance(v, str):
-            # Tự động chuẩn hóa dấu cách thành dấu gạch ngang (vd 'qwen 3.5 4b' -> 'qwen-3.5-4b')
-            # và loại bỏ khoảng trắng thừa để không bao giờ bị lỗi HTTP 422
-            cleaned = "-".join(v.strip().split())
-            return cleaned or None
-        return v
+    def reject_model_fields(cls, data: Any) -> Any:
+        # extra="ignore" sẽ nuốt im hai trường này và báo lưu thành công mà không có tác dụng
+        # (REQ-020 X2); model theo tác vụ đổi bằng revision ở Models & Connections (ADR-0061 §2).
+        if isinstance(data, dict) and ({"llm_provider", "llm_model"} & data.keys()):
+            raise ValueError("Đổi provider/model ở trang Models & Connections, không ở Settings.")
+        return data
 
 
 class PolicySettingsIn(BaseModel):

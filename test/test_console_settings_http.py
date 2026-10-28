@@ -70,13 +70,15 @@ class ConsoleSettingsHttpTest(unittest.TestCase):
             r = self.client.put(f"{BASE}/settings/policy", json={"rag_top_k": 6, "reason": "thử"}, headers=H)
         self.assertEqual(403, r.status_code)
 
-    def test_compute_khong_nhan_provider_openai_hay_base_url(self):
+    def test_compute_khong_nhan_provider_model_hay_base_url(self):
         with self._as(("ai_ml_engineer",)):
-            r = self.client.put(f"{BASE}/settings/compute", json={"llm_provider": "openai"}, headers=H)
-            self.assertEqual(422, r.status_code)
+            # REQ-020 X2: trước đây extra="ignore" nuốt trường lạ và báo lưu thành công.
+            for body in ({"llm_provider": "openai"}, {"llm_provider": "ollama"}, {"llm_model": "qwen3:4b"}):
+                r = self.client.put(f"{BASE}/settings/compute", json=body, headers=H)
+                self.assertEqual(422, r.status_code, body)
             r = self.client.put(
                 f"{BASE}/settings/compute",
-                json={"llm_provider": "ollama", "llm_base_url": "http://evil.example/v1"},
+                json={"local_llm_threads": 4, "llm_base_url": "http://evil.example/v1"},
                 headers=H,
             )
         self.assertEqual(200, r.status_code)

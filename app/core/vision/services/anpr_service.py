@@ -33,7 +33,7 @@ class AnprService:
         tốn I/O trên đường nóng và làm đầy dần ổ đĩa tạm của pod (không có cơ
         chế dọn nào cả).
         """
-        from app.core.vision.engines.anpr_engine import run_anpr
+        from app.core.vision.engines.anpr.engine import run_anpr
 
         result = run_anpr(command.image_data)
         plate_number = result["plate_number"]
@@ -74,3 +74,32 @@ class AnprService:
             crop_bytes=result["crop_bytes"],
             plate_color=plate_color,
         )
+
+    @staticmethod
+    def recognize_clip(data: bytes, content_type: str, motion: bool = False) -> dict:
+        """Đọc biển số từ một clip (IPLMS REQ-021 A), trả sự kiện đã gộp theo xe.
+
+        Không ghi gì xuống đĩa ngoài file tạm của OpenCV (xoá ngay trong engine):
+        clip là PII, lượt chạy chỉ trả ảnh cắt biển của frame tốt nhất.
+
+        Raises:
+            ValueError: sai định dạng, vượt dung lượng/độ dài cấu hình.
+        """
+        from app.core.vision.engines.anpr.engine import run_anpr
+        from app.core.vision.engines.anpr.video import CLIP_SUFFIXES, ClipLimits, analyze_clip
+
+        cfg = get_config().vision
+        suffix = CLIP_SUFFIXES.get((content_type or "").split(";")[0].strip().lower())
+        if suffix is None:
+            raise ValueError("Chỉ nhận clip MP4 hoặc WebM.")
+        if not data:
+            raise ValueError("Clip rỗng.")
+        if len(data) > cfg.clip_max_bytes:
+            raise ValueError(f"Clip vượt {cfg.clip_max_bytes // (1024 * 1024)} MB.")
+        limits = ClipLimits(
+            max_duration_s=cfg.clip_max_duration_s,
+            max_frames=cfg.clip_max_frames,
+            sample_interval_s=cfg.clip_sample_interval_s,
+            motion_threshold=cfg.clip_motion_threshold if motion else None,
+        )
+        return analyze_clip(data, suffix, limits, run_anpr, cfg.clip_event_iou, cfg.clip_event_max_gap_s)

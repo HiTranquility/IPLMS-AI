@@ -13,10 +13,7 @@ from __future__ import annotations
 import re
 from typing import AsyncGenerator, AsyncIterable
 
-GUARD_NOTICE = (
-    "Mình dừng câu trả lời vì nó có nội dung không khớp tài liệu của bãi. "
-    "Bạn xem trực tiếp quy chế của bãi hoặc hỏi nhân viên giúp mình nhé."
-)
+from app.core.copilot.messages import GUARD_NOTICE
 
 _FREE = re.compile(
     r"(?:m[\s._-]*i[\s._-]*ễ[\s._-]*n|m[\s._-]*i[\s._-]*e[\s._-]*n)[\s._-]*(?:p[\s._-]*h[\s._-]*í|p[\s._-]*h[\s._-]*i)"
