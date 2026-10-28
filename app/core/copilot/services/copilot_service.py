@@ -14,7 +14,7 @@ from app.core.copilot.dtos.copilot_dto import (
     DisputeVerdict,
     tuning_kwargs,
 )
-from app.core.copilot.engines.dispute_workflow.fixtures import (
+from app.core.copilot.workflows.dispute.fixtures import (
     STANDARD_BACKEND_EVIDENCE_BUNDLE,
     ContractEvidenceAnalyzer,
     ContractEvidenceClient,
@@ -22,8 +22,8 @@ from app.core.copilot.engines.dispute_workflow.fixtures import (
     ContractRecommendationWriter,
     DisputeWorkflowDependencies,
 )
-from app.core.copilot.engines.dispute_workflow.graph import build_dispute_graph
-from app.core.copilot.engines.dispute_workflow.state import make_initial_state
+from app.core.copilot.workflows.dispute.graph import build_dispute_graph
+from app.core.copilot.workflows.dispute.state import make_initial_state
 from app.core.copilot.engines.rag_pipeline import PROMPT_VERSION, rag_pipeline
 from app.core.copilot.services.usage_service import usage_service
 from app.core.exceptions import FeatureNotImplementedError
