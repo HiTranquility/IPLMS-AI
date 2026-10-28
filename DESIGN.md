@@ -268,6 +268,9 @@ Danh sách biến chuẩn nằm trong `.env.example`:
 | `AI_OLLAMA_URL` | `http://127.0.0.1:11434/v1` | Endpoint Ollama khi `AI_LLM_BASE_URL` rỗng |
 | `AI_LLM_MODEL` | `qwen2.5:0.5b` | Model LLM sinh câu trả lời (vừa VRAM 4 GB); dùng OpenAI thì đặt `gpt-5.6-luna` |
 | `AI_CONSOLE_RELOAD` | `false` | Bật reloader cho `python -m app.console_main` (chỉ máy dev) |
+| `AI_CONSOLE_MODEL_CONNECTION_HOSTS` | *(rỗng = chặn hết)* | Host được làm endpoint connection ở Models & Connections, phân cách dấu phẩy, khớp đúng tên. Link-local/metadata (`169.254.0.0/16`, `fe80::/10`, `fd00:ec2::254`, `100.100.100.200`) luôn bị chặn sau khi phân giải DNS; probe nối thẳng vào IP đã kiểm, không theo redirect (IPLMS ADR-0061 §7, ISSUE-022). Bảng `ai_model_connections` ở `ai-db` (cùng `AI_DATABASE_URL`), chỉ lưu **tên** biến secret |
+| `AI_CONSOLE_MODEL_SECRET_NAMES` | *(rỗng)* | Tên biến env chứa key được phép ngoài tiền tố `AI_LLM_KEY_` (vd `AI_LLM_API_KEY`); tên khác bị từ chối để không gửi nhầm secret khác làm Bearer |
+| `AI_CONSOLE_MODEL_TEST_TIMEOUT_SECONDS` / `AI_CONSOLE_MODEL_TESTS_PER_MINUTE` | `10` / `10` | Timeout một lượt thử kết nối; số lần thử mỗi thành viên mỗi 60 s (bộ đếm trong RAM process console, vượt → 429) |
 | `AI_RUNTIME_SETTINGS_PATH` | `ai/var/runtime_settings.json` | File cấu hình đổi ở trang Settings; console áp dụng ngay, inference nạp khi khởi động lại. Chỉ đọc từ biến môi trường thật, không đọc `.env.dev` |
 | `AI_EMBEDDING_MODEL` | `text-embedding-3-small` | Model sinh vector cho tri thức |
 | `AI_EMBEDDING_ALLOW_NO_PGVECTOR` | `false` | Postgres không có pgvector thì dừng với lỗi; `true` (chỉ dev) cho chạy chế độ mảng `DOUBLE PRECISION[]` quét toàn bảng — [ADR-0001](docs/projects/adrs/10-2026/0001-fallback-khong-pgvector-chi-cho-dev.md) |

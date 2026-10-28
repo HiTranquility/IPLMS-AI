@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from app.api.rest.console_router import console_router
 from app.api.rest.middlewares.error_handler import ai_service_error_handler, generic_error_handler
 from app.config import get_config
-from app.core.exceptions import AiServiceError, ConsoleAccessDenied, ConsoleAuthError
+from app.core.exceptions import AiServiceError, ConsoleAccessDenied, ConsoleAuthError, ConsoleRateLimited
 from app.util.console import enable_utf8_stdio
 
 enable_utf8_stdio()
@@ -44,6 +44,11 @@ async def _auth_error(_: Request, exc: ConsoleAuthError) -> JSONResponse:
 @app.exception_handler(ConsoleAccessDenied)
 async def _access_denied(_: Request, exc: ConsoleAccessDenied) -> JSONResponse:
     return _error(403, str(exc), "FORBIDDEN")
+
+
+@app.exception_handler(ConsoleRateLimited)
+async def _rate_limited(_: Request, exc: ConsoleRateLimited) -> JSONResponse:
+    return _error(429, str(exc), "RATE_LIMITED")
 
 
 @app.exception_handler(ValueError)
