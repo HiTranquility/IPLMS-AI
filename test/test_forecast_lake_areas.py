@@ -12,12 +12,15 @@ from app.api.grpc.mappers.forecast_mapper import (
     to_occupancy_forecast_response,
     to_tariff_recommendation_response,
 )
+from app.api.grpc.generated_stubs import get_stub
 from app.core.console.dtos import ConsoleActor
 from app.core.console.services.tools_service import ConsoleToolsService
+from app.core.enums import ForecastDataSource
 from app.core.forecast.dtos.forecast_dto import OccupancyForecastQuery, TariffRecommendationQuery
 from app.core.forecast.engines.parquet_lake_reader import ParquetLakeReader
 from app.core.forecast.services.forecast_service import ForecastService
 
+PB2, _ = get_stub("forecast_service")
 ANALYST = ConsoleActor("m-an", frozenset({"ai_analyst"}))
 LAKE_AREA = "area-zone-a"
 # Id cứng cũ của UI (`ui/src/constants/parkingLots.ts`), không có trong lake.
@@ -78,27 +81,35 @@ class ForecastLakeAreaTest(unittest.IsolatedAsyncioTestCase):
         self.svc.load_lakehouse_dataset(area_id=UI_LOT, force_reload=True)
         result = self.svc.predict_area_occupancy(UI_LOT, target_timestamp=THURSDAY_08H)
         self.assertTrue(result.is_fallback)
-        self.assertEqual("heuristic_baseline", result.data_source)
+        self.assertEqual(ForecastDataSource.HEURISTIC_BASELINE, result.data_source)
 
     def test_grpc_forecast_mang_nguon_so(self):
         real = self.svc.get_occupancy_forecast(
             OccupancyForecastQuery(parking_lot_id=LAKE_AREA, target_timestamp=THURSDAY_08H, forecast_hours=2)
         )
-        self.assertEqual(("lakehouse_parquet", False), (real.data_source, real.is_fallback))
+        self.assertEqual((ForecastDataSource.LAKEHOUSE_PARQUET, False), (real.data_source, real.is_fallback))
         msg = to_occupancy_forecast_response(real)
-        self.assertEqual(("lakehouse_parquet", False), (msg.data_source, msg.is_fallback))
+        self.assertEqual((PB2.LAKEHOUSE_PARQUET, False), (msg.data_source, msg.is_fallback))
 
         baseline = self.svc.get_occupancy_forecast(
             OccupancyForecastQuery(parking_lot_id=UI_LOT, target_timestamp=THURSDAY_08H, forecast_hours=2)
         )
-        self.assertEqual(("heuristic_baseline", True), (baseline.data_source, baseline.is_fallback))
+        self.assertEqual((ForecastDataSource.HEURISTIC_BASELINE, True), (baseline.data_source, baseline.is_fallback))
 
     def test_grpc_de_xuat_gia_mang_nguon_so(self):
         rec = self.svc.get_dynamic_tariff_recommendation(
             TariffRecommendationQuery(parking_lot_id=UI_LOT, base_hourly_rate=10000)
         )
         msg = to_tariff_recommendation_response(rec)
-        self.assertEqual(("heuristic_baseline", True), (msg.data_source, msg.is_fallback))
+        self.assertEqual((PB2.HEURISTIC_BASELINE, True), (msg.data_source, msg.is_fallback))
+
+    def test_khung_gio_tron_lake_va_baseline_thi_ca_ket_qua_la_baseline(self):
+        # Lake tạm chỉ có thứ Năm: cửa sổ 22:00 thứ Năm → 02:00 thứ Sáu trộn lake với baseline.
+        thursday_22h = int(datetime(2026, 10, 15, 22, tzinfo=timezone.utc).timestamp())
+        mixed = self.svc.get_occupancy_forecast(
+            OccupancyForecastQuery(parking_lot_id=LAKE_AREA, target_timestamp=thursday_22h, forecast_hours=4)
+        )
+        self.assertEqual((ForecastDataSource.HEURISTIC_BASELINE, True), (mixed.data_source, mixed.is_fallback))
 
 
 if __name__ == "__main__":

@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from app.core.forecast.constants import DEFAULT_FORECAST_HOURS, FORECAST_SLOT_SECONDS
-from app.core.enums import OccupancyStatus
+from app.core.enums import ForecastDataSource, OccupancyStatus
 from app.core.forecast.dtos.forecast_dto import (
     AreaOccupancyForecastResult,
     AreaOccupancyTelemetryItem,
@@ -142,10 +142,10 @@ class ForecastService:
         return [{"area_id": area, "records": n} for area, n in sorted(counts.items())]
 
     @staticmethod
-    def _merge_provenance(details: List[Dict[str, Any]]) -> Tuple[str, bool]:
+    def _merge_provenance(details: List[Dict[str, Any]]) -> Tuple[ForecastDataSource, bool]:
         """Gộp nguồn số của nhiều khung giờ: chỉ cần một khung baseline là cả kết quả gắn nhãn baseline."""
         if not details or any(d["is_fallback"] for d in details):
-            return "heuristic_baseline", True
+            return ForecastDataSource.HEURISTIC_BASELINE, True
         return details[0]["data_source"], False
 
     def get_training_dataset(self, area_id: Optional[str] = None) -> Dict[str, Any]:
@@ -190,7 +190,9 @@ class ForecastService:
                 ratio = ratio * 100.0
             ratio = max(0.0, min(100.0, ratio))
             confidence = min(0.98, 0.82 + 0.04 * min(telemetry.sample_count, 4))
-            data_source = "lakehouse_parquet" if self._lake_loaded else "clickhouse_marts"
+            data_source = (
+                ForecastDataSource.LAKEHOUSE_PARQUET if self._lake_loaded else ForecastDataSource.CLICKHOUSE_MARTS
+            )
             return {
                 "ratio": round(ratio, 2),
                 "confidence": round(confidence, 2),
@@ -209,7 +211,7 @@ class ForecastService:
         return {
             "ratio": round(max(0.0, min(100.0, ratio)), 2),
             "confidence": confidence,
-            "data_source": "heuristic_baseline",
+            "data_source": ForecastDataSource.HEURISTIC_BASELINE,
             "is_fallback": True,
         }
 

@@ -44,7 +44,7 @@ class TestForecastOccupancyAndSurgeLogic(unittest.TestCase):
         detail = self.service.get_projected_occupancy_ratio_detail("lot-nonexistent-999", 2, 14)
         self.assertIn("data_source", detail)
         self.assertIn("is_fallback", detail)
-        self.assertEqual(detail["data_source"], "heuristic_baseline")
+        self.assertEqual(detail["data_source"], "HEURISTIC_BASELINE")
         self.assertTrue(detail["is_fallback"])
         self.assertEqual(detail["confidence"], 0.55)
 
