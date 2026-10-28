@@ -5,7 +5,7 @@ from unittest.mock import patch
 import cv2
 import numpy as np
 
-from app.core.vision.engines import anpr_engine
+from app.core.vision.engines.anpr import engine as anpr_engine
 from app.core.vision.engines import vehicle_classifier
 from app.core.vision.engines.anpr.plate_text import correct_plate_confusions, plate_key
 from app.core.vision.dtos.vision_dto import AnprItem, PlateResult

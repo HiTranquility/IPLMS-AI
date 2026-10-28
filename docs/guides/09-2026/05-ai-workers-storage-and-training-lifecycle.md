@@ -97,7 +97,7 @@ Một hàm grayscale không cần một service, một queue hay một microserv
 
 | File hiện có/đề xuất | Thao tác và trách nhiệm | Đầu vào → đầu ra |
 |---|---|---|
-| `core/vision/engines/anpr_engine.py` — có | Giữ façade `run_anpr`, phối hợp engine nhỏ; không đổi transport chỉ vì refactor | Bytes → kết quả nhận diện |
+| `core/vision/engines/anpr/engine.py` — có | Giữ façade `run_anpr`, phối hợp engine nhỏ; không đổi transport chỉ vì refactor | Bytes → kết quả nhận diện |
 | `core/vision/engines/image_preprocessor.py` — đề xuất | Chuyển enhanced transforms sang module có cấu hình; dùng chung online/evaluation | Crop → ảnh dẫn xuất + pipeline version |
 | `core/dataset/engines/image_quality.py` — có | Tính kích thước, sáng, blur, lỗi decode; không tự gán nhãn ground truth | Ảnh → quality report |
 | `core/vision/engines/anpr/scoring.py` — có (tách 2026-09-25) | Candidate/provenance/ranking; chưa tách parser hai dòng riêng | OCR candidates → kết quả hiện tại |

@@ -3,7 +3,7 @@ import unittest
 
 from app.core.enums import IngestStatus
 from app.core.knowledge.dtos.knowledge_dto import IngestDocumentCommand
-from app.core.knowledge.engines.injection_scan import find_instructions
+from app.core.knowledge.guardrails.injection_scan import find_instructions
 from app.core.knowledge.services.ingestion_service import IngestionService
 
 

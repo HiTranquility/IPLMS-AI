@@ -3,10 +3,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.core.copilot.engines.dispute_workflow.dependencies import (
+from app.core.copilot.workflows.dispute.dependencies import (
     DisputeWorkflowDependencies,
 )
-from app.core.copilot.engines.dispute_workflow.nodes import (
+from app.core.copilot.workflows.dispute.nodes import (
     finalize,
     make_analyze_evidence_node,
     make_draft_recommendation_node,
@@ -18,7 +18,7 @@ from app.core.copilot.engines.dispute_workflow.nodes import (
     route_after_validation,
     validate_evidence,
 )
-from app.core.copilot.engines.dispute_workflow.state import DisputeWorkflowState
+from app.core.copilot.workflows.dispute.state import DisputeWorkflowState
 from app.core.exceptions import WorkflowConfigurationError
 
 

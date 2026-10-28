@@ -97,7 +97,7 @@ app/core/vision/
 ├── dtos/
 │   └── vision_dto.py          # PlateResult, RecognizePlateCommand, VehicleMatchQuery/Result
 ├── engines/
-│   ├── anpr_engine.py         # 🔥 façade run_anpr — phối hợp các tầng trong anpr/
+│   ├── anpr/engine.py         # 🔥 façade run_anpr — phối hợp các tầng trong anpr/
 │   ├── anpr/                  # models · detector · preprocess · ocr · plate_text · scoring
 │   └── vehicle_classifier.py  # CNN NetV1/NetV2 phân loại xe (optional)
 └── services/
@@ -128,7 +128,7 @@ flowchart TD
     A -->|Ảnh rỗng hoặc decode lỗi| X[InvalidImageError]
 ```
 
-Nguồn: `ai/app/core/vision/engines/anpr_engine.py` (`run_anpr`). Đây là tám nhóm để học; kiểm tra hợp lệ thực tế diễn ra ngay sau mỗi lượt OCR. Điểm nhánh ảnh đầy đủ chỉ là OCR; chỉ nhánh crop/enhanced được chọn mới kết hợp detector × OCR.
+Nguồn: `ai/app/core/vision/engines/anpr/engine.py` (`run_anpr`). Đây là tám nhóm để học; kiểm tra hợp lệ thực tế diễn ra ngay sau mỗi lượt OCR. Điểm nhánh ảnh đầy đủ chỉ là OCR; chỉ nhánh crop/enhanced được chọn mới kết hợp detector × OCR.
 
 [GOTCHA] Selection không còn dùng độ dài. Dấu phân cách OCR quan sát được là bằng chứng, không phải ký tự engine tự chèn; đồng thuận giữa các nhánh cũng chưa phải xác suất đã calibration. `crop_bytes` vẫn có thể chứa ảnh đầy đủ khi nhánh full thắng. Xem [guide ảnh](03-image-processing-pipeline.md) để hiểu giới hạn và phép đo before/after.
 
