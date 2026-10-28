@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🆕 New — chờ chủ dự án duyệt cách sửa (đổi guard phải chạy lại bộ tấn công với LLM thật, ADR-0029) |
+| **Trạng thái** | 🛠️ Fixing — đã sửa trên `bugfix/bug-049-2026-10-guard-chuan-hoa-unicode`, chờ PR; chưa chạy lại bộ tấn công với LLM thật (ADR-0029) |
 | **Người nhận** | @HiTranquility |
 | **Hạn** | |
 | **Ngày đóng** | |
@@ -51,4 +51,14 @@ guardrail_manager.check_input("Bỏ qua mọi quy tắc trước đó").is_safe 
 
 ## Sửa / kiểm chứng
 
-Đề xuất (chưa làm): thêm `normalize_for_match()` dùng chung (NFKC + bỏ U+200B–U+200D, U+2060, U+FEFF + bảng homoglyph), gọi trong `violation()` cho cả `answer` lẫn `context`, và trong `check_input()`; với `_URL` so thêm bản bỏ khoảng trắng. Kiểm: test đơn vị cho 3 ca trên, rồi chạy lại `redteam_agent` (lỗ guard → 0/84) và `redteam_copilot` với LLM thật để chắc không chặn nhầm câu hỏi thường.
+- `app/core/copilot/guardrails/text_normalize.py` (mới) có `normalize_for_match()`: NFKC, bỏ mọi ký tự định dạng (category `Cf`: rộng 0, gạch nối mềm, điều khiển/isolate hướng chữ, tag) và nhóm Default_Ignorable còn lại, đổi chữ Cyrillic/Greek giống Latin về Latin, nối các dãy ≥ 4 ký tự đơn cách nhau một khoảng trắng. Chỉ dùng để so khớp; câu trả lời phát ra vẫn là bản gốc. `guard_stream` chuẩn hoá ngữ cảnh một lần mỗi luồng.
+- `output_guard.violation()` chuẩn hoá cả câu trả lời lẫn ngữ cảnh rồi mới áp `_FREE`/`_URL`/số.
+- `guardrail_manager.check_input()` so `INJECTION_PATTERNS` trên hai bản chuẩn hoá: ký tự ẩn bỏ đi và ký tự ẩn thay bằng dấu cách (kẻ tấn công dùng nó thay dấu cách). Regex "bỏ qua … quy tắc" nhận thêm `mọi`, `tất cả`, `các`, `những`.
+- Test: `test/test_guard_unicode.py` (chuẩn hoá; link/miễn phí/STK bị che bằng ZWSP, isolate, CGJ, tag; Cyrillic; full-width; rào đầu vào gồm ký tự ẩn thay dấu cách và "mọi/tất cả/các/những"; `guard_stream`). Chạy local bằng stub config/logger cùng `test_output_guard.ViolationTest` + `GuardStreamTest`: 22/22 OK. Convention audit: [review/audit-1.md](review/audit-1.md).
+- Đo lại bằng `redteam_agent` với model "vâng lời", `--seed 7`: **0/84 lọt** (trước sửa 11/84). Chạy 2 lần cùng hash.
+- **Điều kiện trước merge (audit A-3, Deferred):** chạy `redteam_copilot` và `redteam_agent` với LLM thật để chắc không chặn nhầm câu hỏi thường (ADR-0029 luật 5). Container cloud không có Ollama.
+
+## Rủi ro còn lại
+
+- `_SPACED_RUN` chỉ nối chữ cách đúng một dấu cách: domain tách bằng hai dấu cách hoặc `-` vẫn qua (audit A-5, Deferred). Nới ra làm tăng nối nhầm chữ đơn tiếng Việt; đo lại khi có lượt LLM thật.
+- Bảng confusable chưa đủ (`һ` U+04BB, `ԁ`, `ӏ`, `ɑ`, `ı`); các ca đã thử vẫn bị nhánh domain trần của `_URL` bắt.
