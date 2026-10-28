@@ -5,6 +5,7 @@ import re
 from dataclasses import dataclass
 from typing import Any, List, Optional, Tuple
 
+from app.core.copilot.guardrails.text_normalize import normalize_for_match
 from app.core.copilot.messages import NO_CONTEXT_ANSWER
 from app.util.logger import logger
 
@@ -28,7 +29,7 @@ INJECTION_PATTERNS = [
     r"(?i)\bjailbreak\b",
     r"(?i)\bdeveloper\s+mode\b",
     r"(?i)\bact\s+as\s+dan\b",
-    r"(?i)\bbỏ\s+qua\s+(hết\s+)?(chỉ\s+dẫn|hướng\s+dẫn|quy\s+tắc)\b",
+    r"(?i)\bbỏ\s+qua\s+(hết\s+|mọi\s+|tất\s+cả\s+)?(các\s+|những\s+)?(chỉ\s+dẫn|hướng\s+dẫn|quy\s+tắc)\b",
     r"(?i)\bquên\s+(hết\s+)?(chỉ\s+dẫn|hướng\s+dẫn)\b",
     r"(?i)\btiết\s+lộ\s+(system\s+prompt|mật\s+khẩu|hướng\s+dẫn\s+hệ\s+thống)\b",
     r"(?i)\bđóng\s+vai\s+(hacker|admin|dan)\b",
@@ -64,9 +65,11 @@ class GuardrailManager:
                 confidence=0.0,
             )
 
-        # 1. Kiểm tra Prompt Injection
+        # 1. Kiểm tra Prompt Injection — trên bản chuẩn hoá để ký tự ẩn/Cyrillic không lách được (bug-049)
+        # Hai bản: ký tự ẩn bỏ đi (chen giữa chữ) và thành dấu cách (dùng thay dấu cách).
+        match_qs = (normalize_for_match(clean_q), normalize_for_match(clean_q, invisible_as=" "))
         for pattern in INJECTION_COMPILED:
-            if pattern.search(clean_q):
+            if any(pattern.search(q) for q in match_qs):
                 logger.warning("Guardrail kích hoạt: Phát hiện Prompt Injection trong query='%s'", clean_q)
                 return GuardrailResult(
                     is_safe=False,
