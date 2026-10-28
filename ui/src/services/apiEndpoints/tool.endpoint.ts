@@ -7,6 +7,7 @@ import type {
   PolicySettings,
   RuntimeSettings,
   SeedDocument,
+  ForecastAreas,
   SystemCheck,
 } from '@/types/tool';
 
@@ -25,6 +26,7 @@ export const TOOL_ENDPOINTS = {
   ENGINE_ACTION: '/tools/engines/action',
   SESSIONS: '/tools/sessions',
   REVOKE_SESSION: (id: string) => `/tools/sessions/${id}/revoke`,
+  FORECAST_AREAS: '/tools/forecast/areas',
 } as const;
 
 export interface DocumentChunk {
@@ -51,6 +53,9 @@ export interface DocumentChunksData {
 
 export const getSystemCheck = (): Promise<SystemCheck> =>
   apiClient.getOne<SystemCheck>(TOOL_ENDPOINTS.SYSTEM_CHECK);
+
+export const getForecastAreas = (): Promise<ForecastAreas> =>
+  apiClient.getOne<ForecastAreas>(TOOL_ENDPOINTS.FORECAST_AREAS);
 
 export const tryCopilot = (query: string, parkingLotId: string): Promise<CopilotAnswer> =>
   apiClient.postOne<CopilotAnswer>(TOOL_ENDPOINTS.TRY_COPILOT, {
@@ -124,6 +129,7 @@ export function revokeActiveSession(
 
 export const toolApi = {
   systemCheck: getSystemCheck,
+  forecastAreas: getForecastAreas,
   tryCopilot,
   ingestDraft,
   getKnowledgeDocuments,

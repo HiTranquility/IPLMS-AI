@@ -118,3 +118,14 @@ export interface EvalCandidate {
   promoted_by: string;
   promoted_at: string;
 }
+
+/** Bãi có dữ liệu trong Gold lake: `area_id` chính là `area_key` mà Forecast tra (ai bug-028). */
+export interface ForecastLakeArea {
+  area_id: string;
+  records: number;
+}
+
+export interface ForecastAreas {
+  source_path: string;
+  areas: ForecastLakeArea[];
+}

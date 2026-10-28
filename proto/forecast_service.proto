@@ -39,6 +39,9 @@ message OccupancyForecastResponse {
   string parking_lot_id = 1;
   repeated ForecastSlot slots = 2;
   double confidence_score = 3;
+  // Nguồn số (IPLMS REQ-022 F2): "lakehouse_parquet" | "clickhouse_marts" | "heuristic_baseline".
+  string data_source = 4;
+  bool is_fallback = 5;              // true khi có khung giờ dùng baseline, không có dữ liệu bãi
 }
 
 message TariffRecommendationRequest {
@@ -50,4 +53,6 @@ message TariffRecommendationResponse {
   string parking_lot_id = 1;
   double recommended_multiplier = 2; // e.g. 1.2 (+20%) hoặc 0.8 (-20%)
   string reason = 3;                 // Lý do đề xuất (dựa trên % lấp đầy dự kiến)
+  string data_source = 4;            // như OccupancyForecastResponse.data_source
+  bool is_fallback = 5;
 }

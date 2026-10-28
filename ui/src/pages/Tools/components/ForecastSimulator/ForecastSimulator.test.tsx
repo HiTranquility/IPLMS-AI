@@ -1,9 +1,40 @@
-import { fireEvent, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
-import { renderWithProviders } from '@/test/utils';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { mockApi, ok, renderWithProviders } from '@/test/utils';
 import { ForecastSimulator } from './ForecastSimulator';
 
 describe('ForecastSimulator Component', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('lists lots from the Gold lake and runs the pipeline on that area_key (ai bug-028)', async () => {
+    const calls = mockApi((url) => {
+      if (url.endsWith('/tools/forecast/areas')) {
+        return ok({ source_path: 'gold/occupancy', areas: [{ area_id: 'area-zone-a', records: 24 }] });
+      }
+      return undefined;
+    });
+    renderWithProviders(<ForecastSimulator />);
+
+    const select = (await screen.findByRole('option', { name: 'area-zone-a · 24 bản ghi' })).closest('select');
+    expect(select).toBeTruthy();
+    expect((select as HTMLSelectElement).value).toBe('area-zone-a');
+    expect(screen.queryByRole('option', { name: /Landmark 81/i })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /Chạy Pipeline 3/i }));
+    await waitFor(() => expect(calls.some((c) => c.url.endsWith('/tools/forecast/simulate'))).toBe(true));
+    const sim = calls.find((c) => c.url.endsWith('/tools/forecast/simulate'));
+    expect(JSON.parse(String(sim?.init?.body)).area_id).toBe('area-zone-a');
+  });
+
+  it('cannot run the pipeline while the lake has no lot', async () => {
+    mockApi((url) =>
+      url.endsWith('/tools/forecast/areas') ? ok({ source_path: 'gold/occupancy', areas: [] }) : undefined,
+    );
+    renderWithProviders(<ForecastSimulator />);
+    expect(await screen.findByRole('option', { name: 'Gold lake chưa có bãi nào' })).toBeTruthy();
+    expect((screen.getByRole('button', { name: /Chạy Pipeline 3/i }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it('renders simulation parameters and initial KPI values', () => {
     renderWithProviders(<ForecastSimulator />);
 
