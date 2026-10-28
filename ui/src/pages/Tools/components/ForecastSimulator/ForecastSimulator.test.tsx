@@ -26,6 +26,18 @@ describe('ForecastSimulator Component', () => {
     expect(JSON.parse(String(sim?.init?.body)).area_id).toBe('area-zone-a');
   });
 
+  it('shows a load error with retry instead of claiming the lake is empty', async () => {
+    mockApi((url) =>
+      url.endsWith('/tools/forecast/areas')
+        ? { status: 500, body: { success: false, total: 0, message: 'lỗi lake', data: [], code: 'INTERNAL' } }
+        : undefined,
+    );
+    renderWithProviders(<ForecastSimulator />);
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.queryByRole('option', { name: 'Gold lake chưa có bãi nào' })).toBeNull();
+    expect(screen.getByRole('button', { name: /Thử lại/i })).toBeTruthy();
+  });
+
   it('cannot run the pipeline while the lake has no lot', async () => {
     mockApi((url) =>
       url.endsWith('/tools/forecast/areas') ? ok({ source_path: 'gold/occupancy', areas: [] }) : undefined,

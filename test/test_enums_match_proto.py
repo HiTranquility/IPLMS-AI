@@ -11,6 +11,7 @@ from app.api.grpc.generated_stubs import STUBS_READY, get_stub
 from app.core.enums import (
     ArbitrationVerdict,
     DocumentFormat,
+    ForecastDataSource,
     FraudReason,
     IngestStatus,
     OccupancyStatus,
@@ -21,6 +22,7 @@ from app.core.enums import (
 MOI_ENUM = (
     ArbitrationVerdict,
     DocumentFormat,
+    ForecastDataSource,
     FraudReason,
     IngestStatus,
     OccupancyStatus,
@@ -55,6 +57,10 @@ class EnumMatchesProtoTest(unittest.TestCase):
     def test_occupancy_status_khop(self):
         pb2, _ = get_stub("forecast_service")
         self._assert_khop(OccupancyStatus, pb2.OccupancyStatus, "OccupancyStatus")
+
+    def test_forecast_data_source_khop(self):
+        pb2, _ = get_stub("forecast_service")
+        self._assert_khop(ForecastDataSource, pb2.ForecastDataSource, "ForecastDataSource")
 
     def test_arbitration_verdict_khop(self):
         pb2, _ = get_stub("copilot_service")

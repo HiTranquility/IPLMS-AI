@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '@/api/client';
 import { SimulatedBanner } from '@/components/common/Ui/feedback/SimulatedBanner';
+import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
 import { useI18n } from '@/i18n/I18nProvider';
 import { DASH, fmtInt } from '@/utils/format';
 import { useForecastAreas } from '@/hooks/queries';
@@ -352,7 +353,11 @@ export function ForecastSimulator() {
               >
                 {lakeAreas.length === 0 && (
                   <option value="" disabled>
-                    {lakeAreasQuery.isLoading ? t.feedback.loading : t.tools.lakeAreasEmpty}
+                    {lakeAreasQuery.isLoading
+                      ? t.feedback.loading
+                      : lakeAreasQuery.isError
+                        ? t.feedback.loadFailed
+                        : t.tools.lakeAreasEmpty}
                   </option>
                 )}
                 {lakeAreas.map((area) => (
@@ -361,6 +366,9 @@ export function ForecastSimulator() {
                   </option>
                 ))}
               </select>
+              {lakeAreasQuery.isError && (
+                <ErrorBlock error={lakeAreasQuery.error} onRetry={() => void lakeAreasQuery.refetch()} />
+              )}
             </div>
 
             {/* Day of Week Selector */}
