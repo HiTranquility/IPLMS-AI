@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🚧 In progress — chặng 1 (X2) PR #119; chặng 2 code + test xong, chưa chạy test DB thật; chặng 3–4 chưa làm |
+| **Trạng thái** | 🚧 In progress — chặng 1 (X2) PR #119; chặng 2 code + test xong (cả DB thật), cùng PR #119; chặng 3–4 chưa làm |
 | **Người nhận** | @HiTranquility |
 | **Hạn** | |
 | **Ưu tiên** | 🔴 |
@@ -37,7 +37,7 @@
 - [x] API `GET/POST /api/models/connections`, `POST …/{id}/disable`, `POST …/{id}/test`, `POST …/test` (bản nháp, không ghi `ai-db`) — `app/api/rest/routes/console_model_controller.py`; xem `ai:metrics:read`, ghi/thử `ai:model:propose`; mỗi thao tác ghi `audit_event` (`model.connection_create|disable|test`).
 - [x] Chống SSRF: allowlist `AI_CONSOLE_MODEL_CONNECTION_HOSTS`, luôn chặn link-local/metadata sau khi phân giải DNS, nối thẳng IP đã kiểm, không theo redirect, đọc ≤ 1 MiB (`app/core/console/guardrails/model_endpoint.py`, `app/infra/llm/connection_probe.py`); timeout 10 s; 10 lần/phút/thành viên → 429 (`app/core/console/engines/rate_limiter.py`).
 - [x] Secret: chỉ lưu tên biến, phải có tiền tố `AI_LLM_KEY_` hoặc nằm trong `AI_CONSOLE_MODEL_SECRET_NAMES` (Q-B).
-- [ ] Test DB thật (`ConnectionDatabaseTest`, 4 test) — **BLOCKED**: Docker Desktop không khởi động được từ phiên agent; chạy lại khi có `AI_TEST_DATABASE_URL`.
+- [x] Test DB thật (`ConnectionDatabaseTest`, 4 test) PASS trên container `pgvector/pgvector:pg16` tạm, kèm `test_model_policy` (dùng chung `ensure_schema`) — 41 test PASS.
 - [ ] UI trang Models & Connections — chưa làm (gộp vào chặng 3 cùng revision).
 
 ### Chặng 3–4 (chưa làm)
@@ -71,13 +71,13 @@
 | `python -m unittest discover -s test -t .` | 638 test, **2 FAIL có sẵn** (bug-047), 40 skip |
 | `python script/check_core_layout.py` | 0 lệch (thêm slot `console/guardrails/`) |
 | `ui`: `npx tsc --noEmit`, `npx vitest run src/pages/Audit` | PASS (mã audit mới có trong `auditActionCodes.json` + i18n VI/EN) |
-| Test DB thật | **BLOCKED** — xem trên |
+| `AI_TEST_DATABASE_URL=<pg16 tạm> python -m unittest test.test_console_model_connections test.test_model_policy` | PASS — 41 test, 0 skip |
 
 ## Bàn giao
 
 - **Đổi hành vi cần biết:** máy nào đang dùng Settings để chọn `ollama`/`local` hoặc tên model thì sau khi merge sẽ về giá trị env (`AI_LLM_PROVIDER`, `AI_LLM_MODEL`). Muốn đổi model thì tạo và kích hoạt revision (tạm thời ở trang Hồ sơ model AI của platform cho tới chặng 3).
 - **Dead code có sẵn, không đụng:** khoá i18n `settings.providerLocal` đã không được dùng từ trước.
-- **Làm tiếp từ:** chạy `ConnectionDatabaseTest` trên Postgres riêng (`AI_TEST_DATABASE_URL`), rồi chặng 3 (revision gắn `connection_id` + trang Models & Connections).
+- **Làm tiếp từ:** chặng 3 (revision gắn `connection_id` + trang Models & Connections).
 - **Cấu hình mới:** `AI_CONSOLE_MODEL_CONNECTION_HOSTS` rỗng = chặn hết; máy dev cần đặt (mẫu ở `.env.example`).
 
 ## Hồ sơ liên quan
