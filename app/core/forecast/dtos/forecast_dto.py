@@ -45,12 +45,16 @@ class OccupancyForecast(BaseModel):
     parking_lot_id: str
     slots: List[ForecastSlot]
     confidence_score: float
+    data_source: str = "heuristic_baseline"
+    is_fallback: bool = True
 
 
 class TariffRecommendation(BaseModel):
     parking_lot_id: str
     recommended_multiplier: float
     reason: str
+    data_source: str = "heuristic_baseline"
+    is_fallback: bool = True
 
 
 class AreaOccupancyTelemetryItem(BaseModel):

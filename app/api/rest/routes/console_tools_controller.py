@@ -159,6 +159,22 @@ class ForecastSimulateIn(BaseModel):
     base_hourly_rate: float = Field(default=25000.0, ge=0.0)
 
 
+class ForecastLakeArea(BaseModel):
+    area_id: str
+    records: int
+
+
+class ForecastAreasOut(BaseModel):
+    source_path: str
+    areas: List[ForecastLakeArea]
+
+
+@router.get("/forecast/areas", response_model=BaseResponse[ForecastAreasOut])
+async def forecast_areas(actor: ConsoleActor = Depends(require_permission("ai:metrics:read"))):
+    result = await console_tools_service.list_forecast_areas(actor)
+    return BaseResponse.ok([ForecastAreasOut(**result)], "Danh sách bãi có dữ liệu trong Gold lake.")
+
+
 @router.post("/forecast/simulate", response_model=BaseResponse[dict])
 async def simulate_forecast(
     payload: ForecastSimulateIn,

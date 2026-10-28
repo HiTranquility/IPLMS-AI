@@ -490,6 +490,12 @@ class ConsoleToolsService:
             "version_no": result.version_no,
         }
 
+    async def list_forecast_areas(self, actor: ConsoleActor) -> dict:
+        """Bãi có dữ liệu trong Gold lake để Simulator chọn đúng `area_key` (ai bug-028)."""
+        access_policy.require(actor, "ai:metrics:read")
+        areas = await asyncio.to_thread(forecast_service.list_lake_areas)
+        return {"source_path": str(_resolve_default_gold_lake_path()), "areas": areas}
+
     async def simulate_forecast(
         self,
         actor: ConsoleActor,
