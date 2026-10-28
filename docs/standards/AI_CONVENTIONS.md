@@ -67,7 +67,7 @@ app/core/<domain>/
 | Đọc file / DB / lake | `app/infra/` (Parquet occupancy: `infra/datalake/parquet_occupancy_store.py`) |
 | Dữ liệu mẫu, adapter giả | `test/` hoặc `app/script/` (ngoại lệ: `copilot/workflows/dispute/fixtures.py` khi workflow chưa nối backend) |
 
-Hiện có: `copilot_rag_system` (Copilot), `eval_judge`, `eval_generator` (knowledge_eval).
+Hiện có: `copilot_rag_system` (Copilot), `eval_judge`, `eval_generator` (knowledge_eval), `redteam_attacker` (LLM tấn công của `app/script/redteam_agent.py`).
 
 - **[NEVER]** viết prompt dạng chuỗi trong `.py` (`"""Bạn là…"""`, `INSTRUCTIONS = """…`), kể cả làm fallback. Thiếu file prompt thì khởi động báo lỗi.
 - **[MUST]** Sửa nội dung prompt thì tạo `vN+1.md` (bản số lớn nhất tự được dùng), không sửa đè bản đang chạy. Telemetry ghi nhãn `<tên>_<version>#<hash8>`. Backend đọc nhãn này qua `promptVersion`, nên **[NEVER]** đổi dạng nhãn.
