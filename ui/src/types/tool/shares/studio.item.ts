@@ -40,6 +40,24 @@ export interface DisputeSimulationPayload {
   has_checkout_snapshot: boolean;
 }
 
+/** Một xe trong clip: các frame cùng xe đã gộp lại (IPLMS REQ-021 F2–F3). */
+export interface AnprClipEvent {
+  plate_number: string;
+  confidence: number;
+  best_time_s: number;
+  start_time_s: number;
+  end_time_s: number;
+  frame_count: number;
+  crop_image: string | null;
+}
+
+export interface AnprClipResult {
+  sampled_frames: number;
+  plate_reads: number;
+  latency_ms: number;
+  events: AnprClipEvent[];
+}
+
 export interface AnprRecognizeResult {
   plate_number?: string;
   plate_text?: string;

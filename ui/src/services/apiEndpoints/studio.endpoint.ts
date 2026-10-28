@@ -1,5 +1,6 @@
 import { apiClient } from '../apiClient';
 import type {
+  AnprClipResult,
   AnprRecognizeResult,
   DisputeSimulationPayload,
   DisputeSimulationResult,
@@ -17,6 +18,7 @@ export const STUDIO_ENDPOINTS = {
   DISPUTE_SIMULATE: '/copilot/dispute-workflow/simulate',
   KNOWLEDGE_DOCUMENTS: '/tools/knowledge/documents',
   ANPR_RECOGNIZE: '/tools/anpr/recognize',
+  ANPR_RECOGNIZE_CLIP: '/tools/anpr/recognize-clip',
   VERIFY_MATCH: '/tools/vision/verify-match',
 } as const;
 
@@ -29,6 +31,10 @@ export const getKnowledgeSeeds = (): Promise<SeedDocument[]> =>
 export const recognizePlate = (form: FormData): Promise<AnprRecognizeResult> =>
   apiClient.postOne<AnprRecognizeResult>(STUDIO_ENDPOINTS.ANPR_RECOGNIZE, form);
 
+// Clip không được lưu ở server; giới hạn dung lượng/độ dài nằm ở config AI (REQ-021 F1, F7).
+export const recognizeClip = (form: FormData): Promise<AnprClipResult> =>
+  apiClient.postOne<AnprClipResult>(STUDIO_ENDPOINTS.ANPR_RECOGNIZE_CLIP, form);
+
 // Server chỉ nhận hai loại xe (extra="forbid"); URL ảnh chưa dùng vì service chưa so ảnh.
 export const verifyMatch = (body: { expected_vehicle_type: string; current_vehicle_type: string }): Promise<VerifyMatchResult> =>
   apiClient.postOne<VerifyMatchResult>(STUDIO_ENDPOINTS.VERIFY_MATCH, {
@@ -40,5 +46,6 @@ export const studioApi = {
   simulateDispute,
   knowledgeSeeds: getKnowledgeSeeds,
   recognizePlate,
+  recognizeClip,
   verifyMatch,
 };
