@@ -360,6 +360,21 @@ class ConsoleToolsService:
             "crop_image": crop_image_b64,
         }
 
+    async def try_anpr_clip(self, actor: ConsoleActor, clip: bytes, content_type: str, motion: bool = False) -> dict:
+        """Đọc biển số từ clip bằng engine ANPR đang nạp (IPLMS REQ-021 A).
+
+        Clip không được lưu (F7); mỗi sự kiện chỉ mang ảnh cắt biển của frame tốt nhất.
+        """
+        access_policy.require(actor, "ai:model:evaluate")
+        result = await asyncio.to_thread(AnprService.recognize_clip, clip, content_type, motion)
+        import base64
+        for event in result["events"]:
+            crop = event.pop("crop_bytes", None)
+            event["crop_image"] = (
+                f"data:image/jpeg;base64,{base64.b64encode(crop).decode('ascii')}" if crop else None
+            )
+        return result
+
     async def verify_match(self, actor: ConsoleActor, expected_type: str, current_type: str) -> dict:
         """Đối chiếu loại xe vào/ra bằng anti_fraud_service thật (ai bug-018).
 
