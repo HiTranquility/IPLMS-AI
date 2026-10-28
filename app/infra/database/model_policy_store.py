@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from typing import Any, Callable
 from uuid import uuid4
 
@@ -27,6 +28,25 @@ _COLUMNS = (
     "max_output_tokens, timeout_seconds, status, tested_at, created_by, created_at, "
     "activated_at, activated_by"
 )
+
+
+_CONNECTION_COLUMNS = (
+    "id::text, name, provider, base_url, secret_env_name, status, replaces_id::text, "
+    "created_by, created_at, disabled_by, disabled_at, last_tested_at, last_test_ok, "
+    "last_test_error, last_test_latency_ms, last_test_models"
+)
+
+
+def _connection(row) -> dict[str, Any]:
+    return {
+        "id": row[0], "name": row[1], "provider": row[2], "base_url": row[3],
+        "secret_env_name": row[4] or "", "status": row[5], "replaces_id": row[6] or "",
+        "created_by": row[7], "created_at": row[8].isoformat(),
+        "disabled_by": row[9] or "", "disabled_at": row[10].isoformat() if row[10] else "",
+        "last_tested_at": row[11].isoformat() if row[11] else "",
+        "last_test_ok": row[12], "last_test_error": row[13] or "",
+        "last_test_latency_ms": row[14], "last_test_models": row[15] or [],
+    }
 
 
 class ModelPolicyStore:
@@ -92,6 +112,46 @@ class ModelPolicyStore:
                 cur.execute(
                     "CREATE UNIQUE INDEX IF NOT EXISTS uq_ai_model_profile_active "
                     "ON ai_model_profiles (task) WHERE status = 'ACTIVE'"
+                )
+                cur.execute(
+                    """CREATE TABLE IF NOT EXISTS ai_model_connections (
+                        id UUID PRIMARY KEY,
+                        name VARCHAR(80) NOT NULL,
+                        provider VARCHAR(16) NOT NULL,
+                        base_url VARCHAR(500) NOT NULL,
+                        secret_env_name VARCHAR(64),
+                        status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
+                        replaces_id UUID REFERENCES ai_model_connections(id) ON DELETE RESTRICT,
+                        created_by VARCHAR(100) NOT NULL,
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                        disabled_by VARCHAR(100),
+                        disabled_at TIMESTAMPTZ,
+                        last_tested_at TIMESTAMPTZ,
+                        last_test_ok BOOLEAN,
+                        last_test_error VARCHAR(24),
+                        last_test_latency_ms INTEGER,
+                        last_test_models JSONB,
+                        CONSTRAINT ck_ai_model_connections_provider CHECK
+                            (provider IN ('ollama', 'local', 'openai')),
+                        CONSTRAINT ck_ai_model_connections_base_url CHECK (base_url ~ '^https?://'),
+                        CONSTRAINT ck_ai_model_connections_secret_env_name CHECK
+                            (secret_env_name ~ '^[A-Z][A-Z0-9_]{0,63}$'),
+                        CONSTRAINT ck_ai_model_connections_status CHECK
+                            (status IN ('ACTIVE', 'DISABLED')),
+                        CONSTRAINT ck_ai_model_connections_disabled CHECK
+                            ((status = 'DISABLED') = (disabled_at IS NOT NULL)),
+                        CONSTRAINT ck_ai_model_connections_tested CHECK
+                            ((last_tested_at IS NULL) = (last_test_ok IS NULL)),
+                        CONSTRAINT ck_ai_model_connections_test_error CHECK
+                            (last_test_error IN ('unreachable', 'auth_failed', 'timeout',
+                                                 'no_models', 'blocked_host')),
+                        CONSTRAINT ck_ai_model_connections_latency CHECK (last_test_latency_ms >= 0)
+                    )"""
+                )
+                # Không trùng tên giữa các connection đang bật (schema-chang-2-connections.md Q3).
+                cur.execute(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS uq_ai_model_connections_active_name "
+                    "ON ai_model_connections (name) WHERE status = 'ACTIVE'"
                 )
                 cur.execute(
                     """CREATE TABLE IF NOT EXISTS ai_model_profile_activations (
@@ -251,6 +311,90 @@ class ModelPolicyStore:
                 (str(uuid4()), profile_id, profile["task"], actor),
             )
             return active
+
+        return await self._run(work)
+
+    async def list_connections(self) -> list[dict[str, Any]]:
+        def work(cur):
+            cur.execute(f"SELECT {_CONNECTION_COLUMNS} FROM ai_model_connections ORDER BY status, name")
+            return [_connection(row) for row in cur.fetchall()]
+
+        return await self._run(work)
+
+    async def get_connection(self, connection_id: str) -> dict[str, Any] | None:
+        def work(cur):
+            cur.execute(
+                f"SELECT {_CONNECTION_COLUMNS} FROM ai_model_connections WHERE id = %s",
+                (connection_id,),
+            )
+            row = cur.fetchone()
+            return _connection(row) if row else None
+
+        return await self._run(work)
+
+    async def create_connection(
+        self, values: dict[str, Any], actor: str, replaces_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Dòng bất biến: "sửa" = tắt bản cũ và thêm bản mới trỏ về nó, cùng transaction."""
+        def work(cur):
+            if replaces_id:
+                cur.execute(
+                    """UPDATE ai_model_connections
+                       SET status = 'DISABLED', disabled_at = NOW(), disabled_by = %s
+                       WHERE id = %s AND status = 'ACTIVE' RETURNING id""",
+                    (actor, replaces_id),
+                )
+                if not cur.fetchone():
+                    raise KnowledgeGateError("Chỉ sửa được connection đang bật.")
+            try:
+                cur.execute(
+                    f"""INSERT INTO ai_model_connections
+                        (id, name, provider, base_url, secret_env_name, replaces_id, created_by)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        RETURNING {_CONNECTION_COLUMNS}""",
+                    (
+                        str(uuid4()), values["name"], values["provider"], values["base_url"],
+                        values["secret_env_name"] or None, replaces_id, actor,
+                    ),
+                )
+            except Exception as exc:
+                if getattr(exc, "pgcode", None) == "23505":
+                    raise KnowledgeGateError("Đã có connection đang bật trùng tên.") from exc
+                raise
+            return _connection(cur.fetchone())
+
+        return await self._run(work)
+
+    async def disable_connection(self, connection_id: str, actor: str) -> dict[str, Any]:
+        def work(cur):
+            cur.execute(
+                f"""UPDATE ai_model_connections
+                    SET status = 'DISABLED', disabled_at = NOW(), disabled_by = %s
+                    WHERE id = %s AND status = 'ACTIVE' RETURNING {_CONNECTION_COLUMNS}""",
+                (actor, connection_id),
+            )
+            row = cur.fetchone()
+            if not row:
+                raise KnowledgeGateError("Không có connection đang bật với id này.")
+            return _connection(row)
+
+        return await self._run(work)
+
+    async def record_connection_test(self, connection_id: str, result: dict[str, Any]) -> dict[str, Any] | None:
+        """Chỉ ghi kết quả thử gần nhất, không đổi cấu hình (REQ-020 F3)."""
+        def work(cur):
+            cur.execute(
+                f"""UPDATE ai_model_connections
+                    SET last_tested_at = NOW(), last_test_ok = %s, last_test_error = %s,
+                        last_test_latency_ms = %s, last_test_models = %s
+                    WHERE id = %s RETURNING {_CONNECTION_COLUMNS}""",
+                (
+                    result["ok"], result["error"] or None, result["latency_ms"],
+                    json.dumps(result["models"]) if result["ok"] else None, connection_id,
+                ),
+            )
+            row = cur.fetchone()
+            return _connection(row) if row else None
 
         return await self._run(work)
 
