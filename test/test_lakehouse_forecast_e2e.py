@@ -25,10 +25,8 @@ import pyarrow.parquet as pq
 
 from app.core.enums import OccupancyStatus
 from app.core.forecast.dtos.forecast_dto import OccupancyForecastQuery, TariffRecommendationQuery
-from app.core.forecast.readers.parquet_lake_reader import (
-    ParquetLakeReader,
-    _resolve_default_gold_lake_path,
-)
+from app.core.forecast.engines.parquet_lake_reader import ParquetLakeReader
+from app.infra.datalake.parquet_occupancy_store import _resolve_default_gold_lake_path
 from app.core.forecast.services.forecast_service import ForecastService
 
 

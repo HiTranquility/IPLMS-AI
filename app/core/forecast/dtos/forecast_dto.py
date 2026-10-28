@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
-from app.core.constants import DEFAULT_FORECAST_HOURS
+from app.core.forecast.constants import DEFAULT_FORECAST_HOURS
 from app.core.enums import OccupancyStatus
 
 # Biểu đồ phân bổ tỷ lệ lấp đầy chuẩn hóa theo giờ trong ngày cho ngày làm việc (0-4) và cuối tuần (5-6)

@@ -27,6 +27,7 @@ from app.core.copilot import AskQuestionRequest, CopilotAnswer, copilot_service
 from app.core.enums import IngestStatus
 from app.core.forecast import _resolve_default_gold_lake_path, forecast_service
 from app.core.knowledge.dtos.knowledge_dto import IngestDocumentCommand
+from app.core.model_policy.engines.validation import TASKS as MODEL_TASKS
 from app.core.vision import AnprService, RecognizePlateCommand, VehicleMatchQuery, anti_fraud_service
 from app.infra.database.console_store import console_store
 from app.util.logger import logger
@@ -222,75 +223,32 @@ def _reload_llm(cfg) -> dict[str, Any]:
     return {"status": "noop", "provider": prov}
 
 
-def _detect_available_models(cfg) -> list[dict[str, Any]]:
-    """Dò tìm các mô hình LLM có sẵn trên máy dev: file GGUF, llama-server hoặc Ollama."""
-    models: list[dict[str, Any]] = []
-    seen = set()
+async def _effective_models() -> list[dict[str, Any]]:
+    """Model inference dùng thật cho từng tác vụ (IPLMS ADR-0061 §2).
 
-    # 1. Quét các file GGUF trong thư mục model/checkpoint/llm/
-    try:
-        from pathlib import Path
-        repo_root = Path(__file__).resolve().parents[4]
-        gguf_dir = repo_root / "model" / "checkpoint" / "llm"
-        if gguf_dir.is_dir():
-            for p in sorted(gguf_dir.glob("*.gguf")):
-                name = p.stem
-                if name not in seen:
-                    seen.add(name)
-                    size_mb = round(p.stat().st_size / (1024 * 1024), 1)
-                    size_str = f"{round(size_mb / 1024, 2)} GB" if size_mb > 1024 else f"{size_mb} MB"
-                    models.append({
-                        "name": name,
-                        "provider": "local",
-                        "source": "gguf_file",
-                        "label": f"{name} ({size_str} - GGUF Local)",
-                    })
-    except Exception:
-        pass
+    Dựng `LlmFactory` giống `LlmFactory.for_task`: có revision ACTIVE thì theo revision,
+    không có thì theo env. Không đọc được kho profile thì báo "unknown" chứ không đoán env.
+    """
+    from app.infra.database.model_policy_store import model_policy_store
+    from app.infra.llm.llm_factory import LlmFactory
 
-    # 2. Dò llama-server nếu đang chạy
-    try:
-        local_url = getattr(cfg.llm, "local_llm_url", "http://127.0.0.1:8005/v1")
-        models_url = f"{local_url.rstrip('/')}/models"
-        import urllib.request
-        with urllib.request.urlopen(models_url, timeout=0.3) as r:
-            if r.status == 200:
-                data = json.loads(r.read().decode())
-                for m in data.get("data", []):
-                    m_id = m.get("id")
-                    if m_id and m_id not in seen:
-                        seen.add(m_id)
-                        models.append({
-                            "name": m_id,
-                            "provider": "local",
-                            "source": "llama_server",
-                            "label": f"{m_id} (llama-server CUDA)",
-                        })
-    except Exception:
-        pass
-
-    # 3. Dò Ollama nếu đang chạy
-    try:
-        ollama_url = getattr(cfg.llm, "ollama_url", "http://127.0.0.1:11434/v1")
-        tags_url = f"{ollama_url.rstrip('/').removesuffix('/v1')}/api/tags"
-        import urllib.request
-        with urllib.request.urlopen(tags_url, timeout=0.3) as r:
-            if r.status == 200:
-                data = json.loads(r.read().decode())
-                for m in data.get("models", []):
-                    m_name = m.get("name")
-                    if m_name and m_name not in seen:
-                        seen.add(m_name)
-                        models.append({
-                            "name": m_name,
-                            "provider": "ollama",
-                            "source": "ollama_tag",
-                            "label": f"{m_name} (Ollama Local)",
-                        })
-    except Exception:
-        pass
-
-    return models
+    rows: list[dict[str, Any]] = []
+    for task in MODEL_TASKS:
+        try:
+            profile = await model_policy_store.get_active(task) if model_policy_store.db_url else None
+        except Exception as exc:  # noqa: BLE001 — trang Settings vẫn mở được khi ai-db lỗi
+            logger.warning("Không đọc được revision đang dùng cho %s: %s", task, exc)
+            rows.append({"task": task, "provider": None, "model": None, "source": "unknown", "revision": None})
+            continue
+        llm = LlmFactory(profile=profile)
+        rows.append({
+            "task": task,
+            "provider": llm.provider,
+            "model": llm.model,
+            "source": "profile" if profile else "env",
+            "revision": profile["revision"] if profile else None,
+        })
+    return rows
 
 
 class ConsoleToolsService:
@@ -321,9 +279,11 @@ class ConsoleToolsService:
             ("totp_key", "Khoá mã hoá TOTP", bool(cfg.console.totp_encryption_key)),
             ("cookie_secure", "Cookie chỉ qua HTTPS", cfg.console.cookie_secure),
         ]
+        # Model Copilot inference dùng thật, không phải env khi đã có revision ACTIVE (ADR-0061 §2).
+        copilot = next(m for m in await _effective_models() if m["task"] == "copilot_answer")
         return {
             "checks": [{"key": k, "label": label, "ok": bool(ok)} for k, label, ok in checks],
-            "llm_model": getattr(cfg.llm, "active_model_name", cfg.llm.llm_model),
+            "llm_model": copilot["model"] or "—",
             "telemetry_enabled": cfg.telemetry.enabled,
             "vision_device": getattr(cfg.vision, "resolved_device", cfg.vision.device),
             "telemetry_retention_days": cfg.telemetry.retention_days,
@@ -359,6 +319,21 @@ class ConsoleToolsService:
             "latency_ms": round(result.process_time * 1000, 1) if result.process_time is not None else None,
             "crop_image": crop_image_b64,
         }
+
+    async def try_anpr_clip(self, actor: ConsoleActor, clip: bytes, content_type: str, motion: bool = False) -> dict:
+        """Đọc biển số từ clip bằng engine ANPR đang nạp (IPLMS REQ-021 A).
+
+        Clip không được lưu (F7); mỗi sự kiện chỉ mang ảnh cắt biển của frame tốt nhất.
+        """
+        access_policy.require(actor, "ai:model:evaluate")
+        result = await asyncio.to_thread(AnprService.recognize_clip, clip, content_type, motion)
+        import base64
+        for event in result["events"]:
+            crop = event.pop("crop_bytes", None)
+            event["crop_image"] = (
+                f"data:image/jpeg;base64,{base64.b64encode(crop).decode('ascii')}" if crop else None
+            )
+        return result
 
     async def verify_match(self, actor: ConsoleActor, expected_type: str, current_type: str) -> dict:
         """Đối chiếu loại xe vào/ra bằng anti_fraud_service thật (ai bug-018).
@@ -607,15 +582,12 @@ class ConsoleToolsService:
                 "vision_resolved_device": cfg.vision.resolved_device,
                 "onnx_enabled": bool(cfg.vision.onnx_enabled),
                 "vision_warmup_on_start": bool(cfg.vision.vision_warmup_on_start),
-                "llm_provider": cfg.llm.llm_provider,
-                "llm_model": cfg.llm.active_model_name,
-                "llm_base_url": cfg.llm.llm_base_url,
                 "local_llm_gpu_layers": int(cfg.llm.local_llm_gpu_layers),
                 "local_llm_ctx_size": int(cfg.llm.local_llm_ctx_size),
                 "local_llm_threads": int(cfg.llm.local_llm_threads),
                 "local_llm_parallel_slots": int(cfg.llm.local_llm_parallel_slots),
-                "detected_models": await asyncio.to_thread(_detect_available_models, cfg),
             },
+            "models": await _effective_models(),
             "policy": {
                 "rag_min_similarity": float(cfg.llm.rag_min_similarity),
                 "rag_top_k": int(cfg.llm.rag_top_k),
@@ -652,9 +624,8 @@ class ConsoleToolsService:
         llm_changed = any(
             k in payload and payload[k] is not None
             for k in (
-                "llm_model", "local_llm_gpu_layers", "local_llm_ctx_size",
-                "local_llm_threads", "local_llm_parallel_slots", "llm_provider",
-                "preset",
+                "local_llm_gpu_layers", "local_llm_ctx_size",
+                "local_llm_threads", "local_llm_parallel_slots", "preset",
             )
         )
         if llm_changed and cfg.llm.llm_provider in LOCAL_LLM_PROVIDERS:
@@ -671,24 +642,18 @@ class ConsoleToolsService:
         if preset == "safe_4gb":
             cfg.vision.device = "cpu"
             cfg.vision.onnx_enabled = True
-            if cfg.llm.llm_provider in LOCAL_LLM_PROVIDERS:
-                cfg.llm.llm_provider = "local"
             cfg.llm.local_llm_gpu_layers = 33
             cfg.llm.local_llm_ctx_size = 4096
             cfg.llm.local_llm_parallel_slots = 1
         elif preset == "cpu_eco":
             cfg.vision.device = "cpu"
             cfg.vision.onnx_enabled = True
-            if cfg.llm.llm_provider in LOCAL_LLM_PROVIDERS:
-                cfg.llm.llm_provider = "local"
             cfg.llm.local_llm_gpu_layers = 0
             cfg.llm.local_llm_ctx_size = 2048
             cfg.llm.local_llm_parallel_slots = 1
         elif preset == "gpu_full":
             cfg.vision.device = "cuda"
             cfg.vision.onnx_enabled = True
-            if cfg.llm.llm_provider in LOCAL_LLM_PROVIDERS:
-                cfg.llm.llm_provider = "local"
             cfg.llm.local_llm_gpu_layers = 33
             cfg.llm.local_llm_ctx_size = 4096
             cfg.llm.local_llm_parallel_slots = 2
@@ -699,12 +664,9 @@ class ConsoleToolsService:
                 cfg.vision.onnx_enabled = bool(payload["onnx_enabled"])
             if "vision_warmup_on_start" in payload and payload["vision_warmup_on_start"] is not None:
                 cfg.vision.vision_warmup_on_start = bool(payload["vision_warmup_on_start"])
-            if payload.get("llm_provider"):
-                if payload["llm_provider"] not in LOCAL_LLM_PROVIDERS:
-                    raise ValueError("Chỉ đổi tại chỗ giữa ollama và local; OpenAI đặt qua AI_LLM_PROVIDER.")
-                cfg.llm.llm_provider = payload["llm_provider"]
-            if payload.get("llm_model"):
-                cfg.llm.llm_model = str(payload["llm_model"]).strip()
+            if payload.get("llm_provider") or payload.get("llm_model"):
+                # ADR-0061 §2: model theo tác vụ đổi bằng revision, không qua Settings.
+                raise ValueError("Đổi provider/model ở trang Models & Connections, không ở Settings.")
             if "local_llm_gpu_layers" in payload and payload["local_llm_gpu_layers"] is not None:
                 cfg.llm.local_llm_gpu_layers = max(0, min(64, int(payload["local_llm_gpu_layers"])))
             if "local_llm_ctx_size" in payload and payload["local_llm_ctx_size"] is not None:
@@ -718,15 +680,11 @@ class ConsoleToolsService:
             "vision_device": cfg.vision.device,
             "onnx_enabled": cfg.vision.onnx_enabled,
             "vision_warmup_on_start": cfg.vision.vision_warmup_on_start,
-            "llm_model": cfg.llm.llm_model,
             "local_llm_gpu_layers": cfg.llm.local_llm_gpu_layers,
             "local_llm_ctx_size": cfg.llm.local_llm_ctx_size,
             "local_llm_threads": cfg.llm.local_llm_threads,
             "local_llm_parallel_slots": cfg.llm.local_llm_parallel_slots,
         }
-        # Provider OpenAI đặt qua env: preset không đổi provider, file cũng không ghi provider.
-        if cfg.llm.llm_provider in LOCAL_LLM_PROVIDERS:
-            overrides["llm_provider"] = cfg.llm.llm_provider
         persist_runtime_overrides(overrides)
 
     async def update_policy_settings(self, actor: ConsoleActor, payload: dict[str, Any]) -> dict[str, Any]:

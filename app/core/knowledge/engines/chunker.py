@@ -18,7 +18,7 @@ import re
 import unicodedata
 from typing import List, Optional, Tuple
 
-from app.core.constants import CHUNK_MIN_CHARS, CHUNK_OVERLAP_CHARS, CHUNK_TARGET_CHARS
+from app.core.knowledge.constants import CHUNK_MIN_CHARS, CHUNK_OVERLAP_CHARS, CHUNK_TARGET_CHARS
 from app.core.knowledge.dtos.knowledge_dto import TextChunk
 
 # Tiêu đề điều khoản tiếng Việt + heading Markdown. Phải đứng riêng một dòng —

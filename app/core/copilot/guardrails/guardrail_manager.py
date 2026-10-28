@@ -5,6 +5,7 @@ import re
 from dataclasses import dataclass
 from typing import Any, List, Optional, Tuple
 
+from app.core.copilot.messages import NO_CONTEXT_ANSWER
 from app.util.logger import logger
 
 
@@ -47,10 +48,6 @@ OUT_OF_SCOPE_PATTERNS = [
 OUT_OF_SCOPE_COMPILED = [re.compile(p) for p in OUT_OF_SCOPE_PATTERNS]
 
 
-DEFAULT_NO_CONTEXT_ANSWER = (
-    "Mình chưa tìm thấy thông tin đủ liên quan trong kho tri thức để trả lời "
-    "chắc chắn. Bạn hãy chọn đúng bãi xe hoặc nhờ chủ bãi bổ sung quy chế."
-)
 
 
 class GuardrailManager:
@@ -88,7 +85,7 @@ class GuardrailManager:
                 return GuardrailResult(
                     is_safe=False,
                     risk_type="OUT_OF_SCOPE",
-                    refusal_message=DEFAULT_NO_CONTEXT_ANSWER,
+                    refusal_message=NO_CONTEXT_ANSWER,
                     confidence=0.0,
                 )
 
@@ -102,7 +99,7 @@ class GuardrailManager:
             return GuardrailResult(
                 is_safe=False,
                 risk_type="OUT_OF_SCOPE",
-                refusal_message=DEFAULT_NO_CONTEXT_ANSWER,
+                refusal_message=NO_CONTEXT_ANSWER,
                 confidence=0.0,
             )
 
@@ -113,7 +110,7 @@ class GuardrailManager:
             return GuardrailResult(
                 is_safe=False,
                 risk_type="OUT_OF_SCOPE",
-                refusal_message=DEFAULT_NO_CONTEXT_ANSWER,
+                refusal_message=NO_CONTEXT_ANSWER,
                 confidence=0.0,
             )
 

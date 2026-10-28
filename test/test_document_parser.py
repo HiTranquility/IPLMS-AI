@@ -8,7 +8,8 @@ import importlib.util
 import os
 import unittest
 
-from app.core.constants import CHUNK_MIN_CHARS, KNOWLEDGE_MAX_FILE_BYTES
+from app.core.constants import KNOWLEDGE_MAX_FILE_BYTES
+from app.core.knowledge.constants import CHUNK_MIN_CHARS
 from app.core.enums import DocumentFormat
 from app.core.exceptions import (
     DocumentTooLargeError,
@@ -195,7 +196,7 @@ class XuLyCachLyTest(unittest.TestCase):
         self.assertGreaterEqual(ket_qua.page_count, 1)
 
     def test_gioi_han_ocr_toi_da_20_trang(self):
-        from app.core.constants import DOCUMENT_PARSE_TIMEOUT_SECONDS
+        from app.core.knowledge.constants import DOCUMENT_PARSE_TIMEOUT_SECONDS
         from app.core.knowledge.engines.document_parser import _PDF_OCR_MAX_PAGES
         self.assertEqual(_PDF_OCR_MAX_PAGES, 20)
         self.assertEqual(DOCUMENT_PARSE_TIMEOUT_SECONDS, 300.0)
