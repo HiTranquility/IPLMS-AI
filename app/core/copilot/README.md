@@ -21,6 +21,8 @@ backend AiCopilotController (/v1/ai/copilot/stream — SSE; preview chỉ cho ng
             └─ guardrails/output_guard.py chặn câu trả lời có "miễn phí/0đ", link, SĐT/STK không có trong
                  các đoạn đã truy xuất → thay bằng GUARD_NOTICE, bỏ nguồn (stream: giữ đuôi 40 ký tự,
                  dừng trước khi phát phần vi phạm). Lý do và số đo: PROB-046 ở repo gốc
+                 So trên bản chuẩn hoá (`guardrails/text_normalize.py`, bug-049): bỏ ký tự ẩn,
+                 chữ Cyrillic/Greek → Latin, NFKC, nối chữ tách; rào đầu vào cũng so như vậy
             confidence = 0.7×sim(top1) + 0.3×mean(sim)   (điểm truy xuất, không phải "độ chắc" của LLM)
 ```
 
@@ -35,6 +37,7 @@ backend AiCopilotController (/v1/ai/copilot/stream — SSE; preview chỉ cho ng
 | `services/copilot_service.py` | Điểm vào nghiệp vụ; chặn arbitrate |
 | `engines/rag_pipeline.py` | Truy xuất → (không có đoạn khớp nghĩa đạt ngưỡng thì dừng, dùng `guardrails.check_scope_and_chunks`) → sinh câu trả lời; prompt + confidence |
 | `guardrails/output_guard.py` | Kiểm đầu ra tất định chống prompt injection (PROB-046) |
+| `guardrails/text_normalize.py` | `normalize_for_match`: bản chuẩn hoá để guard đầu vào/đầu ra so regex (bug-049) |
 | `workflows/dispute/{graph,nodes,state,dependencies}.py` | Khung LangGraph phân xử (chưa nối) |
 | `dtos/copilot_dto.py` | `AskQuestionRequest` (có `preview`), `CopilotAnswer`, `AnswerChunk` |
 
