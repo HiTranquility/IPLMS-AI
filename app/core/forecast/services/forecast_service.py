@@ -23,10 +23,8 @@ from app.core.forecast.dtos.forecast_dto import (
     _WEEKDAY_HOURLY_BASELINES,
     _WEEKEND_HOURLY_BASELINES,
 )
-from app.core.forecast.engines.parquet_lake_reader import (
-    ParquetLakeReader,
-    _resolve_default_gold_lake_path,
-)
+from app.core.forecast.engines.parquet_lake_reader import ParquetLakeReader
+from app.infra.datalake.parquet_occupancy_store import _resolve_default_gold_lake_path
 from app.util.logger import logger
 
 
