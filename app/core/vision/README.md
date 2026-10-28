@@ -41,8 +41,9 @@ vision_handler.RecognizePlate            map proto → RecognizePlateCommand, đ
 | `engines/anpr/ocr.py` | EasyOCR; điểm = trung bình trọng số độ dài; không đọc được → 0.0 | Thay OCR |
 | `engines/anpr/plate_text.py` | Chuẩn hoá, hợp lệ (≤11 ký tự, ≥1 chữ cái), khoá so sánh | Thêm định dạng biển |
 | `engines/anpr/scoring.py` | `confidence = detector × OCR` (không detector → OCR); chọn ứng viên | Đổi cách chấm |
+| `engines/anpr/video.py` | Clip → frame (nhịp / chuyển động) → `run_anpr` → gộp sự kiện theo `plate_key` + IoU; file tạm xoá ngay (IPLMS REQ-021 A) | Đổi cách cắt frame / gộp xe |
 | `engines/vehicle_classifier.py` | CNN phân loại xe, tắt khi thiếu checkpoint | Có checkpoint mới |
-| `services/anpr_service.py` | Gói kết quả; REST mới ghi file vào `static/` | Đổi hợp đồng trả về |
+| `services/anpr_service.py` | Gói kết quả; REST mới ghi file vào `static/`; `recognize_clip` kiểm định dạng/dung lượng từ config, không ghi file | Đổi hợp đồng trả về |
 | `services/anti_fraud_service.py` | So loại xe vào/ra | Làm ReID ảnh |
 
 ## Cấu hình (`app/config/vision_config.py`, prefix `AI_`)
