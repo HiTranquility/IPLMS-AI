@@ -150,8 +150,8 @@ async def ask_copilot(payload: AskPayload) -> BaseResponse[AskResponse]:
     cfg = get_config()
     api_key = payload.api_key_override or cfg.llm.llm_api_key
 
-    # Nếu có API key hoặc dùng LLM nội bộ (local llama-server), chạy pipeline RAG chuẩn
-    is_local = (cfg.llm.llm_provider == "local")
+    # Nếu có API key hoặc dùng LLM nội bộ (local llama-server / ollama), chạy pipeline RAG chuẩn
+    is_local = cfg.llm.llm_provider in ("local", "ollama") or bool(cfg.llm.llm_base_url)
     if api_key or is_local:
         try:
             req = AskQuestionRequest(
@@ -166,10 +166,10 @@ async def ask_copilot(payload: AskPayload) -> BaseResponse[AskResponse]:
                     sources=ans.sources,
                     confidence=ans.confidence,
                     mode="rag_local" if is_local else "rag_live",
-                    refused=ans.refused,
-                    guardrail_triggered=ans.guardrail_triggered,
+                    refused=getattr(ans, "refused", False),
+                    guardrail_triggered=getattr(ans, "guardrail_triggered", None),
                     prompt_version=ans.prompt_version,
-                    latency_ms=ans.latency_ms,
+                    latency_ms=getattr(ans, "latency_ms", None),
                 )],
                 "Answer generated via local RAG" if is_local else "Answer generated via live RAG"
             )

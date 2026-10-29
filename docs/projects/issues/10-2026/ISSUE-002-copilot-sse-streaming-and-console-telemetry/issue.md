@@ -16,7 +16,7 @@ Hợp nhất các tính năng từ nhánh `khoa-develop` vào hệ thống kiế
 2. Tích hợp số liệu viễn trắc AI Telemetry & Cost Summary (`/api/copilot/metrics`).
 3. Đồng bộ giao diện Web UI AI Console và bộ launcher Windows.
 
-## Tiêu chí chấp nhận
+## Tiêu chí chấp nhận (Definition of Done / Acceptance Criteria)
 
 - [x] Merge `origin/develop` vào `khoa-develop`, xử lý sạch 6 file xung đột.
 - [x] Stream SSE hoạt động ổn định với đầy đủ rào chắn Guardrail (Prompt Injection, Out of Scope).

@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/constants/queryKeys';
-import { getReviewStats, getTurns, getUsage } from '@/services/apiEndpoints/copilot.endpoint';
+import { getEvalCandidates, getReviewStats, getTurns, getUsage } from '@/services/apiEndpoints/copilot.endpoint';
 import type { TurnFilter } from '@/types/copilot';
 
 export function useUsageQuery(days: number) {
@@ -26,6 +26,15 @@ export function useTurnsInfiniteQuery(filter: TurnFilter) {
   });
 }
 
+export function useCopilotEvalCandidatesQuery(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.tools.evalCandidates(),
+    queryFn: getEvalCandidates,
+    enabled,
+  });
+}
+
 export const useUsage = useUsageQuery;
 export const useReviewStats = useReviewStatsQuery;
 export const useTurns = useTurnsInfiniteQuery;
+export const useCopilotEvalCandidates = useCopilotEvalCandidatesQuery;

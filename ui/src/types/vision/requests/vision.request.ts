@@ -6,6 +6,7 @@ export interface ModelInput {
   artifact_key: string;
   sha256: string;
   note: string;
+  train_snapshot_id?: string | null;
 }
 
 export type AddLabelRequest = {

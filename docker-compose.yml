@@ -129,6 +129,8 @@ services:
     env_file:
       - path: .env.dev
         required: true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - AI_CONSOLE_DATABASE_URL=postgresql://${AI_DB_USER:-postgres}:${AI_DB_PASSWORD:?Thiếu AI_DB_PASSWORD - đặt trong file --env-file (mẫu .env.example)}@database-vector:5432/ai_console
       - AI_CONSOLE_DEMO_SEED_ENABLED=true

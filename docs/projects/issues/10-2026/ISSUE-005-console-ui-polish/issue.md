@@ -14,7 +14,7 @@
 
 Nguyên văn yêu cầu: "sửa rồi sau đó làm thêm chỉnh UI này kia là đc". Làm các mục chỉnh UI đã ghi trong [ISSUE-004 review-1](../ISSUE-004-ai-console-ui-review/review/review-1.md) (§Đánh giá UI/UX, §Độ khớp, §Nên thêm/nên bớt). Không gồm các mục cần techlead duyệt trước.
 
-## Tiêu chí chấp nhận
+## Tiêu chí chấp nhận (Definition of Done / Acceptance Criteria)
 
 - [x] Màu viết thẳng trong `*.module.css` đưa về token (`ui/DESIGN.md` §Luật 8). Riêng bảng màu vai/hành động là bảng màu định danh có chủ đích: gom thành token riêng, không để hex rải rác.
 - [x] Trang đăng nhập bỏ nền sao động, gradient và quầng sáng (`ui/DESIGN.md` §Luật 3).

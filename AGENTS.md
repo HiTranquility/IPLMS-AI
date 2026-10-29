@@ -37,6 +37,22 @@ Khi User đưa vào **bất kỳ ý tưởng (Idea), vấn đề mới (Problem)
    - Mọi thao tác build, test, lint, và script phụ trợ chỉ được chạy hoàn toàn trong môi trường Local.
    - Đối với hệ thống có LLM Gateway (như KOS / AIOS), chỉ tương tác qua Router nội bộ theo quy ước, không gọi trực tiếp OpenAI/Anthropic từ code ứng dụng.
 
+## 🛑 [STRICT WORKTREE & ENV HYGIENE] Quy tắc Quản lý Git Worktree & Môi trường Chạy
+
+1. **[NEVER] Tự ý đẻ thư mục worktree ngoài repo:**
+   - TUYỆT ĐỐI CẤM tạo các thư mục dạng `<project>-wt-*` (ví dụ `IPLMS-wt-*`, `SLKG-wt-*`, `AWS-wt-*`...) nằm ngoài thư mục gốc của repository.
+   - Khi thực sự cần tách worktree, BẮT BUỘC đặt bên trong `.worktrees/<loại>/<tên-nhánh>` (đã được cấu hình `.gitignore`).
+
+2. **[MUST] Tự động đồng bộ file cấu hình (`.env*`) khi tạo worktree:**
+   - Do `.env`, `.env.dev`, `.env.local` nằm trong `.gitignore`, bất kỳ agent hay script nào tạo `git worktree` PHẢI tự động copy hoặc symlink các file `.env*` cần thiết từ thư mục gốc sang worktree mới ngay lập tức.
+   - CẤM để worktree chạy ở trạng thái thiếu biến môi trường (tránh lỗi `NOT_CONFIGURED`, mất kết nối DB, OAuth/OIDC, hoặc thiếu API key).
+
+3. **[MUST] Khởi chạy dịch vụ & kiểm thử từ thư mục gốc:**
+   - Luôn bật Docker, chạy server (Backend, Frontend, AI, Worker) và test tính năng từ thư mục gốc của dự án, KHÔNG mở các thư mục `-wt-*` làm active workspace chính để chạy ứng dụng.
+
+4. **[MUST] Dọn sạch worktree ngay sau khi hoàn tất (Worktree Lifecycle):**
+   - Ngay sau khi task/issue hoàn thành hoặc nhánh đã được merge, agent PHẢI chạy `git worktree remove <path>` và xóa sạch thư mục worktree đó. Tuyệt đối không để lại thư mục worktree mồ côi (orphan worktree).
+
 `IPLMS-AI` là submodule của repo gốc IPLMS (thư mục `ai/`). Mở từ repo gốc thì dùng bộ skill `iplms-*` và `CLAUDE.md` ở gốc; file này đủ để làm việc khi chỉ clone riêng repo này.
 
 ## Stack và quy ước

@@ -230,7 +230,7 @@ CHUNKS = [{"content": "Phí 20.000đ", "source": "quy-che.md", "similarity": 0.9
 
 class PipelineStatusTest(unittest.TestCase):
     def test_no_context(self):
-        result = run(RagPipelineEngine(_Embedder(), _Store([]), _Factory("x")).query("phí?"))
+        result = run(RagPipelineEngine(_Embedder(), _Store([]), _Factory("x"), demo_seed_enabled=False).query("phí?"))
         self.assertEqual(("NO_CONTEXT", NO_CONTEXT_ANSWER), (result["status"], result["answer"]))
 
     def test_success_carries_usage_and_model(self):

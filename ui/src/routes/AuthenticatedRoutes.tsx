@@ -21,7 +21,7 @@ import type { Me } from '@/types/auth';
 function Home({ me }: { me: Me }) {
   const { t } = useI18n();
   const { persona: savedPersona } = useWorkspaceStore(me.member_id);
-  const persona = resolvePersona(me, savedPersona);
+  const effectivePersona = resolvePersona(me, savedPersona);
 
   const returnTo = typeof window !== 'undefined' ? sessionStorage.getItem('console_return_to') : null;
   if (returnTo) {
@@ -31,17 +31,17 @@ function Home({ me }: { me: Me }) {
     }
   }
 
-  if (persona === 'admin' && me.permissions.includes('ai:member:manage')) {
+  if (effectivePersona === 'admin' && me.permissions.includes('ai:member:manage')) {
     return <Navigate to="/members" replace />;
   }
-  if (persona === 'labeling' && me.permissions.includes('ai:task:label')) {
+  if (effectivePersona === 'labeling' && me.permissions.includes('ai:task:label')) {
     return <Navigate to="/vision/label" replace />;
   }
-  if (persona === 'ml' && me.permissions.includes('ai:metrics:read')) {
+  if (effectivePersona === 'ml' && me.permissions.includes('ai:metrics:read')) {
     return <Navigate to="/vision/models" replace />;
   }
   if (me.permissions.includes('ai:metrics:read')) return <OverviewPage />;
-  const first = NAV_ITEMS.find((item) => allowed(item, me.permissions, persona));
+  const first = NAV_ITEMS.find((item) => allowed(item, me.permissions, effectivePersona));
   if (first) return <Navigate to={first.to} replace />;
   return <EmptyState title={t.app.noRoleTitle} description={t.app.noRoleDesc} />;
 }

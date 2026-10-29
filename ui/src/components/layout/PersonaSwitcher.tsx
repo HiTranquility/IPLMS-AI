@@ -97,7 +97,7 @@ export function PersonaSwitcher({ me, collapsed = false }: PersonaSwitcherProps)
                 <div className={styles.dropdownHeader}>{t.workspace.title}</div>
                 {availableList.map((item) => {
                   const ItemIcon = item.icon;
-                  const isCurrent = item.id === persona;
+                  const isCurrent = item.id === activeId;
                   return (
                     <button
                       key={item.id}
