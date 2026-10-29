@@ -163,6 +163,7 @@ def _hardware_telemetry() -> dict[str, Any]:
             if out:
                 first = out.splitlines()[0].split(",")
                 if len(first) >= 4:
+                    cuda_available = True
                     gpu_name = first[0].strip()
                     vram_total_mb = int(float(first[1].strip()))
                     vram_used_mb = int(float(first[2].strip()))
@@ -195,6 +196,32 @@ def _detect_compute_profile(cfg) -> str:
     return "custom"
 
 
+def _ollama_api_bases(cfg) -> list[str]:
+    """Danh sách gốc API Ollama ứng viên (tự dịch giữa 127.0.0.1 và host.docker.internal)."""
+    raw_urls = [
+        getattr(cfg.llm, "ollama_url", "") or "",
+        getattr(cfg.llm, "llm_base_url", "") or "",
+        "http://127.0.0.1:11434/v1",
+    ]
+    in_docker = os.path.exists("/.dockerenv")
+    candidates: list[str] = []
+    for raw in raw_urls:
+        u = raw.strip().rstrip("/")
+        if not u:
+            continue
+        if u.endswith("/v1"):
+            u = u[:-3]
+        variants = [u]
+        if in_docker and ("127.0.0.1" in u or "localhost" in u):
+            variants.insert(0, u.replace("127.0.0.1", "host.docker.internal").replace("localhost", "host.docker.internal"))
+        elif not in_docker and "host.docker.internal" in u:
+            variants.insert(0, u.replace("host.docker.internal", "127.0.0.1"))
+        for v in variants:
+            if v not in candidates:
+                candidates.append(v)
+    return candidates
+
+
 def _reload_llm(cfg) -> dict[str, Any]:
     """Khởi động lại / nạp lại mô hình LLM theo cấu hình hiện thời."""
     prov = getattr(cfg.llm, "llm_provider", "local")
@@ -203,22 +230,36 @@ def _reload_llm(cfg) -> dict[str, Any]:
         return llama_server_manager.restart_server(cfg)
     elif prov == "ollama":
         import urllib.request
-        base = getattr(cfg.llm, "ollama_url", "http://127.0.0.1:11434/v1").rstrip("/")
-        api_base = base[:-3] if base.endswith("/v1") else base
-        generate_url = f"{api_base}/api/generate"
-        model_name = getattr(cfg.llm, "active_model_name", "qwen2.5:0.5b")
-        req_data = json.dumps({"model": model_name, "keep_alive": "5m"}).encode("utf-8")
-        req = urllib.request.Request(
-            generate_url,
-            data=req_data,
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=10.0) as resp:
-                return {"status": "ok", "provider": "ollama", "model": model_name}
-        except Exception as e:
-            return {"status": "warning", "provider": "ollama", "model": model_name, "message": str(e)}
+        model_name = getattr(cfg.llm, "active_model_name", "qwen2.5:3b")
+        layers = int(getattr(cfg.llm, "local_llm_gpu_layers", 33))
+        num_gpu = 99 if layers >= 33 else max(0, layers)
+        ctx_size = int(getattr(cfg.llm, "local_llm_ctx_size", 4096))
+        threads = int(getattr(cfg.llm, "local_llm_threads", 4))
+        req_data = json.dumps({
+            "model": model_name,
+            "prompt": "",
+            "keep_alive": "10m",
+            "options": {
+                "num_gpu": num_gpu,
+                "num_ctx": ctx_size,
+                "num_thread": threads,
+            },
+        }).encode("utf-8")
+        last_err: Optional[Exception] = None
+        for api_base in _ollama_api_bases(cfg):
+            generate_url = f"{api_base}/api/generate"
+            req = urllib.request.Request(
+                generate_url,
+                data=req_data,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=15.0) as resp:
+                    return {"status": "ok", "provider": "ollama", "model": model_name, "num_gpu": num_gpu}
+            except Exception as e:
+                last_err = e
+        return {"status": "warning", "provider": "ollama", "model": model_name, "message": str(last_err or "")}
     return {"status": "noop", "provider": prov}
 
 
@@ -269,26 +310,27 @@ def _detect_available_models(cfg) -> list[dict[str, Any]]:
     except Exception:
         pass
 
-    # 3. Dò Ollama nếu đang chạy
-    try:
-        ollama_url = getattr(cfg.llm, "ollama_url", "http://127.0.0.1:11434/v1")
-        tags_url = f"{ollama_url.rstrip('/').removesuffix('/v1')}/api/tags"
-        import urllib.request
-        with urllib.request.urlopen(tags_url, timeout=0.3) as r:
-            if r.status == 200:
-                data = json.loads(r.read().decode())
-                for m in data.get("models", []):
-                    m_name = m.get("name")
-                    if m_name and m_name not in seen:
-                        seen.add(m_name)
-                        models.append({
-                            "name": m_name,
-                            "provider": "ollama",
-                            "source": "ollama_tag",
-                            "label": f"{m_name} (Ollama Local)",
-                        })
-    except Exception:
-        pass
+    # 3. Dò Ollama nếu đang chạy (hỗ trợ cả host lẫn container Docker qua host.docker.internal)
+    import urllib.request
+    for api_base in _ollama_api_bases(cfg):
+        tags_url = f"{api_base}/api/tags"
+        try:
+            with urllib.request.urlopen(tags_url, timeout=0.8) as r:
+                if r.status == 200:
+                    data = json.loads(r.read().decode())
+                    for m in data.get("models", []):
+                        m_name = m.get("name")
+                        if m_name and m_name not in seen:
+                            seen.add(m_name)
+                            models.append({
+                                "name": m_name,
+                                "provider": "ollama",
+                                "source": "ollama_tag",
+                                "label": f"{m_name} (Ollama CUDA/Local)",
+                            })
+                    break
+        except Exception:
+            continue
 
     return models
 
@@ -671,24 +713,24 @@ class ConsoleToolsService:
         if preset == "safe_4gb":
             cfg.vision.device = "cpu"
             cfg.vision.onnx_enabled = True
-            if cfg.llm.llm_provider in LOCAL_LLM_PROVIDERS:
-                cfg.llm.llm_provider = "local"
+            if cfg.llm.llm_provider in LOCAL_LLM_PROVIDERS and payload.get("llm_provider") in LOCAL_LLM_PROVIDERS:
+                cfg.llm.llm_provider = payload["llm_provider"]
             cfg.llm.local_llm_gpu_layers = 33
             cfg.llm.local_llm_ctx_size = 4096
             cfg.llm.local_llm_parallel_slots = 1
         elif preset == "cpu_eco":
             cfg.vision.device = "cpu"
             cfg.vision.onnx_enabled = True
-            if cfg.llm.llm_provider in LOCAL_LLM_PROVIDERS:
-                cfg.llm.llm_provider = "local"
+            if cfg.llm.llm_provider in LOCAL_LLM_PROVIDERS and payload.get("llm_provider") in LOCAL_LLM_PROVIDERS:
+                cfg.llm.llm_provider = payload["llm_provider"]
             cfg.llm.local_llm_gpu_layers = 0
             cfg.llm.local_llm_ctx_size = 2048
             cfg.llm.local_llm_parallel_slots = 1
         elif preset == "gpu_full":
             cfg.vision.device = "cuda"
             cfg.vision.onnx_enabled = True
-            if cfg.llm.llm_provider in LOCAL_LLM_PROVIDERS:
-                cfg.llm.llm_provider = "local"
+            if cfg.llm.llm_provider in LOCAL_LLM_PROVIDERS and payload.get("llm_provider") in LOCAL_LLM_PROVIDERS:
+                cfg.llm.llm_provider = payload["llm_provider"]
             cfg.llm.local_llm_gpu_layers = 33
             cfg.llm.local_llm_ctx_size = 4096
             cfg.llm.local_llm_parallel_slots = 2

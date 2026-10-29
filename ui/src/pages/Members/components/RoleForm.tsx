@@ -1,14 +1,15 @@
-import { ShieldCheck, UserCheck } from 'lucide-react';
+import { ShieldCheck, UserCheck, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/common/Ui/button/Button';
 import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
-import { SelectField, TextField } from '@/components/common/Ui/form/Field';
+import { TextField } from '@/components/common/Ui/form/Field';
 import { queryKeys } from '@/constants/queryKeys';
 import { useI18n } from '@/i18n/I18nProvider';
 import { grantRole, revokeRole } from '@/services/apiEndpoints/member.endpoint';
 import { ROLES } from '@/types/auth';
 import type { Member } from '@/types/member';
+import { MemberCombobox } from './MemberCombobox';
 import { RoleBadge } from './RoleBadge';
 import { RoleSelectorGroup } from './RoleSelectorGroup';
 import styles from '../MembersPage.module.css';
@@ -121,20 +122,27 @@ export function RoleForm({
         {t.members.roleTitle}
       </h2>
 
-      <SelectField
+      <MemberCombobox
+        members={members}
+        selectedId={activeId}
+        selfId={selfId}
+        onSelect={handleMemberChange}
         label={t.members.member}
-        required
-        value={activeId}
-        onChange={(e) => handleMemberChange(e.target.value)}
-      >
-        <option value="">{t.members.pickMember}</option>
-        {members.map((m) => (
-          <option key={m.id} value={m.id} disabled={m.id === selfId}>
-            {m.display_name} · {m.email}
-            {m.id === selfId ? t.members.selfSuffix : ''}
-          </option>
-        ))}
-      </SelectField>
+      />
+
+      {!activeMember && (
+        <div className={styles.noSelectionBox}>
+          <div className={styles.noSelectionIconWrap}>
+            <Users size={24} aria-hidden />
+          </div>
+          <h3 className={styles.noSelectionTitle}>
+            {t.members.noMemberSelectedTitle}
+          </h3>
+          <p className={styles.noSelectionDesc}>
+            {t.members.noMemberSelectedDesc}
+          </p>
+        </div>
+      )}
 
       {activeMember && (
         <div className={styles.memberBox}>

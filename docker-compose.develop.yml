@@ -11,6 +11,7 @@ services:
   api:
     # Dev image is built from this checkout; do not probe a private registry first.
     pull_policy: build
+    gpus: all
     build:
       args:
         PRELOAD_EASYOCR_MODELS: "false"
@@ -28,6 +29,7 @@ services:
       - ./training:/app/training:ro
       - ./test:/app/test:ro
       - ./docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh:ro
+      - ./var:/app/var
       - ./var/easyocr-cache:/app/var/easyocr-cache
 
   database-vector:
@@ -47,9 +49,12 @@ services:
         ]
 
   console:
+    gpus: all
     environment:
       # Nút "nạp mẫu thực hành" Vision Lab — chỉ dev, base/production để tắt.
       - AI_CONSOLE_DEMO_SEED_ENABLED=true
     volumes:
       - ./app:/app/app:ro
+      - ./data:/app/data:ro
       - ./ui/dist:/app/ui/dist:ro
+      - ./var:/app/var

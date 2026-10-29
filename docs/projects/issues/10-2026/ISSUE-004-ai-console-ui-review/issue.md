@@ -18,7 +18,7 @@ Nguyên văn yêu cầu của chủ dự án:
 
 > "với cái REA mới, bạn thử chạy và coi cái ai/ui nha, coi có thể vừa coi bug nè, rồi tính năng nên đề xuất là gì, những tính năng hiện tại UI/UX ra sao, có ổn không? Từ code đến quy trình chuẩn chưa, nên thêm bớt gì, chỉ cần ghi ý tưởng bug vào thôi, tui sẽ để bên khác làm. Miễn là đúng chuẩn kỹ, sau đó thấy với những việc đó, Phat, Duong Khoa nên được giao thêm gì? (Phần UI/UX hay này kia Phat làm hết) rồi xong đóng commit lại là đc"
 
-## Tiêu chí chấp nhận
+## Tiêu chí chấp nhận (Definition of Done / Acceptance Criteria)
 
 - [x] Chạy `ai/ui` và xem bằng REA (`inspect_web_page`, `capture_web_screenshot`) cùng browser: 11 màn hình, xem [review-1](review/review-1.md) §Đã kiểm thế nào.
 - [x] Mỗi bug có bằng chứng được ghi thành một hồ sơ: [bug-015](../../../bugs/bug-015-dev-session-cua-hau-dang-nhap/bug.md) … [bug-023](../../../bugs/bug-023-che-do-en-tron-tieng-viet/bug.md) (9 bug), cùng 2 bug của lượt bổ sung: [bug-024](../../../bugs/bug-024-trang-cong-cu-tran-ngang-o-768px/bug.md), [bug-025](../../../bugs/bug-025-mau-chu-faded-va-accent-duoi-nguong-tuong-phan/bug.md).

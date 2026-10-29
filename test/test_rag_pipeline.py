@@ -48,7 +48,7 @@ class FakeLlm:
 
 class RagPipelineTest(unittest.TestCase):
     def test_no_context_does_not_call_llm(self):
-        engine = RagPipelineEngine(FakeEmbedder(), FakeStore([]), FakeLlm())
+        engine = RagPipelineEngine(FakeEmbedder(), FakeStore([]), FakeLlm(), demo_seed_enabled=False)
         result = asyncio.run(engine.query("phí bao nhiêu?"))
         self.assertEqual(NO_CONTEXT_ANSWER, result["answer"])
         self.assertEqual([], result["sources"])

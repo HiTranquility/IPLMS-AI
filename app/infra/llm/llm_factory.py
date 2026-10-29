@@ -74,14 +74,15 @@ class LlmFactory:
         """Read the active revision per request so replicas see activation promptly."""
         from app.infra.database.model_policy_store import model_policy_store
 
+        fallback = self if (self._client is not None or self._profile) else LlmFactory()
         if not model_policy_store.db_url:
-            return self
+            return fallback
         try:
             profile = await model_policy_store.get_active(task)
-            return LlmFactory(profile=profile) if profile else self
+            return LlmFactory(profile=profile) if profile else fallback
         except Exception as exc:
             logger.warning("Không thể đọc active model policy profile (%s), dùng fallback mặc định.", exc)
-            return self
+            return fallback
 
     def _get_client(self) -> Any:
         if self._client is not None:
@@ -134,13 +135,17 @@ class LlmFactory:
 
             # B. Nếu llama-server không chạy, tự động kết nối Ollama local
             ollama_url = getattr(config, "ollama_url", "http://127.0.0.1:11434/v1")
-            custom_base = getattr(config, "llm_base_url", "")
+            custom_base = self.base_url or getattr(config, "llm_base_url", "")
             target_base = custom_base or ollama_url
             import os
-            if "host.docker.internal" in target_base and not os.path.exists("/.dockerenv"):
+            in_docker = os.path.exists("/.dockerenv")
+            if "host.docker.internal" in target_base and not in_docker:
                 target_base = target_base.replace("host.docker.internal", "127.0.0.1")
+            elif in_docker and ("127.0.0.1:11434" in target_base or "localhost:11434" in target_base):
+                target_base = target_base.replace("127.0.0.1", "host.docker.internal").replace("localhost", "host.docker.internal")
             if not target_base.endswith("/v1"):
                 target_base = f"{target_base.rstrip('/')}/v1"
+            self.base_url = target_base
 
             from openai import AsyncOpenAI
             self._client = AsyncOpenAI(

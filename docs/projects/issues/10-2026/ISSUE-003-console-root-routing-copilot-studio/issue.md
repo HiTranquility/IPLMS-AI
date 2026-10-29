@@ -27,7 +27,7 @@ Mục tiêu của ISSUE-003:
    - **Knowledge Base & Dispute Studio:** Trình khám phá kho quy chế bãi xe (Knowledge Explorer) phân loại theo danh mục và Bộ mô phỏng máy trạng thái phân xử tranh chấp LangGraph 5-node (`validate_ticket` -> `verify_snapshots` -> `assess_claim` -> `supervisor_approval` -> `finalize_dispute`) kèm cảnh báo Bounded Autonomy.
    - **Diagnostics & Forecast Studio:** Bảng chẩn đoán động cơ YOLO, EasyOCR, PyTorch phần cứng, 4 nguyên tắc kiến trúc cốt lõi cùng Bộ mô phỏng dự báo sức chứa 24 giờ (Occupancy Curve SVG nội bộ không dùng thư viện ngoài) và tính cước giờ cao điểm có van an toàn ADR-0008.
 
-## Tiêu chí chấp nhận
+## Tiêu chí chấp nhận (Definition of Done / Acceptance Criteria)
 
 - [x] Truy cập `http://localhost:8095/` phục vụ trực tiếp SPA tại root mà không bị chuyển hướng cưỡng bức sang `/console/`.
 - [x] API hỗ trợ cả `/api` và `/console/api`, giữ nguyên cookie auth `SameSite=Strict` và header `X-Console-Request: 1`.

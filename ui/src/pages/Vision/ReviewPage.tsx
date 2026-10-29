@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
 import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { queryKeys } from '@/constants/queryKeys';
+import { useCan } from '@/hooks/common/useCan';
 import { useSeedDemoBatch } from '@/hooks/mutations/useVisionMutations';
 import { useReviewQueue } from '@/hooks/queries/useVisionQueries';
 import { useI18n } from '@/i18n/I18nProvider';
@@ -20,6 +21,11 @@ export function ReviewPage() {
   const queue = useReviewQueue();
   const queryClient = useQueryClient();
   const seedMutation = useSeedDemoBatch();
+  const canLabel = useCan('ai:task:label');
+  const canSnapshot = useCan('ai:dataset:snapshot');
+  const canEvaluate = useCan('ai:model:evaluate');
+  const canOpenDatasets = canSnapshot || canEvaluate;
+  const canOpenVision = useCan('ai:metrics:read');
   const [isBatchApproving, setIsBatchApproving] = useState(false);
   const [batchError, setBatchError] = useState<unknown>(null);
   const [filterMode, setFilterMode] = useState<'ALL' | 'EXACT' | 'CORRECTED'>('ALL');
@@ -99,32 +105,50 @@ export function ReviewPage() {
           <span style={{ color: 'var(--color-muted)' }}>{t.review.workflowDesc}</span>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <Link
-            to="/vision/label"
-            style={{
-              padding: '4px 10px',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--color-border)',
-              color: 'var(--color-text)',
-              textDecoration: 'none',
-              fontWeight: 500,
-            }}
-          >
-            {t.review.goToLabel}
-          </Link>
-          <Link
-            to="/vision/datasets"
-            style={{
-              padding: '4px 10px',
-              borderRadius: 'var(--radius-sm)',
-              background: 'var(--color-accent)',
-              color: 'var(--color-accent-ink)',
-              textDecoration: 'none',
-              fontWeight: 600,
-            }}
-          >
-            {t.review.goToDatasets}
-          </Link>
+          {canLabel && (
+            <Link
+              to="/vision/label"
+              style={{
+                padding: '4px 10px',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-text)',
+                textDecoration: 'none',
+                fontWeight: 500,
+              }}
+            >
+              {t.review.goToLabel}
+            </Link>
+          )}
+          {canOpenDatasets ? (
+            <Link
+              to="/vision/datasets"
+              style={{
+                padding: '4px 10px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--color-accent)',
+                color: 'var(--color-accent-ink)',
+                textDecoration: 'none',
+                fontWeight: 600,
+              }}
+            >
+              {t.review.goToDatasets}
+            </Link>
+          ) : canOpenVision ? (
+            <Link
+              to="/vision"
+              style={{
+                padding: '4px 10px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--color-accent)',
+                color: 'var(--color-accent-ink)',
+                textDecoration: 'none',
+                fontWeight: 600,
+              }}
+            >
+              {t.nav.visionOverview} →
+            </Link>
+          ) : null}
         </div>
       </div>
 

@@ -1,11 +1,13 @@
-import { Copy, ShieldCheck } from 'lucide-react';
+import { Copy, Moon, ShieldCheck, Sun } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
+import { StarTechBackground } from '@/components/common/Background/StarTechBackground';
 import { Button } from '@/components/common/Ui/button/Button';
 import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
 import { TextField } from '@/components/common/Ui/form/Field';
 import { LanguageSwitch } from '@/components/layout/LanguageSwitch';
 import { useEnrollTotp, useLogout, useVerifyTotp } from '@/hooks/mutations/useAuthMutations';
 import { useI18n } from '@/i18n/I18nProvider';
+import { useThemeStore } from '@/stores/useThemeStore';
 import type { Me } from '@/types/auth';
 import styles from './MfaPage.module.css';
 
@@ -26,6 +28,7 @@ export interface MfaPageProps {
 
 export function MfaPage({ me }: MfaPageProps) {
   const { t } = useI18n();
+  const { theme, toggleTheme } = useThemeStore();
   const enroll = useEnrollTotp();
   const verify = useVerifyTotp();
   const logout = useLogout();
@@ -51,11 +54,31 @@ export function MfaPage({ me }: MfaPageProps) {
 
   return (
     <div className={styles.page}>
+      <StarTechBackground />
       <section className={styles.panel} aria-labelledby="mfa-title">
         <div className={styles.top}>
-          <p className={styles.scope}>{t.mfa.step(me.email)}</p>
-          <LanguageSwitch />
+          <div className={styles.brandRow}>
+            <div className={styles.logoBadge}>
+              <ShieldCheck size={16} className={styles.logoIcon} aria-hidden />
+              <span className={styles.scope}>{t.login.scope}</span>
+            </div>
+            <span className={styles.stepBadge}>{t.mfa.step(me.email)}</span>
+          </div>
+
+          <div className={styles.controls}>
+            <LanguageSwitch />
+            <button
+              type="button"
+              className={styles.themeToggle}
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? t.shell.toLight : t.shell.toDark}
+              title={theme === 'dark' ? t.shell.toLight : t.shell.toDark}
+            >
+              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+            </button>
+          </div>
         </div>
+
         <h1 id="mfa-title" className={styles.title}>{needsEnroll ? t.mfa.enrollTitle : t.mfa.verifyTitle}</h1>
 
         {needsEnroll && !enroll.data && (
