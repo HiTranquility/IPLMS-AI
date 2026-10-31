@@ -5,7 +5,8 @@
 | | |
 |---|---|
 | **Ngày / Người báo** | 2026-10-16 / Codex |
-| **Trạng thái / Mức độ** | 🛠️ Fixing — source/local đã sửa, chờ checkPR / P2 |
+| **Trạng thái** | ✅ Fixed — Đã bổ sung runtime dependencies vào CI (.github/workflows/ci.yml) và chuẩn hoá benchmark. |
+| **Ngày đóng** | 2026-10-31 |
 | **Nguồn** | IPLMS ISSUE-124; checkPython củaPR17 |
 
 Check Python tự chạy của PR 17 báo thiếu `fastapi`/`pyarrow` (runtime đã có trong requirements nhưng CI cài thiếu), cùng một benchmark assertion thất bại. Tỷ số dương của detector giả lập bị làm tròn hai chữ số thành 0.0; đây là lỗi độ chính xác của báo cáo, chưa chứng minh hiệu năng model thật.

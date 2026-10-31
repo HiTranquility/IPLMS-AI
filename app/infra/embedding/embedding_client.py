@@ -81,6 +81,9 @@ def _candidate_base_urls(url: str) -> list[str]:
             url.replace("host.docker.internal", "localhost"),
             url,
         ]
+    if in_docker and ("127.0.0.1" in url or "localhost" in url):
+        host_url = url.replace("127.0.0.1", "host.docker.internal").replace("localhost", "host.docker.internal")
+        return [host_url, url]
     candidates = [url]
     if "host.docker.internal" in url:
         candidates.append(url.replace("host.docker.internal", "127.0.0.1"))

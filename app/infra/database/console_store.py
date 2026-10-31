@@ -655,7 +655,12 @@ class ConsoleStore:
     async def list_active_sessions(self, member_id: str, include_all: bool = False) -> list[dict[str, Any]]:
         """Liệt kê các phiên đăng nhập đang hoạt động (chưa bị thu hồi)."""
         def work(cur):
-            where = "WHERE s.revoked_at IS NULL" if include_all else "WHERE s.revoked_at IS NULL AND s.member_id = %s"
+            # bug-030: chỉ liệt kê các phiên đã hoàn tất MFA để tránh phiên chờ MFA / đăng nhập dở tồn đọng
+            where = (
+                "WHERE s.revoked_at IS NULL AND s.mfa_at IS NOT NULL"
+                if include_all
+                else "WHERE s.revoked_at IS NULL AND s.mfa_at IS NOT NULL AND s.member_id = %s"
+            )
             params = () if include_all else (member_id,)
             cur.execute(
                 f"""SELECT s.id::text, s.member_id::text, m.email, m.display_name,

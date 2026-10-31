@@ -16,6 +16,9 @@ def check_session(
         raise ConsoleAuthError("Phiên đã hết hạn, hãy đăng nhập lại.", "SESSION_EXPIRED")
     if now - session["last_seen_at"] > idle:
         raise ConsoleAuthError("Phiên đã rảnh quá lâu, hãy đăng nhập lại.", "SESSION_IDLE")
+    # bug-030: phiên chờ TOTP quá 10 phút coi như hết hạn, tránh tồn đọng phiên dở
+    if session.get("mfa_at") is None and now - session["created_at"] > timedelta(minutes=10):
+        raise ConsoleAuthError("Phiên chờ nhập mã TOTP đã hết hạn, hãy đăng nhập lại.", "SESSION_EXPIRED")
     if require_mfa and session["mfa_at"] is None:
         raise ConsoleAuthError("Cần nhập mã TOTP.", "MFA_REQUIRED")
 

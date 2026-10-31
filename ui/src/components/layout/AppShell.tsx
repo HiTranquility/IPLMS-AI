@@ -132,6 +132,10 @@ export function AppShell({ me, children }: AppShellProps) {
   };
 
   const isSettingsActive = location.pathname.startsWith('/settings');
+  const canOpenSettings = allowed(
+    { permissions: ['ai:metrics:read', 'ai:member:manage', 'ai:audit:read'] },
+    me.permissions,
+  );
   const isCompact = railCollapsed && !drawerOpen;
 
   return (
@@ -257,16 +261,18 @@ export function AppShell({ me, children }: AppShellProps) {
                 >
                   {theme === 'dark' ? <Sun size={14} aria-hidden /> : <Moon size={14} aria-hidden />}
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={isSettingsActive ? styles.settingsButtonActive : undefined}
-                  onClick={() => navigate('/settings')}
-                  aria-label={t.nav.settings}
-                  title={t.nav.settings}
-                >
-                  <Settings size={14} aria-hidden />
-                </Button>
+                {canOpenSettings && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={isSettingsActive ? styles.settingsButtonActive : undefined}
+                    onClick={() => navigate('/settings')}
+                    aria-label={t.nav.settings}
+                    title={t.nav.settings}
+                  >
+                    <Settings size={14} aria-hidden />
+                  </Button>
+                )}
               </div>
             </div>
             <Button

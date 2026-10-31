@@ -1,0 +1,275 @@
+.canvasWrap {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.hudGrid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(to right, rgba(56, 189, 248, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(56, 189, 248, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(circle at center, black 40%, transparent 85%);
+  -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 85%);
+  pointer-events: none;
+}
+
+:global([data-theme='light']) .hudGrid {
+  background-image: 
+    linear-gradient(to right, rgba(2, 132, 199, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(2, 132, 199, 0.06) 1px, transparent 1px);
+}
+
+.nebulaAura {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.28;
+  pointer-events: none;
+  animation: floatAura 18s ease-in-out infinite alternate;
+}
+
+.aura1 {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, #38bdf8 0%, rgba(99, 102, 241, 0.3) 50%, transparent 70%);
+  top: -150px;
+  left: 10%;
+}
+
+.aura2 {
+  width: 550px;
+  height: 550px;
+  background: radial-gradient(circle, #d946ef 0%, rgba(139, 92, 246, 0.25) 50%, transparent 70%);
+  bottom: -150px;
+  right: 15%;
+  animation-duration: 22s;
+  animation-delay: -5s;
+}
+
+.aura3 {
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, #f59e0b 0%, rgba(245, 158, 11, 0.15) 50%, transparent 70%);
+  top: 45%;
+  left: 55%;
+  animation-duration: 26s;
+  animation-delay: -10s;
+  opacity: 0.18;
+}
+
+:global([data-theme='light']) .aura1 {
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.35) 0%, rgba(14, 165, 233, 0.15) 50%, transparent 70%);
+}
+
+:global([data-theme='light']) .aura2 {
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.2) 0%, rgba(192, 132, 252, 0.1) 50%, transparent 70%);
+}
+
+:global([data-theme='light']) .aura3 {
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.25) 0%, rgba(245, 158, 11, 0.1) 50%, transparent 70%);
+}
+
+/* Corner HUD Brackets */
+.cornerHUD {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-color: rgba(56, 189, 248, 0.35);
+  border-style: solid;
+  pointer-events: none;
+  z-index: 2;
+}
+
+:global([data-theme='light']) .cornerHUD {
+  border-color: rgba(2, 132, 199, 0.4);
+}
+
+.cornerTL {
+  top: 24px;
+  left: 24px;
+  border-width: 2px 0 0 2px;
+}
+
+.cornerTR {
+  top: 24px;
+  right: 24px;
+  border-width: 2px 2px 0 0;
+}
+
+.cornerBL {
+  bottom: 24px;
+  left: 24px;
+  border-width: 0 0 2px 2px;
+}
+
+.cornerBR {
+  bottom: 24px;
+  right: 24px;
+  border-width: 0 2px 2px 0;
+}
+
+/* Live Telemetry HUD at Bottom Left */
+.telemetryHUD {
+  position: absolute;
+  bottom: 24px;
+  left: 58px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.equalizer {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 20px;
+  padding-bottom: 2px;
+}
+
+.waveBar {
+  width: 3px;
+  border-radius: 2px;
+  background: #38bdf8;
+  animation: bounceBar 1.2s ease-in-out infinite alternate;
+}
+
+:global([data-theme='light']) .waveBar {
+  background: #0284c7;
+}
+
+.bar1 { height: 40%; animation-delay: 0.1s; }
+.bar2 { height: 85%; animation-delay: 0.35s; }
+.bar3 { height: 60%; animation-delay: 0.15s; }
+.bar4 { height: 100%; animation-delay: 0.5s; }
+.bar5 { height: 50%; animation-delay: 0.25s; }
+
+@keyframes bounceBar {
+  0% {
+    transform: scaleY(0.3);
+    opacity: 0.45;
+  }
+  100% {
+    transform: scaleY(1);
+    opacity: 1;
+    filter: drop-shadow(0 0 6px currentColor);
+  }
+}
+
+.telemetryText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.35;
+}
+
+.telemetryLine1 {
+  color: #38bdf8;
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+}
+
+:global([data-theme='light']) .telemetryLine1 {
+  color: #0284c7;
+}
+
+.telemetryLine2 {
+  color: rgba(148, 163, 184, 0.85);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+:global([data-theme='light']) .telemetryLine2 {
+  color: #64748b;
+}
+
+.cursorBlink {
+  display: inline-block;
+  margin-left: 2px;
+  font-weight: 800;
+  color: #38bdf8;
+  animation: blink 1s step-start infinite;
+}
+
+:global([data-theme='light']) .cursorBlink {
+  color: #0284c7;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.statusIndicator {
+  position: absolute;
+  top: 28px;
+  right: 60px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: rgba(74, 222, 128, 0.85);
+  letter-spacing: 0.08em;
+  pointer-events: none;
+}
+
+:global([data-theme='light']) .statusIndicator {
+  color: #166534;
+}
+
+.beaconDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 8px #4ade80;
+  animation: pulseBeacon 2s infinite ease-in-out;
+}
+
+:global([data-theme='light']) .beaconDot {
+  background: #16a34a;
+  box-shadow: 0 0 8px #16a34a;
+}
+
+@keyframes pulseBeacon {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.7);
+  }
+}
+
+@keyframes floatAura {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(40px, -30px) scale(1.08);
+  }
+  100% {
+    transform: translate(-30px, 40px) scale(0.95);
+  }
+}

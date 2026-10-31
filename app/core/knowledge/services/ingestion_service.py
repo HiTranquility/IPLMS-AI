@@ -5,7 +5,7 @@ import asyncio
 import time
 from uuid import uuid4
 
-from app.core.constants import DOCUMENT_PARSE_TIMEOUT_SECONDS
+from app.core.knowledge.constants import DOCUMENT_PARSE_TIMEOUT_SECONDS
 from app.core.enums import IngestStatus
 from app.core.exceptions import (
     DocumentTooLargeError,
@@ -20,7 +20,7 @@ from app.core.knowledge.dtos.knowledge_dto import (
 )
 from app.core.knowledge.engines.chunker import chunk_text
 from app.core.knowledge.engines.document_parser import parse_document
-from app.core.knowledge.engines.injection_scan import find_instructions
+from app.core.knowledge.guardrails.injection_scan import find_instructions
 from app.infra.database.pgvector_client import pgvector_client
 from app.infra.embedding import embedding_client
 from app.util.logger import logger

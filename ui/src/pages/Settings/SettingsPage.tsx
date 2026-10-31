@@ -17,6 +17,7 @@ import { Badge } from '@/components/common/Ui/data-display/Badge';
 import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
 import { ReasonAction } from '@/components/common/Ui/form/ReasonAction';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { useCan } from '@/hooks/common/useCan';
 import { useStepUpMutation } from '@/hooks/mutations/useAuthMutations';
 import {
   useEngineAction,
@@ -24,9 +25,9 @@ import {
   useUpdateComputeSettings,
   useUpdatePolicySettings,
 } from '@/hooks/mutations/useToolMutations';
+import { useCopilotEvalCandidates as useEvalCandidates } from '@/hooks/queries/useCopilotQueries';
 import {
   useActiveSessions,
-  useEvalCandidates,
   useRuntimeSettings,
 } from '@/hooks/queries/useToolQueries';
 import { useI18n } from '@/i18n/I18nProvider';
@@ -45,9 +46,15 @@ export function SettingsPage() {
   const [savedPolicy, setSavedPolicy] = useState(false);
   const [engineMsg, setEngineMsg] = useState(false);
 
+  const canReadChatlog = useCan('ai:chatlog:read');
+  const canPromptEdit = useCan('ai:prompt:edit');
+  const canModelEvaluate = useCan('ai:model:evaluate');
+  const canEditCompute = canPromptEdit || canModelEvaluate;
+  const canEditPolicy = useCan('ai:policy:threshold');
+
   const settingsQuery = useRuntimeSettings();
   const sessionsQuery = useActiveSessions();
-  const evalCandidatesQuery = useEvalCandidates();
+  const evalCandidatesQuery = useEvalCandidates(canReadChatlog);
 
   const updateCompute = useUpdateComputeSettings();
   const updatePolicy = useUpdatePolicySettings();
@@ -60,13 +67,12 @@ export function SettingsPage() {
   const comp = data?.compute;
   const pol = data?.policy;
   const eng = data?.engines;
+  const copilotModel = data?.models.find((m) => m.task === 'copilot_answer');
 
   // Compute state
   const [visionDevice, setVisionDevice] = useState('auto');
   const [onnxEnabled, setOnnxEnabled] = useState(true);
   const [warmupOnStart, setWarmupOnStart] = useState(true);
-  const [llmProvider, setLlmProvider] = useState('ollama');
-  const [llmModel, setLlmModel] = useState('qwen2.5:0.5b');
   const [gpuLayers, setGpuLayers] = useState(33);
   const [cpuThreads, setCpuThreads] = useState(4);
   const [ctxSize, setCtxSize] = useState(4096);
@@ -88,8 +94,6 @@ export function SettingsPage() {
       setVisionDevice(comp.vision_device);
       setOnnxEnabled(comp.onnx_enabled);
       setWarmupOnStart(comp.vision_warmup_on_start);
-      setLlmProvider(comp.llm_provider);
-      if (comp.llm_model) setLlmModel(comp.llm_model);
       setGpuLayers(comp.local_llm_gpu_layers);
       setCpuThreads(comp.local_llm_threads);
       setCtxSize(comp.local_llm_ctx_size);
@@ -112,6 +116,7 @@ export function SettingsPage() {
   }, [pol]);
 
   const applyPreset = (preset: 'safe_4gb' | 'cpu_eco' | 'gpu_full') => {
+    if (!canEditCompute) return;
     setSavedCompute(false);
     updateCompute.mutate(
       { preset },
@@ -123,15 +128,13 @@ export function SettingsPage() {
 
   const submitCompute = (e: FormEvent) => {
     e.preventDefault();
+    if (!canEditCompute) return;
     setSavedCompute(false);
     updateCompute.mutate(
       {
         vision_device: visionDevice,
         onnx_enabled: onnxEnabled,
         vision_warmup_on_start: warmupOnStart,
-        // OpenAI chỉ bật qua env; API chỉ nhận ollama/local (A-54).
-        ...(llmProvider === 'ollama' || llmProvider === 'local' ? { llm_provider: llmProvider } : {}),
-        llm_model: llmModel,
         local_llm_gpu_layers: gpuLayers,
         local_llm_threads: cpuThreads,
         local_llm_ctx_size: ctxSize,
@@ -145,6 +148,7 @@ export function SettingsPage() {
 
   // ai:policy:threshold cần step-up (ADR-0048 §4): lưu qua ReasonAction để nhập lý do + TOTP tại chỗ.
   const submitPolicy = async (reason: string) => {
+    if (!canEditPolicy) return;
     setSavedPolicy(false);
     await updatePolicy.mutateAsync({
       reason,
@@ -162,6 +166,7 @@ export function SettingsPage() {
   };
 
   const handleEngine = (action: 'warmup' | 'unload' | 'reload_llm') => {
+    if (!canEditCompute) return;
     setEngineMsg(false);
     engineAction.mutate(action, {
       onSuccess: () => {
@@ -188,7 +193,9 @@ export function SettingsPage() {
             onClick={() => {
               void settingsQuery.refetch();
               void sessionsQuery.refetch();
-              void evalCandidatesQuery.refetch();
+              if (canReadChatlog) {
+                void evalCandidatesQuery.refetch();
+              }
             }}
           >
             <RefreshCw size={14} aria-hidden />
@@ -262,6 +269,9 @@ export function SettingsPage() {
         <div role="tabpanel" id="settings-panel-compute" aria-labelledby="settings-tab-compute" tabIndex={0}>
           {data && (
           <>
+          {!canEditCompute && (
+            <p className={styles.readOnlyBanner}>{s.computeReadOnlyHint}</p>
+          )}
           <section className={styles.sectionCard}>
             <div className={styles.sectionHeader}>
               <div>
@@ -347,6 +357,7 @@ export function SettingsPage() {
                   <Button
                     type="button"
                     variant="primary"
+                    disabled={!canEditCompute}
                     loading={engineAction.isPending && engineAction.variables === 'warmup'}
                     onClick={() => handleEngine('warmup')}
                   >
@@ -356,6 +367,7 @@ export function SettingsPage() {
                   <Button
                     type="button"
                     variant="secondary"
+                    disabled={!canEditCompute}
                     loading={engineAction.isPending && engineAction.variables === 'unload'}
                     onClick={() => handleEngine('unload')}
                   >
@@ -389,7 +401,7 @@ export function SettingsPage() {
                   type="button"
                   variant={comp?.profile === 'safe_4gb' ? 'accent' : 'secondary'}
                   loading={updateCompute.isPending && updateCompute.variables?.preset === 'safe_4gb'}
-                  disabled={updateCompute.isPending}
+                  disabled={!canEditCompute || updateCompute.isPending}
                   aria-label={comp?.profile === 'safe_4gb' ? s.activePresetFor(s.presetSafeTitle) : s.applyPresetFor(s.presetSafeTitle)}
                   onClick={() => applyPreset('safe_4gb')}
                 >
@@ -406,7 +418,7 @@ export function SettingsPage() {
                   type="button"
                   variant={comp?.profile === 'gpu_full' ? 'accent' : 'secondary'}
                   loading={updateCompute.isPending && updateCompute.variables?.preset === 'gpu_full'}
-                  disabled={updateCompute.isPending}
+                  disabled={!canEditCompute || updateCompute.isPending}
                   aria-label={comp?.profile === 'gpu_full' ? s.activePresetFor(s.presetGpuTitle) : s.applyPresetFor(s.presetGpuTitle)}
                   onClick={() => applyPreset('gpu_full')}
                 >
@@ -423,13 +435,52 @@ export function SettingsPage() {
                   type="button"
                   variant={comp?.profile === 'cpu_eco' ? 'accent' : 'secondary'}
                   loading={updateCompute.isPending && updateCompute.variables?.preset === 'cpu_eco'}
-                  disabled={updateCompute.isPending}
+                  disabled={!canEditCompute || updateCompute.isPending}
                   aria-label={comp?.profile === 'cpu_eco' ? s.activePresetFor(s.presetCpuTitle) : s.applyPresetFor(s.presetCpuTitle)}
                   onClick={() => applyPreset('cpu_eco')}
                 >
                   {comp?.profile === 'cpu_eco' ? s.activePresetBadge : s.applyPresetBtn}
                 </Button>
               </div>
+            </div>
+          </section>
+
+          {/* Chỉ xem: model inference dùng thật theo tác vụ (REQ-020 X2, ADR-0061 §2) */}
+          <section className={styles.sectionCard}>
+            <div className={styles.sectionHeader}>
+              <div>
+                <h2 className={styles.sectionTitle}>
+                  <Layers size={18} aria-hidden />
+                  <span>{s.modelsRunningTitle}</span>
+                </h2>
+                <p className={styles.sectionSub}>{s.modelsRunningHint}</p>
+              </div>
+            </div>
+            <div className={styles.tableWrap}>
+              <table className={styles.table} aria-label={s.modelsRunningTitle}>
+                <thead>
+                  <tr>
+                    <th>{s.colModelTask}</th>
+                    <th>{s.colModelProvider}</th>
+                    <th>{s.colModelName}</th>
+                    <th>{s.colModelSource}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data?.models.map((m) => (
+                    <tr key={m.task}>
+                      <td>{s.modelTasks[m.task]}</td>
+                      <td className={styles.mono}>{m.provider ?? DASH}</td>
+                      <td className={styles.mono}>{m.model ?? DASH}</td>
+                      <td>
+                        {m.source === 'profile' && <Badge tone="success">{s.modelSourceProfile(m.revision)}</Badge>}
+                        {m.source === 'env' && <Badge tone="neutral">{s.modelSourceEnv}</Badge>}
+                        {m.source === 'unknown' && <Badge tone="warning">{s.modelSourceUnknown}</Badge>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </section>
 
@@ -448,6 +499,7 @@ export function SettingsPage() {
                 <select
                   id="vision-device-select"
                   className={styles.selectInput}
+                  disabled={!canEditCompute}
                   value={visionDevice}
                   onChange={(e) => setVisionDevice(e.target.value)}
                 >
@@ -458,6 +510,7 @@ export function SettingsPage() {
                 <label className={styles.checkboxRow}>
                   <input
                     type="checkbox"
+                    disabled={!canEditCompute}
                     checked={onnxEnabled}
                     onChange={(e) => setOnnxEnabled(e.target.checked)}
                   />
@@ -466,69 +519,12 @@ export function SettingsPage() {
                 <label className={styles.checkboxRow}>
                   <input
                     type="checkbox"
+                    disabled={!canEditCompute}
                     checked={warmupOnStart}
                     onChange={(e) => setWarmupOnStart(e.target.checked)}
                   />
                   <span>{s.warmupOnStartLabel}</span>
                 </label>
-              </div>
-
-              <div className={styles.fieldBlock}>
-                <label className={styles.fieldLabel} htmlFor="llm-provider-select">
-                  {s.llmProviderLabel}
-                </label>
-                <select
-                  id="llm-provider-select"
-                  className={styles.selectInput}
-                  value={llmProvider}
-                  onChange={(e) => setLlmProvider(e.target.value)}
-                >
-                  <option value="ollama">Ollama Local (127.0.0.1:11434)</option>
-                  <option value="local">Local llama-server (127.0.0.1:8005)</option>
-                  <option value="openai" disabled>{s.providerOpenai}</option>
-                </select>
-                <p className={styles.fieldHint}>{s.providerOpenaiEnvOnly}</p>
-              </div>
-
-              <div className={styles.fieldBlock}>
-                <label className={styles.fieldLabel} htmlFor="llm-model-input">
-                  {s.llmModelLabel}
-                </label>
-                {comp?.detected_models && comp.detected_models.length > 0 && (
-                  <select
-                    className={styles.selectInput}
-                    style={{ marginBottom: '8px' }}
-                    value={comp.detected_models.some((m) => m.name === llmModel) ? llmModel : '__custom__'}
-                    onChange={(e) => {
-                      if (e.target.value !== '__custom__') {
-                        setLlmModel(e.target.value);
-                      }
-                    }}
-                    aria-label={s.selectDetectedModel}
-                  >
-                    <option value="" disabled>{s.selectDetectedModel}</option>
-                    {comp.detected_models.map((m) => (
-                      <option key={m.name} value={m.name}>
-                        {m.label}
-                      </option>
-                    ))}
-                    <option value="__custom__">{s.customModelOption}</option>
-                  </select>
-                )}
-                <input
-                  id="llm-model-input"
-                  type="text"
-                  className={styles.selectInput}
-                  value={llmModel}
-                  onChange={(e) => {
-                    const sanitized = e.target.value.replace(/\s+/g, '-');
-                    setLlmModel(sanitized);
-                  }}
-                  placeholder="vd: Qwen3.5-4B-Q4_K_M, qwen2.5:3b, gpt-4o-mini"
-                />
-                <p className={styles.fieldHint}>
-                  {s.llmModelRunning} <strong className={styles.mono}>{comp?.llm_model || DASH}</strong>
-                </p>
               </div>
 
               <div className={styles.fieldBlock}>
@@ -541,6 +537,7 @@ export function SettingsPage() {
                   min={0}
                   max={35}
                   step={1}
+                  disabled={!canEditCompute}
                   value={gpuLayers}
                   onChange={(e) => setGpuLayers(Number(e.target.value))}
                   className={styles.rangeInput}
@@ -558,6 +555,7 @@ export function SettingsPage() {
                   min={1}
                   max={hw?.cpu_logical_cores || 16}
                   step={1}
+                  disabled={!canEditCompute}
                   value={cpuThreads}
                   onChange={(e) => setCpuThreads(Number(e.target.value))}
                   className={styles.rangeInput}
@@ -571,6 +569,7 @@ export function SettingsPage() {
                 <select
                   id="ctx-size-select"
                   className={styles.selectInput}
+                  disabled={!canEditCompute}
                   value={ctxSize}
                   onChange={(e) => setCtxSize(Number(e.target.value))}
                 >
@@ -587,6 +586,7 @@ export function SettingsPage() {
                 <select
                   id="parallel-slots-select"
                   className={styles.selectInput}
+                  disabled={!canEditCompute}
                   value={parallelSlots}
                   onChange={(e) => setParallelSlots(Number(e.target.value))}
                 >
@@ -601,12 +601,17 @@ export function SettingsPage() {
             { engineAction.error && <ErrorBlock error={engineAction.error} />}
 
             <div className={styles.formFooter}>
-              <Button type="submit" variant="primary" loading={updateCompute.isPending && !updateCompute.variables?.preset} disabled={updateCompute.isPending}>
+              <Button
+                type="submit"
+                variant="primary"
+                loading={updateCompute.isPending && !updateCompute.variables?.preset}
+                disabled={!canEditCompute || updateCompute.isPending}
+              >
                 {s.saveComputeBtn}
               </Button>
               {savedCompute && (
                 <span className={styles.okBanner}>
-                  {llmProvider === 'local' ? s.savedComputeWithReloadMsg : s.savedComputeMsg}
+                  {copilotModel?.provider === 'local' ? s.savedComputeWithReloadMsg : s.savedComputeMsg}
                 </span>
               )}
             </div>
@@ -620,6 +625,10 @@ export function SettingsPage() {
       {tab === 'policy' && (
         <div role="tabpanel" id="settings-panel-policy" aria-labelledby="settings-tab-policy" tabIndex={0}>
           {data && (
+          <>
+          {!canEditPolicy && (
+            <p className={styles.readOnlyBanner}>{s.policyReadOnlyHint}</p>
+          )}
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div>
@@ -642,6 +651,7 @@ export function SettingsPage() {
                 min={0.1}
                 max={0.85}
                 step={0.05}
+                disabled={!canEditPolicy}
                 value={ragMinSim}
                 onChange={(e) => setRagMinSim(Number(e.target.value))}
                 className={styles.rangeInput}
@@ -659,6 +669,7 @@ export function SettingsPage() {
                 min={0.2}
                 max={0.95}
                 step={0.05}
+                disabled={!canEditPolicy}
                 value={vehicleConf}
                 onChange={(e) => setVehicleConf(Number(e.target.value))}
                 className={styles.rangeInput}
@@ -674,6 +685,7 @@ export function SettingsPage() {
                 type="number"
                 min={1}
                 max={20}
+                disabled={!canEditPolicy}
                 value={ragTopK}
                 onChange={(e) => setRagTopK(Number(e.target.value))}
                 className={styles.numberInput}
@@ -690,6 +702,7 @@ export function SettingsPage() {
                 min={128}
                 max={8192}
                 step={64}
+                disabled={!canEditPolicy}
                 value={llmMaxTokens}
                 onChange={(e) => setLlmMaxTokens(Number(e.target.value))}
                 className={styles.numberInput}
@@ -705,6 +718,7 @@ export function SettingsPage() {
                 type="number"
                 min={5}
                 max={300}
+                disabled={!canEditPolicy}
                 value={llmTimeout}
                 onChange={(e) => setLlmTimeout(Number(e.target.value))}
                 className={styles.numberInput}
@@ -719,6 +733,7 @@ export function SettingsPage() {
                 id="default-lane-input"
                 type="text"
                 maxLength={64}
+                disabled={!canEditPolicy}
                 value={defaultLane}
                 onChange={(e) => setDefaultLane(e.target.value)}
                 className={styles.numberInput}
@@ -734,6 +749,7 @@ export function SettingsPage() {
                 type="number"
                 min={1}
                 max={365}
+                disabled={!canEditPolicy}
                 value={telemetryRetention}
                 onChange={(e) => setTelemetryRetention(Number(e.target.value))}
                 className={styles.numberInput}
@@ -741,6 +757,7 @@ export function SettingsPage() {
               <label className={styles.checkboxRow}>
                 <input
                   type="checkbox"
+                  disabled={!canEditPolicy}
                   checked={telemetryEnabled}
                   onChange={(e) => setTelemetryEnabled(e.target.checked)}
                 />
@@ -757,6 +774,7 @@ export function SettingsPage() {
                 type="number"
                 min={1}
                 max={365}
+                disabled={!canEditPolicy}
                 value={visionRetention}
                 onChange={(e) => setVisionRetention(Number(e.target.value))}
                 className={styles.numberInput}
@@ -768,12 +786,14 @@ export function SettingsPage() {
             <ReasonAction
               label={s.savePolicyBtn}
               variant="primary"
+              disabled={!canEditPolicy}
               onStepUp={(code, reason) => stepUp.mutateAsync({ code, reason })}
               onSubmit={submitPolicy}
             />
             {savedPolicy && <span className={styles.okBanner}>{s.savedPolicyMsg}</span>}
           </div>
         </section>
+          </>
           )}
         </div>
       )}
@@ -866,39 +886,52 @@ export function SettingsPage() {
               </div>
             </div>
 
-            {evalCandidatesQuery.data && evalCandidatesQuery.data.length === 0 && (
-              <p className={styles.sectionSub}>{s.evalEmpty}</p>
-            )}
+            {!canReadChatlog ? (
+              <p className={styles.readOnlyBanner}>{s.readOnlyBanner}</p>
+            ) : (
+              <>
+                {evalCandidatesQuery.isPending && <Loading />}
+                {evalCandidatesQuery.error && (
+                  <ErrorBlock
+                    error={evalCandidatesQuery.error}
+                    onRetry={() => void evalCandidatesQuery.refetch()}
+                  />
+                )}
+                {evalCandidatesQuery.data && evalCandidatesQuery.data.length === 0 && (
+                  <p className={styles.sectionSub}>{s.evalEmpty}</p>
+                )}
 
-            {evalCandidatesQuery.data && evalCandidatesQuery.data.length > 0 && (
-              <div className={styles.tableWrap}>
-                <table className={styles.table} aria-label={s.evalCandidatesTitle}>
-                  <thead>
-                    <tr>
-                      <th>{s.colEvalQuery}</th>
-                      <th>{s.colEvalBehavior}</th>
-                      <th>{s.colEvalCategory}</th>
-                      <th>{s.colEvalAt}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {evalCandidatesQuery.data.map((item, idx) => (
-                      <tr key={String(item.turn_id ?? idx)}>
-                        <td>{String(item.query ?? '')}</td>
-                        <td>
-                          <Badge tone={item.expected_behavior === 'REFUSE' ? 'warning' : 'success'}>
-                            {String(item.expected_behavior ?? 'ANSWER')}
-                          </Badge>
-                        </td>
-                        <td className={styles.mono}>{String(item.category ?? 'regulation')}</td>
-                        <td className={styles.mono}>
-                          {item.promoted_at ? fmtDateTime(String(item.promoted_at)) : DASH}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                {evalCandidatesQuery.data && evalCandidatesQuery.data.length > 0 && (
+                  <div className={styles.tableWrap}>
+                    <table className={styles.table} aria-label={s.evalCandidatesTitle}>
+                      <thead>
+                        <tr>
+                          <th>{s.colEvalQuery}</th>
+                          <th>{s.colEvalBehavior}</th>
+                          <th>{s.colEvalCategory}</th>
+                          <th>{s.colEvalAt}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {evalCandidatesQuery.data.map((item, idx) => (
+                          <tr key={String(item.turn_id ?? idx)}>
+                            <td>{String(item.query ?? '')}</td>
+                            <td>
+                              <Badge tone={item.expected_behavior === 'REFUSE' ? 'warning' : 'success'}>
+                                {String(item.expected_behavior ?? 'ANSWER')}
+                              </Badge>
+                            </td>
+                            <td className={styles.mono}>{String(item.category ?? 'regulation')}</td>
+                            <td className={styles.mono}>
+                              {item.promoted_at ? fmtDateTime(String(item.promoted_at)) : DASH}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
             )}
           </section>
         </div>

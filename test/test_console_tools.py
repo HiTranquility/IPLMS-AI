@@ -299,13 +299,67 @@ class ConsoleSettingsAndToolsEndpointTest(unittest.IsolatedAsyncioTestCase):
         self.assertIn("đo held-out", store.add_audit.await_args.args[4])
         self.assertTrue(os.path.isfile(self._settings_path))
 
-    async def test_compute_khong_doi_sang_provider_ngoai(self):
+    async def test_compute_khong_doi_provider_hay_model(self):
+        import json
+
+        from app.core.console.services import tools_service
+
         svc, *_ = service()
-        # A-6/A-38: gửi câu hỏi ra OpenAI chỉ bật qua env, không qua API Settings.
-        with self.assertRaises(ValueError):
-            await svc.update_compute_settings(ML, {"llm_provider": "openai"})
-        res = await svc.update_compute_settings(ML, {"llm_provider": "ollama", "llm_model": "qwen3:4b"})
-        self.assertEqual("ollama", res["compute"]["llm_provider"])
+        cfg = tools_service.get_config()
+        before = (cfg.llm.llm_provider, cfg.llm.llm_model)
+        # REQ-020 X2 / ADR-0061 §2: model theo tác vụ đổi bằng revision, Settings không nhận nữa.
+        for payload in ({"llm_provider": "openai"}, {"llm_provider": "ollama"}, {"llm_model": "qwen3:4b"}):
+            with self.assertRaises(ValueError):
+                await svc.update_compute_settings(ML, payload)
+        # Preset chỉ đổi phần cứng, không lặng lẽ chuyển provider.
+        await svc.update_compute_settings(ML, {"preset": "cpu_eco"})
+        self.assertEqual(before, (cfg.llm.llm_provider, cfg.llm.llm_model))
+        with open(self._settings_path, encoding="utf-8") as f:
+            saved = json.load(f)
+        self.assertNotIn("llm_provider", saved)
+        self.assertNotIn("llm_model", saved)
+
+    async def test_settings_hien_model_inference_dung_that(self):
+        from app.infra.database.model_policy_store import model_policy_store
+
+        svc, *_ = service()
+        active = {"id": "p-1", "task": "copilot_answer", "revision": 4, "provider": "openai",
+                  "model": "gpt-profile", "timeout_seconds": 30, "max_output_tokens": 800,
+                  "reasoning_effort": "none"}
+
+        async def get_active(task):
+            return active if task == "copilot_answer" else None
+
+        with patch.object(model_policy_store, "db_url", "postgresql://test"),                 patch.object(model_policy_store, "get_active", side_effect=get_active):
+            res = await svc.get_runtime_settings(ML)
+            check = await svc.system_check(ML)
+        models = {m["task"]: m for m in res["models"]}
+        self.assertEqual(("profile", "gpt-profile", 4), (
+            models["copilot_answer"]["source"], models["copilot_answer"]["model"], models["copilot_answer"]["revision"]))
+        self.assertEqual("env", models["test_judge"]["source"])
+        self.assertEqual("gpt-profile", check["llm_model"])
+        self.assertNotIn("llm_model", res["compute"])
+
+    async def test_settings_kho_profile_loi_thi_bao_unknown(self):
+        from app.infra.database.model_policy_store import model_policy_store
+
+        svc, *_ = service()
+        with patch.object(model_policy_store, "db_url", "postgresql://test"),                 patch.object(model_policy_store, "get_active", side_effect=RuntimeError("db down")):
+            res = await svc.get_runtime_settings(ML)
+        # Không đoán là env khi không biết revision nào đang dùng.
+        self.assertEqual({"unknown"}, {m["source"] for m in res["models"]})
+
+    def test_file_override_cu_con_llm_model_bi_bo_qua(self):
+        import json
+
+        from app.config.runtime_override_config import apply_runtime_overrides
+
+        cfg = SimpleNamespace(llm=SimpleNamespace(llm_model="env-model", llm_provider="ollama", rag_top_k=5),
+                              vision=SimpleNamespace(), telemetry=SimpleNamespace(), console=SimpleNamespace())
+        with open(self._settings_path, "w", encoding="utf-8") as f:
+            json.dump({"llm_model": "file-model", "llm_provider": "local", "rag_top_k": 7}, f)
+        apply_runtime_overrides(cfg)
+        self.assertEqual(("env-model", "ollama", 7), (cfg.llm.llm_model, cfg.llm.llm_provider, cfg.llm.rag_top_k))
 
     async def test_ghi_file_loi_thi_hoan_tac_cau_hinh(self):
         from app.core.console.services import tools_service
@@ -321,7 +375,7 @@ class ConsoleSettingsAndToolsEndpointTest(unittest.IsolatedAsyncioTestCase):
             with self.assertRaises(PermissionError):
                 await svc.update_policy_settings(LEAD, {"rag_top_k": 19, "reason": "thử lỗi ghi"})
             with self.assertRaises(PermissionError):
-                await svc.update_compute_settings(ML, {"local_llm_threads": 63, "llm_provider": "local"})
+                await svc.update_compute_settings(ML, {"local_llm_threads": 63})
             with self.assertRaises(PermissionError):
                 await svc.update_compute_settings(ML, {"preset": "cpu_eco"})
         # A-53: API báo lỗi thì cấu hình đang chạy giữ nguyên, kể cả provider; không để lại tệp tạm.
@@ -344,6 +398,20 @@ class ConsoleSettingsAndToolsEndpointTest(unittest.IsolatedAsyncioTestCase):
         apply_runtime_overrides(cfg)
         self.assertEqual(20, cfg.llm.rag_top_k)
         self.assertFalse(hasattr(cfg.llm, "llm_provider"))
+
+    async def test_list_sessions_delegates_and_marks_current(self):
+        # bug-030: kiểm tra list_sessions uỷ quyền store và đánh dấu is_current
+        svc, _, _, store = service()
+        store.list_active_sessions.return_value = [
+            {"session_id": "sess-active-01", "member_id": "m-admin", "mfa_verified": True},
+            {"session_id": "sess-other-02", "member_id": "m-admin", "mfa_verified": True},
+        ]
+        current_actor = ConsoleActor("m-admin", frozenset({"ai_console_admin"}), session_id="sess-active-01")
+        sessions = await svc.list_sessions(current_actor)
+        store.list_active_sessions.assert_awaited_once_with("m-admin", include_all=True)
+        self.assertEqual(2, len(sessions))
+        self.assertTrue(sessions[0]["is_current"])
+        self.assertFalse(sessions[1]["is_current"])
 
     async def test_revoke_active_session_guards(self):
         svc, _, _, store = service()
