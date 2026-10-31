@@ -53,6 +53,9 @@ class SessionPolicyTest(unittest.TestCase):
         self.assertEqual("SESSION_IDLE", self.code_of(session(), now=T0 + timedelta(minutes=31)))
         self.assertEqual("MFA_REQUIRED", self.code_of(session(mfa_at=None)))
         self.assertEqual("OK", self.code_of(session(mfa_at=None), require_mfa=False))
+        # bug-030: phiên chờ TOTP quá 10 phút coi như hết hạn
+        self.assertEqual("SESSION_EXPIRED", self.code_of(
+            session(mfa_at=None), now=T0 + timedelta(minutes=11), require_mfa=False))
 
     def test_step_up_window(self):
         window = timedelta(minutes=5)
