@@ -36,7 +36,7 @@
 | Hạng mục quy định | Yêu cầu chuẩn | Mức độ đáp ứng trong IPLMS AI | Bằng chứng mã nguồn / Kiểm thử |
 | :--- | :--- | :--- | :--- |
 | **Năng lực AI (Mục 4.1)** | Tối thiểu 2 năng lực (nhóm 3 người: tối thiểu 3) | **Đáp ứng 5/5 năng lực (A, B, C, D, E)** | RAG, LangGraph Agent, Pydantic DTOs, Vision ANPR + Ingestion, Multi-Agent StateGraph |
-| **Kỹ nghệ AI (Mục 4.2)** | 6 tiêu chuẩn bắt buộc: Model, Prompt, Guardrails, Eval Set, Logging, Fallback | **Đáp ứng 100% chuyên sâu** | Qwen3.5-4B CUDA, PromptManager, 3-layer Guardrails, 25 test cases eval, Telemetry logger, Seed fallback |
+| **Kỹ nghệ AI (Mục 4.2)** | 6 tiêu chuẩn bắt buộc: Model, Prompt, Guardrails, Eval Set, Logging, Fallback | **Đáp ứng 100% chuyên sâu** | Qwen3.5-4B CUDA, PromptStore, 3-layer Guardrails, 25 test cases eval, Telemetry logger, Seed fallback |
 | **Truy xuất yêu cầu (Mục 5.1)** | 8–15 User Stories kèm bảng Traceability Table | **10 User Stories hoàn chỉnh** | Bảng ma trận ánh xạ từ Story $\to$ Endpoint $\to$ File $\to$ Unit Test |
 | **Quyết định kiến trúc (Mục 5.2)** | Tối thiểu 3 ADR (ít nhất 1 về AI) | **3 ADRs chuẩn hóa** | [ai ADR-0002](docs/projects/adrs/10-2026/0002-tu-choi-khi-thieu-ngu-canh.md) (chống bịa), [ai ADR-0004](docs/projects/adrs/10-2026/0004-llama-server-mot-slot-vua-vram-4gb.md) (VRAM 4 GB), [ai ADR-0003](docs/projects/adrs/10-2026/0003-nguoi-duyet-truoc-khi-xu-ly-tranh-chap.md) (human-in-the-loop) |
 | **Nhật ký AI (Mục 5.3)** | File `AI_USAGE.md` với ít nhất 2 ca lỗi & cách sửa | **Hoàn thành xuất sắc** | Đã tạo `AI_USAGE.md` phân tích sâu lỗi VRAM OOM và lỗi Stopword collision |
@@ -64,7 +64,7 @@ flowchart TD
 
     subgraph EngineLayer ["AI Engines & Workflows"]
         VisionPipe["Vision Pipeline (CUDA)<br/>- YOLOv8 (Plate Detection)<br/>- Bilinear Interpolation Crop<br/>- EasyOCR (VN Plate Syntax TT24)<br/>- CNN NetV2 (Vehicle Cls)"]
-        RagPipe["RAG Copilot Pipeline<br/>- Dynamic PromptManager<br/>- Cosine Similarity Reranker<br/>- Source Citation Formatter"]
+        RagPipe["RAG Copilot Pipeline<br/>- PromptStore (data/prompts)<br/>- Cosine Similarity Reranker<br/>- Source Citation Formatter"]
         DisputeGraph["LangGraph Multi-Agent Workflow<br/>- Evidence Analyst<br/>- Policy Retriever<br/>- Human-in-the-Loop Review<br/>- Finalizer"]
     end
 
@@ -112,7 +112,7 @@ Nhóm hiện thực **toàn bộ 5 năng lực AI** được quy định trong h
 │    App Data  │ Citations, Zero-Hallucination Refusal  │ engines/rag_pipeline.py │
 ├──────────────┼────────────────────────────────────────┼─────────────────────────┤
 │ B. Tool-using│ 3+ Domain Tools, State Modification,   │ app/core/copilot/       │
-│    Agent     │ Mandatory Human Approval Gate          │ engines/dispute_workflow│
+│    Agent     │ Mandatory Human Approval Gate          │ workflows/dispute│
 ├──────────────┼────────────────────────────────────────┼─────────────────────────┤
 │ C. Structured│ Pydantic Validation, Strict JSON       │ app/core/copilot/dtos/  │
 │    Output    │ Schema, Safe Type Conversion           │ app/core/vision/dtos/   │
@@ -121,7 +121,7 @@ Nhóm hiện thực **toàn bộ 5 năng lực AI** được quy định trong h
 │    Input     │ CNN Classifier, PDF/DOCX Parser        │ app/core/knowledge/     │
 ├──────────────┼────────────────────────────────────────┼─────────────────────────┤
 │ E. Multi-    │ LangGraph Supervisor StateGraph, Node  │ app/core/copilot/       │
-│    agent Flow│ Handoffs, Reviewer & Interrupt Nodes   │ engines/dispute_workflow│
+│    agent Flow│ Handoffs, Reviewer & Interrupt Nodes   │ workflows/dispute│
 └──────────────┴────────────────────────────────────────┴─────────────────────────┘
 ```
 
@@ -182,10 +182,10 @@ Nhóm hiện thực **toàn bộ 5 năng lực AI** được quy định trong h
   4. **Triệt tiêu trễ suy luận (`--reasoning-budget 0`):** Ép mô hình bỏ qua vòng lặp `<think>...</think>`, đưa độ trễ từ 45s xuống chỉ còn **2.1s** với tốc độ sinh từ **20–22 tokens/giây**.
 
 ### 4.2 Quản lý Prompt có Versioning
-* Hệ thống tách biệt hoàn toàn nội dung prompt khỏi logic code thông qua `PromptManager` (`app/core/copilot/prompts/prompt_manager.py`).
-* Prompt hệ thống nằm ở [`data/prompts/copilot_rag_system_v2.txt`](data/prompts/copilot_rag_system_v2.txt), theo dõi lịch sử qua Git: chỉ trả lời từ ngữ cảnh, trích nguồn, coi ngữ cảnh là dữ liệu chứ không phải chỉ dẫn (chống prompt injection). `rag_pipeline.py` nạp nó qua `prompt_manager.get_prompt("copilot_rag_system")`; phiên bản mặc định là `default_version` trong `prompt_manager.py`.
-* Mỗi request ghi `prompt_version` = tên file + 8 ký tự hash nội dung (ví dụ `copilot_rag_system_v2#<hash>`) vào telemetry; sửa file mà quên tăng version thì hash vẫn đổi.
-* Thiếu file thì `PromptManager` dùng prompt dự phòng trong code và log ghi `copilot_rag_system_v1_fallback#default`, nên nhìn log là biết.
+* Nội dung prompt tách khỏi code (ADR-0005): mỗi prompt một thư mục `data/prompts/<tên>/`, nạp qua `PromptStore` (`app/infra/llm/prompts.py`).
+* Prompt hệ thống Copilot ở [`data/prompts/copilot_rag_system/v2.md`](data/prompts/copilot_rag_system/v2.md), theo dõi lịch sử qua Git: chỉ trả lời từ ngữ cảnh, trích nguồn, coi ngữ cảnh là dữ liệu chứ không phải chỉ dẫn (chống prompt injection). Khuôn user message ở `user.md` cùng thư mục. Bản `vN.md` số lớn nhất được dùng.
+* Mỗi request ghi `prompt_version` = `<tên>_<version>#<8 ký tự hash>` (ví dụ `copilot_rag_system_v2#<hash>`) vào telemetry; sửa file mà quên tăng version thì hash vẫn đổi.
+* Thiếu file thì service khởi động báo lỗi; không còn prompt dự phòng trong code.
 
 ### 4.3 Hệ thống Phòng vệ 3 Rủi ro (Guardrails)
 Theo quy định mục 4.2.C, hệ thống xử lý triệt để 3 kịch bản rủi ro:
@@ -284,7 +284,7 @@ Hệ thống xây dựng **10 User Stories** chuẩn mực kèm ma trận liên 
 │ ID    │ User Story Tóm Tắt               │ API / gRPC Endpoint  │ File Mã Nguồn Xử Lý    │ File Kiểm Thử Tự Động│
 ├───────┼──────────────────────────────────┼──────────────────────┼────────────────────────┼──────────────────────┤
 │ US-01 │ Quét biển số xe tự động vào bãi  │ POST /api/anpr/      │ app/core/vision/       │ test/                │
-│       │ với độ trễ < 500ms               │ recognize-plate      │ anpr_engine.py         │ test_anpr_engine.py  │
+│       │ với độ trễ < 500ms               │ recognize-plate      │ anpr/engine.py         │ test_anpr_engine.py  │
 ├───────┼──────────────────────────────────┼──────────────────────┼────────────────────────┼──────────────────────┤
 │ US-02 │ Phân loại phương tiện qua CNN    │ gRPC RecognizePlate  │ app/core/vision/       │ test/                │
 │       │ để áp giá vé tự động             │ (ai_service.proto)   │ vehicle_classifier.py  │ test_vehicle_cls.py  │
@@ -367,7 +367,7 @@ Tài liệu chi tiết được lưu giữ tại [`AI_USAGE.md`](file:///D:/ai/A
 Giảng viên thường yêu cầu 1 trong 4 thao tác sau:
 
 #### Yêu Cầu 1: "Hãy đổi quy tắc prompt (ví dụ: bắt buộc bot xưng là 'IPLMS Bot' và chào khách hàng)"
-- **File cần sửa:** [`data/prompts/copilot_rag_system_v2.txt`](data/prompts/copilot_rag_system_v2.txt) (thay đổi lớn thì chép thành `_v3.txt` và đổi `default_version` trong `prompt_manager.py`)
+- **File cần sửa:** chép [`data/prompts/copilot_rag_system/v2.md`](data/prompts/copilot_rag_system/v2.md) thành `v3.md` rồi sửa bản mới (bản số lớn nhất tự được dùng), sau đó chạy lại `app/script/redteam_copilot.py`
 - **Thao tác:** Mở file prompt, thêm vào dòng đầu:
   ```text
   Bạn là IPLMS Bot. Luôn bắt đầu câu trả lời bằng: 'Xin chào quý khách, IPLMS Bot xin giải đáp:'
@@ -385,7 +385,7 @@ Giảng viên thường yêu cầu 1 trong 4 thao tác sau:
   2. Trong hàm `query()`, tính toán: `reading_time = max(1, len(answer.split()) // 3)` và gán vào DTO trả về.
 
 #### Yêu Cầu 4: "Hãy thêm một công cụ mới vào Agent (ví dụ: công cụ kiểm tra số dư thẻ gửi xe)"
-- **File cần sửa:** [`app/core/copilot/engines/dispute_workflow/nodes.py`](file:///D:/ai/app/core/copilot/engines/dispute_workflow/nodes.py)
+- **File cần sửa:** [`app/core/copilot/workflows/dispute/nodes.py`](file:///D:/ai/app/core/copilot/workflows/dispute/nodes.py)
 - **Thao tác:** Khai báo một Python function có type hints và docstring rõ ràng, đăng ký vào danh sách công cụ của LangGraph node.
 
 ---

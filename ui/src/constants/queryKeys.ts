@@ -26,6 +26,7 @@ export const queryKeys = {
     runtimeSettings: () => [...queryKeys.tools.all(), 'settings'] as const,
     sessions: () => [...queryKeys.tools.all(), 'sessions'] as const,
     evalCandidates: () => [...queryKeys.tools.all(), 'eval-candidates'] as const,
+    forecastAreas: () => [...queryKeys.tools.all(), 'forecast', 'areas'] as const,
   },
   members: {
     all: () => ['members'] as const,

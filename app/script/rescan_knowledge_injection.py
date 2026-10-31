@@ -18,7 +18,7 @@ import json
 
 from psycopg2.extras import Json
 
-from app.core.knowledge.engines.injection_scan import find_instructions
+from app.core.knowledge.guardrails.injection_scan import find_instructions
 from app.infra.database.pgvector_client import pgvector_client
 
 _SELECT = """

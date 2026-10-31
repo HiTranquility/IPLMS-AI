@@ -3,31 +3,26 @@ from __future__ import annotations
 
 import re
 import time
-from typing import Any, AsyncGenerator, Dict, Iterable
+from typing import Any, AsyncGenerator, Dict, Iterable, List, Optional
 
 from app.config import get_config
-from app.core.copilot.engines import output_guard
-from app.core.copilot.guardrails import guardrail_manager
-from app.core.copilot.prompts import prompt_manager
+from app.core.copilot.guardrails import guardrail_manager, output_guard
+from app.core.copilot.messages import NO_CONTEXT_ANSWER
 from app.infra.monitoring.ai_logger import ai_telemetry_logger
 from app.core.exceptions import EmbeddingError, ModelNotLoadedError, RagPipelineError
 from app.infra.database.pgvector_client import pgvector_client
 from app.infra.embedding import embedding_client
 from app.infra.llm.llm_factory import LlmFactory, llm_factory
+from app.infra.llm.prompts import prompt_store
 from app.util.logger import logger
 
 
-# Prompt hệ thống nằm ở `data/prompts/copilot_rag_system_<version>.txt` (đề Final §4.2).
-# Nhãn telemetry = tên file + hash nội dung: sửa file mà quên tăng version vẫn thấy hash đổi.
-_PROMPT_META = prompt_manager.get_metadata("copilot_rag_system")
-SYSTEM_PROMPT = prompt_manager.get_prompt("copilot_rag_system")
-PROMPT_VERSION = f"{_PROMPT_META['name']}_{_PROMPT_META['version']}#{_PROMPT_META['hash'][:8]}"
+# Prompt hệ thống ở `data/prompts/copilot_rag_system/vN.md` (đề Final §4.2, ADR-0005).
+# Nhãn telemetry = tên + version + hash nội dung: sửa file mà quên tăng version vẫn thấy hash đổi.
+_PROMPT = prompt_store.system("copilot_rag_system")
+SYSTEM_PROMPT = _PROMPT.text
+PROMPT_VERSION = _PROMPT.label
 TOOLS = ["knowledge_search"]
-
-NO_CONTEXT_ANSWER = (
-    "Mình chưa tìm thấy thông tin đủ liên quan trong kho tri thức để trả lời "
-    "chắc chắn. Bạn hãy chọn đúng bãi xe hoặc nhờ chủ bãi bổ sung quy chế."
-)
 
 
 def _sources(chunks: Iterable[dict[str, Any]]) -> list[str]:

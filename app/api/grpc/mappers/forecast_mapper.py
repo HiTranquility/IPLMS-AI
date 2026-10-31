@@ -1,6 +1,6 @@
 """Map message protobuf ↔ DTO Domain Forecast."""
 from app.api.grpc.generated_stubs import get_stub
-from app.core.constants import DEFAULT_FORECAST_HOURS
+from app.core.forecast.constants import DEFAULT_FORECAST_HOURS
 from app.core.forecast.dtos.forecast_dto import (
     OccupancyForecast,
     OccupancyForecastQuery,
@@ -39,6 +39,8 @@ def to_occupancy_forecast_response(forecast: OccupancyForecast):
             for slot in forecast.slots
         ],
         confidence_score=forecast.confidence_score,
+        data_source=_pb2.ForecastDataSource.Value(forecast.data_source),
+        is_fallback=forecast.is_fallback,
     )
 
 
@@ -47,4 +49,6 @@ def to_tariff_recommendation_response(recommendation: TariffRecommendation):
         parking_lot_id=recommendation.parking_lot_id,
         recommended_multiplier=recommendation.recommended_multiplier,
         reason=recommendation.reason,
+        data_source=_pb2.ForecastDataSource.Value(recommendation.data_source),
+        is_fallback=recommendation.is_fallback,
     )

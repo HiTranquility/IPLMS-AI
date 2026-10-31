@@ -4,11 +4,11 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🆕 New / 🟠 sai số liệu hiển thị, có đường vòng (đọc thẻ `is_fallback` ở API) |
+| **Trạng thái** | 🟢 Fixed (chờ merge) / 🟠 sai số liệu hiển thị |
 | **Người báo** | Claude Code, phát hiện khi soạn lộ trình console (SUGGESTION-006 F-1) cùng đợt [ISSUE-019](../../issues/10-2026/ISSUE-019-console-settings-va-don-audit-006/issue.md) |
 | **Ngày báo** | 2026-10-25 |
 | **Môi trường** | local, `develop` + WIP ngày 2026-10-25 |
-| **Người nhận** | |
+| **Người nhận** | Claude Code (nhánh `bugfix/bug-028-2026-10-forecast-area-key-and-source-label`) |
 | **Hạn** | — |
 | **Ưu tiên** | 🟠 |
 | **Ngày đóng** | — |
@@ -42,4 +42,21 @@ Chọn bất kỳ bãi nào ở Forecast Simulator (trang Công cụ) thì servi
 
 ## Sửa / kiểm chứng
 
-<Điền sau khi sửa. Đề xuất: thêm endpoint danh sách khu từ lake (hoặc fixture chung), UI bỏ danh sách cứng; test kiểm `is_fallback=False` khi area có dữ liệu và UI hiện thẻ nguồn dữ liệu.>
+Sửa 2026-10-28, cùng đợt IPLMS [REQ-022](../../../../../docs/requirements/10-2026/REQ-022-forecast-tuong-tac-theo-vai.md) F1–F3:
+
+- **Nguyên nhân gốc 1 — danh sách cứng:** Simulator chọn bãi từ `PARKING_LOTS`. Thêm `ForecastService.list_lake_areas()` (`app/core/forecast/services/forecast_service.py`) và `GET /tools/forecast/areas` (`app/api/rest/routes/console_tools_controller.py`); `ForecastSimulator.tsx` lấy danh sách từ endpoint này qua `useForecastAreas`, lake rỗng thì khoá nút chạy pipeline. `PARKING_LOTS` vẫn dùng cho Copilot/Ingest (không thuộc bug này).
+- **Nguyên nhân gốc 2 — nhãn sai sau khi nạp (tìm thêm khi viết test):** `load_lakehouse_dataset(area_id=X)` với X không có trong lake trả bản ghi baseline, và các bản ghi đó được nạp vào cache telemetry. Lần hỏi sau cho X trả `data_source="lakehouse_parquet"`, `is_fallback=False` cho số baseline. Giờ chỉ bản ghi không phải fallback mới vào cache.
+- **Nguồn số qua gRPC:** `OccupancyForecastResponse` và `TariffRecommendationResponse` thêm `data_source = 4`, `is_fallback = 5` (proto gốc, `ai/proto`, bản backend; `check_proto_sync.py` sạch). Kết quả gộp nhiều khung giờ: chỉ cần một khung baseline là cả kết quả gắn baseline.
+- Nhãn Console: bỏ "PREDICTIVE ML" ở badge pipeline; "Dữ liệu thật từ Gold lake" → "Dữ liệu lịch sử từ Gold lake" (VI/EN), vì lake dev hiện là dữ liệu tổng hợp của exporter (xem dưới).
+
+**Kiểm chứng**
+
+- `test/test_forecast_lake_areas.py` (6 test): chạy trên mã `origin/develop` → 4 error + 2 fail (gồm `test_bai_ngoai_lake_khong_bi_gan_nhan_lake_sau_khi_nap`: `False is not true`); trên nhánh sửa → 6 pass.
+- `python -m unittest discover -s test -t .`: 609 test, 2 fail `test_copilot_usage…test_no_context`, `test_rag_pipeline…test_no_context_does_not_call_llm` — cùng 2 fail có sẵn trên `origin/develop` (603 test), không liên quan forecast.
+- `ui`: `tsc --noEmit` sạch; `vitest run` 22 file / 105 test pass, gồm 2 test mới ở `ForecastSimulator.test.tsx` (chọn bãi từ lake, gửi đúng `area_id`; lake rỗng thì khoá nút).
+- Chưa kiểm trên browser stack dev: Docker không chạy và stack chạy từ checkout gốc, chưa có nhánh này.
+
+**Còn lại / ghi chú**
+
+- Gold lake dev (`analytic/var/datalake/gold/occupancy`) là 96 dòng tổng hợp do `analytic/etl/parquet_lake_exporter.py::_generate_occupancy_telemetry_fallback` sinh khi không có ClickHouse, không có cột đánh dấu. Forecast không phân biệt được, nên vẫn gắn `lakehouse_parquet`. Cần sửa ở analytic (đánh dấu hoặc không ghi bản tổng hợp vào gold).
+- Bãi thật của backend dùng `area_id` UUID; lake dev chỉ có `area-zone-*`, nên trên 3 app mọi bãi hiện nhãn "Ước lượng sơ bộ" cho tới khi có dữ liệu export thật. Đó là hành vi đúng.

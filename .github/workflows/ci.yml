@@ -22,7 +22,7 @@ jobs:
         image: pgvector/pgvector:0.8.6-pg16-bookworm
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: ***REMOVED***
+          POSTGRES_PASSWORD: postgres_ci_test_only
           POSTGRES_DB: iplms_knowledge
         ports:
           - 5432:5432
@@ -32,12 +32,12 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      AI_DATABASE_URL: postgresql://postgres:***REMOVED***@localhost:5432/iplms_knowledge
-      AI_TEST_DATABASE_URL: postgresql://postgres:***REMOVED***@localhost:5432/iplms_knowledge
-      AI_CONSOLE_DATABASE_URL: postgresql://postgres:***REMOVED***@localhost:5432/ai_console
-      AI_CONSOLE_INFERENCE_DATABASE_URL: postgresql://ai_inference:***REMOVED***@localhost:5432/ai_console
-      AI_CONSOLE_DB_PASSWORD: ***REMOVED***
-      AI_INFERENCE_DB_PASSWORD: ***REMOVED***
+      AI_DATABASE_URL: postgresql://postgres:postgres_ci_test_only@localhost:5432/iplms_knowledge
+      AI_TEST_DATABASE_URL: postgresql://postgres:postgres_ci_test_only@localhost:5432/iplms_knowledge
+      AI_CONSOLE_DATABASE_URL: postgresql://postgres:postgres_ci_test_only@localhost:5432/ai_console
+      AI_CONSOLE_INFERENCE_DATABASE_URL: postgresql://ai_inference:postgres_ci_test_only@localhost:5432/ai_console
+      AI_CONSOLE_DB_PASSWORD: postgres_ci_test_only
+      AI_INFERENCE_DB_PASSWORD: postgres_ci_test_only
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -67,8 +67,8 @@ jobs:
 
       - name: Initialize Postgres databases and vector extension
         run: |
-          PGPASSWORD=***REMOVED*** psql -h localhost -U postgres -d iplms_knowledge -c "CREATE EXTENSION IF NOT EXISTS vector;"
-          PGPASSWORD=***REMOVED*** psql -h localhost -U postgres -d postgres -c "CREATE DATABASE ai_console;"
+          PGPASSWORD=postgres_ci_test_only psql -h localhost -U postgres -d iplms_knowledge -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          PGPASSWORD=postgres_ci_test_only psql -h localhost -U postgres -d postgres -c "CREATE DATABASE ai_console;"
           python -m app.script.harden_console_db
 
       - name: Run unit tests
@@ -76,6 +76,12 @@ jobs:
 
       - name: Compile Python sources
         run: python -m compileall -q app model training test
+
+      # ADR-0005: khuôn domain app/core/ và không có prompt viết cứng.
+      - name: Check core layout
+        run: |
+          python -B -m unittest discover -s script -p test_check_core_layout.py
+          python -X utf8 script/check_core_layout.py
 
   ui:
     name: Build AI Console UI

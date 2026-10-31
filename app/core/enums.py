@@ -27,6 +27,13 @@ class OccupancyStatus(str, Enum):
     CRITICAL = "CRITICAL"
 
 
+class ForecastDataSource(str, Enum):
+    """Nguồn số của kết quả forecast — khớp enum `ForecastDataSource` trong forecast_service.proto (IPLMS REQ-022)."""
+    LAKEHOUSE_PARQUET = "LAKEHOUSE_PARQUET"
+    CLICKHOUSE_MARTS = "CLICKHOUSE_MARTS"
+    HEURISTIC_BASELINE = "HEURISTIC_BASELINE"
+
+
 class FraudReason(str, Enum):
     """Kết quả đối chiếu xe — khớp enum `MismatchReason` trong vision_service.proto."""
     OK = "OK"

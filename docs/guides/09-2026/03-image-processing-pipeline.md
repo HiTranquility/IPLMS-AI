@@ -49,7 +49,7 @@ flowchart TD
     M --> N[Backend áp dụng nghiệp vụ cổng]
 ```
 
-Nguồn chính: [anpr_engine.py](../../../app/core/vision/engines/anpr_engine.py), hàm `run_anpr`; [anpr_service.py](../../../app/core/vision/services/anpr_service.py), hàm `recognize_bytes`. Mô tả **hiện tại** bên dưới dựa trên các hàm này; chiến lược sửa được ghi **đề xuất**.
+Nguồn chính: [anpr/engine.py](../../../app/core/vision/engines/anpr/engine.py), hàm `run_anpr`; [anpr_service.py](../../../app/core/vision/services/anpr_service.py), hàm `recognize_bytes`. Mô tả **hiện tại** bên dưới dựa trên các hàm này; chiến lược sửa được ghi **đề xuất**.
 
 ### Snapshot runtime 2026-09-21
 

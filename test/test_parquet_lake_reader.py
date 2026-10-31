@@ -18,7 +18,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from app.core.exceptions import DataLakeError
-from app.core.forecast.readers import ParquetLakeReader, parquet_lake_reader
+from app.core.forecast.engines.parquet_lake_reader import ParquetLakeReader, parquet_lake_reader
 from app.core.forecast.services.forecast_service import ForecastService
 
 

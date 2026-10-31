@@ -148,11 +148,12 @@ class RagPipelineTest(unittest.TestCase):
 
     def test_system_prompt_loaded_from_versioned_file(self):
         # bug-032: prompt nằm ở data/prompts, nhãn log = tên file + hash nội dung.
-        path = Path(__file__).resolve().parents[1] / "data" / "prompts" / "copilot_rag_system_v2.txt"
+        # ADR-0005: data/prompts/<tên>/vN.md; nhãn giữ dạng <tên>_<version>#<hash8> cho backend.
+        path = Path(__file__).resolve().parents[1] / "data" / "prompts" / "copilot_rag_system" / "v2.md"
         content = path.read_text(encoding="utf-8").strip()
         self.assertEqual(content, SYSTEM_PROMPT)
         digest = hashlib.sha256(content.encode("utf-8")).hexdigest()[:8]
-        self.assertEqual(f"{path.stem}#{digest}", PROMPT_VERSION)
+        self.assertEqual(f"copilot_rag_system_v2#{digest}", PROMPT_VERSION)
 
     def test_stream_emits_sources_only_on_terminal_chunk(self):
         chunks = [{"content": "Phí 20.000đ", "source": "quy-che.md", "similarity": 0.9}]

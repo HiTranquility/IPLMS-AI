@@ -21,6 +21,20 @@ class NormalizeTest(unittest.TestCase):
         self.assertTrue(is_refusal("Kho tri thức chưa có đủ thông tin để kết luận."))
         self.assertFalse(is_refusal("Phí gửi xe là 25.000đ mỗi giờ."))
 
+    def test_marker_khop_cau_tu_choi_cua_copilot(self):
+        # Hợp đồng ADR-0005: đổi NO_CONTEXT_ANSWER mà quên marker trong grader thì đỏ ở đây.
+        from app.core.copilot.messages import NO_CONTEXT_ANSWER
+
+        self.assertTrue(is_refusal(NO_CONTEXT_ANSWER))
+
+
+class PromptFileTest(unittest.TestCase):
+    def test_schema_generator_khop_kinds(self):
+        from app.core.knowledge_eval.engines.grader import KINDS
+
+        kind = case_generator.GENERATOR_SCHEMA["properties"]["cases"]["items"]["properties"]["kind"]
+        self.assertEqual(list(KINDS), kind["enum"])
+
 
 class GradeTest(unittest.TestCase):
     def test_fact_passes_with_different_money_format(self):

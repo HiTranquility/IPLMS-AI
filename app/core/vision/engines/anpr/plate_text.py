@@ -1,7 +1,7 @@
 """Luật chuỗi biển số Việt Nam — thuần, không phụ thuộc model."""
 import re
 
-from app.core.constants import PLATE_MAX_LENGTH, PLATE_MIN_ALNUM, PLATE_MIN_ALPHA
+from app.core.vision.constants import PLATE_MAX_LENGTH, PLATE_MIN_ALNUM, PLATE_MIN_ALPHA
 
 # Hình dạng thường gặp sau khi bỏ dấu phân cách: 7–10 ký tự, ≥5 chữ số.
 _PLAUSIBLE_MIN_LEN = 7

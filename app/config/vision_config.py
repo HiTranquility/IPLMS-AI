@@ -55,6 +55,18 @@ class VisionConfig(BaseConfig):
     # Xác suất softmax cao nhất dưới ngưỡng → trả "không rõ" (None) thay vì đoán.
     vehicle_min_confidence: float = 0.6
 
+    # Đọc biển số từ clip ở AI Console (IPLMS REQ-021 A). Clip không được lưu.
+    clip_max_bytes: int = 50 * 1024 * 1024
+    clip_max_duration_s: float = 60.0
+    # Trần số frame đưa vào ANPR mỗi clip — chặn thời gian CPU dù nhịp cắt nhỏ.
+    clip_max_frames: int = 240
+    clip_sample_interval_s: float = 0.5
+    # Chế độ "theo chuyển động": bỏ frame có tỉ lệ điểm ảnh đổi (so frame giữ trước) dưới ngưỡng.
+    clip_motion_threshold: float = 0.01
+    # Gộp frame thành sự kiện: ô biển chồng nhau đủ IoU, hai lần thấy cách nhau không quá max_gap.
+    clip_event_iou: float = 0.3
+    clip_event_max_gap_s: float = 1.5
+
     @property
     def ocr_language_list(self) -> List[str]:
         return [lang.strip() for lang in self.ocr_languages.split(",") if lang.strip()]

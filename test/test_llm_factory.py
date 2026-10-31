@@ -172,6 +172,23 @@ class LlmProviderTest(unittest.TestCase):
         self.assertEqual("cases", call["response_format"]["json_schema"]["name"])
         self.assertEqual("system", call["messages"][0]["role"])
 
+    def test_compatible_endpoint_answer_reports_provider_tokens(self):
+        # bug-042: nhánh Chat Completions (Ollama) bỏ mất usage → ai_request_log không có token.
+        chat = FakeChat("Phí qua đêm 15.000 VNĐ.")
+        reply = SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content="Phí qua đêm 15.000 VNĐ."))],
+                                usage=SimpleNamespace(prompt_tokens=412, completion_tokens=19))
+
+        async def create(**kwargs):
+            chat.calls.append(kwargs)
+            return reply
+
+        chat.create = create
+        factory = self._factory(base_url="http://localhost:11434/v1", client=SimpleNamespace(chat=chat))
+        usage: dict = {}
+        answer = asyncio.run(factory.generate_response("s", "q", "c", usage=usage))
+        self.assertEqual("Phí qua đêm 15.000 VNĐ.", answer)
+        self.assertEqual({"input_tokens": 412, "output_tokens": 19}, usage)
+
     def test_compatible_endpoint_bad_json_is_an_error_not_swallowed(self):
         from app.core.exceptions import RagPipelineError
 

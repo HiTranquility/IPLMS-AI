@@ -3,6 +3,7 @@ import { queryKeys } from '@/constants/queryKeys';
 import {
   getActiveSessions,
   getDocumentChunks,
+  getForecastAreas,
   getKnowledgeDocuments,
   getRuntimeSettings,
   getSystemCheck,
@@ -63,3 +64,12 @@ export function useEvalCandidatesQuery() {
 }
 
 export const useEvalCandidates = useEvalCandidatesQuery;
+
+export function useForecastAreasQuery() {
+  return useQuery({
+    queryKey: queryKeys.tools.forecastAreas(),
+    queryFn: getForecastAreas,
+  });
+}
+
+export const useForecastAreas = useForecastAreasQuery;
