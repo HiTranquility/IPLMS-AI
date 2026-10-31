@@ -4,11 +4,11 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🛠️ Fixing |
+| **Trạng thái** | ✅ Fixed — Đã sửa trong PR #112 (Copilot prompt nướng sẵn trong container image). |
 | **Người nhận** | @khoalololo (Đỗ Minh Khoa — chủ module Copilot) |
 | **Hạn** | 2026-10-31 |
 | **Ưu tiên** | 🟠 |
-| **Ngày đóng** | |
+| **Ngày đóng** | 2026-10-31 |
 | **Người báo** | Claude Code (rà báo cáo Final theo đề §4.2) |
 | **Môi trường** | local Docker (`iplms-ai-dev-api-1`), image build từ `Dockerfile` |
 

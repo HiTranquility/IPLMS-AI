@@ -4,7 +4,8 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🛠️ Fixing — đã sửa trên `bugfix/bug-045-2026-10-cors-origin-allowlist` (`f7ff908`), chờ PR |
+| **Trạng thái** | ✅ Fixed — Đã sửa trong PR #115 (CORS inference theo allowlist, bỏ wildcard credentials). |
+| **Ngày đóng** | 2026-10-31 |
 | **Người nhận** | @HiTranquility |
 | **Ưu tiên** | 🟠 |
 | **Người báo** | Claude Code, từ [AUDIT-008](../../audits/10-2026/AUDIT-008-loi-vao-inference-rate-limit-upload-cors-grpc.md) A3 |

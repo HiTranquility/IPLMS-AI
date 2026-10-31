@@ -4,7 +4,8 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🛠️ Fixing — đã sửa trên `bugfix/bug-048-2026-10-server-config-thieu-import-list`, chờ PR |
+| **Trạng thái** | ✅ Fixed — Đã sửa trong PR #123 (bổ sung import List trong server_config.py). |
+| **Ngày đóng** | 2026-10-31 |
 | **Người nhận** | @HiTranquility |
 | **Ưu tiên** | 🔴 |
 | **Người báo** | Claude Code, phát hiện khi làm ISSUE-026 (red-team agent) |

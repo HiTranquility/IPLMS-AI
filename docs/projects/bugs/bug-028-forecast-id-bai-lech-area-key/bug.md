@@ -4,14 +4,14 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🟢 Fixed (chờ merge) / 🟠 sai số liệu hiển thị |
+| **Trạng thái** | ✅ Fixed — Đã sửa trong PR #122 (Forecast Simulator chọn bãi từ Gold lake, trả enum ForecastDataSource). |
 | **Người báo** | Claude Code, phát hiện khi soạn lộ trình console (SUGGESTION-006 F-1) cùng đợt [ISSUE-019](../../issues/10-2026/ISSUE-019-console-settings-va-don-audit-006/issue.md) |
 | **Ngày báo** | 2026-10-25 |
 | **Môi trường** | local, `develop` + WIP ngày 2026-10-25 |
 | **Người nhận** | Claude Code (nhánh `bugfix/bug-028-2026-10-forecast-area-key-and-source-label`) |
 | **Hạn** | — |
 | **Ưu tiên** | 🟠 |
-| **Ngày đóng** | — |
+| **Ngày đóng** | 2026-10-31 |
 
 ## Hành vi thực tế
 
