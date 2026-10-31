@@ -3,6 +3,14 @@
 # ── Vision ────────────────────────────────────────────────────────────────────
 FALLBACK_PLATE_NUMBER = "UNKNOWN"
 # Luật chuỗi biển số chỉ vision dùng: app/core/vision/constants.py (ADR-0005).
+# Trần một ảnh ANPR gửi qua REST (bug-043). Cùng mức 8MB với ANPR thử ở Console;
+# thấp hơn `grpc_max_message_length` (10MB) để ảnh qua REST cũng đi được gRPC.
+# Dùng chung cho `/anpr/*` và `/vision/recognize` (app/api/rest/image_upload.py),
+# nên nằm ở đây chứ không ở app/core/vision/constants.py (bug-050).
+ANPR_MAX_IMAGE_BYTES = 8 * 1024 * 1024
+# Trần số ảnh mỗi request `/anpr/recognize-many` (bug-044): mỗi ảnh chạy YOLO + OCR
+# tuần tự trên CPU dùng chung với đường nóng gRPC.
+ANPR_MAX_FILES_PER_REQUEST = 10
 
 
 # ── Anti-Fraud ────────────────────────────────────────────────────────────────
