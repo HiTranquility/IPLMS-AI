@@ -22,7 +22,9 @@ jobs:
         image: pgvector/pgvector:0.8.6-pg16-bookworm
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres_ci_test_only
+          # bug-053: không để mật khẩu literal trong repo — mỗi lượt chạy một giá trị riêng
+          # (DB chỉ sống trong job này, chỉ nghe localhost của runner).
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
           POSTGRES_DB: iplms_knowledge
         ports:
           - 5432:5432
@@ -32,12 +34,13 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      AI_DATABASE_URL: postgresql://postgres:postgres_ci_test_only@localhost:5432/iplms_knowledge
-      AI_TEST_DATABASE_URL: postgresql://postgres:postgres_ci_test_only@localhost:5432/iplms_knowledge
-      AI_CONSOLE_DATABASE_URL: postgresql://postgres:postgres_ci_test_only@localhost:5432/ai_console
-      AI_CONSOLE_INFERENCE_DATABASE_URL: postgresql://ai_inference:postgres_ci_test_only@localhost:5432/ai_console
-      AI_CONSOLE_DB_PASSWORD: postgres_ci_test_only
-      AI_INFERENCE_DB_PASSWORD: postgres_ci_test_only
+      CI_DB_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+      AI_DATABASE_URL: postgresql://postgres:ci-${{ github.run_id }}-${{ github.run_attempt }}@localhost:5432/iplms_knowledge
+      AI_TEST_DATABASE_URL: postgresql://postgres:ci-${{ github.run_id }}-${{ github.run_attempt }}@localhost:5432/iplms_knowledge
+      AI_CONSOLE_DATABASE_URL: postgresql://postgres:ci-${{ github.run_id }}-${{ github.run_attempt }}@localhost:5432/ai_console
+      AI_CONSOLE_INFERENCE_DATABASE_URL: postgresql://ai_inference:ci-${{ github.run_id }}-${{ github.run_attempt }}@localhost:5432/ai_console
+      AI_CONSOLE_DB_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+      AI_INFERENCE_DB_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -67,8 +70,8 @@ jobs:
 
       - name: Initialize Postgres databases and vector extension
         run: |
-          PGPASSWORD=postgres_ci_test_only psql -h localhost -U postgres -d iplms_knowledge -c "CREATE EXTENSION IF NOT EXISTS vector;"
-          PGPASSWORD=postgres_ci_test_only psql -h localhost -U postgres -d postgres -c "CREATE DATABASE ai_console;"
+          PGPASSWORD="$CI_DB_PASSWORD" psql -h localhost -U postgres -d iplms_knowledge -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          PGPASSWORD="$CI_DB_PASSWORD" psql -h localhost -U postgres -d postgres -c "CREATE DATABASE ai_console;"
           python -m app.script.harden_console_db
 
       - name: Run unit tests
@@ -82,6 +85,41 @@ jobs:
         run: |
           python -B -m unittest discover -s script -p test_check_core_layout.py
           python -X utf8 script/check_core_layout.py
+
+  # bug-053: script init chỉ chạy khi volume database-vector còn trống — đúng lúc
+  # giảng viên/người mới chạy lần đầu, nên phải kiểm trên volume trống ở mỗi PR.
+  db-init:
+    name: Check database-vector init on empty volume
+    runs-on: ubuntu-latest
+    env:
+      PW: ci-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start pgvector with repo init scripts
+        run: |
+          docker run -d --name dbinit \
+            -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD="$PW" -e POSTGRES_DB=iplms_knowledge \
+            -e AI_CONSOLE_DB_PASSWORD="$PW-console" -e AI_INFERENCE_DB_PASSWORD="$PW-inference" \
+            -v "$PWD/docker/database-vector/init:/docker-entrypoint-initdb.d:ro" \
+            pgvector/pgvector:0.8.6-pg16-bookworm
+
+      - name: Wait for init to finish
+        run: |
+          for i in $(seq 1 60); do
+            if docker logs dbinit 2>&1 | grep -q 'PostgreSQL init process complete'; then exit 0; fi
+            if [ "$(docker inspect -f '{{.State.Running}}' dbinit)" != true ]; then break; fi
+            sleep 2
+          done
+          docker logs dbinit 2>&1 | tail -40
+          exit 1
+
+      - name: ai_inference can log in to ai_console
+        run: |
+          for i in $(seq 1 30); do docker exec dbinit pg_isready -h 127.0.0.1 -U postgres && break; sleep 1; done
+          docker exec -e PGPASSWORD="$PW-inference" dbinit \
+            psql -h 127.0.0.1 -U ai_inference -d ai_console -tAc "select current_user" | grep -qx ai_inference
 
   ui:
     name: Build AI Console UI

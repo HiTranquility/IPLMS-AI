@@ -24,18 +24,22 @@ class DockerContextTest(unittest.TestCase):
         self.assertTrue(context.name.startswith("iplms-context-proof-"))
         tag = "iplms-context-proof:" + uuid.uuid4().hex[:12]
         name = "iplms-context-proof-" + uuid.uuid4().hex[:12]
-        allowed = {"ai/app/probe.py":"pass", "ai/requirements-service.txt":"# fixture", "ai/static/cropped/.gitkeep":"", "ai/data/prompts/probe/v1.md":"prompt", "proto/probe.proto":"syntax = \"proto3\";"}
-        excluded = ["ai/static/original/", "ai/static/cropped/", "ai/data/golden/", "ai/data/datalake/", "ai/model/checkpoint/", "ai/.venv/", "other/"]
+        allowed = {"app/probe.py":"pass", "requirements-service.txt":"# fixture", "static/cropped/.gitkeep":"", "data/prompts/probe/v1.md":"prompt", "proto/probe.proto":"syntax = \"proto3\";"}
+        excluded = ["static/original/", "static/cropped/", "data/golden/", "data/datalake/", "model/checkpoint/", ".venv/", "other/"]
         for parent in excluded:
             allowed[parent + "private-fixture.txt"] = "synthetic exclusion sentinel"
+        # .env* phải bị loại kể cả khi nằm trong thư mục được mở (app/**) — SETUP_GUIDE, .dockerignore.
+        secret_sentinels = [".env.dev", "app/.env", "app/.env.local"]
+        for relative in secret_sentinels:
+            allowed[relative] = "SYNTHETIC_NOT_A_SECRET=1"
         try:
             for relative, text in allowed.items():
                 p = context / relative; p.parent.mkdir(parents=True, exist_ok=True)
                 p.write_text(text, encoding="utf-8")
-            dockerfile = context / "ai/Dockerfile"
+            dockerfile = context / "Dockerfile"
             dockerfile.write_text("FROM scratch\nCOPY . /\n", encoding="utf-8")
-            ignore = Path(__file__).resolve().parents[1] / "Dockerfile.dockerignore"
-            (context / "ai/Dockerfile.dockerignore").write_bytes(ignore.read_bytes())
+            ignore = Path(__file__).resolve().parents[1] / ".dockerignore"  # ADR-0006: context = repo này
+            (context / ".dockerignore").write_bytes(ignore.read_bytes())
             build = subprocess.run(["docker","build","--network=none","--no-cache","-q","-t",tag,"-f",str(dockerfile),str(context)], text=True, capture_output=True)
             self.assertEqual(build.returncode, 0, build.stderr)
             subprocess.run(["docker","create","--name",name,tag,"/unused"], check=True, capture_output=True)
@@ -43,9 +47,10 @@ class DockerContextTest(unittest.TestCase):
             with tarfile.open(fileobj=io.BytesIO(export.stdout)) as archive:
                 names = archive.getnames()
             self.assertFalse([n for n in names if n.endswith("private-fixture.txt")])
-            self.assertIn("ai/app/probe.py", names)
-            self.assertIn("ai/static/cropped/.gitkeep", names)
-            self.assertIn("ai/data/prompts/probe/v1.md", names)  # bug-042
+            self.assertFalse([n for n in names if n.rsplit("/", 1)[-1].startswith(".env")])
+            self.assertIn("app/probe.py", names)
+            self.assertIn("static/cropped/.gitkeep", names)
+            self.assertIn("data/prompts/probe/v1.md", names)  # bug-042
             self.assertIn("proto/probe.proto", names)
         finally:
             subprocess.run(["docker","rm",name], capture_output=True)

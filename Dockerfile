@@ -1,10 +1,9 @@
 # IPLMS AI — ANPR + Copilot + Forecast (FastAPI REST :8000 & gRPC :50051, CPU).
 #
-# ⚠️ BUILD CONTEXT LÀ GỐC REPO, không phải thư mục ai/:
-#     docker build -f ai/Dockerfile -t iplms-ai:latest .
-# Lý do: hợp đồng `proto/` nằm ở gốc repo và dùng chung với backend. Đặt context
-# ở ai/ thì proto nằm ngoài tầm COPY, buộc phải nhân bản proto — đúng thứ gây
-# lệch hợp đồng giữa hai phía.
+# Build context là CHÍNH THƯ MỤC NÀY (repo IPLMS-AI), không cần repo cha:
+#     docker build -t iplms-ai:latest .
+# Hợp đồng gRPC lấy từ `proto/` của repo này — bản chép từ `IPLMS/proto/` (nguồn
+# chuẩn), được `IPLMS/proto/check_proto_sync.py` canh lệch. Xem ADR-0006.
 FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1 \
@@ -19,14 +18,14 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends libglib2.0-0 libgomp1 libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY ai/requirements-service.txt .
+COPY requirements-service.txt .
 RUN pip install -r requirements-service.txt
 
 # model/ chứa kiến trúc, bootstrap YOLO và workspace train; data/ chứa dữ liệu và ONNX models.
-COPY ai/app ./app
-COPY ai/model ./model
-COPY ai/static ./static
-COPY ai/data ./data
+COPY app ./app
+COPY model ./model
+COPY static ./static
+COPY data ./data
 COPY proto ./proto
 
 # Đảm bảo các thư mục model và data ONNX tồn tại và gán quyền phù hợp
@@ -53,7 +52,7 @@ RUN if [ "$PRELOAD_EASYOCR_MODELS" = "true" ]; then \
       echo "Bo qua preload EasyOCR cho image dev; model se tai khi ANPR duoc goi lan dau."; \
     fi
 
-COPY ai/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh && chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 8000 50051

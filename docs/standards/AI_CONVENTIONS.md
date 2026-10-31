@@ -147,14 +147,16 @@ api/rest/routes/anpr_controller.py  ─┘
 
 **[GOTCHA]** Request ANPR đầu tiên sau restart mất ~19–24s để nạp EasyOCR + YOLO. Vì vậy `AI_GRPC_TIMEOUT_MS=30000`, **[NEVER]** hạ xuống dưới 25s (xem `deployment/README.md` §6).
 
-## 7. Build image — context là **gốc repo**
+## 7. Build image — context là **chính repo AI**
 
-`ai/Dockerfile` cần `proto/` nằm ngoài `ai/`, nên:
+Theo [ADR-0006](../projects/adrs/10-2026/0006-build-context-la-repo-ai.md), `Dockerfile` chỉ COPY trong repo này, kể cả `proto/` (bản chép của `IPLMS/proto/`):
 
 ```bash
-docker build -f ai/Dockerfile .      # ✅ context = gốc repo
-docker build ai/                     # ❌ không có proto/ → không sinh được stub
+docker build -t iplms-ai:latest .            # ✅ từ gốc repo AI (clone riêng hoặc ai/ trong umbrella)
+docker build -f ai/Dockerfile .              # ❌ context umbrella cũ — COPY không còn tiền tố ai/
 ```
+
+**[MUST]** Đổi hợp đồng gRPC: sửa `IPLMS/proto/` → chép sang `proto/` của repo này trong cùng đợt → `IPLMS/proto/check_proto_sync.py` phải xanh. **[MUST]** Thêm file cần vào image thì mở trong allowlist `.dockerignore`.
 
 ## 8. `app/script/` — chạy tay, không phải test
 

@@ -17,7 +17,7 @@ Kèm theo là **AI Console** (`ui/`): giao diện nội bộ cho bộ phận AI,
 ## Chạy
 
 Cần Docker Desktop và mạng chung `iplms-shared-dev` (tên đặt bằng `SHARED_NETWORK`, stack backend tạo; chạy riêng AI thì tạo tay một lần: `docker network create iplms-shared-dev`).
-Build image cần context ở gốc umbrella để lấy `proto/`; chạy cả hệ thống dùng `deployment/script/run-stack.ps1` (hoặc `.sh`) ở repo gốc.
+Repo này build được khi clone riêng: `git clone https://github.com/HiTranquility/IPLMS-AI.git && cd IPLMS-AI` (context Docker là chính repo, hợp đồng gRPC lấy từ `proto/` của repo — [ADR-0006](docs/projects/adrs/10-2026/0006-build-context-la-repo-ai.md)). Chạy cả hệ thống thì dùng `deployment/script/run-stack.ps1` (hoặc `.sh`) ở repo gốc IPLMS.
 
 ```bash
 # 1. Cấu hình: chép mẫu rồi điền giá trị thật (file .env.dev không commit)
