@@ -4,11 +4,11 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🔧 Đã sửa trên nhánh `bugfix/bug-033-2026-10-dang-nhap-tu-goc-console-404` (`895eefb`), chờ PR vào develop |
+| **Trạng thái** | ✅ Fixed — Đã merge nhánh bugfix/bug-033 vào develop. |
 | **Người nhận** | @HiTranquility |
 | **Hạn** | — |
 | **Ưu tiên** | 🟠 |
-| **Ngày đóng** | — |
+| **Ngày đóng** | 2026-10-31 |
 | **Người báo** | Claude Code (browser pane, vòng agent của [ISSUE-020](../../issues/10-2026/ISSUE-020-ke-hoach-demo-audit-ai-console/review/review-1.md)) |
 | **Môi trường** | local · console `http://127.0.0.1:8090/console/` (ui/dist build 2026-10-26 19:13) · ai `6c52707` |
 

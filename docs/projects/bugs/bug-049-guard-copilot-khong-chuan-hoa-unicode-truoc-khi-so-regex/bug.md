@@ -4,10 +4,10 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🛠️ Fixing — đã sửa trên `bugfix/bug-049-2026-10-guard-chuan-hoa-unicode`, chờ PR; chưa chạy lại bộ tấn công với LLM thật (ADR-0029) |
+| **Trạng thái** | ✅ Fixed — Đã sửa trong PR #125 (chuẩn hoá Unicode NFKC trước khi so regex guardrails). |
 | **Người nhận** | @HiTranquility |
 | **Hạn** | |
-| **Ngày đóng** | |
+| **Ngày đóng** | 2026-10-31 |
 | **Ưu tiên** | 🟠 |
 | **Người báo** | Claude Code, từ lượt đo của [ISSUE-026](../../issues/10-2026/ISSUE-026-redteam-agent-sinh-bien-the-tan-cong/issue.md) |
 | **Ngày báo** | 2026-10-28 |
