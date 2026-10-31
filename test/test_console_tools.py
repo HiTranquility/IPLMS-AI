@@ -399,6 +399,20 @@ class ConsoleSettingsAndToolsEndpointTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(20, cfg.llm.rag_top_k)
         self.assertFalse(hasattr(cfg.llm, "llm_provider"))
 
+    async def test_list_sessions_delegates_and_marks_current(self):
+        # bug-030: kiểm tra list_sessions uỷ quyền store và đánh dấu is_current
+        svc, _, _, store = service()
+        store.list_active_sessions.return_value = [
+            {"session_id": "sess-active-01", "member_id": "m-admin", "mfa_verified": True},
+            {"session_id": "sess-other-02", "member_id": "m-admin", "mfa_verified": True},
+        ]
+        current_actor = ConsoleActor("m-admin", frozenset({"ai_console_admin"}), session_id="sess-active-01")
+        sessions = await svc.list_sessions(current_actor)
+        store.list_active_sessions.assert_awaited_once_with("m-admin", include_all=True)
+        self.assertEqual(2, len(sessions))
+        self.assertTrue(sessions[0]["is_current"])
+        self.assertFalse(sessions[1]["is_current"])
+
     async def test_revoke_active_session_guards(self):
         svc, _, _, store = service()
         store.revoke_target_session.return_value = True

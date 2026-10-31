@@ -4,11 +4,11 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🆕 New |
-| **Người nhận** | — |
-| **Hạn** | — |
+| **Trạng thái** | ✅ Fixed |
+| **Người nhận** | @HiTranquility |
+| **Hạn** | 2026-10-31 |
 | **Ưu tiên** | 🟡 |
-| **Ngày đóng** | — |
+| **Ngày đóng** | 2026-10-31 |
 | **Ngày báo** | 2026-10-26 |
 | **Người báo** | Claude Code (lượt rà browser của ISSUE-019, [review-2](../../issues/10-2026/ISSUE-019-console-settings-va-don-audit-006/review/review-2.md)) |
 | **Môi trường** | local (stack dev `iplms-ai-dev`, console 8090) |
@@ -35,7 +35,8 @@ Phiên chưa qua MFA không hiện trong danh sách thu hồi, hoặc hiện ri�
 
 ## Sửa / kiểm chứng
 
-Chưa sửa. Hướng gợi ý:
-- Lọc phiên `mfa_at IS NULL` khỏi danh sách, hoặc cho chúng hạn sống ngắn.
-- Đóng phiên khi `fail_totp` báo đã chạm trần.
-- Viết test ở `test/test_console_auth.py`.
+- `app/infra/database/console_store.py`: Trong `list_active_sessions`, bổ sung điều kiện `AND s.mfa_at IS NOT NULL` để danh sách phiên hoạt động ở Settings không còn bị lẫn các phiên chưa hoàn thành xác thực hoặc đăng nhập bỏ dở.
+- `app/core/console/engines/session_policy.py`: Trong `check_session`, đặt thời hạn tối đa 10 phút cho phiên chưa hoàn tất MFA (`session.get("mfa_at") is None and now - session["created_at"] > timedelta(minutes=10)`), nếu vượt quá sẽ nâng lỗi `SESSION_EXPIRED`.
+- Đã bổ sung kiểm thử tại:
+  - `test/test_console_auth.py`: Kiểm tra phiên chờ TOTP quá 10 phút trả về `SESSION_EXPIRED`.
+  - `test/test_console_tools.py`: `test_list_sessions_delegates_and_marks_current` xác nhận `list_sessions` uỷ quyền cho `store.list_active_sessions` và gắn cờ `is_current` chính xác.
