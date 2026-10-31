@@ -15,15 +15,15 @@ INFERENCE_PW="${AI_INFERENCE_DB_PASSWORD:?Thiếu AI_INFERENCE_DB_PASSWORD (bắ
 
 psql -v ON_ERROR_STOP=1 -v pw="$INFERENCE_PW" \
   --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<'SQL'
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'ai_inference') THEN
-    CREATE ROLE ai_inference LOGIN PASSWORD :'pw';
-  ELSE
-    ALTER ROLE ai_inference WITH PASSWORD :'pw';
-  END IF;
-END
-$$;
+-- bug-053: psql KHÔNG thay biến :'pw' bên trong khối DO $$ … $$ (chuỗi dollar-quoted),
+-- nên khối DO cũ gây "syntax error at or near ':'" và làm hỏng lần init đầu của
+-- database-vector. Dựng câu lệnh bằng format(... %L ...) rồi \gexec để psql thay biến.
+SELECT format('CREATE ROLE ai_inference LOGIN PASSWORD %L', :'pw')
+WHERE NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'ai_inference')
+\gexec
+SELECT format('ALTER ROLE ai_inference WITH LOGIN PASSWORD %L', :'pw')
+WHERE EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'ai_inference')
+\gexec
 
 GRANT CONNECT ON DATABASE ai_console TO ai_inference;
 SQL

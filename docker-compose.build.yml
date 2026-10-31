@@ -2,9 +2,9 @@
 # IPLMS — AI Service Build-only (docker-compose.build.yml)
 #
 # CHỈ build + tag image, KHÔNG chạy container (chạy dùng docker-compose.yml +
-# .develop.yml / .production.yml). Build context là GỐC REPO vì cần `proto/`.
+# .develop.yml / .production.yml). Build context là repo này (ADR-0006).
 #
-# Cách dùng (từ thư mục ai/):
+# Cách dùng (từ gốc repo AI — clone riêng hoặc ai/ trong umbrella):
 #   docker compose -f docker-compose.build.yml build
 #   AI_IMAGE=<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/iplms-ai-prod:<tag> \
 #     docker compose -f docker-compose.build.yml build
@@ -17,8 +17,8 @@ services:
   api:
     image: ${AI_IMAGE:-iplms-ai:latest}
     build:
-      context: ..
-      dockerfile: ai/Dockerfile
+      context: .
+      dockerfile: Dockerfile
       args:
         # Image phát hành tự chứa model EasyOCR; đặt false để build nhanh khi thử.
         PRELOAD_EASYOCR_MODELS: ${PRELOAD_EASYOCR_MODELS:-true}

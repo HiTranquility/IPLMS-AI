@@ -8,8 +8,8 @@
 #   Dev:  docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.develop.yml up -d
 #   Prod: docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.production.yml up -d
 #
-# ⚠️ BUILD CONTEXT LÀ GỐC REPO (`context: ..`), không phải thư mục ai/.
-# Lý do: hợp đồng `proto/` nằm ở gốc repo và dùng chung với backend (xem PROB-034).
+# Build context là chính repo này (`context: .`), dùng `proto/` của repo — ADR-0006.
+# Clone riêng IPLMS-AI là build được, không cần repo cha.
 # ==============================================================================
 
 name: ${COMPOSE_PROJECT_NAME:-iplms-ai-dev}
@@ -25,8 +25,8 @@ services:
   # Tên service theo vai (IPLMS ADR-0055): container tự có tên <project>-api-<n>.
   api:
     build:
-      context: ..
-      dockerfile: ai/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     image: ${AI_IMAGE:-iplms-ai:latest}
     restart: unless-stopped
     logging: *default-logging

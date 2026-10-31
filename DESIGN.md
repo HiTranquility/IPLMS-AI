@@ -34,7 +34,7 @@ Mỗi static Traefik file là một cấu hình **đầy đủ**, không phải 
 | `gateway` / alias `ai-gateway` / mạng chung `iplms-shared-<env>` | Tên service theo vai, alias plane cho stack khác gọi (IPLMS ADR-0055) | Migration phải cập nhật caller, label Docker network và stack script |
 | `model/architectures/m1`, `m2` | Tên phiên bản mã kiến trúc nhập từ nguồn ngoài | Đổi cùng registry/import/checkpoint metadata, không rename weights |
 | `knowledge_eval` chưa có DTO riêng | Nợ cấu trúc đã ghi ở conventions; không tạo thư mục rỗng | Thêm DTO thật khi thay đổi hợp đồng domain |
-| Proto generated | Stub là output của proto nguồn chuẩn ở umbrella | Sinh lại, không sửa tay tên symbol/field tag |
+| Proto generated | Stub là output của proto nguồn chuẩn ở umbrella (image build từ bản chép `proto/` của repo, ADR-0006) | Sinh lại, không sửa tay tên symbol/field tag |
 
 File REST mới dùng `<domain>_controller.py`; health nay là `health_controller.py`, vẫn giữ URL `/health`.
 `AI_*` là env key, Python dùng snake_case cho module/hàm và PascalCase cho type. Mọi exception mới phải có phạm vi, lý do và điều kiện bỏ như bảng trên.
@@ -298,7 +298,7 @@ Backend kết nối tới AI service qua 2 kênh:
 
 ## Tích hợp Khoa — cập nhật 2026-10-16
 
-- Docker giữ contextumbrella và COPYai/; Dockerfile.dockerignore đi cùngfile, allowlist chỉ app/proto/corpus/bootstrapcầnthiết, chặn ảnh runtime/data/checkpoint/venv. Không coi benchmarkcũ là số hiện hành; image service đầy đủ chưa build ở đợt này.
+- ~~Docker giữ context umbrella và COPY ai/~~ — thay bởi [ADR-0006](docs/projects/adrs/10-2026/0006-build-context-la-repo-ai.md) (2026-10-31): context là repo này, allowlist ở `.dockerignore`; allowlist chỉ app/proto/corpus/bootstrapcầnthiết, chặn ảnh runtime/data/checkpoint/venv. Không coi benchmarkcũ là số hiện hành; image service đầy đủ chưa build ở đợt này.
 - Native start-dev gọi app.script.run_dev quản lý REST+gRPC cùngvòngđời; bind127.0.0.1, kiểmcổng, không tự stop/start sharedDocker. grpc_bind_host mặcđịnh[::] cho container, native launcher injectloopback. Readinesshiện tại xác nhận listener/healthtransport, DB/model/provider cần gate riêng.
 - developer_dashboard_enabled mặc định false; `AI_DEVELOPER_DASHBOARD_ENABLED=true` chỉ còn mở route chẩn đoán Vision local (loopback, same-origin). `/dashboard`, `static/index.html` và REST dev `/api/copilot/ask`, `/api/knowledge/ingest`, `/api/system/info` đã bỏ (IPLMS ADR-0050) — dùng trang "Công cụ thử" của AI Console. Nạp bản nháp vẫn dùng UUID ổn định; xuất bản theo cổng hiện hành.
 - Vision giữ modular/ONNX/two-line/cropmàugốc/strictclassifier và ngưỡng confidence. HSV/deskew chỉ ở enhancement; màuOptionalNone khi chưa có cropquan sát. Thiếuclassifiermodel→None, không suyprior từbiển. Không đổi proto; màu hiện chỉ fieldREST bổsung.

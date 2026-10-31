@@ -39,15 +39,9 @@ jobs:
       contents: read
       packages: write
     steps:
-      # ai/Dockerfile dùng context = GỐC repo cha (COPY ai/... + COPY proto). Dựng lại đúng
-      # layout đó: repo này vào ./ai, bản proto/ vendor (ADR-0006, PR AI#1) ra ./proto.
-      - name: Checkout (as ./ai)
+      # ADR-0006: build context là chính repo này, dùng proto/ của repo — checkout thường là đủ.
+      - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          path: ai
-
-      - name: Recreate monorepo layout (proto/ at context root)
-        run: cp -r ai/proto proto
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
@@ -70,7 +64,7 @@ jobs:
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: .
-          file: ai/Dockerfile
+          file: Dockerfile
           load: true
           push: false
           tags: scan-target:${{ github.sha }}
@@ -112,7 +106,7 @@ jobs:
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: .
-          file: ai/Dockerfile
+          file: Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
