@@ -51,9 +51,9 @@ Từ đó tình hình đã khác:
 | Caller | Trạng thái |
 |---|---|
 | `deployment/script/run-stack.{ps1,sh}` | Gọi `ai/docker-compose.yml`; compose tính `context: .` theo thư mục file, không phải sửa |
-| `deployment/registry/push-images-local.{ps1,sh}:18` | Build context gốc. Sửa sang context `ai/` trên nhánh cùng tên ở IPLMS-Deployment |
+| `deployment/registry/push-images-local.{ps1,sh}:18` | Build context gốc. Sửa sang context `ai/` ở HiTranquility/IPLMS-Deployment#17 |
 | `deployment/docs/guides/09-2026/operations.md:267` | Hướng dẫn cũ "context phải là gốc repo". Sửa cùng nhánh Deployment |
-| `backend/docker-compose.yml:247–248` (theo bug-003; service AI `context: ..` + `dockerfile: ai/Dockerfile`) | **Chưa rà được**: phiên làm việc không có quyền đọc IPLMS-Backend. **Chặn:** không nâng gitlink `ai` ở umbrella tới khi caller này đổi sang `context: ../ai`, `dockerfile: Dockerfile` (theo dõi ở bug-053 › Việc trên BOARD) |
+| `backend/docker-compose.yml:266–267` (service `ai-api`, profile `infra-ai-embedded`) | Sửa sang `context: ../ai`, `dockerfile: Dockerfile` ở HiTranquility/IPLMS-Backend#65 (nhánh cùng tên). **Không nâng gitlink `ai` ở umbrella trước khi PR này merge** |
 | IPLMS `/.dockerignore` (allowlist cho context umbrella) | Hết tác dụng với image AI khi mọi caller đã đổi; dọn ở IPLMS gốc sau khi gỡ chặn ở trên |
 
 ## Bằng chứng và liên kết

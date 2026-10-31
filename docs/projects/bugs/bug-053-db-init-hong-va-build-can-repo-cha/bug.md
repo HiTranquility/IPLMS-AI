@@ -61,7 +61,7 @@ Kiểm chứng (2026-10-31, sandbox cloud):
 
 | Việc | Người nhận | Hạn | Ưu tiên | Trạng thái |
 |---|---|---|---|---|
-| Viết lại lịch sử Git IPLMS-AI để xoá mật khẩu cũ (mọi nhánh + tag) rồi force push; nhờ GitHub Support dọn `refs/pull/*` và cache | HiTranquility |  | 🔴 | 🛠️ Chuẩn bị xong ở local, chờ duyệt force push |
+| Viết lại lịch sử Git IPLMS-AI để xoá mật khẩu cũ (mọi nhánh + tag) rồi force push; nhờ GitHub Support dọn `refs/pull/*` và cache | HiTranquility |  | 🔴 | 🛠️ Chủ repo đã duyệt; proxy phiên cloud chặn force push (HTTP 403) nên chủ repo tự chạy script `clean_history.sh` (đã chạy thử: 59 chỗ, còn 0) |
 | Đổi mật khẩu ở mọi DB/máy từng dùng giá trị cũ | HiTranquility |  | 🔴 | 🆕 New |
-| Sửa `backend/docker-compose.yml` (service AI build) sang `context: ../ai`, `dockerfile: Dockerfile`, trước khi nâng gitlink `ai` ở umbrella (ADR-0006 › Caller) |  |  | 🔴 | 🆕 New, chặn nâng gitlink |
-| Sửa `deployment/registry/push-images-local.{ps1,sh}` và `operations.md:267` sang context `ai/` | HiTranquility |  | 🟠 | 🛠️ Nhánh cùng tên ở IPLMS-Deployment |
+| Sửa `backend/docker-compose.yml` (service AI build) sang `context: ../ai`, `dockerfile: Dockerfile`, trước khi nâng gitlink `ai` ở umbrella (ADR-0006 › Caller) | HiTranquility |  | 🔴 | 🛠️ HiTranquility/IPLMS-Backend#65 (nhánh cùng tên); merge cùng #127 rồi mới nâng gitlink |
+| Sửa `deployment/registry/push-images-local.{ps1,sh}` và `operations.md:267` sang context `ai/` | HiTranquility |  | 🟠 | 🛠️ HiTranquility/IPLMS-Deployment#17 |
