@@ -119,6 +119,9 @@ async def evaluate(paths: list[Path]) -> dict[str, Any]:
                 "sources": result.get("sources", []),
                 "source_hit": bool(expected & set(result.get("sources", []))),
                 "latency_s": round(latency, 3),
+                # Token provider báo về; câu bị cổng chặn không gọi LLM nên rỗng.
+                "input_tokens": (result.get("usage") or {}).get("input_tokens"),
+                "output_tokens": (result.get("usage") or {}).get("output_tokens"),
                 "answer": (result.get("answer") or "")[:400],
             })
             print(
@@ -158,6 +161,13 @@ def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "refused_by_gate": sum(r["refused_by"] == "gate" for r in rows),
         "latency_s": {"p50": _percentile(latencies, 0.5), "p95": _percentile(latencies, 0.95)},
         "latency_llm_s": {"p50": _percentile(llm_latencies, 0.5), "p95": _percentile(llm_latencies, 0.95)},
+        "latency_mean_s": round(sum(latencies) / len(latencies), 3) if latencies else 0.0,
+        # Trung bình mỗi request (câu bị chặn tính 0 token) — nhân đơn giá ra chi phí/request.
+        "tokens_mean_per_request": {
+            "input": round(sum(r["input_tokens"] or 0 for r in rows) / len(rows), 1) if rows else 0.0,
+            "output": round(sum(r["output_tokens"] or 0 for r in rows) / len(rows), 1) if rows else 0.0,
+        },
+        "llm_calls": sum(r["refused_by"] != "gate" for r in rows),
     }
 
 

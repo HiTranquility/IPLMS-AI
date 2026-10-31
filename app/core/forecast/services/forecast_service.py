@@ -9,8 +9,8 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from app.core.constants import DEFAULT_FORECAST_HOURS, FORECAST_SLOT_SECONDS
-from app.core.enums import OccupancyStatus
+from app.core.forecast.constants import DEFAULT_FORECAST_HOURS, FORECAST_SLOT_SECONDS
+from app.core.enums import ForecastDataSource, OccupancyStatus
 from app.core.forecast.dtos.forecast_dto import (
     AreaOccupancyForecastResult,
     AreaOccupancyTelemetryItem,
@@ -23,10 +23,8 @@ from app.core.forecast.dtos.forecast_dto import (
     _WEEKDAY_HOURLY_BASELINES,
     _WEEKEND_HOURLY_BASELINES,
 )
-from app.core.forecast.readers.parquet_lake_reader import (
-    ParquetLakeReader,
-    _resolve_default_gold_lake_path,
-)
+from app.core.forecast.engines.parquet_lake_reader import ParquetLakeReader
+from app.infra.datalake.parquet_occupancy_store import _resolve_default_gold_lake_path
 from app.util.logger import logger
 
 
@@ -100,7 +98,8 @@ class ForecastService:
 
         # Đọc dữ liệu từ Parquet Lake
         records = reader.read_occupancy_parquet(target_path, area_id=area_id, fallback_on_error=True)
-        items = reader.to_telemetry_items(records)
+        # Bản ghi baseline tự sinh không vào cache: nếu vào, lần hỏi sau trả nhãn lake cho số baseline (ai bug-028).
+        items = reader.to_telemetry_items([r for r in records if not r.get("is_fallback")])
         self.ingest_telemetry(items)
 
         # Tạo ma trận huấn luyện 7x24 và profile tuần
@@ -128,6 +127,24 @@ class ForecastService:
             logger.warning(f"ForecastService: Không thể tự động nạp Parquet Lake: {exc}")
         self._lake_loaded = True
         return False
+
+    def list_lake_areas(self) -> List[Dict[str, Any]]:
+        """Các `area_key` có bản ghi thật trong Gold lake (ai bug-028): UI chọn bãi từ đây, không từ danh sách cứng."""
+        target_path = self._datalake_dir or _resolve_default_gold_lake_path()
+        reader = self._lake_reader or ParquetLakeReader(base_path=target_path)
+        records = reader.read_occupancy_parquet(target_path, fallback_on_error=True)
+        counts: Dict[str, int] = {}
+        for r in records:
+            if not r.get("is_fallback"):
+                counts[r["area_id"]] = counts.get(r["area_id"], 0) + 1
+        return [{"area_id": area, "records": n} for area, n in sorted(counts.items())]
+
+    @staticmethod
+    def _merge_provenance(details: List[Dict[str, Any]]) -> Tuple[ForecastDataSource, bool]:
+        """Gộp nguồn số của nhiều khung giờ: chỉ cần một khung baseline là cả kết quả gắn nhãn baseline."""
+        if not details or any(d["is_fallback"] for d in details):
+            return ForecastDataSource.HEURISTIC_BASELINE, True
+        return details[0]["data_source"], False
 
     def get_training_dataset(self, area_id: Optional[str] = None) -> Dict[str, Any]:
         """Lấy dataset huấn luyện hiện tại hoặc nạp mới từ Parquet Lake."""
@@ -171,7 +188,9 @@ class ForecastService:
                 ratio = ratio * 100.0
             ratio = max(0.0, min(100.0, ratio))
             confidence = min(0.98, 0.82 + 0.04 * min(telemetry.sample_count, 4))
-            data_source = "lakehouse_parquet" if self._lake_loaded else "clickhouse_marts"
+            data_source = (
+                ForecastDataSource.LAKEHOUSE_PARQUET if self._lake_loaded else ForecastDataSource.CLICKHOUSE_MARTS
+            )
             return {
                 "ratio": round(ratio, 2),
                 "confidence": round(confidence, 2),
@@ -190,7 +209,7 @@ class ForecastService:
         return {
             "ratio": round(max(0.0, min(100.0, ratio)), 2),
             "confidence": confidence,
-            "data_source": "heuristic_baseline",
+            "data_source": ForecastDataSource.HEURISTIC_BASELINE,
             "is_fallback": True,
         }
 
@@ -265,6 +284,7 @@ class ForecastService:
 
         slots: List[ForecastSlot] = []
         confidences: List[float] = []
+        details: List[Dict[str, Any]] = []
         capacity = query.total_capacity if (query.total_capacity is not None and query.total_capacity > 0) else 100
 
         for i in range(total_slots):
@@ -273,7 +293,9 @@ class ForecastService:
             dow = dt.weekday()
             hour = dt.hour
 
-            ratio, conf = self.get_projected_occupancy_ratio(query.parking_lot_id, dow, hour)
+            detail = self.get_projected_occupancy_ratio_detail(query.parking_lot_id, dow, hour)
+            details.append(detail)
+            ratio, conf = detail["ratio"], detail["confidence"]
             free_spots = max(0, int(capacity * (1.0 - ratio / 100.0)))
             status = self._status_from_ratio(ratio)
 
@@ -288,10 +310,13 @@ class ForecastService:
             confidences.append(conf)
 
         avg_confidence = round(sum(confidences) / len(confidences), 2) if confidences else 0.85
+        data_source, is_fallback = self._merge_provenance(details)
         return OccupancyForecast(
             parking_lot_id=query.parking_lot_id,
             slots=slots,
             confidence_score=avg_confidence,
+            data_source=data_source,
+            is_fallback=is_fallback,
         )
 
     def get_dynamic_tariff_recommendation(
@@ -302,7 +327,8 @@ class ForecastService:
         dow = now_dt.weekday()
         hour = now_dt.hour
 
-        ratio, _ = self.get_projected_occupancy_ratio(query.parking_lot_id, dow, hour)
+        detail = self.get_projected_occupancy_ratio_detail(query.parking_lot_id, dow, hour)
+        ratio = detail["ratio"]
         multiplier, reason = self.calculate_surge_multiplier(ratio)
 
         logger.info(
@@ -313,6 +339,8 @@ class ForecastService:
             parking_lot_id=query.parking_lot_id,
             recommended_multiplier=multiplier,
             reason=reason,
+            data_source=detail["data_source"],
+            is_fallback=detail["is_fallback"],
         )
 
     # ──────────────────────────────────────────────────────────────────────────

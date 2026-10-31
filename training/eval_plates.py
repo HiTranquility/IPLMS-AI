@@ -72,7 +72,7 @@ def run_one(image_path: Path) -> Dict[str, Any]:
     phải lý do để bỏ dở 200 ảnh còn lại.
     """
     from app.core.exceptions import InvalidImageError, PlateRecognitionError
-    from app.core.vision.engines.anpr_engine import run_anpr
+    from app.core.vision.engines.anpr.engine import run_anpr
 
     try:
         started = time.time()

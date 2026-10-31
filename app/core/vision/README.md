@@ -15,7 +15,7 @@
 ```text
 vision_handler.RecognizePlate            map proto → RecognizePlateCommand, đẩy sang thread (CPU-bound)
   └─ services/anpr_service.recognize_bytes
-       ├─ engines/anpr_engine.run_anpr   FAÇADE — chỉ điều phối các tầng dưới
+       ├─ engines/anpr/engine.run_anpr  FAÇADE — chỉ điều phối các tầng dưới
        │    ├─ anpr/models.ensure_models_loaded   nạp YOLO + EasyOCR (lazy, khoá luồng)
        │    ├─ anpr/ocr.read_with_confidence      ① OCR CẢ ẢNH → ứng viên "full"
        │    ├─ anpr/detector.detect_plate         ② YOLO → ảnh cắt biển + điểm detector
@@ -34,15 +34,16 @@ vision_handler.RecognizePlate            map proto → RecognizePlateCommand, đ
 
 | File | Việc | Sửa khi |
 |---|---|---|
-| `engines/anpr_engine.py` | Façade `run_anpr`, `warmup` | Đổi thứ tự các bước |
+| `engines/anpr/engine.py` | Façade `run_anpr`, `warmup` | Đổi thứ tự các bước |
 | `engines/anpr/models.py` | Nạp model; `initialized` chỉ bật khi OCR nạp được (bug-006) | Đổi cách nạp/cache |
 | `engines/anpr/detector.py` | YOLO chọn box điểm cao nhất, cắt trong biên ảnh | Train lại `best.pt` |
 | `engines/anpr/preprocess.py` | Ngưỡng ảnh cắt + chuỗi làm nét (hằng số có tên ở đầu file) | Chỉnh theo camera thật |
 | `engines/anpr/ocr.py` | EasyOCR; điểm = trung bình trọng số độ dài; không đọc được → 0.0 | Thay OCR |
 | `engines/anpr/plate_text.py` | Chuẩn hoá, hợp lệ (≤11 ký tự, ≥1 chữ cái), khoá so sánh | Thêm định dạng biển |
 | `engines/anpr/scoring.py` | `confidence = detector × OCR` (không detector → OCR); chọn ứng viên | Đổi cách chấm |
+| `engines/anpr/video.py` | Clip → frame (nhịp / chuyển động) → `run_anpr` → gộp sự kiện theo `plate_key` + IoU; file tạm xoá ngay (IPLMS REQ-021 A) | Đổi cách cắt frame / gộp xe |
 | `engines/vehicle_classifier.py` | CNN phân loại xe, tắt khi thiếu checkpoint | Có checkpoint mới |
-| `services/anpr_service.py` | Gói kết quả; REST mới ghi file vào `static/` | Đổi hợp đồng trả về |
+| `services/anpr_service.py` | Gói kết quả; REST mới ghi file vào `static/`; `recognize_clip` kiểm định dạng/dung lượng từ config, không ghi file | Đổi hợp đồng trả về |
 | `services/anti_fraud_service.py` | So loại xe vào/ra | Làm ReID ảnh |
 
 ## Cấu hình (`app/config/vision_config.py`, prefix `AI_`)

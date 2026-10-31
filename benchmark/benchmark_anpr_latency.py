@@ -56,7 +56,7 @@ import numpy as np
 
 from app.core.vision.engines.anpr import models
 from app.core.vision.engines.anpr.detector import detect_plate as pytorch_detect_plate
-from app.core.vision.engines.anpr_onnx_engine import AnprOnnxEngine
+from app.core.vision.engines.anpr.onnx_engine import AnprOnnxEngine
 from app.util.logger import logger
 
 

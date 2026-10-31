@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 from app.core.copilot.dtos.copilot_dto import AskQuestionRequest
-from app.core.copilot.engines.pii_redactor import redact
+from app.core.copilot.guardrails.pii_redactor import redact
 from app.core.copilot.engines.rag_pipeline import NO_CONTEXT_ANSWER, PROMPT_VERSION, RagPipelineEngine
 from app.core.copilot.services.usage_service import CopilotUsageService
 from app.infra.llm.llm_factory import LlmFactory
