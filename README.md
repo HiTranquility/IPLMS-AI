@@ -11,6 +11,7 @@ Kèm theo là **AI Console** (`ui/`): giao diện nội bộ cho bộ phận AI,
 | Luật phân tầng, naming | [AI_CONVENTIONS](docs/standards/AI_CONVENTIONS.md) |
 | Cài đặt chi tiết, lỗi thường gặp | [SETUP_GUIDE.md](SETUP_GUIDE.md) |
 | Đối chiếu đề Final Project, kịch bản bảo vệ | [AI_GUIDE.md](AI_GUIDE.md) · [đề bài](docs/references/final-project-assignment-guidelines.md) |
+| Báo cáo Final Project (Word) | [Final_Projects_Report_IPLMS-AI.docx](docs/references/Final_Projects_Report_IPLMS-AI.docx) |
 | Nhật ký dùng công cụ AI (§5.3) | [AI_USAGE.md](AI_USAGE.md) |
 | Hồ sơ (ISSUE, bug, ADR, SUGGESTION) | [docs/projects/](docs/projects/README.md) |
 
