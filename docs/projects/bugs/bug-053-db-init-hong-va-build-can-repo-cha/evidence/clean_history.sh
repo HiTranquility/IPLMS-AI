@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Xoá mật khẩu DB cũ khỏi MỌI nhánh + tag của IPLMS-AI rồi force push (IPLMS-AI bug-053).
-# Cách dùng (Git Bash / Linux / macOS, cần git + python3):
+# Cách dùng (Git Bash / Linux / macOS, cần git + perl — Git Bash có sẵn perl):
 #   1. bash clean_history.sh            -> chỉ chuẩn bị + kiểm, KHÔNG push
 #   2. bash clean_history.sh --push     -> force push sau khi đã xem kết quả kiểm
 # Mật khẩu cũ được script TỰ lấy từ dòng `PGPASSWORD=` trong .github/workflows/ci.yml
@@ -25,31 +25,31 @@ if [ ! -s "$SECRET" ]; then
 fi
 git init -q --bare "$WORK/clean.git"
 
-cat > "$WORK/replace_stream.py" <<'PY'
-import sys
-secret = open(sys.argv[1], 'rb').read().strip()
-assert secret
-repl = b'***REMOVED***'
-inp, out = sys.stdin.buffer, sys.stdout.buffer
-hits = 0
-while True:
-    line = inp.readline()
-    if not line:
-        break
-    if line.startswith(b'data ') and not line.startswith(b'data <<'):
-        n = int(line[5:].strip()); body = inp.read(n)
-        hits += body.count(secret); body = body.replace(secret, repl)
-        out.write(b'data %d\n' % len(body)); out.write(body)
-    else:
-        out.write(line)
-out.flush()
-sys.stderr.write(f'replaced {hits} occurrence(s)\n')
-PY
+cat > "$WORK/replace_stream.pl" <<'PL'
+# Lọc luồng git fast-export: thay chuỗi bí mật trong mọi khối "data <n>", tính lại độ dài.
+use strict; use warnings;
+open(my $fh, '<:raw', $ARGV[0]) or die "secret: $!";
+local $/; my $secret = <$fh>; close $fh;
+$secret =~ s/\s+\z//; die "empty secret\n" unless length $secret;
+my $repl = '***REMOVED***';
+binmode STDIN; binmode STDOUT;
+$/ = "\n"; my $hits = 0;
+while (my $line = <STDIN>) {
+  if ($line =~ /^data (\d+)\n\z/) {
+    my $n = $1; my $body = ''; my $got = 0;
+    while ($got < $n) { my $r = read(STDIN, $body, $n - $got, $got); die "short read\n" unless $r; $got += $r; }
+    my $c = () = $body =~ /\Q$secret\E/g; $hits += $c;
+    $body =~ s/\Q$secret\E/$repl/g if $c;
+    print STDOUT "data " . length($body) . "\n" . $body;
+  } else { print STDOUT $line; }
+}
+print STDERR "replaced $hits occurrence(s)\n";
+PL
 
 cd "$WORK/mirror.git"
 REFS=$(git for-each-ref --format='%(refname)' refs/heads refs/tags)
 git fast-export --signed-tags=strip --reencode=no $REFS \
-  | python3 "$WORK/replace_stream.py" "$SECRET" \
+  | perl "$WORK/replace_stream.pl" "$SECRET" \
   | (cd "$WORK/clean.git" && git fast-import --quiet)
 
 cd "$WORK/clean.git"
