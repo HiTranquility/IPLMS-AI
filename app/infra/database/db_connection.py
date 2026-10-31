@@ -104,6 +104,20 @@ def resolve_db_candidates(db_url: str) -> List[str]:
     return candidates
 
 
+def _may_create_database(cand_url: str, db_url: str) -> bool:
+    """Chỉ tự tạo DB trên URL đã cấu hình hoặc cổng map của chính DB AI (AI_DB_HOST_PORT).
+
+    Ứng viên fallback khác (vd 5432 trên máy dev) có thể là Postgres của dự án khác (bug-029).
+    """
+    if cand_url == db_url:
+        return True
+    try:
+        own_port = int(os.environ.get("AI_DB_HOST_PORT", "5435"))
+        return urllib.parse.urlsplit(cand_url).port == own_port
+    except ValueError:
+        return False
+
+
 def _ensure_database_exists(cand_url: str, connect_timeout: int = 3) -> bool:
     """Tự động khởi tạo database nếu server PostgreSQL đang chạy nhưng chưa có database đích."""
     try:
@@ -175,7 +189,11 @@ def connect_with_fallback(
             try:
                 conn = psycopg2.connect(cand_url, connect_timeout=connect_timeout)
             except psycopg2.OperationalError as op_exc:
-                if "does not exist" in str(op_exc) and _ensure_database_exists(cand_url, connect_timeout):
+                if (
+                    _may_create_database(cand_url, db_url)
+                    and "does not exist" in str(op_exc)
+                    and _ensure_database_exists(cand_url, connect_timeout)
+                ):
                     conn = psycopg2.connect(cand_url, connect_timeout=connect_timeout)
                 else:
                     raise
@@ -185,10 +203,10 @@ def connect_with_fallback(
             # Lưu vào cache để các lần gọi sau không mất thời gian thử lại
             _RESOLVED_URL_CACHE[db_url] = cand_url
             if cand_url != db_url:
-                logger.info(
-                    "Database Fallback: Chuyển hướng kết nối thành công từ %s sang %s",
-                    _redact_url(db_url),
+                logger.warning(
+                    "Database Fallback: dùng %s thay cho URL cấu hình %s",
                     _redact_url(cand_url),
+                    _redact_url(db_url),
                 )
             return conn, cand_url
         except Exception as exc:
@@ -197,4 +215,6 @@ def connect_with_fallback(
 
     if last_exc:
         raise last_exc
-    raise psycopg2.OperationalError(f"Không thể kết nối tới bất kỳ ứng viên nào của DB: {[_redact_url(c) for c in candidates]}")
+    raise psycopg2.OperationalError(
+        f"Không thể kết nối tới bất kỳ ứng viên nào của DB: {[_redact_url(c) for c in candidates]}"
+    )

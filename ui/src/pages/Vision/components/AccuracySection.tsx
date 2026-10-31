@@ -20,9 +20,11 @@ function suggestionReason(report: AccuracyReport, t: Messages): string {
 
 export interface AccuracySectionProps {
   report: AccuracyReport;
+  selectedThreshold?: number | null;
+  onSelectThreshold?: (threshold: number) => void;
 }
 
-export function AccuracySection({ report }: AccuracySectionProps) {
+export function AccuracySection({ report, selectedThreshold, onSelectThreshold }: AccuracySectionProps) {
   const { t } = useI18n();
 
   const suggestedPoint = report.suggested_threshold !== null
@@ -92,6 +94,9 @@ export function AccuracySection({ report }: AccuracySectionProps) {
         <div className={styles.tableCard}>
           <div className={styles.tableCardHeader}>
             <h4 className={styles.tableCardTitle}>{t.visionOverview.pointsTitle}</h4>
+            {onSelectThreshold && (
+              <span className={styles.tableCardHint}>{t.visionOverview.pointsClickHint}</span>
+            )}
           </div>
           <div className={table.wrap}>
             <table className={table.table}>
@@ -106,36 +111,38 @@ export function AccuracySection({ report }: AccuracySectionProps) {
               <tbody>
                 {rows.map((p) => {
                   const isSuggested = p.threshold === report.suggested_threshold;
+                  const isSelected = selectedThreshold != null && Math.abs(p.threshold - selectedThreshold) < 0.001;
+                  const rowClasses = [
+                    onSelectThreshold ? styles.clickableRow : '',
+                    isSuggested ? styles.suggestedRow : '',
+                    isSelected ? styles.selectedRow : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ');
+
                   return (
-                    <tr key={p.threshold} style={isSuggested ? { background: 'var(--color-accent-soft)', fontWeight: 600 } : undefined}>
+                    <tr
+                      key={p.threshold}
+                      className={rowClasses || undefined}
+                      onClick={onSelectThreshold ? () => onSelectThreshold(p.threshold) : undefined}
+                    >
                       <td className={table.num}>
-                        {p.threshold.toFixed(2)} {isSuggested && <Badge tone="accent">{t.visionOverview.suggestedBadge}</Badge>}
+                        {p.threshold.toFixed(2)}{' '}
+                        {isSuggested && <Badge tone="accent">{t.visionOverview.suggestedBadge}</Badge>}{' '}
+                        {isSelected && <Badge tone="success">{t.visionOverview.selectedBadge}</Badge>}
                       </td>
                       <td className={table.num}>{fmtInt(p.total)}</td>
-                      <td className={table.num} style={{ color: p.accuracy && p.accuracy >= report.target ? 'var(--color-success)' : undefined }}>
+                      <td className={`${table.num} ${p.accuracy && p.accuracy >= report.target ? styles.targetMetCell : ''}`}>
                         {fmtPercent(p.accuracy)}
                       </td>
                       <td className={table.num}>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <div className={styles.coverageCell}>
                           <span>{fmtPercent(p.coverage)}</span>
                           {p.coverage !== null && (
-                            <span
-                              style={{
-                                display: 'inline-block',
-                                width: 36,
-                                height: 4,
-                                background: 'var(--color-surface-2)',
-                                borderRadius: 2,
-                                overflow: 'hidden',
-                              }}
-                            >
+                            <span className={styles.coverageTrack}>
                               <span
-                                style={{
-                                  display: 'block',
-                                  width: `${p.coverage * 100}%`,
-                                  height: '100%',
-                                  background: 'var(--color-accent)',
-                                }}
+                                className={styles.coverageFill}
+                                style={{ width: `${p.coverage * 100}%` }}
                               />
                             </span>
                           )}

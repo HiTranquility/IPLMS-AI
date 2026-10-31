@@ -43,7 +43,7 @@ def fetch_image(url: str) -> bytes:
 
 
 def _run_engine(image: bytes) -> Dict[str, object]:
-    from app.core.vision.engines.anpr_engine import run_anpr
+    from app.core.vision.engines.anpr.engine import run_anpr
 
     return run_anpr(image)
 

@@ -12,8 +12,7 @@ from typing import Optional
 from app.config import get_config
 from app.core.console.dtos import ConsoleActor
 from app.core.console.engines import access_policy
-from app.core.copilot.engines.pii_redactor import redact
-from app.core.copilot.services.usage_service import usage_service
+from app.core.copilot import redact, usage_service
 from app.infra.database.ai_request_log_store import ai_request_log_store
 from app.infra.database.console_store import console_store
 

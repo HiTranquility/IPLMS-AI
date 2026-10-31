@@ -4,7 +4,8 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🛠️ Fixing — đã sửa trên `bugfix/bug-044-2026-10-anpr-recognize-many-file-cap` (`2ad639c`), chờ PR |
+| **Trạng thái** | ✅ Fixed — Đã sửa trong PR #113 (giới hạn 10 file per request cho recognize-many). |
+| **Ngày đóng** | 2026-10-31 |
 | **Người nhận** | @HiTranquility |
 | **Ưu tiên** | 🟠 |
 | **Người báo** | Claude Code, từ [AUDIT-008](../../audits/10-2026/AUDIT-008-loi-vao-inference-rate-limit-upload-cors-grpc.md) A2 |

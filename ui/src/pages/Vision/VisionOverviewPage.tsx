@@ -12,13 +12,15 @@ import { DASH, fmtDateTime, fmtInt, fmtPercent } from '@/utils/format';
 import { AccuracySection } from './components/AccuracySection';
 import { ProposePolicyForm } from './components/ProposePolicyForm';
 import { AnprSandbox } from './components/AnprSandbox';
+import { ClipLab } from './components/ClipLab';
 import { POLICY_TONE } from './labels';
 import { VisionOverviewPageProvider, useVisionOverviewPageContext } from './VisionOverviewPageContext';
 import styles from './VisionOverviewPage.module.css';
 
 function VisionOverviewPageContent() {
   const { t } = useI18n();
-  const [viewMode, setViewMode] = useState<'metrics' | 'sandbox'>('metrics');
+  const [viewMode, setViewMode] = useState<'metrics' | 'sandbox' | 'clip'>('metrics');
+  const [selectedThreshold, setSelectedThreshold] = useState<number | null>(null);
   const { me, status, accuracy, policies, decide, stepUp, canPropose, canDecide } = useVisionOverviewPageContext();
   const handleStepUp = (code: string, reason: string) => stepUp.mutateAsync({ code, reason });
 
@@ -34,13 +36,16 @@ function VisionOverviewPageContent() {
             options={[
               { value: 'metrics', label: t.visionOverview.viewMetrics },
               { value: 'sandbox', label: t.visionOverview.viewSandbox },
+              { value: 'clip', label: t.visionOverview.viewClip },
             ]}
             onChange={setViewMode}
           />
         }
       />
 
-      {viewMode === 'sandbox' ? (
+      {viewMode === 'clip' ? (
+        <ClipLab />
+      ) : viewMode === 'sandbox' ? (
         <AnprSandbox />
       ) : (
         <>
@@ -48,73 +53,90 @@ function VisionOverviewPageContent() {
             <h2 id="acc-title" className={styles.sectionTitle}>{t.visionOverview.accuracyTitle}</h2>
             {accuracy.isPending && <Loading />}
             {accuracy.error && <ErrorBlock error={accuracy.error} onRetry={() => void accuracy.refetch()} />}
-            {accuracy.data && <AccuracySection report={accuracy.data} />}
+            {accuracy.data && (
+              <AccuracySection
+                report={accuracy.data}
+                selectedThreshold={selectedThreshold}
+                onSelectThreshold={canPropose ? setSelectedThreshold : undefined}
+              />
+            )}
           </section>
 
           <section className={styles.section} aria-labelledby="policy-title">
             <h2 id="policy-title" className={styles.sectionTitle}>{t.visionOverview.policyTitle}</h2>
             <p className={styles.note}>{t.visionOverview.policyNote}</p>
-            {canPropose && accuracy.data && <ProposePolicyForm suggested={accuracy.data.suggested_threshold} />}
+            {canPropose && accuracy.data && (
+              <ProposePolicyForm
+                suggested={accuracy.data.suggested_threshold}
+                selectedThreshold={selectedThreshold}
+              />
+            )}
             {policies.isPending && <Loading />}
             {policies.error && <ErrorBlock error={policies.error} onRetry={() => void policies.refetch()} />}
             {policies.data?.length === 0 && <EmptyState title={t.visionOverview.noPolicies} />}
             {policies.data && policies.data.length > 0 && (
               <div className={styles.tableCard}>
                 <div className={table.wrap}>
-                <table className={table.table}>
-                  <thead>
-                    <tr>
-                      <th scope="col" className={table.num}>{t.visionOverview.version}</th>
-                      <th scope="col" className={table.num}>{t.visionOverview.threshold}</th>
-                      <th scope="col" className={table.num}>{t.visionOverview.auditRate}</th>
-                      <th scope="col">{t.visionOverview.evidence}</th>
-                      <th scope="col">{t.common.status}</th>
-                      <th scope="col">{t.common.actions}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {policies.data.map((p) => (
-                      <tr key={p.id}>
-                        <td className={table.num}>v{p.version}</td>
-                        <td className={table.num}>{p.auto_accept_threshold.toFixed(2)}</td>
-                        <td className={table.num}>{fmtPercent(p.audit_rate)}</td>
-                        <td className={table.muted}>
-                          {p.evidence.at_threshold
-                            ? t.visionOverview.evidenceAt(fmtInt(p.evidence.at_threshold.total), fmtPercent(p.evidence.at_threshold.accuracy))
-                            : DASH}
-                          <div>{p.reason} — {p.proposed_by} · {fmtDateTime(p.proposed_at)}</div>
-                        </td>
-                        <td>
-                          <Badge tone={POLICY_TONE[p.status]}>{t.vision.policy[p.status]}</Badge>
-                          {p.decided_by && <div className={table.muted}>{p.decided_by}</div>}
-                        </td>
-                        <td>
-                          {p.status === 'PROPOSED' && canDecide && (
-                            <div className={styles.actions}>
-                              <ReasonAction
-                                label={t.common.approve}
-                                variant="accent"
-                                disabled={p.proposed_by_id === me.data?.member_id}
-                                disabledHint={t.visionOverview.fourEyes}
-                                onStepUp={handleStepUp}
-                                onSubmit={(note) => decide.mutateAsync({ id: p.id, decision: 'APPROVED', note })}
-                              />
-                              <ReasonAction
-                                label={t.common.reject}
-                                variant="danger"
-                                onStepUp={handleStepUp}
-                                onSubmit={(note) => decide.mutateAsync({ id: p.id, decision: 'REJECTED', note })}
-                              />
-                            </div>
-                          )}
-                        </td>
+                  <table className={table.table}>
+                    <thead>
+                      <tr>
+                        <th scope="col" className={table.num}>{t.visionOverview.version}</th>
+                        <th scope="col" className={table.num}>{t.visionOverview.threshold}</th>
+                        <th scope="col" className={table.num}>{t.visionOverview.auditRate}</th>
+                        <th scope="col">{t.visionOverview.evidence}</th>
+                        <th scope="col">{t.common.status}</th>
+                        <th scope="col">{t.common.actions}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {policies.data.map((p) => (
+                        <tr key={p.id}>
+                          <td className={table.num}>v{p.version}</td>
+                          <td className={table.num}>{p.auto_accept_threshold.toFixed(2)}</td>
+                          <td className={table.num}>{fmtPercent(p.audit_rate)}</td>
+                          <td className={table.muted}>
+                            {p.evidence.at_threshold
+                              ? t.visionOverview.evidenceAt(fmtInt(p.evidence.at_threshold.total), fmtPercent(p.evidence.at_threshold.accuracy))
+                              : DASH}
+                            <div>{p.reason} — {p.proposed_by} · {fmtDateTime(p.proposed_at)}</div>
+                          </td>
+                          <td>
+                            <Badge tone={POLICY_TONE[p.status]}>{t.vision.policy[p.status]}</Badge>
+                            {p.decided_by && <div className={table.muted}>{p.decided_by}</div>}
+                          </td>
+                          <td>
+                            {p.status === 'PROPOSED' ? (
+                              canDecide ? (
+                                <div className={styles.actions}>
+                                  <ReasonAction
+                                    label={t.common.approve}
+                                    variant="accent"
+                                    disabled={p.proposed_by_id === me.data?.member_id}
+                                    disabledHint={t.visionOverview.fourEyes}
+                                    onStepUp={handleStepUp}
+                                    onSubmit={(note) => decide.mutateAsync({ id: p.id, decision: 'APPROVED', note })}
+                                  />
+                                  <ReasonAction
+                                    label={t.common.reject}
+                                    variant="danger"
+                                    onStepUp={handleStepUp}
+                                    onSubmit={(note) => decide.mutateAsync({ id: p.id, decision: 'REJECTED', note })}
+                                  />
+                                </div>
+                              ) : (
+                                <Badge tone="warning">{t.visionOverview.policyReadOnlyStatus}</Badge>
+                              )
+                            ) : (
+                              <span className={table.muted}>{t.visionOverview.policyDecidedStatus}</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          )}
+            )}
           </section>
 
           <section className={styles.section} aria-labelledby="import-title">

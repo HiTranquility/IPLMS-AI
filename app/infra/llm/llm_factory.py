@@ -8,6 +8,7 @@ from typing import Any, AsyncGenerator
 from app.config import get_config
 from app.config.llm_config import DEFAULT_LOCAL_LLM_MODEL, NON_OLLAMA_MODEL_NAMES
 from app.core.exceptions import ModelConfigurationError, ModelNotLoadedError, RagPipelineError
+from app.infra.llm.prompts import prompt_store
 from app.util.logger import logger
 
 try:
@@ -28,6 +29,11 @@ def _should_use_responses_api(client: Any, provider: str, has_api_key: bool) -> 
     return provider not in ("local", "ollama") and has_api_key
 
 
+def _user_message(user_query: str, context: str) -> str:
+    """Khuôn user message của Copilot, một nguồn ở `data/prompts/copilot_rag_system/user.md`."""
+    return prompt_store.user_template("copilot_rag_system").format(question=user_query, context=context)
+
+
 def _strip_thinking_tags(text: str) -> str:
     import re
     return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
@@ -37,8 +43,12 @@ def _copy_usage(source: Any, target: dict | None) -> None:
     """Chép số token nếu provider có báo; không báo thì để trống, không ước lượng."""
     if target is None or source is None:
         return
-    for field in ("input_tokens", "output_tokens"):
+    # Responses API báo input/output_tokens; Chat Completions (Ollama, llama-server)
+    # báo prompt/completion_tokens (bug-042).
+    for field, alias in (("input_tokens", "prompt_tokens"), ("output_tokens", "completion_tokens")):
         value = getattr(source, field, None)
+        if not isinstance(value, int):
+            value = getattr(source, alias, None)
         if isinstance(value, int):
             target[field] = value
 
@@ -74,14 +84,15 @@ class LlmFactory:
         """Read the active revision per request so replicas see activation promptly."""
         from app.infra.database.model_policy_store import model_policy_store
 
+        fallback = self if (self._client is not None or self._profile) else LlmFactory()
         if not model_policy_store.db_url:
-            return self
+            return fallback
         try:
             profile = await model_policy_store.get_active(task)
-            return LlmFactory(profile=profile) if profile else self
+            return LlmFactory(profile=profile) if profile else fallback
         except Exception as exc:
             logger.warning("Không thể đọc active model policy profile (%s), dùng fallback mặc định.", exc)
-            return self
+            return fallback
 
     def _get_client(self) -> Any:
         if self._client is not None:
@@ -134,13 +145,17 @@ class LlmFactory:
 
             # B. Nếu llama-server không chạy, tự động kết nối Ollama local
             ollama_url = getattr(config, "ollama_url", "http://127.0.0.1:11434/v1")
-            custom_base = getattr(config, "llm_base_url", "")
+            custom_base = self.base_url or getattr(config, "llm_base_url", "")
             target_base = custom_base or ollama_url
             import os
-            if "host.docker.internal" in target_base and not os.path.exists("/.dockerenv"):
+            in_docker = os.path.exists("/.dockerenv")
+            if "host.docker.internal" in target_base and not in_docker:
                 target_base = target_base.replace("host.docker.internal", "127.0.0.1")
+            elif in_docker and ("127.0.0.1:11434" in target_base or "localhost:11434" in target_base):
+                target_base = target_base.replace("127.0.0.1", "host.docker.internal").replace("localhost", "host.docker.internal")
             if not target_base.endswith("/v1"):
                 target_base = f"{target_base.rstrip('/')}/v1"
+            self.base_url = target_base
 
             from openai import AsyncOpenAI
             self._client = AsyncOpenAI(
@@ -193,12 +208,7 @@ class LlmFactory:
         request = {
             "model": self.model,
             "instructions": system_prompt,
-            "input": (
-                "CÂU HỎI CỦA NGƯỜI DÙNG:\n"
-                f"{user_query}\n\n"
-                "NGỮ CẢNH ĐÃ TRUY XUẤT TỪ KHO TRI THỨC:\n"
-                f"{context}"
-            ),
+            "input": _user_message(user_query, context),
             "max_output_tokens": self.max_output_tokens,
             # Nội dung quy chế/phiên gửi có thể nhạy cảm; không lưu response ở
             # phía provider trừ khi có quyết định governance riêng.
@@ -254,12 +264,13 @@ class LlmFactory:
                     {"role": "system", "content": system_prompt},
                     {
                         "role": "user",
-                        "content": f"CÂU HỎI CỦA NGƯỜI DÙNG:\n{user_query}\n\nNGỮ CẢNH ĐÃ TRUY XUẤT TỪ KHO TRI THỨC:\n{context}",
+                        "content": _user_message(user_query, context),
                     },
                 ],
                 max_tokens=self.max_output_tokens,
                 temperature=0.2 if temperature is None else temperature,
             )
+            _copy_usage(getattr(resp, "usage", None), usage)
             raw_answer = (resp.choices[0].message.content or "").strip()
             answer = _strip_thinking_tags(raw_answer)
             if not answer:
@@ -427,7 +438,7 @@ class LlmFactory:
                         messages.append({"role": r, "content": c})
             messages.append({
                 "role": "user",
-                "content": f"CÂU HỎI CỦA NGƯỜI DÙNG:\n{user_query}\n\nNGỮ CẢNH ĐÃ TRUY XUẤT TỪ KHO TRI THỨC:\n{context}",
+                "content": _user_message(user_query, context),
             })
             stream = await client.chat.completions.create(
                 model=self.model,

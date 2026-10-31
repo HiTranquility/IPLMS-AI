@@ -52,6 +52,15 @@ services:
       - "traefik.http.services.ai-rest.loadbalancer.healthcheck.path=/health"
       - "traefik.http.services.ai-rest.loadbalancer.healthcheck.interval=5s"
       - "traefik.http.services.ai-rest.loadbalancer.healthcheck.timeout=2s"
+      # bug-046: chặn burst REST ở gateway. Mọi request đều đến từ backend nên
+      # rateLimit theo IP nguồn ở đây gần như là trần chung của cả service.
+      # gRPC không gắn middleware: stream Copilot sống lâu, trần nằm ở
+      # AI_GRPC_MAXIMUM_CONCURRENT_RPCS trong process.
+      - "traefik.http.routers.ai-rest.middlewares=ai-rest-inflight,ai-rest-ratelimit"
+      - "traefik.http.middlewares.ai-rest-inflight.inflightreq.amount=${AI_GATEWAY_REST_INFLIGHT:-20}"
+      - "traefik.http.middlewares.ai-rest-ratelimit.ratelimit.average=${AI_GATEWAY_REST_RATE_AVG:-30}"
+      - "traefik.http.middlewares.ai-rest-ratelimit.ratelimit.burst=${AI_GATEWAY_REST_RATE_BURST:-60}"
+      - "traefik.http.middlewares.ai-rest-ratelimit.ratelimit.period=1s"
       # ── gRPC Routing (:50051) with cleartext HTTP/2 (h2c) ──
       - "traefik.http.routers.ai-grpc.rule=PathPrefix(`/`)"
       - "traefik.http.routers.ai-grpc.entrypoints=grpc"
@@ -129,6 +138,8 @@ services:
     env_file:
       - path: .env.dev
         required: true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - AI_CONSOLE_DATABASE_URL=postgresql://${AI_DB_USER:-postgres}:${AI_DB_PASSWORD:?Thiếu AI_DB_PASSWORD - đặt trong file --env-file (mẫu .env.example)}@database-vector:5432/ai_console
       - AI_CONSOLE_DEMO_SEED_ENABLED=true

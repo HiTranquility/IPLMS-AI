@@ -48,3 +48,7 @@ Thực hiện hạng mục **Dương 3 (`I-3: demo liên vai trên UI IPLMS-AI b
 - [x] Có test tự động `ui/src/pages/Vision/CrossRoleDemoLoop.test.tsx` kiểm tra xuyên suốt hành trình 5 vai trò, bao gồm cả ca thành công, ca chặn điều hướng sai quyền trên UI, và ca chặn tự duyệt 4 mắt (`403 FORBIDDEN`).
 - [x] `tsc --noEmit` và `vitest run` pass 100%.
 - [x] `script/check_branch_policy.py` pass 100%.
+
+## Definition of Done
+
+- [x] Toàn bộ unit test và kiểm thử tích hợp của hạng mục đạt PASS.

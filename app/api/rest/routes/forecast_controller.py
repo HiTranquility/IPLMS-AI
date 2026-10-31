@@ -5,7 +5,7 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.core.constants import DEFAULT_FORECAST_HOURS
+from app.core.forecast.constants import DEFAULT_FORECAST_HOURS
 from app.core.forecast import (
     AreaOccupancyForecastResult,
     SurgeMultiplierResult,

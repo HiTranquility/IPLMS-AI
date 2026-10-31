@@ -4,7 +4,8 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🛠️ Fixing — đã sửa trên `bugfix/bug-046-2026-10-ai-ingress-concurrency-limit` (`912eb1b`), chờ PR |
+| **Trạng thái** | ✅ Fixed — Đã sửa trong PR #116 (trần RPC đồng thời cho gRPC và rate-limit REST qua Traefik). |
+| **Ngày đóng** | 2026-10-31 |
 | **Người nhận** | @HiTranquility |
 | **Ưu tiên** | 🟠 |
 | **Người báo** | Claude Code, từ [AUDIT-008](../../audits/10-2026/AUDIT-008-loi-vao-inference-rate-limit-upload-cors-grpc.md) A4 |

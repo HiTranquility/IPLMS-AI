@@ -1,13 +1,13 @@
 from typing import Any, Dict, Tuple
 
-from app.core.constants import PLATE_OCR_ALLOWLIST
+from app.core.vision.constants import PLATE_OCR_ALLOWLIST
 from app.core.exceptions import ModelNotLoadedError
 from app.core.vision.engines.anpr import models
 from app.core.vision.engines.anpr.plate_text import (
     correct_plate_confusions,
     sanitize_plate_text,
 )
-from app.core.vision.engines.two_line_plate_parser import parse_two_line_vietnam_plate
+from app.core.vision.engines.anpr.two_line_plate_parser import parse_two_line_vietnam_plate
 
 
 def _reading_order(results):

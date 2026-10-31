@@ -24,8 +24,8 @@ echo.
 echo [1/3] Kiem tra co so du lieu Vector (PostgreSQL pgvector)...
 where docker >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
-    docker compose --env-file .env.dev stop ai gateway >nul 2>&1
-    docker compose --env-file .env.dev up -d ai-db >nul 2>&1
+    docker compose --env-file .env.dev stop api gateway >nul 2>&1
+    docker compose --env-file .env.dev up -d database-vector >nul 2>&1
     echo   [OK] pgvector database dang chay tai localhost:5435
 ) else (
     echo   [INFO] Docker chua bat hoac chua cai dat. He thong su dung Local Seed Fallback.

@@ -2,6 +2,7 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from app.api.rest.developer_access import require_developer_access
+from app.api.rest.image_upload import read_image_upload
 from pydantic import BaseModel
 
 from app.core.vision import (
@@ -35,8 +36,9 @@ async def recognize_plate(
     lane_id: Optional[str] = Form(None),
 ) -> BaseResponse[AnprItem]:
     """Nhận diện biển số và phân loại loại xe từ ảnh gửi lên."""
+    image_bytes = await read_image_upload(file)
     try:
-        result = await AnprService.recognize(file, lane_id=lane_id)
+        result = await AnprService.recognize(image_bytes, lane_id=lane_id)
         return BaseResponse.ok([AnprItem.from_result(result)], "Recognized")
     except Exception as exc:
         return BaseResponse.fail(f"Recognition failed: {exc}")

@@ -18,15 +18,17 @@ backend AiCopilotController (/v1/ai/copilot/stream — SSE; preview chỉ cho ng
                  │     (đoạn chỉ khớp keyword có similarity 0) → NO_CONTEXT "chưa tìm thấy…", KHÔNG gọi LLM
                  └─ infra/llm/llm_factory.stream_response / generate_response
                        Responses API, SYSTEM_PROMPT: chỉ trả lời từ ngữ cảnh, trích [Nguồn], store=False
-            └─ engines/output_guard.py   chặn câu trả lời có "miễn phí/0đ", link, SĐT/STK không có trong
+            └─ guardrails/output_guard.py chặn câu trả lời có "miễn phí/0đ", link, SĐT/STK không có trong
                  các đoạn đã truy xuất → thay bằng GUARD_NOTICE, bỏ nguồn (stream: giữ đuôi 40 ký tự,
                  dừng trước khi phát phần vi phạm). Lý do và số đo: PROB-046 ở repo gốc
+                 So trên bản chuẩn hoá (`guardrails/text_normalize.py`, bug-049): bỏ ký tự ẩn,
+                 chữ Cyrillic/Greek → Latin, NFKC, nối chữ tách; rào đầu vào cũng so như vậy
             confidence = 0.7×sim(top1) + 0.3×mean(sim)   (điểm truy xuất, không phải "độ chắc" của LLM)
 ```
 
 ## Phân xử tranh chấp
 
-`copilot_service.arbitrate_dispute` → `FeatureNotImplementedError` (bản cũ luôn trả APPROVE_REFUND + bằng chứng bịa). Khung `engines/dispute_workflow/` (LangGraph: load_evidence → analyze → retrieve_policy → validate → draft → human_review → finalize, PROB-040) **chưa được gọi từ đâu**.
+`copilot_service.arbitrate_dispute` → `FeatureNotImplementedError` (bản cũ luôn trả APPROVE_REFUND + bằng chứng bịa). Khung `workflows/dispute/` (LangGraph: load_evidence → analyze → retrieve_policy → validate → draft → human_review → finalize, PROB-040) **chưa được gọi từ đâu**.
 
 ## File
 
@@ -34,8 +36,9 @@ backend AiCopilotController (/v1/ai/copilot/stream — SSE; preview chỉ cho ng
 |---|---|
 | `services/copilot_service.py` | Điểm vào nghiệp vụ; chặn arbitrate |
 | `engines/rag_pipeline.py` | Truy xuất → (không có đoạn khớp nghĩa đạt ngưỡng thì dừng, dùng `guardrails.check_scope_and_chunks`) → sinh câu trả lời; prompt + confidence |
-| `engines/output_guard.py` | Kiểm đầu ra tất định chống prompt injection (PROB-046) |
-| `engines/dispute_workflow/{graph,nodes,state,dependencies}.py` | Khung LangGraph phân xử (chưa nối) |
+| `guardrails/output_guard.py` | Kiểm đầu ra tất định chống prompt injection (PROB-046) |
+| `guardrails/text_normalize.py` | `normalize_for_match`: bản chuẩn hoá để guard đầu vào/đầu ra so regex (bug-049) |
+| `workflows/dispute/{graph,nodes,state,dependencies}.py` | Khung LangGraph phân xử (chưa nối) |
 | `dtos/copilot_dto.py` | `AskQuestionRequest` (có `preview`), `CopilotAnswer`, `AnswerChunk` |
 
 Tài liệu Copilot đọc được quản lý ở [core/knowledge](../knowledge/README.md) (nạp) và [core/knowledge_eval](../knowledge_eval/README.md) (test + xuất bản).
@@ -94,7 +97,7 @@ sequenceDiagram
 | pgvector HNSW (`vector_cosine_ops`) + PostgreSQL full-text | `infra/database/pgvector_client.py` | Ngữ nghĩa + khớp từ khoá (số tiền, "Điều 5") trong một DB |
 | Reciprocal Rank Fusion (k=60) | `search_similar_chunks` | Trộn hai bảng xếp hạng không cần chuẩn hoá điểm |
 | gRPC server-streaming → SSE ở backend | `copilot_handler` → `AiCopilotController` | Trình duyệt nhận stream qua HTTP thường |
-| LangGraph (+ checkpoint Postgres) | `engines/dispute_workflow/` | Luồng nhiều bước có điểm dừng chờ người — **chưa nối** |
+| LangGraph (+ checkpoint Postgres) | `workflows/dispute/` | Luồng nhiều bước có điểm dừng chờ người — **chưa nối** |
 
 ## ⚡ Case tối ưu
 

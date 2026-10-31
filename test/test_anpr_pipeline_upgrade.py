@@ -19,7 +19,7 @@ from app.core.vision.engines.anpr.preprocess import (
     assess_crop_quality,
     suppress_glare_for_ocr,
 )
-from app.core.vision.engines.anpr_engine import run_anpr
+from app.core.vision.engines.anpr.engine import run_anpr
 
 
 class CorrectPlateConfusionsFiveDigitsTest(unittest.TestCase):
@@ -136,7 +136,7 @@ class RunAnprQualityFlagsIntegrationTest(unittest.TestCase):
             "initialized": True,
         }
         with patch.dict("app.core.vision.engines.anpr.models._state", state), patch(
-            "app.core.vision.engines.anpr_engine.suppress_glare_for_ocr",
+            "app.core.vision.engines.anpr.engine.suppress_glare_for_ocr",
             wraps=suppress_glare_for_ocr,
         ) as mock_glare:
             res = run_anpr(buf.tobytes())

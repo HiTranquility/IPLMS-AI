@@ -4,7 +4,8 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🛠️ Fixing — đã sửa trên `bugfix/bug-043-2026-10-anpr-upload-size-limit` (`1ba8c14`), chờ PR |
+| **Trạng thái** | ✅ Fixed — Đã sửa trong PR #113 và bug-050 (giới hạn 8MB upload ảnh REST ANPR). |
+| **Ngày đóng** | 2026-10-31 |
 | **Người nhận** | @HiTranquility |
 | **Ưu tiên** | 🟠 |
 | **Người báo** | Claude Code, từ [AUDIT-008](../../audits/10-2026/AUDIT-008-loi-vao-inference-rate-limit-upload-cors-grpc.md) A1 + B1 |
