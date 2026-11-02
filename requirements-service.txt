@@ -5,7 +5,7 @@
 # 2.6.0: vá CVE-2025-32434 (RCE qua torch.load) — cổng Trivy chặn 2.5.1 (ADR-0006).
 torch==2.14.1+cpu
 torchvision==0.29.1+cpu
-numpy>=1.24
+numpy>=2.5.4
 pillow>=13.0.0
 opencv-python-headless>=5.0.0.93
 easyocr>=1.7
