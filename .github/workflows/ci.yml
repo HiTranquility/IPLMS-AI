@@ -69,6 +69,10 @@ jobs:
         run: python app/script/compile_proto.py
 
       - name: Initialize Postgres databases and vector extension
+        # bug-055: harden_console_db đọc mật khẩu admin từ POSTGRES_PASSWORD; env của services
+        # chỉ tới container Postgres, không tới bước này.
+        env:
+          POSTGRES_PASSWORD: ${{ env.CI_DB_PASSWORD }}
         run: |
           PGPASSWORD="$CI_DB_PASSWORD" psql -h localhost -U postgres -d iplms_knowledge -c "CREATE EXTENSION IF NOT EXISTS vector;"
           PGPASSWORD="$CI_DB_PASSWORD" psql -h localhost -U postgres -d postgres -c "CREATE DATABASE ai_console;"
