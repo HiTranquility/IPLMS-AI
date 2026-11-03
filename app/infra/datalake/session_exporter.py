@@ -69,7 +69,7 @@ class SessionExportResult:
     watermark: datetime
 
 
-class ParkingSessionExporter:
+class SessionExporter:
     """Stream changed sessions to an immutable partition without loading all rows."""
 
     def __init__(

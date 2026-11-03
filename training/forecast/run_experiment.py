@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Sequence
 
-from app.infra.datalake import OccupancyHistoryReader
+from app.infra.datalake import OccupancyReader
 from training.forecast.baselines import backtest_baselines
 from training.forecast.build_features import write_feature_dataset
 from training.forecast.dataset import regularize_history
@@ -101,7 +101,7 @@ def run_forecast_experiment(
         raise ForecastReadinessError(readiness)
 
     lot_ids = list(readiness["eligible_lots"])
-    reader = OccupancyHistoryReader(base_path=data_lake)
+    reader = OccupancyReader(base_path=data_lake)
     observed: list[dict[str, Any]] = []
     for lot_id in lot_ids:
         observed.extend(

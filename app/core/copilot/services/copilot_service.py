@@ -27,7 +27,7 @@ from app.core.copilot.workflows.dispute.state import make_initial_state
 from app.core.copilot.engines.rag_pipeline import PROMPT_VERSION, rag_pipeline
 from app.core.copilot.services.usage_service import usage_service
 from app.core.exceptions import FeatureNotImplementedError
-from app.infra.monitoring.ai_logger import ai_telemetry_logger
+from app.infra.monitoring.ai_logger import ai_logger
 from app.util.logger import logger
 
 
@@ -147,7 +147,7 @@ class CopilotService:
     @staticmethod
     def get_metrics_summary() -> Dict[str, Any]:
         """Tổng hợp telemetry AI requests, tokens, latency và chi phí."""
-        return ai_telemetry_logger.get_metrics_summary()
+        return ai_logger.get_metrics_summary()
 
     @staticmethod
     async def simulate_dispute_workflow(

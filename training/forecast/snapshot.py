@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Iterable
 from uuid import uuid4
 
-from app.infra.datalake.occupancy_reader import OccupancyHistoryReader
+from app.infra.datalake.occupancy_reader import OccupancyReader
 from training.forecast.dataset import discover_lot_ids, regularize_history
 
 
@@ -198,7 +198,7 @@ def main() -> int:
     if not lot_ids:
         parser.error("no raw parking lot data found; run export_parking_sessions first")
 
-    reader = OccupancyHistoryReader(base_path=args.data_lake)
+    reader = OccupancyReader(base_path=args.data_lake)
     observed: list[dict[str, Any]] = []
     for lot_id in lot_ids:
         observed.extend(

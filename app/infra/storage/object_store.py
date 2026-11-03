@@ -40,7 +40,7 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-class SignedUrlObjectStore:
+class ObjectStore:
     """Adapter đọc object storage qua một signed HTTPS URL."""
 
     def download(self, request: ObjectDownloadRequest) -> Path:

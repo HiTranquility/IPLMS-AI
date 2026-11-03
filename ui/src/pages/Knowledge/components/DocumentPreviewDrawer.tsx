@@ -1,5 +1,5 @@
 import { Check, Copy, FileText, Layers, Search, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/common/Ui/data-display/Badge';
 import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
 import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
@@ -14,25 +14,61 @@ export interface DocumentPreviewDrawerProps {
   onClose: () => void;
 }
 
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export function DocumentPreviewDrawer({ document, onClose }: DocumentPreviewDrawerProps) {
   const { t } = useI18n();
   const kp = t.knowledgePage;
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedOrdinal, setCopiedOrdinal] = useState<number | null>(null);
+  const drawerRef = useRef<HTMLElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   const docId = document?.id || document?.document_id || '';
   const parkingLotId = document?.parking_lot_id || undefined;
+  const isOpen = Boolean(document);
 
   const { data, isLoading, error, refetch } = useDocumentChunks(docId, parkingLotId);
 
-  // Phím Escape để đóng drawer
+  // AUDIT-007 B5: Lưu trigger element khi mở, chuyển focus vào nút đóng, giữ focus trong drawer (Tab) và trả focus khi đóng
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+    if (!isOpen) return;
+    const triggerEl =
+      globalThis.document.activeElement instanceof HTMLElement
+        ? globalThis.document.activeElement
+        : null;
+    closeBtnRef.current?.focus();
+
+    const handleKeyDown = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (e.key === 'Tab' && drawerRef.current) {
+        const focusable = Array.from(drawerRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && globalThis.document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && globalThis.document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      triggerEl?.focus();
+    };
+  }, [isOpen]);
 
   if (!document) return null;
 
@@ -58,6 +94,7 @@ export function DocumentPreviewDrawer({ document, onClose }: DocumentPreviewDraw
   return (
     <div className={styles.backdrop} onClick={onClose} role="presentation">
       <aside
+        ref={drawerRef}
         className={styles.drawer}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -92,6 +129,7 @@ export function DocumentPreviewDrawer({ document, onClose }: DocumentPreviewDraw
             </div>
           </div>
           <button
+            ref={closeBtnRef}
             type="button"
             className={styles.closeBtn}
             onClick={onClose}

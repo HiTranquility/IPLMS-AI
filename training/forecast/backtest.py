@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from app.infra.datalake.occupancy_reader import OccupancyHistoryReader
+from app.infra.datalake.occupancy_reader import OccupancyReader
 from training.forecast.baselines import backtest_baselines
 from training.forecast.dataset import discover_lot_ids, regularize_history
 from training.forecast.snapshot import load_snapshot
@@ -72,7 +72,7 @@ def main() -> int:
                 "no parking lot IDs found; export PostgreSQL sessions first or pass --lot-id"
             )
 
-        reader = OccupancyHistoryReader(base_path=str(args.data_lake))
+        reader = OccupancyReader(base_path=str(args.data_lake))
         observed: list[dict[str, Any]] = []
         for lot_id in lot_ids:
             observed.extend(reader.load_historical_occupancy(lot_id, days=args.days))

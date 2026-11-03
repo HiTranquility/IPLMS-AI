@@ -78,6 +78,14 @@ class CheckCoreLayoutTest(unittest.TestCase):
         self.assertIn("class AuthService", found)
         self.assertIn("auth_service = AuthService", found)
 
+    def test_controller_khong_khai_bao_class_truc_tiep(self):
+        make(self.core.parent, {
+            "core/__init__.py": "",
+            "api/rest/routes/bad_controller.py": "class InlineSchema:\n    pass\n",
+        })
+        found = "\n".join(ccl.naming_violations(self.core))
+        self.assertIn("bad_controller.py", found)
+
 
 if __name__ == "__main__":
     unittest.main()

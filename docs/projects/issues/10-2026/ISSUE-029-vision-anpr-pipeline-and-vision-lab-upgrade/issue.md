@@ -1,6 +1,6 @@
-# 🏷️ ISSUE-020: Nâng cấp pipeline ANPR (tiền xử lý, hậu xử lý biển số) và Vision Lab trên AI Console
+# 🏷️ ISSUE-029: Nâng cấp pipeline ANPR (tiền xử lý, hậu xử lý biển số) và Vision Lab trên AI Console
 
-> **Đích:** `docs/projects/issues/10-2026/ISSUE-020-vision-anpr-pipeline-and-vision-lab-upgrade/issue.md` · **Luật chung:** [templates/README](../../../../templates/README.md)
+> **Đích:** `docs/projects/issues/10-2026/ISSUE-029-vision-anpr-pipeline-and-vision-lab-upgrade/issue.md` · **Luật chung:** [templates/README](../../../../templates/README.md)
 
 | | |
 |---|---|
@@ -40,7 +40,7 @@ Nâng cấp toàn diện phần **Vision ANPR pipeline** và **Vision Lab trên 
 
 ## Tiêu chí chấp nhận
 
-- [x] Hồ sơ `ISSUE-020` định nghĩa rõ phạm vi, chỉ số đo (`exact_strict`, `exact_relaxed`, `cer`, `quality_flags`) và ranh giới không đụng checkpoint `model/`.
+- [x] Hồ sơ `ISSUE-029` định nghĩa rõ phạm vi, chỉ số đo (`exact_strict`, `exact_relaxed`, `cer`, `quality_flags`) và ranh giới không đụng checkpoint `model/`.
 - [x] `app/core/vision/engines/anpr/preprocess.py`: có `assess_crop_quality(crop)` và `suppress_glare_for_ocr(crop)` hoạt động tất định, không làm biến đổi mảng ảnh gốc (`evidence_image`).
 - [x] `app/core/vision/engines/anpr/plate_text.py`: `correct_plate_confusions` sửa được chữ số thứ 5 từ cuối trên biển 5 số (8–9 ký tự chữ-số) mà không làm hỏng chữ cái sê-ri của biển 4 số; có `format_vietnam_plate`.
 - [x] `ui/src/pages/Vision/ReviewPage.tsx`: lọc được hàng đợi duyệt 4 mắt theo từng cờ `quality_flags` (`blurry`, `glare`, `skewed`, `occluded`, `two_line`), có `role="group"` và `aria-pressed`.
@@ -48,7 +48,7 @@ Nâng cấp toàn diện phần **Vision ANPR pipeline** và **Vision Lab trên 
 
 ## Kế hoạch
 
-1. Lập hồ sơ `ISSUE-020` và kiểm tra `check_branch_policy.py` (PASS).
+1. Lập hồ sơ `ISSUE-029` và kiểm tra `check_branch_policy.py` (PASS).
 2. Cải tiến `preprocess.py`, `plate_text.py`, `anpr_engine.py` và viết bộ test `test/test_anpr_pipeline_upgrade.py` (87/87 PASS).
 3. Cải tiến `ReviewPage.tsx` và bổ sung test trong `ui/src/pages/Vision/ReviewRowNames.test.tsx`.
 4. Chạy toàn bộ kiểm chứng (`unittest`, `tsc --noEmit`, `vitest`, `check_generated.py`), cập nhật trạng thái `✅ Done` và tạo PR.

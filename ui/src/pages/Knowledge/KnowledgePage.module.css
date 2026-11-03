@@ -148,6 +148,23 @@
   font-size: 0.8rem;
 }
 
+.fileChipError {
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.fileChipInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.fileErrorText {
+  font-size: 0.725rem;
+  color: var(--color-danger);
+}
+
 .fileChipName {
   display: flex;
   align-items: center;

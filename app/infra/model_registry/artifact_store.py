@@ -11,7 +11,7 @@ from app.config import get_config
 from app.infra.storage.object_store import (
     ObjectDownloadRequest,
     ObjectDownloadError,
-    SignedUrlObjectStore,
+    ObjectStore,
     sha256_file,
 )
 
@@ -33,7 +33,7 @@ class ModelArtifactSpec:
     sha256: str = ""
 
 
-class ModelArtifactRegistry:
+class ArtifactStore:
     def __init__(
         self,
         ai_root: Path,
@@ -50,7 +50,7 @@ class ModelArtifactRegistry:
         self._timeout_seconds = timeout_seconds
         self._max_bytes = max_bytes
         self._allow_insecure_http = allow_insecure_http
-        self._object_store = SignedUrlObjectStore()
+        self._object_store = ObjectStore()
         self._lock = threading.Lock()
 
     def resolve(self, spec: ModelArtifactSpec) -> Path:
@@ -108,13 +108,16 @@ class ModelArtifactRegistry:
 
 
 @lru_cache
-def get_model_artifact_registry() -> ModelArtifactRegistry:
+def get_artifact_store() -> ArtifactStore:
     config = get_config()
     ai_root = Path(__file__).resolve().parents[3]
-    return ModelArtifactRegistry(
+    return ArtifactStore(
         ai_root=ai_root,
         cache_dir=config.model_registry.cache_dir,
         timeout_seconds=config.object_storage.download_timeout_seconds,
         max_bytes=config.object_storage.max_artifact_bytes,
         allow_insecure_http=config.object_storage.allow_insecure_http,
     )
+
+
+get_model_artifact_registry = get_artifact_store

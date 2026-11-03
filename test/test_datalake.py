@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from app.core.exceptions import DataLakeError
-from app.infra.datalake import OccupancyHistoryReader, ParkingSessionExporter
+from app.infra.datalake import OccupancyReader, SessionExporter
 
 
 UTC = timezone.utc
@@ -49,9 +49,9 @@ class _Connection:
         self.closed = True
 
 
-class ParkingSessionExporterTest(unittest.TestCase):
+class SessionExporterTest(unittest.TestCase):
     def test_requires_an_explicit_operational_database(self):
-        exporter = ParkingSessionExporter(db_url="")
+        exporter = SessionExporter(db_url="")
 
         with self.assertRaisesRegex(
             DataLakeError, "AI_DATALAKE_SOURCE_DATABASE_URL"
@@ -78,7 +78,7 @@ class ParkingSessionExporterTest(unittest.TestCase):
         ]
         connection = _Connection(rows)
         with tempfile.TemporaryDirectory() as directory:
-            exporter = ParkingSessionExporter(
+            exporter = SessionExporter(
                 root_path=directory,
                 connection_factory=lambda: connection,
                 batch_size=1,
@@ -111,7 +111,7 @@ class ParkingSessionExporterTest(unittest.TestCase):
     def test_export_does_not_leave_partition_when_checkpoint_fails(self):
         connection = _Connection([])
         with tempfile.TemporaryDirectory() as directory:
-            exporter = ParkingSessionExporter(
+            exporter = SessionExporter(
                 root_path=directory,
                 connection_factory=lambda: connection,
             )
@@ -136,7 +136,7 @@ class ParkingSessionExporterTest(unittest.TestCase):
             self.assertTrue(connection.closed)
 
 
-class OccupancyHistoryReaderTest(unittest.TestCase):
+class OccupancyReaderTest(unittest.TestCase):
     def test_deduplicates_incremental_rows_and_aggregates_half_open_slots(self):
         records = [
             {
@@ -172,7 +172,7 @@ class OccupancyHistoryReaderTest(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            result = OccupancyHistoryReader(directory, slot_minutes=30).load_historical_occupancy(
+            result = OccupancyReader(directory, slot_minutes=30).load_historical_occupancy(
                 "lot-1",
                 days=1,
                 now=datetime(2026, 1, 1, 2, 0, tzinfo=UTC),
@@ -213,7 +213,7 @@ class OccupancyHistoryReaderTest(unittest.TestCase):
         ]
         with tempfile.TemporaryDirectory() as directory:
             self._write_sessions(directory, records, windows)
-            reader = OccupancyHistoryReader(directory, slot_minutes=30)
+            reader = OccupancyReader(directory, slot_minutes=30)
             self.assertEqual(reader.coverage_end(), datetime(2026, 1, 1, 2, 0, tzinfo=UTC))
             result = reader.load_historical_occupancy(
                 "lot-1", days=1, now=datetime(2026, 1, 1, 3, 0, tzinfo=UTC)
@@ -245,7 +245,7 @@ class OccupancyHistoryReaderTest(unittest.TestCase):
         ]
         with tempfile.TemporaryDirectory() as directory:
             self._write_sessions(directory, records, windows)
-            reader = OccupancyHistoryReader(directory, slot_minutes=30)
+            reader = OccupancyReader(directory, slot_minutes=30)
             self.assertEqual(
                 reader.coverage_end(), datetime(2026, 1, 1, 0, 30, tzinfo=UTC)
             )

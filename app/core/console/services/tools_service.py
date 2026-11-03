@@ -809,7 +809,9 @@ class ToolsService:
         return await self.get_runtime_settings(actor)
 
     async def list_sessions(self, actor: ConsoleActor) -> list[dict[str, Any]]:
-        include_all = bool({"ai_console_admin", "ai_lead"} & set(actor.roles))
+        if not any(access_policy.can(actor, p) for p in ("ai:metrics:read", "ai:member:manage", "ai:audit:read")):
+            access_policy.require(actor, "ai:metrics:read")
+        include_all = access_policy.can(actor, "ai:member:manage")
         rows = await self.store.list_active_sessions(actor.member_id, include_all=include_all)
         return [
             {
@@ -820,9 +822,11 @@ class ToolsService:
         ]
 
     async def revoke_session_by_id(self, actor: ConsoleActor, session_id: str, reason: str = "") -> dict[str, Any]:
+        if not any(access_policy.can(actor, p) for p in ("ai:metrics:read", "ai:member:manage", "ai:audit:read")):
+            access_policy.require(actor, "ai:metrics:read")
         if session_id and session_id == getattr(actor, "session_id", ""):
             raise ValueError("Không thể tự thu hồi phiên đang hoạt động hiện tại.")
-        allow_any = bool({"ai_console_admin", "ai_lead"} & set(actor.roles))
+        allow_any = access_policy.can(actor, "ai:member:manage")
         clean_reason = (reason or "").strip()[:200] or "Thu hồi phiên đăng nhập từ trang Cài đặt"
         revoked = await self.store.revoke_target_session(
             session_id, actor.member_id, allow_any_member=allow_any, reason=clean_reason

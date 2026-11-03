@@ -1,6 +1,6 @@
-# 🏷️ ISSUE-007: Mở Rộng Bộ Dữ Liệu Held-Out Copilot RAG Lên ≥ 30 Câu Hỏi-Đáp Độc Lập
+# 🏷️ ISSUE-028: Mở Rộng Bộ Dữ Liệu Held-Out Copilot RAG Lên ≥ 30 Câu Hỏi-Đáp Độc Lập
 
-> **Đích:** `docs/projects/issues/10-2026/ISSUE-007-copilot-rag-heldout-dataset/issue.md` · **Luật chung:** [templates/README](../../../../templates/README.md)
+> **Đích:** `docs/projects/issues/10-2026/ISSUE-028-copilot-rag-heldout-dataset/issue.md` · **Luật chung:** [templates/README](../../../../templates/README.md)
 
 | | |
 |---|---|

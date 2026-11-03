@@ -1,3 +1,3 @@
-from app.infra.storage.object_store import ObjectDownloadError, SignedUrlObjectStore
+from app.infra.storage.object_store import ObjectDownloadError, ObjectStore
 
-__all__ = ["ObjectDownloadError", "SignedUrlObjectStore"]
+__all__ = ["ObjectDownloadError", "ObjectStore"]

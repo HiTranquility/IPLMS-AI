@@ -61,7 +61,7 @@ Kiểm chứng (2026-10-31, sandbox cloud):
 
 | Việc | Người nhận | Hạn | Ưu tiên | Trạng thái |
 |---|---|---|---|---|
-| Viết lại lịch sử Git IPLMS-AI để xoá mật khẩu cũ (mọi nhánh + tag) rồi force push | HiTranquility |  | 🔴 | ✅ 2026-10-31: chủ repo chạy `evidence/clean_history.sh --push` (59 chỗ thay, 4 nhánh + 5 tag). Kiểm bằng clone mirror mới: 0 lần trên mọi nhánh/tag và commit message |
+| Viết lại lịch sử Git IPLMS-AI để xoá mật khẩu cũ (mọi nhánh + tag) rồi force push | HiTranquility |  | 🔴 | ✅ 2026-10-31: chủ repo chạy `evidence/clean-history.sh --push` (59 chỗ thay, 4 nhánh + 5 tag). Kiểm bằng clone mirror mới: 0 lần trên mọi nhánh/tag và commit message |
 | Nhờ GitHub Support xoá các ref `refs/pull/*` của PR cũ còn trỏ tới commit cũ (36 lần xuất hiện) và cache; repo hiện private | HiTranquility |  | 🟠 | 🆕 New |
 | Đổi mật khẩu ở mọi DB/máy từng dùng giá trị cũ | HiTranquility |  | 🔴 | 🆕 New |
 | Sửa `backend/docker-compose.yml` (service AI build) sang `context: ../ai`, `dockerfile: Dockerfile`, trước khi nâng gitlink `ai` ở umbrella (ADR-0006 › Caller) | HiTranquility |  | 🔴 | 🛠️ HiTranquility/IPLMS-Backend#65 (nhánh cùng tên); merge cùng #127 rồi mới nâng gitlink |

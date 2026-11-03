@@ -4,11 +4,11 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🛠️ Fixing |
+| **Trạng thái** | ✅ Fixed |
 | **Người nhận** | @HiTranquility |
 | **Hạn** |  |
 | **Ưu tiên** | 🔴 |
-| **Ngày đóng** |  |
+| **Ngày đóng** | 2026-11-03 |
 | **Ngày báo** | 2026-11-03 |
 | **Người báo** | Claude Code, khi rà lỗi còn tồn (2026-11-03) |
 | **Môi trường** | GitHub Actions, `develop` `a7de8d0` |

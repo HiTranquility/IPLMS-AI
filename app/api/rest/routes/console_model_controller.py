@@ -1,61 +1,18 @@
 """Models & Connections trong AI Console (ISSUE-022 chặng 2, IPLMS REQ-020 F2–F3, ADR-0061)."""
-from typing import List, Optional
-
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.rest.console_access import require_permission
 from app.api.rest.schemas.base_response import BaseResponse
+from app.api.rest.schemas.console_model_schema import (
+    Connection,
+    ConnectionCreate,
+    ConnectionDraft,
+    Reason,
+    TestResult,
+)
 from app.core.console import ConsoleActor, model_connection_service
 
 router = APIRouter(prefix="/models", tags=["AI Console models"])
-
-
-class ConnectionDraft(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    name: str = Field(default="Thử nhanh", max_length=80)
-    provider: str = Field(max_length=16)
-    base_url: str = Field(max_length=500)
-    # Tên biến env chứa key trên AI host — KHÔNG phải giá trị key (ADR-0061 §6).
-    secret_env_name: str = Field(default="", max_length=64)
-
-
-class ConnectionCreate(ConnectionDraft):
-    name: str = Field(max_length=80)
-    reason: str = Field(max_length=300)
-    replaces_id: str = Field(default="", max_length=36)
-
-
-class Reason(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    reason: str = Field(max_length=300)
-
-
-class Connection(BaseModel):
-    id: str
-    name: str
-    provider: str
-    base_url: str
-    secret_env_name: str
-    status: str
-    replaces_id: str
-    created_by: str
-    created_at: str
-    disabled_by: str
-    disabled_at: str
-    last_tested_at: str
-    last_test_ok: Optional[bool]
-    last_test_error: str
-    last_test_latency_ms: Optional[int]
-    last_test_models: List[str]
-
-
-class TestResult(BaseModel):
-    ok: bool
-    error: str
-    latency_ms: Optional[int]
-    models: List[str]
-    detail: str
 
 
 @router.get("/connections", response_model=BaseResponse[Connection])

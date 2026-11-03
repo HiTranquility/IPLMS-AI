@@ -130,6 +130,7 @@ api/rest/routes/anpr_controller.py  ─┘
 `routes/` (endpoint) · `schemas/` (body/response Pydantic) · `middlewares/` · `router.py` (gom route cho cả `api_router` cổng 8000 và `console_router` cổng 8090).
 
 **[MUST]** File REST đặt `<domain>_controller.py`: `anpr_controller.py`, `health_controller.py`. Đổi tên file phải sửa import ở `router.py`; tên file không đổi URL public. Ngoại lệ `health.py` đã được gỡ ngày 2026-10-14.
+**[MUST]** Mọi Pydantic request/response model (`BaseModel`) của REST đặt tại `app/api/rest/schemas/<domain>_schema.py`, **[NEVER]** khai báo class `BaseModel` trực tiếp bên trong `app/api/rest/routes/*_controller.py`.
 
 ## 4. Config
 
@@ -152,7 +153,7 @@ api/rest/routes/anpr_controller.py  ─┘
 
 ## 6. [GOTCHA] Nạp model — cái bẫy đã cắn một lần
 
-`anpr/models.py` giữ model ở module scope với cờ `initialized`. Bản cũ bật cờ **trước** khi nạp xong:
+`anpr/model_loader.py` giữ model ở module scope với cờ `initialized`. Bản cũ bật cờ **trước** khi nạp xong:
 
 > *"Bật trước (bản cũ) khiến request thứ hai đi tiếp với reader vẫn là None → FAILED_PRECONDITION ngay sau mỗi lần restart pod."*
 

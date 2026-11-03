@@ -29,7 +29,7 @@ class EnsureModelsLoadedTest(unittest.TestCase):
         fake_easyocr = types.SimpleNamespace(Reader=FlakyReader)
         no_yolo = patch.object(
             anpr_models,
-            "get_model_artifact_registry",
+            "get_artifact_store",
             side_effect=ArtifactResolutionError("không có best.pt trong test"),
         )
         with patch.dict(sys.modules, {"easyocr": fake_easyocr}), no_yolo:

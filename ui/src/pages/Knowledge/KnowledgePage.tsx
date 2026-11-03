@@ -30,6 +30,8 @@ import styles from './KnowledgePage.module.css';
 
 const newDocumentId = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : '');
 
+export const KNOWLEDGE_MAX_FILE_BYTES = 8 * 1024 * 1024;
+
 const formatFileSize = (bytes: number): string => {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -140,9 +142,11 @@ export function KnowledgePage() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const hasOversizedFile = files.some((f) => f.size > KNOWLEDGE_MAX_FILE_BYTES);
+
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (files.length === 0 || isBatchIngesting) return;
+    if (files.length === 0 || hasOversizedFile || isBatchIngesting) return;
 
     if (files.length === 1) {
       const form = new FormData();
@@ -341,26 +345,39 @@ export function KnowledgePage() {
                     {kp.clearAll}
                   </button>
                 </div>
-                {files.map((file, idx) => (
-                  <div key={`${file.name}-${idx}`} className={styles.fileChip}>
-                    <div className={styles.fileChipName} title={file.name}>
-                      <FileText size={14} className={styles.fileIcon} />
-                      <span>{file.name}</span>
-                      <span className={styles.fileSize}>({formatFileSize(file.size)})</span>
-                    </div>
-                    <button
-                      type="button"
-                      className={styles.removeFileBtn}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeFile(idx);
-                      }}
-                      aria-label={kp.removeFileAria(file.name)}
+                {files.map((file, idx) => {
+                  const isTooLarge = file.size > KNOWLEDGE_MAX_FILE_BYTES;
+                  return (
+                    <div
+                      key={`${file.name}-${idx}`}
+                      className={`${styles.fileChip} ${isTooLarge ? styles.fileChipError : ''}`}
                     >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
+                      <div className={styles.fileChipInfo}>
+                        <div className={styles.fileChipName} title={file.name}>
+                          <FileText size={14} className={styles.fileIcon} />
+                          <span>{file.name}</span>
+                          <span className={styles.fileSize}>({formatFileSize(file.size)})</span>
+                        </div>
+                        {isTooLarge && (
+                          <span className={styles.fileErrorText} role="alert">
+                            {kp.fileTooLarge(file.name, formatFileSize(file.size))}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.removeFileBtn}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeFile(idx);
+                        }}
+                        aria-label={kp.removeFileAria(file.name)}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -420,7 +437,7 @@ export function KnowledgePage() {
                 type="submit"
                 variant="primary"
                 loading={ingest.isPending || isBatchIngesting}
-                disabled={files.length === 0}
+                disabled={files.length === 0 || hasOversizedFile}
               >
                 {files.length > 1 ? kp.btnBatchIngest(files.length) : t.tools.ingest}
               </Button>

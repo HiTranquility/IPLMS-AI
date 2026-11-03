@@ -11,7 +11,7 @@ from app.infra.ocr.reader import get_easyocr_reader
 from app.infra.model_registry import (
     ArtifactResolutionError,
     ModelArtifactSpec,
-    get_model_artifact_registry,
+    get_artifact_store,
 )
 from app.util.logger import logger
 
@@ -59,7 +59,7 @@ def ensure_models_loaded() -> None:
 def _load_yolo(vision) -> None:
     """YOLO là tầng tuỳ chọn: thiếu nó thì OCR chạy trên cả ảnh (`det_conf=None`)."""
     try:
-        model_path = get_model_artifact_registry().resolve(
+        model_path = get_artifact_store().resolve(
             ModelArtifactSpec(
                 name="plate-detector",
                 version=vision.yolo_model_version,

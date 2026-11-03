@@ -8,7 +8,7 @@ from typing import Any, AsyncGenerator, Dict, Iterable, List, Optional
 from app.config import get_config
 from app.core.copilot.guardrails import guardrail_manager, output_guard
 from app.core.copilot.messages import NO_CONTEXT_ANSWER
-from app.infra.monitoring.ai_logger import ai_telemetry_logger
+from app.infra.monitoring.ai_logger import ai_logger
 from app.core.exceptions import EmbeddingError, ModelNotLoadedError, RagPipelineError
 from app.infra.database.pgvector_client import pgvector_client
 from app.infra.embedding import embedding_client
@@ -409,7 +409,7 @@ class RagPipelineEngine:
         if not guard_in.is_safe:
             refusal = guard_in.refusal_message or NO_CONTEXT_ANSWER
             lat = round((time.perf_counter() - start_time) * 1000.0, 2)
-            ai_telemetry_logger.record(
+            ai_logger.record(
                 endpoint="/api/copilot/stream",
                 model=getattr(self.llm, "model", "local"),
                 prompt_version=PROMPT_VERSION,
@@ -479,7 +479,7 @@ class RagPipelineEngine:
         if not guard_scope.is_safe:
             refusal = guard_scope.refusal_message or NO_CONTEXT_ANSWER
             lat = round((time.perf_counter() - start_time) * 1000.0, 2)
-            ai_telemetry_logger.record(
+            ai_logger.record(
                 endpoint="/api/copilot/stream",
                 model=getattr(self.llm, "model", "local"),
                 prompt_version=PROMPT_VERSION,
@@ -543,7 +543,7 @@ class RagPipelineEngine:
         usage["input_tokens"] = in_toks
         usage["output_tokens"] = out_toks
 
-        ai_telemetry_logger.record(
+        ai_logger.record(
             endpoint="/api/copilot/stream",
             model=str(getattr(llm, "model", "local")),
             prompt_version=PROMPT_VERSION,

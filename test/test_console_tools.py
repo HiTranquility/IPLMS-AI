@@ -413,6 +413,13 @@ class ConsoleSettingsAndToolsEndpointTest(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(sessions[0]["is_current"])
         self.assertFalse(sessions[1]["is_current"])
 
+        # AUDIT-007 B1: vai trò không có ai:member:manage chỉ xem được phiên của chính mình
+        store.list_active_sessions.reset_mock()
+        await svc.list_sessions(LEAD)
+        store.list_active_sessions.assert_awaited_once_with("m-lead", include_all=False)
+        with self.assertRaises(ConsoleAccessDenied):
+            await svc.list_sessions(ANNOTATOR)
+
     async def test_revoke_active_session_guards(self):
         svc, _, _, store = service()
         store.revoke_target_session.return_value = True
@@ -425,6 +432,18 @@ class ConsoleSettingsAndToolsEndpointTest(unittest.IsolatedAsyncioTestCase):
         # Thu hồi phiên khác của người dùng -> Thành công
         res = await svc.revoke_session_by_id(current_actor, "sess-other-02", "Dọn dẹp phiên cũ")
         self.assertTrue(res["revoked"])
+        store.revoke_target_session.assert_awaited_once_with(
+            "sess-other-02", "m-admin", allow_any_member=True, reason="Dọn dẹp phiên cũ"
+        )
+
+        # AUDIT-007 B1: vai trò không có ai:member:manage chỉ thu hồi được phiên của chính mình
+        store.revoke_target_session.reset_mock()
+        await svc.revoke_session_by_id(LEAD, "sess-other-02", "Tự thu hồi")
+        store.revoke_target_session.assert_awaited_once_with(
+            "sess-other-02", "m-lead", allow_any_member=False, reason="Tự thu hồi"
+        )
+        with self.assertRaises(ConsoleAccessDenied):
+            await svc.revoke_session_by_id(ANNOTATOR, "sess-other-02")
 
     async def test_engine_reload_llm_action(self):
         svc, _, _, store = service()

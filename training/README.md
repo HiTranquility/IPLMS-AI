@@ -60,7 +60,7 @@ Chi tiết định dạng key checkpoint: [`../checkpoint-config-guide.md`](../c
 
 ```bash
 # In kiến trúc + số tham số + torchsummary
-python training/checkmodel.py
+python training/check_model.py
 
 # Đếm FLOPs / MACs / params (NetV2)
 python training/ptflops_count.py
@@ -112,7 +112,7 @@ CNN này là **bộ phân loại ảnh** — trong dịch vụ nó chỉ dùng l
    Với object storage, đặt `AI_VEHICLE_ARTIFACT_URL`, `AI_VEHICLE_ARTIFACT_SHA256`
    và `AI_VEHICLE_MODEL_VERSION`; URL chỉ là quyền tải ngắn hạn, version + hash
    mới là định danh bền của model.
-Phần nhận diện **biển số** do YOLO+EasyOCR trong [`../app/core/vision/engines/anpr/engine.py`](../app/core/vision/engines/anpr/engine.py) đảm nhiệm (không cần train lại ở đây; weights `best.pt` đã có sẵn).
+Phần nhận diện **biển số** do YOLO+EasyOCR trong [`../app/core/vision/engines/anpr/anpr_engine.py`](../app/core/vision/engines/anpr/anpr_engine.py) đảm nhiệm (không cần train lại ở đây; weights `best.pt` đã có sẵn).
 
 > **[GOTCHA] Đừng train phân biệt sedan với SUV — lớp dịch vứt bỏ khác biệt đó.**
 > Hai đầu **cố ý** nói hai từ vựng: AI trả nhãn của model, backend sống bằng
@@ -136,7 +136,7 @@ Phần nhận diện **biển số** do YOLO+EasyOCR trong [`../app/core/vision/
 | `train_cifar.py` | Train NetV2 trên CIFAR-10/100 (tải tự động) |
 | `train_imagefolder.py` | Train NetV1/NetV2 trên ImageFolder (Animal-10) |
 | `test_animal10.py` | Eval NetV1 trên test set Animal-10 |
-| `checkmodel.py` | In kiến trúc + summary |
+| `check_model.py` | In kiến trúc + summary |
 | `ptflops_count.py` | Đếm FLOPs/MACs/params |
 | `draw_graph.py` | Vẽ biểu đồ acc/loss từ log |
 | `prepare_cifar.py` | Tạo CIFAR ImageFolder (cho train_imagefolder) |

@@ -1,61 +1,22 @@
 """Copilot Lab trong AI Console: số liệu dùng, lượt chat đã che PII, chấm đúng/sai (P1c)."""
-from typing import List, Literal, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel, Field
 
 from app.api.rest.console_access import require_permission
 from app.api.rest.schemas.base_response import BaseResponse
+from app.api.rest.schemas.console_copilot_schema import (
+    PromoteEvalIn,
+    Review,
+    ReviewStats,
+    Reviewed,
+    Turn,
+    TurnReview,
+)
 from app.core.console import ConsoleActor, copilot_lab_service
 from app.core.copilot import UsageSummary
 
 router = APIRouter(prefix="/copilot", tags=["AI Console Copilot Lab"])
-
-
-class ReviewStats(BaseModel):
-    window_days: int
-    reviewed: int
-    correct: int
-    incorrect: int
-    unsafe: int
-    accuracy: Optional[float]
-
-
-class TurnReview(BaseModel):
-    verdict: str
-    note: str
-    reviewer: str
-    reviewed_at: str
-
-
-class Turn(BaseModel):
-    turn_id: str
-    at: str
-    task: str
-    status: str
-    model: str
-    prompt_version: str
-    input_tokens: Optional[int]
-    output_tokens: Optional[int]
-    latency_ms: int
-    cost_usd: Optional[float]
-    user_role: str
-    parking_lot_id: str
-    query: str
-    answer: str
-    error_code: str
-    feedback: Optional[int]
-    review: Optional[TurnReview]
-
-
-class Review(BaseModel):
-    verdict: Literal["CORRECT", "INCORRECT", "UNSAFE"]
-    note: str = Field("", max_length=500)
-
-
-class Reviewed(BaseModel):
-    turn_id: str
-    verdict: str
 
 
 @router.get("/usage", response_model=BaseResponse[UsageSummary])
@@ -94,13 +55,6 @@ async def review(
 ) -> BaseResponse[Reviewed]:
     await copilot_lab_service.review_turn(actor, turn_id, payload.verdict, payload.note)
     return BaseResponse.ok([Reviewed(turn_id=turn_id, verdict=payload.verdict)], "Đã chấm lượt này.")
-
-
-class PromoteEvalIn(BaseModel):
-    query: str = Field(..., min_length=1, max_length=2000)
-    expected_behavior: Literal["ANSWER", "REFUSE"] = "ANSWER"
-    category: str = Field("regulation", max_length=64)
-    note: str = Field("", max_length=500)
 
 
 @router.post("/turns/{turn_id}/promote-eval", response_model=BaseResponse[dict])

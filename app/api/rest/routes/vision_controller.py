@@ -3,8 +3,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from app.api.rest.developer_access import require_developer_access
 from app.api.rest.image_upload import read_image_upload
-from pydantic import BaseModel
-
+from app.api.rest.schemas.base_response import BaseResponse
+from app.api.rest.schemas.vision_schema import VerifyMatchRequest, VerifyMatchResponse
 from app.core.vision import (
     AnprItem,
     AnprService,
@@ -12,22 +12,8 @@ from app.core.vision import (
     VehicleMatchResult,
     anti_fraud_service,
 )
-from app.api.rest.schemas.base_response import BaseResponse
 
 router = APIRouter(prefix="/vision", tags=["Developer Vision"], dependencies=[Depends(require_developer_access)])
-
-
-class VerifyMatchRequest(BaseModel):
-    expected_vehicle_type: str
-    current_vehicle_type: str
-    checkin_crop_url: Optional[str] = ""
-    checkout_crop_url: Optional[str] = ""
-
-
-class VerifyMatchResponse(BaseModel):
-    is_matched: bool
-    similarity_score: float
-    mismatch_reason: str
 
 
 @router.post("/recognize", response_model=BaseResponse[AnprItem])

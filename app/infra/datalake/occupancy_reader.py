@@ -17,7 +17,7 @@ def _instant(value: str) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
-class OccupancyHistoryReader:
+class OccupancyReader:
     def __init__(self, base_path: str | Path | None = None, slot_minutes: int | None = None):
         config = get_config().datalake
         self.base_path = Path(base_path or config.local_path)
@@ -184,4 +184,4 @@ class OccupancyHistoryReader:
         return latest
 
 
-occupancy_reader = OccupancyHistoryReader()
+occupancy_reader = OccupancyReader()

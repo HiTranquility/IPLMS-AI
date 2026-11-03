@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from app.config import get_config
-from app.infra.datalake import ParkingSessionExporter
+from app.infra.datalake import SessionExporter
 
 
 def main() -> int:
@@ -46,7 +46,7 @@ def main() -> int:
         )
         return 0
 
-    result = ParkingSessionExporter(
+    result = SessionExporter(
         db_url=args.database_url,
         root_path=args.output,
     ).export(

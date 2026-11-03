@@ -45,6 +45,7 @@ export function SettingsPage() {
   const [savedCompute, setSavedCompute] = useState(false);
   const [savedPolicy, setSavedPolicy] = useState(false);
   const [engineMsg, setEngineMsg] = useState(false);
+  const [confirmRevokeSessionId, setConfirmRevokeSessionId] = useState<string | null>(null);
 
   const canReadChatlog = useCan('ai:chatlog:read');
   const canPromptEdit = useCan('ai:prompt:edit');
@@ -845,26 +846,50 @@ export function SettingsPage() {
                         </td>
                         <td>
                           {!sess.is_current && (
-                            <Button
-                              type="button"
-                              variant="danger"
-                              aria-label={s.revokeSessionFor(
-                                i + 1,
-                                sess.display_name,
-                                sess.created_at ? fmtDateTime(sess.created_at) : DASH,
-                              )}
-                              loading={
-                                revokeSession.isPending &&
-                                revokeSession.variables?.sessionId === sess.session_id
-                              }
-                              onClick={() => {
-                                if (window.confirm(s.revokeSessionConfirm)) {
-                                  revokeSession.mutate({ sessionId: sess.session_id });
-                                }
-                              }}
-                            >
-                              {s.revokeSessionBtn}
-                            </Button>
+                            confirmRevokeSessionId === sess.session_id ? (
+                              <div className={styles.confirmGroup}>
+                                <Button
+                                  type="button"
+                                  variant="danger"
+                                  loading={
+                                    revokeSession.isPending &&
+                                    revokeSession.variables?.sessionId === sess.session_id
+                                  }
+                                  onClick={() => {
+                                    revokeSession.mutate(
+                                      { sessionId: sess.session_id },
+                                      { onSettled: () => setConfirmRevokeSessionId(null) },
+                                    );
+                                  }}
+                                >
+                                  {s.confirmRevokeBtn}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  disabled={
+                                    revokeSession.isPending &&
+                                    revokeSession.variables?.sessionId === sess.session_id
+                                  }
+                                  onClick={() => setConfirmRevokeSessionId(null)}
+                                >
+                                  {s.cancelRevokeBtn}
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="danger"
+                                aria-label={s.revokeSessionFor(
+                                  i + 1,
+                                  sess.display_name,
+                                  sess.created_at ? fmtDateTime(sess.created_at) : DASH,
+                                )}
+                                onClick={() => setConfirmRevokeSessionId(sess.session_id)}
+                              >
+                                {s.revokeSessionBtn}
+                              </Button>
+                            )
                           )}
                         </td>
                       </tr>

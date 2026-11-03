@@ -1,15 +1,22 @@
 """Đăng nhập AI Console: Google → TOTP, mật khẩu khẩn cấp, step-up, đăng xuất, /me."""
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Request, Response
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel, Field
 
 from app.api.rest.console_access import (
     FLOW_COOKIE, clear_flow_cookie, clear_session_cookie, session_token,
     set_flow_cookie, set_session_cookie,
 )
 from app.api.rest.schemas.base_response import BaseResponse
+from app.api.rest.schemas.console_auth_schema import (
+    Enrollment,
+    LoginState,
+    Me,
+    PasswordLogin,
+    StepUp,
+    TotpCode,
+)
 from app.core.console import access_policy, auth_service
 from app.core.exceptions import ConsoleAuthError
 from app.util.logger import logger
@@ -17,39 +24,6 @@ from app.util.logger import logger
 router = APIRouter(tags=["AI Console auth"])
 
 _UI_HOME = "/"
-
-
-class PasswordLogin(BaseModel):
-    email: str = Field(max_length=254)
-    password: str = Field(max_length=256)
-
-
-class TotpCode(BaseModel):
-    code: str = Field(min_length=6, max_length=6)
-
-
-class StepUp(TotpCode):
-    reason: str = Field(max_length=500)
-
-
-class LoginState(BaseModel):
-    mfa_required: bool
-
-
-class Enrollment(BaseModel):
-    otpauth_uri: str
-
-
-class Me(BaseModel):
-    member_id: str
-    email: str
-    display_name: str
-    roles: List[str]
-    permissions: List[str]
-    mfa_done: bool
-    totp_enabled: bool
-    # Đã có khoá (từ CLI) nhưng chưa xác nhận: nhập mã luôn, không tạo khoá mới.
-    totp_pending: bool
 
 
 @router.get("/auth/google/start")

@@ -21,6 +21,7 @@ class LlamaServerManager:
     def __init__(self) -> None:
         self._process: Optional[subprocess.Popen] = None
         self._is_started: bool = False
+        atexit.register(self.stop_server)
 
     def is_server_alive(self, url: str | None = None) -> bool:
         """Kiểm tra llama-server có đang phản hồi tại /health hay không."""
@@ -112,7 +113,6 @@ class LlamaServerManager:
                 stderr=subprocess.DEVNULL,
                 cwd=str(bin_path.parent),
             )
-            atexit.register(self.stop_server)
         except Exception as exc:
             raise RagPipelineError(f"Không thể khởi chạy llama-server: {exc}") from exc
 

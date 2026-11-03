@@ -1,8 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, within } from '@testing-library/react';
+import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 import { I18nProvider } from '@/i18n/I18nProvider';
+import { DocumentPreviewDrawer } from '@/pages/Knowledge/components/DocumentPreviewDrawer';
+import { KNOWLEDGE_MAX_FILE_BYTES, KnowledgePage } from '@/pages/Knowledge/KnowledgePage';
 import { me, mockApi, ok, renderWithProviders } from '@/test/utils';
 import SettingsPage from './SettingsPage';
 
@@ -96,5 +99,133 @@ describe('SettingsPage — model đang chạy theo tác vụ (REQ-020 X2, ADR-00
     expect(within(table).getByText('Không đọc được kho revision')).toBeTruthy();
     expect(document.getElementById('llm-model-input')).toBeNull();
     expect(document.getElementById('llm-provider-select')).toBeNull();
+  });
+
+  it('xác nhận thu hồi phiên ngay trên dòng thay vì window.confirm (AUDIT-007 B6)', async () => {
+    const revoked: string[] = [];
+    mockApi((url, init) => {
+      if (url.endsWith('/me')) return ok(me({ permissions: ['ai:metrics:read', 'ai:member:manage'] }));
+      if (url.endsWith('/tools/settings')) {
+        return ok({ hardware: {}, policy: {}, engines: {}, compute: {}, models: [] });
+      }
+      if (url.endsWith('/tools/sessions')) {
+        return ok(
+          {
+            session_id: 'sess-current',
+            member_id: 'm-1',
+            display_name: 'Admin 1',
+            email: 'a1@iplms.internal',
+            created_at: '2026-10-27T08:00:00Z',
+            last_seen_at: '2026-10-27T08:05:00Z',
+            mfa_verified: true,
+            is_current: true,
+          },
+          {
+            session_id: 'sess-other',
+            member_id: 'm-2',
+            display_name: 'Member 2',
+            email: 'm2@iplms.internal',
+            created_at: '2026-10-27T07:00:00Z',
+            last_seen_at: '2026-10-27T07:30:00Z',
+            mfa_verified: true,
+            is_current: false,
+          },
+        );
+      }
+      if (url.includes('/tools/sessions/sess-other/revoke') && init?.method === 'POST') {
+        revoked.push('sess-other');
+        return ok({ session_id: 'sess-other', revoked: true });
+      }
+      return undefined;
+    });
+
+    renderWithProviders(<SettingsPage />);
+    fireEvent.click(screen.getByRole('tab', { name: /Phiên đăng nhập/i }));
+    const revokeBtn = await screen.findByRole('button', { name: /Thu hồi phiên #2 của Member 2/i });
+    fireEvent.click(revokeBtn);
+
+    // Hiện nút Xác nhận và Hủy ngay trên dòng
+    const cancelBtn = screen.getByRole('button', { name: 'Hủy' });
+    expect(screen.getByRole('button', { name: 'Xác nhận' })).toBeTruthy();
+    fireEvent.click(cancelBtn);
+    expect(revoked).toHaveLength(0);
+
+    // Mở lại và bấm Xác nhận
+    fireEvent.click(screen.getByRole('button', { name: /Thu hồi phiên #2 của Member 2/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Xác nhận' }));
+    await vi.waitFor(() => expect(revoked).toEqual(['sess-other']));
+  });
+});
+
+describe('KnowledgePage & DocumentPreviewDrawer (AUDIT-007 B5, B7)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('DocumentPreviewDrawer focus nút đóng khi mở và trả focus về nút mở khi đóng (AUDIT-007 B5)', async () => {
+    mockApi((url) => {
+      if (url.includes('/tools/knowledge/documents/')) {
+        return ok({ document_id: 'doc-1', version_no: 1, total: 0, chunks: [] });
+      }
+      return undefined;
+    });
+
+    function Harness() {
+      const [open, setOpen] = useState(false);
+      return (
+        <div>
+          <button type="button" onClick={() => setOpen(true)}>
+            Mở xem trước
+          </button>
+          <DocumentPreviewDrawer
+            document={
+              open
+                ? {
+                    id: 'doc-1',
+                    title: 'Quy chế bãi xe',
+                    source: 'quy-che.pdf',
+                    category: 'regulation',
+                    chunk_count: 1,
+                    content: 'Nội dung mẫu',
+                  }
+                : null
+            }
+            onClose={() => setOpen(false)}
+          />
+        </div>
+      );
+    }
+
+    renderWithProviders(<Harness />);
+    const triggerBtn = screen.getByRole('button', { name: 'Mở xem trước' });
+    triggerBtn.focus();
+    expect(document.activeElement).toBe(triggerBtn);
+
+    fireEvent.click(triggerBtn);
+    const closeBtn = screen.getByRole('button', { name: 'Đóng ngăn kéo xem trước' });
+    expect(document.activeElement).toBe(closeBtn);
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(document.activeElement).toBe(triggerBtn);
+  });
+
+  it('KnowledgePage báo lỗi ngay trên dòng khi chọn tệp vượt 8 MB và khoá nút nạp (AUDIT-007 B7)', async () => {
+    mockApi((url) => {
+      if (url.includes('/tools/knowledge/documents')) return ok();
+      return undefined;
+    });
+
+    renderWithProviders(<KnowledgePage />);
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const bigFile = new File(['x'], 'oversized.pdf', { type: 'application/pdf' });
+    Object.defineProperty(bigFile, 'size', { value: KNOWLEDGE_MAX_FILE_BYTES + 1024 });
+
+    fireEvent.change(input, { target: { files: [bigFile] } });
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('oversized.pdf');
+    expect(alert.textContent).toContain('8 MB');
+
+    const submitBtn = screen.getByRole('button', { name: 'Nạp bản nháp' });
+    expect((submitBtn as HTMLButtonElement).disabled).toBe(true);
   });
 });

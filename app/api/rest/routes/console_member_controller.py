@@ -1,48 +1,19 @@
 """Quản lý thành viên/vai trò và đọc nhật ký AI Console (P1a qua REST)."""
-from typing import List
-
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel, Field
 
 from app.api.rest.console_access import require_permission
 from app.api.rest.schemas.base_response import BaseResponse
+from app.api.rest.schemas.console_member_schema import (
+    AuditEntry,
+    Changed,
+    Invite,
+    Member,
+    RoleChange,
+)
 from app.core.console.dtos import ConsoleActor
 from app.core.console import member_service
 
 router = APIRouter(tags=["AI Console members"])
-
-
-class Invite(BaseModel):
-    email: str = Field(max_length=254)
-    display_name: str = Field(max_length=120)
-    reason: str = Field(max_length=500)
-
-
-class RoleChange(BaseModel):
-    reason: str = Field(max_length=500)
-
-
-class Member(BaseModel):
-    id: str
-    email: str
-    display_name: str
-    status: str
-    created_at: str
-    roles: List[str]
-
-
-class Changed(BaseModel):
-    changed: bool
-
-
-class AuditEntry(BaseModel):
-    id: str
-    actor_id: str
-    action: str
-    target_type: str
-    target_id: str
-    reason: str
-    at: str
 
 
 @router.get("/members", response_model=BaseResponse[Member])

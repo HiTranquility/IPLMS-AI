@@ -102,6 +102,17 @@ def naming_violations(core: Path) -> list[str]:
                     out.append(
                         f"{path.as_posix()}: thiếu singleton `{path.stem} = {expected_cls}(...)` khớp tên file (ADR-0005)"
                     )
+    routes_dir = core.parent / "api" / "rest" / "routes"
+    if routes_dir.is_dir():
+        for path in sorted(routes_dir.glob("*.py")):
+            if path.name == "__init__.py":
+                continue
+            text = path.read_text(encoding="utf-8")
+            if CLASS_DEF_RE.search(text):
+                out.append(
+                    f"{path.as_posix()}: không khai báo class trực tiếp trong routes/*_controller.py; "
+                    "đặt Pydantic schema trong app/api/rest/schemas/<domain>_schema.py (AI_CONVENTIONS §3)"
+                )
     return out
 
 

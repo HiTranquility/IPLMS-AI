@@ -14,7 +14,7 @@ from uuid import uuid4
 from app.util.logger import logger
 
 
-class AiTelemetryLogger:
+class AiLogger:
     """Ghi vết chi tiết từng yêu cầu AI (tokens, latency, prompt version, cost)."""
 
     def __init__(self, log_path: Optional[Path] = None, max_memory_entries: int = 1000) -> None:
@@ -150,4 +150,4 @@ class AiTelemetryLogger:
         }
 
 
-ai_telemetry_logger = AiTelemetryLogger()
+ai_logger = AiLogger()

@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 from app.infra.model_registry import (
     ArtifactResolutionError,
-    ModelArtifactRegistry,
+    ArtifactStore,
     ModelArtifactSpec,
 )
 
@@ -19,9 +19,9 @@ class _FakeResponse(io.BytesIO):
         self.headers = {"Content-Length": str(len(content))}
 
 
-class ModelArtifactRegistryTest(unittest.TestCase):
-    def _registry(self, root: Path) -> ModelArtifactRegistry:
-        return ModelArtifactRegistry(
+class ArtifactStoreTest(unittest.TestCase):
+    def _registry(self, root: Path) -> ArtifactStore:
+        return ArtifactStore(
             ai_root=root,
             cache_dir="var/model-cache",
             timeout_seconds=10,

@@ -4,7 +4,7 @@ import unittest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.infra.monitoring.ai_logger import ai_telemetry_logger
+from app.infra.monitoring.ai_logger import ai_logger
 
 
 class CopilotStreamingAndTelemetryApiTest(unittest.TestCase):

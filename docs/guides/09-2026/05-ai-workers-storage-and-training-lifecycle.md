@@ -77,9 +77,9 @@ phải bằng chứng đã chạy production.
 | `backend/src/infrastructures/Storage/storage.provider.ts`, `StorageProvider` | Có upload tối ưu và `uploadRaw` giữ bytes | Tái sử dụng raw path sau khi hoàn thiện metadata/MIME |
 | `backend/src/infrastructures/Storage/adapters/s3.adapter.ts`, `S3Adapter` | Có S3 client, endpoint tuỳ chỉnh, presigned PUT | Có nền S3-compatible; chưa phải data-lake publisher |
 | `backend/src/infrastructures/Storage/adapters/cloudinary.adapter.ts`, `upload` | Upload và trả secure_url, chưa đặt authenticated type | URL HTTPS không tự chứng minh media private |
-| `backend/src/infrastructures/Message/adapters/rabbitmq.adapter.ts`, `RabbitMQAdapter` | Durable exchange/queue, persistent message, ACK khi handler xong; lỗi vào DLQ | Có consumer nền, chưa phải job framework hoàn chỉnh |
+| `backend/src/infrastructures/Messaging/adapters/rabbitmq.adapter.ts`, `RabbitMQAdapter` | Durable exchange/queue, persistent message, ACK khi handler xong; lỗi vào DLQ | Có consumer nền, chưa phải job framework hoàn chỉnh |
 | Cùng class, `connect()` | Dùng `createChannel`; chưa thấy confirm/prefetch/reconnect trong adapter | Cần tăng độ tin cậy và giới hạn concurrency trước job AI |
-| `backend/src/infrastructures/Message/messaging.provider.ts`, `publish()` | Publish bắt lỗi rồi chỉ log | Không dùng như xác nhận giao việc bền vững |
+| `backend/src/infrastructures/Messaging/messaging.provider.ts`, `publish()` | Publish bắt lỗi rồi chỉ log | Không dùng như xác nhận giao việc bền vững |
 | `staff-operation.service.ts`, `parking-session.entity.ts` | Session đã lưu key/provider; check-in event hiện chưa mang object ref | Bước kế tiếp là capture/outbox event bền |
 | `ai/app/core/vision/services/anpr_service.py`, `recognize_bytes()` | gRPC mặc định không lưu file; REST lưu local | Python inference không nên thành nơi giữ ảnh dài hạn |
 | `ai/app/core/knowledge/services/ingestion_service.py` | Parse → chunk → embed → transaction đã có | Giữ một đường nghiệp vụ cho REST/gRPC |
