@@ -1,11 +1,10 @@
-from app.core.console.dtos import ExportedCapture
-from app.core.dataset.services.evaluation_service import EvaluationSample
 """Map protobuf DatasetService ↔ DTO domain dataset."""
 import json
 from typing import List
 
 from app.api.grpc.generated_stubs import get_stub
-from app.core.dataset.dtos import CurationResult, SnapshotSample
+from app.core.console import ExportedCapture
+from app.core.dataset import CurationResult, EvaluationSample, SnapshotSample
 
 _pb2, _ = get_stub("dataset_service")
 
