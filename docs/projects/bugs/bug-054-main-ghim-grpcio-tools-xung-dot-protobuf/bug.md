@@ -4,11 +4,11 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🆕 New |
-| **Người nhận** |  |
+| **Trạng thái** | ✅ Fixed |
+| **Người nhận** | Antigravity |
 | **Hạn** |  |
 | **Ưu tiên** | 🟠 |
-| **Ngày đóng** |  |
+| **Ngày đóng** | 2026-11-03 |
 | **Ngày báo** | 2026-10-31 |
 | **Người báo** | Claude Code, lúc kiểm bug-053 (2026-10-31) |
 | **Môi trường** | `main` `82af07f` |
@@ -36,4 +36,5 @@ Trên `main`, `requirements-service.txt` và `requirements.txt` ghim `grpcio==1.
 
 ## Sửa / kiểm chứng
 
-<Điền sau khi sửa. Gợi ý: đưa `develop` lên `main` qua PR, thêm nhóm Dependabot gom `grpcio*` + `protobuf`, hoặc `ignore` major/minor của grpcio-tools cho tới khi nâng protobuf 7.>
+- Ghim đồng bộ `grpcio==1.71.0`, `grpcio-tools==1.71.0`, `protobuf==5.29.5` trong `requirements.txt` và `requirements-service.txt`.
+- Cấu hình `.github/dependabot.yml` gom nhóm `grpcio*` + `protobuf` và chặn nâng `grpcio`/`grpcio-tools >= 1.72.0` độc lập với `protobuf`.

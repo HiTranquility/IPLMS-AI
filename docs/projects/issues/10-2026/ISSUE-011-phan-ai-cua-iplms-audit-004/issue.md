@@ -4,8 +4,9 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🚧 In progress |
-| **Người phụ trách** | — |
+| **Trạng thái** | ✅ Done |
+| **Ngày đóng** | 2026-11-03 |
+| **Người phụ trách** | Dương |
 | **Phạm vi** | `ai` |
 | **Bắt nguồn từ** | IPLMS AUDIT-004 |
 | **Ngày tạo** | 2026-10-25 |
@@ -21,12 +22,12 @@ Gom các phần việc `ai` của IPLMS AUDIT-004 đang theo dõi trên BOARD t�
 
 | Việc | Người nhận | Hạn | Ưu tiên | Trạng thái | Ghi chú |
 |---|---|---|---|---|---|
-| Sửa vi phạm so với AI_CONVENTIONS (bổ sung luật lỗi & test doc) | Dương | 2026-10-19 | — | 🚧 Đã có báo cáo AUDIT-004; cập nhật doc & gRPC mapping | — |
+| Sửa vi phạm so với AI_CONVENTIONS (bổ sung luật lỗi & test doc) | Dương | 2026-10-19 | — | ✅ Done | Bổ sung §9 (Bảng quy đổi lỗi → gRPC status) & §10 (Testing) vào `AI_CONVENTIONS.md`; phủ đủ 100% `AiServiceError` subclasses trong `logging_interceptor.py` + `test/test_logging_interceptor.py` |
 
 ## Tiêu chí chấp nhận
 
-- [ ] Mỗi dòng ở bảng trên chuyển sang ✅ kèm bằng chứng (ở đây hoặc ở hồ sơ gốc).
-- [ ] Hết dòng mở → Trạng thái hồ sơ này ✅ + **Ngày đóng**.
+- [x] Mỗi dòng ở bảng trên chuyển sang ✅ kèm bằng chứng (ở đây hoặc ở hồ sơ gốc).
+- [x] Hết dòng mở → Trạng thái hồ sơ này ✅ + **Ngày đóng**.
 
 ## Hồ sơ liên quan
 

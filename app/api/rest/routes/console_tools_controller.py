@@ -307,14 +307,15 @@ async def try_copilot_stream(payload: AskIn, actor: ConsoleActor = Depends(requi
         except Exception as exc:
             logger.exception("Error in try_copilot_stream: %s", exc)
             err_data = {
-                "token": f"\n\n⚠️ Lỗi kết nối mô hình ngôn ngữ (LLM): {exc}",
+                "token": f"\n\n⚠️ Dịch vụ AI (Embedding/LLM) hiện không khả dụng: {exc}",
                 "is_finished": True,
                 "sources": [],
                 "citations": [],
                 "confidence": 0.0,
                 "refused": True,
-                "guardrail_triggered": "connection_error",
-                "prompt_version": "v1",
+                "guardrail_triggered": "FAILED_RESPONSE",
+                "status": "ERROR",
+                "prompt_version": "v2",
                 "turn_id": None,
                 "latency_ms": 0.0,
             }

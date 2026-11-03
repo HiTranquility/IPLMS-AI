@@ -2,7 +2,7 @@
 status: canonical
 audience: AI coding agents + developers
 applies-to: `ai/` — Python service (FastAPI REST + gRPC), ANPR · Forecast · Copilot
-verified-against-code: 2026-10-28 — đọc trực tiếp từ `ai/app/`; §2 kiểm bằng `script/check_core_layout.py` (0 lệch)
+verified-against-code: 2026-11-03 — đọc trực tiếp từ `ai/app/`; §2 kiểm bằng `script/check_core_layout.py` (0 lệch), §9 kiểm bằng `test/test_logging_interceptor.py`
 ---
 
 # 🧠 AI Conventions — IPLMS
@@ -28,7 +28,7 @@ api/          ⟶  core/           ⟶  infra/
 |---|---|---|
 | `app/api/` | gRPC handler · REST route · mapper · schema | `core/` |
 | `app/core/` | domain theo khuôn §2 | `infra/`, `util/`, `config/`; domain khác chỉ qua `__init__` của nó |
-| `app/infra/` | pgvector · Parquet · LLM factory + loader prompt | `config/`, `util/` |
+| `app/infra/` | pgvector · Parquet · LLM factory + loader prompt · embedding · storage · ocr | `config/`, `util/`, `core.exceptions` |
 
 - **[NEVER]** `app/core/` import `grpc`, `_pb2`, hay `generated_stubs`. Đã kiểm: **0 chỗ vi phạm**. Giữ vậy — core không được biết nó đang được gọi qua giao thức nào.
 - **[NEVER]** `app/api/` import thẳng `engines/`. Đã kiểm: **0 chỗ vi phạm**. Handler/route chỉ gọi `services/`.
@@ -110,7 +110,7 @@ api/rest/routes/anpr_controller.py  ─┘
 | `interceptors/` | cắt ngang (hiện có `logging_interceptor.py`) |
 | `generated/`, `generated_stubs.py` | stub sinh tự động |
 
-**[MUST]** Mapper đặt tên theo chiều: `to_<dto>_command` / `to_<dto>_query` cho chiều vào, `to_<...>_response` cho chiều ra — đúng như `vision_mapper.py` đang làm.
+**[MUST]** Mapper đặt tên theo chiều: `to_<dto>_command` / `to_<dto>_query` cho chiều vào, `to_<...>_response` cho chiều ra — đúng như `vision_mapper.py` đang làm. Ngoại lệ: message của server-streaming (`to_*_event`, `to_answer_chunk`).
 **[NEVER]** sửa tay file trong `generated/`. Sinh lại bằng `app/script/compile_proto.py`.
 
 ### REST
@@ -163,6 +163,27 @@ docker build -f ai/Dockerfile .              # ❌ context umbrella cũ — COPY
 Script vận hành chạy tay: sinh stub (`compile_proto.py`), smoke check, seed, eval, red-team. Script kiểm repo chạy trong CI (như `check_core_layout.py`) nằm ở `script/` ngoài `app/`.
 
 **[NEVER]** đặt pytest ở đây. **[NEVER]** để service runtime import từ `app/script/`.
+
+## 9. Bảng quy đổi lỗi → gRPC status
+
+Mọi exception nghiệp vụ kế thừa `AiServiceError` (`app/core/exceptions.py`) và được quy đổi tập trung tại `app/api/grpc/interceptors/logging_interceptor.py` (`_STATUS_BY_EXCEPTION`):
+
+| Nhóm lỗi | Exception | gRPC Status | Hành vi phía Backend (`BaseAiProvider`) |
+|---|---|---|---|
+| Dữ liệu đầu vào sai | `InvalidImageError`, `UnsupportedFormatError`, `NoTextLayerError`, `DocumentTooLargeError`, `WorkflowStateError`, `ValueError` | `INVALID_ARGUMENT` | Trả 400 Bad Request kèm message cho client |
+| Không tìm thấy kết quả | `PlateRecognitionError` | `NOT_FOUND` | Trả 404 / xử lý "không nhận ra biển" |
+| Xác thực / quyền / tốc độ Console | `ConsoleAuthError`, `ConsoleAccessDenied`, `ConsoleRateLimited` | `UNAUTHENTICATED` / `PERMISSION_DENIED` / `RESOURCE_EXHAUSTED` | Trả 401 / 403 / 429 |
+| Cổng nghiệp vụ / cấu hình chưa sẵn sàng | `FraudDetectedError`, `ModelNotLoadedError`, `KnowledgeGateError`, `ModelConfigurationError`, `WorkflowConfigurationError` | `FAILED_PRECONDITION` | Giữ nguyên message nghiệp vụ/cấu hình trả về người dùng (không retry mù) |
+| Hạ tầng phía sau tạm sập | `EmbeddingError`, `RagPipelineError`, `DataLakeError`, `ConsoleStoreError` | `UNAVAILABLE` | Báo `AI_UNAVAILABLE` (503), không ngụy trang thành "chưa tìm thấy thông tin" (`NO_CONTEXT`) |
+| Chưa triển khai thật | `FeatureNotImplementedError` | `UNIMPLEMENTED` | Báo 501, tuyệt đối không bịa số liệu |
+
+- **[MUST]** Thêm lớp con `AiServiceError` mới trong `app/core/exceptions.py` thì bắt buộc khai báo trong `_STATUS_BY_EXCEPTION` (`test/test_logging_interceptor.py` kiểm tự động 100% subclass).
+
+## 10. Kiểm thử (Testing)
+
+- Toàn bộ unit test và contract test đặt tại `test/test_*.py`, chạy bằng `python -m unittest discover -s test` (hoặc `pytest`).
+- Test cần tài nguyên ngoài (Postgres thật, OCR PDF, model nặng) dùng `@unittest.skipUnless(...)` theo biến môi trường (`AI_TEST_DATABASE_URL`, `AI_TEST_OCR=1`), không được làm đỏ CI khi chạy offline.
+- Đổi guardrail, prompt hoặc RAG pipeline phải chạy bộ đánh giá `python -X utf8 app/script/eval_ai_engineering.py --copilot-only` và đảm bảo các ca `test/test_eval_set.py` + `test/test_copilot_eval_dataset.py` xanh.
 
 ## 🔗 Liên quan
 

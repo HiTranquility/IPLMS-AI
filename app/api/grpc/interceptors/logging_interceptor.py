@@ -11,15 +11,25 @@ from grpc import aio
 
 from app.core.exceptions import (
     AiServiceError,
+    ConsoleAccessDenied,
+    ConsoleAuthError,
+    ConsoleRateLimited,
     ConsoleStoreError,
+    DataLakeError,
+    DocumentTooLargeError,
+    EmbeddingError,
     FeatureNotImplementedError,
     FraudDetectedError,
     InvalidImageError,
     KnowledgeGateError,
     ModelConfigurationError,
     ModelNotLoadedError,
+    NoTextLayerError,
     PlateRecognitionError,
     RagPipelineError,
+    UnsupportedFormatError,
+    WorkflowConfigurationError,
+    WorkflowStateError,
 )
 from app.util.logger import logger
 
@@ -27,9 +37,17 @@ from app.util.logger import logger
 _STATUS_BY_EXCEPTION: tuple[tuple[type[Exception], grpc.StatusCode], ...] = (
     # Lỗi do dữ liệu client gửi lên → client sửa được, KHÔNG phải sự cố hệ thống.
     (InvalidImageError, grpc.StatusCode.INVALID_ARGUMENT),
+    (UnsupportedFormatError, grpc.StatusCode.INVALID_ARGUMENT),
+    (NoTextLayerError, grpc.StatusCode.INVALID_ARGUMENT),
+    (DocumentTooLargeError, grpc.StatusCode.INVALID_ARGUMENT),
+    (WorkflowStateError, grpc.StatusCode.INVALID_ARGUMENT),
     (ValueError, grpc.StatusCode.INVALID_ARGUMENT),
     # Ảnh hợp lệ nhưng không tìm ra biển → "không có kết quả", không phải lỗi.
     (PlateRecognitionError, grpc.StatusCode.NOT_FOUND),
+    # Xác thực / phân quyền / giới hạn tốc độ AI Console.
+    (ConsoleAuthError, grpc.StatusCode.UNAUTHENTICATED),
+    (ConsoleAccessDenied, grpc.StatusCode.PERMISSION_DENIED),
+    (ConsoleRateLimited, grpc.StatusCode.RESOURCE_EXHAUSTED),
     # Kết luận nghiệp vụ, không phải hỏng hóc.
     (FraudDetectedError, grpc.StatusCode.FAILED_PRECONDITION),
     # Thiếu checkpoint/model → server chưa sẵn sàng, client retry sau có thể được.
@@ -37,10 +55,13 @@ _STATUS_BY_EXCEPTION: tuple[tuple[type[Exception], grpc.StatusCode], ...] = (
     # Cổng nghiệp vụ Knowledge Base (bộ test trống, chưa đạt ngưỡng…) → message
     # đi thẳng tới người dùng qua backend.
     (KnowledgeGateError, grpc.StatusCode.FAILED_PRECONDITION),
-    # Lỗi cấu hình model/provider (không có model, không kết nối được provider)
+    # Lỗi cấu hình model/provider hoặc workflow (không có model, thiếu cấu hình).
     (ModelConfigurationError, grpc.StatusCode.FAILED_PRECONDITION),
-    # Hạ tầng phía sau (pgvector, LLM) hỏng.
+    (WorkflowConfigurationError, grpc.StatusCode.FAILED_PRECONDITION),
+    # Hạ tầng phía sau (pgvector, LLM, data lake) hỏng.
+    (EmbeddingError, grpc.StatusCode.UNAVAILABLE),
     (RagPipelineError, grpc.StatusCode.UNAVAILABLE),
+    (DataLakeError, grpc.StatusCode.UNAVAILABLE),
     # DB AI Console (kênh A2) không truy cập được → backend thử lại ở chu kỳ sau.
     (ConsoleStoreError, grpc.StatusCode.UNAVAILABLE),
     # Khai trong proto nhưng nghiệp vụ chưa có thật. UNIMPLEMENTED chứ không phải

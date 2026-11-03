@@ -4,11 +4,11 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🆕 New |
-| **Người nhận** |  |
+| **Trạng thái** | ✅ Fixed |
+| **Người nhận** | Antigravity |
 | **Hạn** |  |
 | **Ưu tiên** | 🟠 |
-| **Ngày đóng** |  |
+| **Ngày đóng** | 2026-11-03 |
 | **Người báo** | Claude Code, lượt test luồng AI trước nộp báo cáo (2026-10-31) |
 | **Môi trường** | local Docker (`docker-compose.develop.yml`), `develop` `e07413a`, Ollama `qwen2.5:3b` |
 
@@ -54,4 +54,6 @@ docker exec iplms-ai-dev-api-1 python -c "import unicodedata as u; from app.core
 
 ## Sửa / kiểm chứng
 
-<Điền sau khi sửa.>
+- Chuẩn hoá chuỗi đầu vào bằng `normalize_for_match` ở bước 2 (`OUT_OF_SCOPE_COMPILED`) trong `app/core/copilot/guardrails/guardrail_manager.py`, đồng thời mở rộng bộ mẫu `OUT_OF_SCOPE_PATTERNS`.
+- Siết `_retrieve_from_seed` trong `app/core/copilot/engines/rag_pipeline.py` theo ranh giới từ (`\b`) và yêu cầu từ khoá miền bãi đỗ xe để không lấp nhầm câu lạc đề.
+- Bổ sung ca kiểm thử NFD và diễn đạt lại vào `data/knowledge/eval_set.json` (`TC-28`, `TC-29`), `test/test_guard_unicode.py` và `test/test_rag_pipeline.py`.

@@ -4,11 +4,11 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🆕 New |
-| **Người nhận** |  |
+| **Trạng thái** | ✅ Fixed |
+| **Người nhận** | Antigravity |
 | **Hạn** |  |
 | **Ưu tiên** | 🟡 |
-| **Ngày đóng** |  |
+| **Ngày đóng** | 2026-11-03 |
 | **Người báo** | Claude Code, lượt test luồng AI trước nộp báo cáo (2026-10-31) |
 | **Môi trường** | local Docker (`docker-compose.develop.yml`), `develop` `e07413a` |
 
@@ -40,4 +40,6 @@ Lượt test 2026-10-31: HTTP 200, 0,075 s; `/health` = ok; `/api/anpr/recognize
 
 ## Sửa / kiểm chứng
 
-<Điền sau khi sửa.>
+- Bỏ hành vi tự động nuốt lỗi kết nối trong `app/infra/embedding/embedding_client.py` và `app/core/copilot/engines/rag_pipeline.py` (`_retrieve`), ném `EmbeddingError` khi dịch vụ embedding ngừng hoạt động thay vì rơi xuống seed rồi báo nhầm `NO_CONTEXT`.
+- Cập nhật `app/api/rest/routes/copilot_controller.py` và `app/api/rest/routes/console_tools_controller.py` trả `refused=True`, `guardrail_triggered="FAILED_RESPONSE"`, `mode="ai_unavailable"` khi AI/Embedding lỗi, đồng thời loại bỏ `api_key_override` khỏi `AskPayload`.
+- Bổ sung unit test trong `test/test_rag_pipeline.py`.

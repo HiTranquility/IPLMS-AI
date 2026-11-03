@@ -235,13 +235,22 @@ class RagPipelineEngine:
             "nào", "ở", "ra", "sao", "với", "đến", "từ", "hãy", "tôi", "mình",
             "bạn", "biết", "về", "cách", "làm", "như", "hay"
         }
+        PARKING_DOMAIN_TERMS = {
+            "xe", "bãi", "đỗ", "gửi", "phí", "tiền", "vé", "thẻ", "cổng", "barie",
+            "barrier", "sạc", "điện", "giờ", "phút", "phạt", "khiếu", "nại", "tranh",
+            "chấp", "chỗ", "ô", "tô", "máy", "camera", "anpr", "biển", "quy", "định",
+            "điều", "trạm", "hầm", "ca", "nhân", "viên", "hoàn", "quá", "hạn", "ân",
+            "vãng", "lai", "tháng", "đêm", "ngày", "khóa", "bánh", "mất", "trầy",
+            "xước", "móp", "va", "quẹt", "cứu", "thương", "chữa", "cháy", "pccc",
+            "ưu", "tiên", "landmark", "vincom", "kwh", "slot", "iplms",
+        }
         q_lower = query.lower()
         all_words = re.findall(r'\w+', q_lower)
         keywords = [w for w in all_words if len(w) >= 2 and w not in STOPWORDS]
         if not keywords:
             keywords = [w for w in all_words if len(w) >= 2]
 
-        if not keywords:
+        if not keywords or not (set(keywords) & PARKING_DOMAIN_TERMS):
             return []
 
         scored = []
@@ -254,15 +263,18 @@ class RagPipelineEngine:
 
             content = item.get("content", "")
             title = item.get("title", "")
+            title_lower = title.lower()
+            content_lower = content.lower()
 
             matched_kw_count = 0
             score = 0.0
             for kw in keywords:
                 hit = False
-                if kw in title.lower():
+                pat = rf"\b{re.escape(kw)}\b"
+                if re.search(pat, title_lower):
                     score += 2.0
                     hit = True
-                if kw in content.lower():
+                if re.search(pat, content_lower):
                     score += 1.0
                     hit = True
                 if hit:
@@ -293,8 +305,10 @@ class RagPipelineEngine:
         query = query_text.strip()
         if not query:
             raise ValueError("Câu hỏi không được để trống.")
+        # Không nuốt lỗi kết nối Embedding/Model: khi Ollama hoặc provider ngừng hoạt động,
+        # phải báo lỗi dịch vụ AI rõ ràng thay vì rơi xuống seed rồi báo nhầm NO_CONTEXT (bug-052).
+        vector = await self.embedder.embed_query(query)
         try:
-            vector = await self.embedder.embed_query(query)
             chunks = await self.vector_store.search_similar_chunks(
                 vector,
                 query_text=query,
@@ -311,13 +325,10 @@ class RagPipelineEngine:
                     logger.info("pgvector không có chunk khớp, fallback sang %d seed chunks.", len(seed_chunks))
                     return seed_chunks
             return chunks
-        except (RagPipelineError, ModelNotLoadedError, EmbeddingError) as exc:
-            if not isinstance(self.vector_store, pgvector_client.__class__):
-                raise
-            logger.warning("Kho tri thức pgvector/embedding không khả dụng (%s), fallback sang local knowledge seed.", exc)
-            return self._retrieve_from_seed(query, parking_lot_id, k, floor)
+        except (RagPipelineError, ModelNotLoadedError, EmbeddingError):
+            raise
         except Exception as exc:
-            if not isinstance(self.vector_store, pgvector_client.__class__):
+            if not isinstance(self.vector_store, pgvector_client.__class__) or not self._seed_fallback_enabled():
                 raise RagPipelineError("Không truy xuất được kho tri thức.") from exc
             logger.warning("Lỗi truy xuất kho tri thức (%s), fallback sang local seed.", exc)
             return self._retrieve_from_seed(query, parking_lot_id, k, floor)
@@ -351,7 +362,7 @@ class RagPipelineEngine:
         guard_in = _check_input(query_text, history)
         if not guard_in.is_safe:
             return {"answer": guard_in.refusal_message or NO_CONTEXT_ANSWER, "sources": [],
-                    "confidence": 0.0, "status": "REFUSED", "usage": {}, "model": "",
+                    "confidence": 0.0, "status": "REFUSED", "refused": True, "usage": {}, "model": "",
                     "guardrail_triggered": guard_in.risk_type}
         retrieval_query = _enrich_retrieval_query(query_text, history)
         chunks = await self._grounded_chunks(retrieval_query, parking_lot_id, preview, top_k, min_similarity)
@@ -371,7 +382,8 @@ class RagPipelineEngine:
         if rule:
             _log_guard(rule)
             return {"answer": output_guard.GUARD_NOTICE, "sources": [],
-                    "confidence": 0.0, "status": "REFUSED", **meta}
+                    "confidence": 0.0, "status": "REFUSED", "refused": True,
+                    "guardrail_triggered": rule, **meta}
         return {
             "answer": answer,
             "sources": _cited_sources(answer, chunks),

@@ -39,11 +39,13 @@ INJECTION_PATTERNS = [
 
 INJECTION_COMPILED = [re.compile(p) for p in INJECTION_PATTERNS]
 
-# Các mẫu câu hỏi chắc chắn ngoài luồng (Culinary, General Trivia, v.v.)
+# Các mẫu câu hỏi chắc chắn ngoài luồng (Culinary, General Trivia, Creative Writing, Finance/Weather, Personal PII, v.v.)
 OUT_OF_SCOPE_PATTERNS = [
-    r"(?i)\b(cách\s+nấu|công\s+thức|nấu\s+ăn|món\s+ăn|phở\s+bò|bún\s+chả)\b",
-    r"(?i)\b(thủ\s+đô\s+của|capital\s+of|tổng\s+thống|dân\s+số|diện\s+tích\s+thế\s+giới)\b",
-    r"(?i)\b(thơ\s+tình|viết\s+thơ|kể\s+chuyện\s+ma|tâm\s+sự|bói\s+toán)\b",
+    r"(?i)\b(cách\s+nấu|công\s+thức|nấu\s+ăn|nấu\s+phở|cách\s+làm\s+bánh|cách\s+làm\s+món|món\s+ăn|phở\s+bò|bún\s+chả)\b",
+    r"(?i)\b(dự\s+báo\s+thời\s+tiết|thời\s+tiết\s+(?:hôm\s+nay|ngày\s+mai)|mưa\s+hay\s+nắng|nhiệt\s+độ\s+ngoài\s+trời)\b",
+    r"(?i)\b(thủ\s+đô\s+của|capital\s+of|tổng\s+thống|dân\s+số|diện\s+tích\s+thế\s+giới|chứng\s+khoán|giá\s+vàng|giá\s+bitcoin|tỷ\s+giá|kết\s+quả\s+xổ\s+số)\b",
+    r"(?i)\b(thơ\s+tình|viết\s+thơ|làm\s+thơ|bài\s+thơ|sáng\s+tác\s+(?:thơ|nhạc|bài\s+hát)|kể\s+chuyện|viết\s+truyện|viết\s+bài\s+văn|tâm\s+sự|bói\s+toán|viết\s+code|code\s+python|giải\s+phương\s+trình)\b",
+    r"(?i)\b(số\s+điện\s+thoại\s+riêng|địa\s+chỉ\s+nhà\s+của\s+giám\s+đốc|lương\s+(?:nhân\s+viên|tháng\s+bao\s+nhiêu)|thông\s+tin\s+cá\s+nhân)\b",
 ]
 
 OUT_OF_SCOPE_COMPILED = [re.compile(p) for p in OUT_OF_SCOPE_PATTERNS]
@@ -81,9 +83,9 @@ class GuardrailManager:
                     confidence=0.0,
                 )
 
-        # 2. Kiểm tra câu hỏi ngoài phạm vi rõ ràng
+        # 2. Kiểm tra câu hỏi ngoài phạm vi rõ ràng (trên bản chuẩn hoá NFKC/NFC để chặn NFD & ký tự ẩn — bug-051)
         for pattern in OUT_OF_SCOPE_COMPILED:
-            if pattern.search(clean_q):
+            if any(pattern.search(q) for q in match_qs):
                 logger.info("Guardrail kích hoạt: Phát hiện câu hỏi ngoài phạm vi query='%s'", clean_q)
                 return GuardrailResult(
                     is_safe=False,

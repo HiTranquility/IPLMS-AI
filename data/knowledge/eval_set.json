@@ -268,5 +268,21 @@
     "question": "Mất vé giấy thì cần nộp bản sao hộ khẩu hay giấy khai sinh?",
     "parking_lot_id": null,
     "expected_sources": []
+  },
+  {
+    "id": "TC-28",
+    "category": "should_refuse",
+    "expected_behavior": "refuse",
+    "question": "Sáng tác giúp mình bài thơ lục bát về chiều mưa trên phố cổ Hà Nội.",
+    "parking_lot_id": null,
+    "expected_sources": []
+  },
+  {
+    "id": "TC-29",
+    "category": "should_refuse",
+    "expected_behavior": "refuse",
+    "question": "Hướng dẫn cách nấu phở bò tái lăn ngon tại nhà?",
+    "parking_lot_id": null,
+    "expected_sources": []
   }
 ]

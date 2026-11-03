@@ -167,15 +167,24 @@ class EmbeddingClient:
                 last_exc = exc
                 continue
 
-        # Nếu không thể kết nối tới Ollama / OpenAI (máy dev offline, Ollama chưa chạy):
-        # Kích hoạt deterministic fallback embedding (768-dim) để quá trình nạp và test hoạt động 100%
-        self._offline_until = time.monotonic() + 300.0
-        logger.warning(
-            "Không thể kết nối dịch vụ embedding (%s). Tự động kích hoạt deterministic local fallback embedding (dim=%d) để đảm bảo nạp dữ liệu offline an toàn.",
-            last_exc,
-            self._config.dimensions,
-        )
-        return [_deterministic_embedding(t, self._config.dimensions) for t in texts]
+        # Nếu không thể kết nối tới Ollama / OpenAI: chỉ dùng deterministic fallback khi
+        # bật tường minh AI_EMBEDDING_OFFLINE_FALLBACK=true; mặc định ném EmbeddingError để
+        # không che giấu lỗi kết nối AI dưới vỏ bọc NO_CONTEXT (bug-052).
+        import os
+        if os.getenv("AI_EMBEDDING_OFFLINE_FALLBACK", "").strip().lower() in ("1", "true", "yes"):
+            self._offline_until = time.monotonic() + 300.0
+            logger.warning(
+                "Không thể kết nối dịch vụ embedding (%s). Tự động kích hoạt deterministic local fallback embedding (dim=%d).",
+                last_exc,
+                self._config.dimensions,
+            )
+            return [_deterministic_embedding(t, self._config.dimensions) for t in texts]
+
+        target = self._base_url or "OpenAI"
+        logger.error("Không thể kết nối dịch vụ embedding (%s): %s", target, last_exc)
+        raise EmbeddingError(
+            f"Không thể kết nối dịch vụ embedding ({target}): {last_exc}"
+        ) from last_exc
 
     async def _call_sdk(self, client: Any, texts: List[str]) -> List[List[float]]:
         attempts = max(0, self._config.max_retries) + 1

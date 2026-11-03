@@ -84,6 +84,23 @@ class InputGuardBypassTest(unittest.TestCase):
         for query in ("Gửi ô tô 3 tiếng hết bao nhiêu tiền?", "Mấy giờ bãi đóng cửa, quá giờ thì sao?"):
             self.assertTrue(guardrail_manager.check_input(query).is_safe, query)
 
+    def test_out_of_scope_nfd_and_rephrased_queries_are_refused(self):
+        # bug-051: bước 2 check_input phải chuẩn hoá Unicode (NFD/ký tự ẩn) và chặn các câu ngoài phạm vi diễn đạt lại
+        import unicodedata
+
+        nfd_pho = unicodedata.normalize("NFD", "Hướng dẫn cách nấu phở bò gia truyền Hà Nội ngon chuẩn vị?")
+        zw_pho = "Cách nấu\u200bphở bò ngon"
+        rephrased = (
+            "Viết giúp mình bài thơ về mùa thu Hà Nội",
+            "Viết giúp mình một bài thơ ngắn về mùa thu Hà Nội.",
+            "Giá vàng SJC hôm nay mua vào bán ra bao nhiêu?",
+            "Thời tiết Sài Gòn ngày mai mưa hay nắng và nhiệt độ bao nhiêu?",
+        )
+        for query in (nfd_pho, zw_pho, *rephrased):
+            res = guardrail_manager.check_input(query)
+            self.assertFalse(res.is_safe, repr(query))
+            self.assertEqual("OUT_OF_SCOPE", res.risk_type, repr(query))
+
 
 class GuardStreamTest(unittest.TestCase):
     def _stream(self, tokens):

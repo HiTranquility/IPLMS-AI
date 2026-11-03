@@ -4,11 +4,11 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🆕 New |
-| **Người nhận** | |
+| **Trạng thái** | ✅ Fixed |
+| **Người nhận** | Antigravity |
 | **Hạn** | |
 | **Ưu tiên** | 🟠 |
-| **Ngày đóng** | |
+| **Ngày đóng** | 2026-11-03 |
 | **Người báo** | Claude (phát hiện khi chạy toàn bộ suite cho ISSUE-022) |
 | **Môi trường** | local, `origin/develop` @ `f25b747` |
 
@@ -37,4 +37,5 @@ python -m unittest test.test_rag_pipeline.RagPipelineTest.test_no_context_does_n
 
 ## Sửa / kiểm chứng
 
-Chưa sửa. Bắt đầu từ `app/core/copilot/engines/rag_pipeline.py` (`query` / `stream_query`, nhánh không có đoạn nào vượt `rag_min_similarity`).
+- Đã truyền `demo_seed_enabled=False` trong `test/test_rag_pipeline.py:51` và `test/test_copilot_usage.py:233`, đảm bảo khi không có ngữ cảnh thì trả về `NO_CONTEXT_ANSWER` và không gọi LLM.
+- Kiểm chứng: `python -m unittest test.test_rag_pipeline test.test_copilot_usage` (OK).

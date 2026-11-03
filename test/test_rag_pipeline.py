@@ -184,6 +184,44 @@ class RagPipelineTest(unittest.TestCase):
             asyncio.run(engine.query("phí bao nhiêu?"))
         self.assertIs(grpc.StatusCode.FAILED_PRECONDITION, status_for(ModelNotLoadedError("x")))
 
+    def test_embedding_outage_raises_instead_of_returning_no_context(self):
+        # bug-052: Khi Ollama/Embedding ngừng hoạt động, không được nuốt lỗi và báo nhầm NO_CONTEXT
+        from app.core.exceptions import EmbeddingError
+        from app.infra.database.pgvector_client import pgvector_client
+
+        class DownEmbedder:
+            async def embed_query(self, text):
+                raise EmbeddingError("Không thể kết nối dịch vụ embedding (http://host.docker.internal:11434/v1)")
+
+        engine = RagPipelineEngine(DownEmbedder(), pgvector_client, FakeLlm(), demo_seed_enabled=True)
+        with self.assertRaises(EmbeddingError):
+            asyncio.run(engine.query("Tôi đặt chỗ trước mà đến trễ 20 phút có mất cọc không?"))
+
+    def test_seed_retrieval_ignores_non_parking_queries_sharing_generic_words(self):
+        # bug-051: Câu lạc đề trùng từ đơn lẻ ("thu", "nội") không được khớp seed bãi xe
+        engine = RagPipelineEngine(FakeEmbedder(), FakeStore([]), FakeLlm(), demo_seed_enabled=True)
+        chunks = engine._retrieve_from_seed("Mùa thu Hà Nội có lá vàng rơi", None)
+        self.assertEqual([], chunks)
+
+    def test_copilot_controller_rejects_api_key_override_and_reports_failed_response_on_outage(self):
+        # bug-011 & bug-052: AskPayload không nhận api_key_override; khi AI lỗi phải trả FAILED_RESPONSE, không bịa seed 0.88 hay no_context
+        from unittest.mock import AsyncMock, patch
+        from app.api.rest.routes.copilot_controller import AskPayload, ask_copilot
+        from app.core.exceptions import EmbeddingError
+
+        self.assertNotIn("api_key_override", AskPayload.model_fields)
+        with patch(
+            "app.api.rest.routes.copilot_controller.copilot_service.ask_question",
+            new=AsyncMock(side_effect=EmbeddingError("Connection error.")),
+        ):
+            resp = asyncio.run(ask_copilot(AskPayload(query="Tôi đặt chỗ trước mà đến trễ 20 phút có mất cọc không?")))
+            item = resp.data[0]
+            self.assertTrue(item.refused)
+            self.assertEqual("FAILED_RESPONSE", item.guardrail_triggered)
+            self.assertEqual("ai_unavailable", item.mode)
+            self.assertEqual(0.0, item.confidence)
+            self.assertEqual([], item.sources)
+
 
 class HistoryInputGuardTest(unittest.TestCase):
     """bug-040: history do client tự khai cũng là đầu vào độc (ADR-0029)."""

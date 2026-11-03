@@ -36,7 +36,6 @@ class AskPayload(BaseModel):
     query: str = Field(..., min_length=1, max_length=2000)
     parking_lot_id: Optional[str] = Field(None, max_length=128)
     user_id: Optional[str] = Field("test-user", max_length=64)
-    api_key_override: Optional[str] = None
 
 
 class AskResponse(BaseModel):
@@ -98,12 +97,13 @@ def _stream_sse_response(
                 yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
         except Exception as exc:
             err_payload = {
-                "token": f"\n\n[Lỗi streaming: {str(exc)}]",
+                "token": f"⚠️ Dịch vụ AI hiện không khả dụng: {str(exc)}",
                 "is_finished": True,
                 "sources": [],
                 "confidence": 0.0,
-                "refused": False,
-                "guardrail_triggered": "STREAM_EXCEPTION",
+                "refused": True,
+                "guardrail_triggered": "FAILED_RESPONSE",
+                "status": "ERROR",
                 "prompt_version": "v2",
                 "latency_ms": 0.0,
             }
@@ -146,80 +146,41 @@ def stream_copilot_get(
 
 @router.post("/ask", response_model=BaseResponse[AskResponse])
 async def ask_copilot(payload: AskPayload) -> BaseResponse[AskResponse]:
-    """Hỏi đáp quy chế bãi xe thông qua RAG pipeline."""
+    """Hỏi đáp quy chế bãi xe thông qua RAG pipeline (không fallback seed giả tạo khi AI lỗi — bug-011, bug-052)."""
     cfg = get_config()
-    api_key = payload.api_key_override or cfg.llm.llm_api_key
-
-    # Nếu có API key hoặc dùng LLM nội bộ (local llama-server / ollama), chạy pipeline RAG chuẩn
     is_local = cfg.llm.llm_provider in ("local", "ollama") or bool(cfg.llm.llm_base_url)
-    if api_key or is_local:
-        try:
-            req = AskQuestionRequest(
-                query=payload.query,
-                parking_lot_id=payload.parking_lot_id or None,
-                user_id=payload.user_id or "test-user",
-            )
-            ans: CopilotAnswer = await copilot_service.ask_question(req)
-            return BaseResponse.ok(
-                [AskResponse(
-                    answer=ans.answer,
-                    sources=ans.sources,
-                    confidence=ans.confidence,
-                    mode="rag_local" if is_local else "rag_live",
-                    refused=getattr(ans, "refused", False),
-                    guardrail_triggered=getattr(ans, "guardrail_triggered", None),
-                    prompt_version=ans.prompt_version,
-                    latency_ms=getattr(ans, "latency_ms", None),
-                )],
-                "Answer generated via local RAG" if is_local else "Answer generated via live RAG"
-            )
-        except Exception:
-            pass  # Fallback to local semantic seed lookup if LLM failed
-
-    # Offline fallback qua seed documents trong data/knowledge/
-    seed_path = get_seed_path()
-    if os.path.exists(seed_path):
-        try:
-            with open(seed_path, "r", encoding="utf-8") as f:
-                seeds = json.load(f)
-
-            q_lower = payload.query.lower()
-            matched_sources = []
-            matched_snippets = []
-
-            for item in seeds:
-                content = item.get("content", "")
-                title = item.get("title", "")
-                source = item.get("source", "regulations_seed.json")
-                category = item.get("category", "general")
-
-                tokens = [t for t in q_lower.split() if len(t) > 2]
-                match_count = sum(1 for t in tokens if t in content.lower() or t in title.lower())
-
-                if match_count > 0 or not tokens:
-                    matched_sources.append(source)
-                    matched_snippets.append(f"**{title}** ({category}):\n{content}")
-                    if len(matched_snippets) >= 2:
-                        break
-
-            if matched_snippets:
-                answer = "🔍 **[Tra cứu từ Kho Tri Thức Nội Bộ]**:\n\n" + "\n\n---\n\n".join(matched_snippets)
-                return BaseResponse.ok(
-                    [AskResponse(answer=answer, sources=list(set(matched_sources)), confidence=0.88, mode="local_knowledge_seed")],
-                    "Grounded answer from local knowledge base"
-                )
-        except Exception as exc:
-            return BaseResponse.fail(f"Knowledge lookup error: {exc}")
-
-    return BaseResponse.ok(
-        [AskResponse(
-            answer="Chưa tìm thấy điều khoản phù hợp trong kho tri thức hoặc chưa cấu hình AI_LLM_API_KEY.",
-            sources=[],
-            confidence=0.0,
-            mode="no_context"
-        )],
-        "No context found"
-    )
+    try:
+        req = AskQuestionRequest(
+            query=payload.query,
+            parking_lot_id=payload.parking_lot_id or None,
+            user_id=payload.user_id or "test-user",
+        )
+        ans: CopilotAnswer = await copilot_service.ask_question(req)
+        return BaseResponse.ok(
+            [AskResponse(
+                answer=ans.answer,
+                sources=ans.sources,
+                confidence=ans.confidence,
+                mode="rag_local" if is_local else "rag_live",
+                refused=getattr(ans, "refused", False),
+                guardrail_triggered=getattr(ans, "guardrail_triggered", None),
+                prompt_version=ans.prompt_version,
+                latency_ms=getattr(ans, "latency_ms", None),
+            )],
+            "Answer generated via local RAG" if is_local else "Answer generated via live RAG"
+        )
+    except Exception as exc:
+        return BaseResponse.ok(
+            [AskResponse(
+                answer=f"Dịch vụ AI (Embedding/LLM) hiện không khả dụng: {exc}",
+                sources=[],
+                confidence=0.0,
+                mode="ai_unavailable",
+                refused=True,
+                guardrail_triggered="FAILED_RESPONSE",
+            )],
+            "AI service unavailable"
+        )
 
 
 @router.post("/arbitrate-dispute")

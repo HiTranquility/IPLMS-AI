@@ -9,8 +9,14 @@ updates:
       day: "monday"
     open-pull-requests-limit: 5
     groups:
+      grpc-protobuf:
+        patterns: ["grpcio*", "protobuf"]
       pip-minor-patch:
         update-types: ["minor", "patch"]
+        exclude-patterns: ["grpcio*", "protobuf"]
+    ignore:
+      - dependency-name: "grpcio*"
+        versions: [">= 1.72.0"]
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
