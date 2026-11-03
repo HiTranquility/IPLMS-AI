@@ -40,6 +40,7 @@
 |---|---|---|---|---|
 | Models & Connections trong AI Console — chặng 1: một nguồn model (sửa X2) | [ISSUE-022](issues/10-2026/ISSUE-022-models-connections-mot-nguon-model/issue.md) | @HiTranquility |  | 🚧 In progress — chặng 1 (X2) PR #119; chặng 2 code + test xong (cả DB thật), cùng PR #119; chặng 3–… |
 | Sửa `backend/docker-compose.yml` (service AI build) sang `context: ../ai`, `dockerfile: Dockerfile`… | [bug-053](bugs/bug-053-db-init-hong-va-build-can-repo-cha/bug.md) | HiTranquility |  | 🛠️ HiTranquility/IPLMS-Backend#65 (nhánh cùng tên); merge cùng #127 rồi mới nâng gitlink |
+| CI `AI · CI` dừng ở bước khởi tạo Postgres vì thiếu `POSTGRES_PASSWORD`, unittest và kiểm khuôn khô… | [bug-055](bugs/bug-055-ci-thieu-postgres-password-test-khong-chay/bug.md) | @HiTranquility |  | 🛠️ Fixing |
 | Đọc biển số từ clip ở Vision Lab (IPLMS REQ-021 hướng A) | [ISSUE-025](issues/10-2026/ISSUE-025-doc-bien-so-tu-clip-vision-lab/issue.md) | @HiTranquility | 2026-11-04 | 🚧 In progress |
 | Agent tấn công sinh biến thể từ bộ red-team và bắn vào Copilot thật (IPLMS REQ-024 phần A) | [ISSUE-026](issues/10-2026/ISSUE-026-redteam-agent-sinh-bien-the-tan-cong/issue.md) | @HiTranquility | 2026-11-04 | 🚧 In progress — code + test lõi xong; chưa đo với LLM thật |
 | Sửa `deployment/registry/push-images-local.{ps1,sh}` và `operations.md:267` sang context `ai/` | [bug-053](bugs/bug-053-db-init-hong-va-build-can-repo-cha/bug.md) | HiTranquility |  | 🛠️ HiTranquility/IPLMS-Deployment#17 |
