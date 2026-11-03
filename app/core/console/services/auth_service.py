@@ -173,6 +173,10 @@ class AuthService:
             totp_secret_set=session.get("totp_secret_enc") is not None,
         )
 
+    def validate_permission(self, permission: str) -> None:
+        if permission not in access_policy.PERMISSIONS:
+            raise ValueError(f"Quyền console không tồn tại: {permission}")
+
     async def authorize(self, raw: str, permission: str) -> ConsoleActor:
         session = await self.resolve(raw)
         access_policy.require(session.actor, permission)

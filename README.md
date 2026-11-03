@@ -77,7 +77,7 @@ python -m app.script.eval_ai_engineering        # bộ eval RAG theo §4.2 (data
 python -m app.script.redteam_copilot            # bộ tấn công prompt injection / ngoài phạm vi
 python -m app.script.redteam_agent --attacker-model qwen2.5:3b   # sinh biến thể tấn công (ISSUE-026)
 pnpm --dir ui typecheck && pnpm --dir ui test   # AI Console
-python -m training.readiness --scope vision     # model đủ điều kiện phục vụ chưa
+python -m training.readiness --scope vision     # kiểm tra điều kiện phục vụ model
 ```
 
 ## Đối chiếu nhanh với đề Final Project

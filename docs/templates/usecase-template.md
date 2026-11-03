@@ -2,7 +2,8 @@
 
 > **Đích:** `docs/projects/usecases/UC-NNN-slug.md` — trong repo sở hữu code của hành vi (repo gốc nếu xuyên module, repo con nếu chỉ một module) · **Luật chung:** [templates/README](README.md)
 > **Use case = đặc tả cho dev:** MỘT hành vi của hệ thống từ trigger tới kết quả, đủ để viết code và test. *"Hệ thống phải làm được gì"* ở REQ; *lý do chọn giải pháp* ở ADR; *việc triển khai* ở ISSUE.
-> **[MUST]** Giữ Meta, mục 4, 5, 10, 11. Mục không áp dụng thì **xoá**, không để trống. Bảng và sơ đồ phải khớp nhau và khớp code — lệch thì sửa cùng lúc.
+> **[MUST]** Giữ Meta, mục 4, 5, 10, 11 và mục *Lịch sử thay đổi*. Mục không áp dụng thì **xoá**, không để trống. Bảng và sơ đồ phải khớp nhau và khớp code — lệch thì sửa cùng lúc.
+> **UC sống** (IPLMS ADR-0065): mỗi tính năng một UC; ISSUE sau chạm cùng luồng thì **cập nhật UC này** (sơ đồ + một dòng lịch sử), không vẽ hình mới trong ISSUE.
 
 ## 📌 Meta
 
@@ -19,6 +20,7 @@
 | **Code sở hữu** | Handler/service/page chính (đường dẫn file) |
 | **Nguồn** | REQ-NNN (R?), IDEA/SUGGESTION, ADR |
 | **Triển khai** | ISSUE-NNN |
+| **Sơ đồ đối chiếu code** | `<sha7>` · YYYY-MM-DD — commit mà sơ đồ mục 4/8 được vẽ lại **từ code** (đọc `file:line`); code sở hữu có commit mới hơn thì coi sơ đồ có thể đã lệch |
 
 ---
 
@@ -192,9 +194,15 @@ Chỉ ghi khi repo có pattern handler/service bắt buộc: link practice/ADR c
 
 ---
 
+## 🕓 Lịch sử thay đổi
+
+| Ngày | Hồ sơ | Đổi gì trong luồng / sơ đồ |
+|---|---|---|
+| YYYY-MM-DD | ISSUE-NNN | Tạo UC |
+
 ## 🔍 Kiểm chứng
 
-- [ ] Sơ đồ sequence khớp bảng luồng chính và code hiện tại (`file:line`).
+- [ ] Sơ đồ sequence khớp bảng luồng chính và code hiện tại (`file:line`); dòng *Sơ đồ đối chiếu code* ghi đúng commit vừa đọc.
 - [ ] Mỗi quy tắc BR và nhánh E có test hoặc lý do chưa có.
 - [ ] Tiêu chí AC chạy được, kết quả ghi **PASS / FAIL / BLOCKED / NOT RUN**.
 
@@ -204,5 +212,5 @@ Chỉ ghi khi repo có pattern handler/service bắt buộc: link practice/ADR c
 |---|---|---|
 | `sequenceDiagram` | Tương tác giữa actor và các thành phần | ✅ Có |
 | `stateDiagram-v2` | UC đổi trạng thái một thực thể | Khi đổi trạng thái |
-| `erDiagram` | Thêm/đổi bảng hoặc quan hệ | Khi đổi schema |
+| `erDiagram` | Thêm/đổi bảng hoặc quan hệ | Khi đổi schema — chép phần bảng liên quan từ ERD máy sinh `docs/architecture/erd/backend.md` (IPLMS), không vẽ tay từ trí nhớ |
 | `flowchart` | Logic rẽ nhánh phức tạp trong một bước | Tuỳ chọn |

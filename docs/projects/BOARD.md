@@ -45,7 +45,6 @@
 | Agent tấn công sinh biến thể từ bộ red-team và bắn vào Copilot thật (IPLMS REQ-024 phần A) | [ISSUE-026](issues/10-2026/ISSUE-026-redteam-agent-sinh-bien-the-tan-cong/issue.md) | @HiTranquility | 2026-11-04 | 🚧 In progress — code + test lõi xong; chưa đo với LLM thật |
 | Sửa `deployment/registry/push-images-local.{ps1,sh}` và `operations.md:267` sang context `ai/` | [bug-053](bugs/bug-053-db-init-hong-va-build-can-repo-cha/bug.md) | HiTranquility |  | 🛠️ HiTranquility/IPLMS-Deployment#17 |
 | Đưa `app/core/` về khuôn domain của ADR-0005 (prompt ra `data/prompts/`, slot tuỳ chọn có tên cố đị… | [ISSUE-023](issues/10-2026/ISSUE-023-khuon-domain-core/issue.md) | @HiTranquility |  | 🚧 In progress — code đã merge, còn chạy `redteam_copilot.py` khi có LLM local |
-| Tách I/O Parquet khỏi `forecast/engines/parquet_lake_reader.py` sang `infra/datalake/` | [ISSUE-024](issues/10-2026/ISSUE-024-tach-io-parquet-lake-reader/issue.md) | @HiTranquility |  | 🚧 In progress — code xong và đã kiểm ở máy, chờ PR merge vào `develop` |
 | Chạy bộ test Knowledge Base với LLM thật (cần `AI_LLM_API_KEY`) | [ISSUE-013](issues/10-2026/ISSUE-013-phan-ai-cua-iplms-issue-009/issue.md) | Dương | 2026-10-15 | 🚧 299 test unit/mock đã pass; chờ key/ollama chạy live |
 | Nạp liệu tri thức RAG — phần AI | [ISSUE-012](issues/10-2026/ISSUE-012-phan-ai-cua-iplms-issue-004/issue.md) | Dương | 2026-10-16 | 🚧 Giữ phần ingest/retrieve và test AI; E2E container, caller backend và nối FE chuyển HiTranquility… |
 | Làm nốt 1.3 `materialize_dataset` (tải theo manifest + sha256) | [ISSUE-015](issues/10-2026/ISSUE-015-phan-ai-cua-iplms-issue-013/issue.md) | Khoa | 2026-10-16 | 🚧 Đang viết CLI & loader từ private storage |
@@ -53,11 +52,12 @@
 | Sửa vi phạm so với AI_CONVENTIONS (bổ sung luật lỗi & test doc) | [ISSUE-011](issues/10-2026/ISSUE-011-phan-ai-cua-iplms-audit-004/issue.md) | Dương | 2026-10-19 | 🚧 Đã có báo cáo AUDIT-004; cập nhật doc & gRPC mapping |
 | Việc vặt tháng 10/2026 | [CHORE-001](chores/10-2026/CHORE-001-monthly-maintenance/issue.md) | @HiTranquility | 2026-10-31 | 🚧 In progress |
 | Định tuyến trực tiếp Root URL và Nâng cấp Copilot Chat Studio 3-Panel | [ISSUE-003](issues/10-2026/ISSUE-003-console-root-routing-copilot-studio/issue.md) | AI Team | 2026-10-31 | 🚧 In progress |
+| Việc vặt tháng 11/2026 | [CHORE-002](chores/11-2026/CHORE-002-monthly-maintenance/issue.md) | @HiTranquility | 2026-11-30 | 🚧 In progress |
 | Copilot SSE Streaming & Console Telemetry Integration | [ISSUE-002](issues/10-2026/ISSUE-002-copilot-sse-streaming-and-console-telemetry/issue.md) |  |  | 🚧 In progress |
-| Củng cố kết nối DB, quản lý tài liệu tri thức, batch upload và tối ưu phân bổ VRAM 4GB cho Console … | [ISSUE-007](issues/10-2026/ISSUE-007-console-tools-and-knowledge-management/issue.md) |  |  | 🚧 IN PROGRESS |
 | AI Console nội bộ: DB riêng, 7 vai trò, đăng nhập Google + TOTP, `ai/ui` | [ISSUE-017](issues/10-2026/ISSUE-017-phan-ai-cua-iplms-issue-126/issue.md) | Claude Code |  | 🚧 P1a–P6 + EN (`98c2a88`) + cổng từ chối RAG (`e616fee`) đã code; PR #22, #23 + nhánh xếp chồng chờ… |
 | Hoàn thiện phần AI của `khoa-develop`: lọc thẻ `<think>`, rà `guardrail_manager`/`prompt_manager`/`… | [ISSUE-017](issues/10-2026/ISSUE-017-phan-ai-cua-iplms-issue-126/issue.md) | Khoa |  | 🚧 Giữ sửa/test trong AI; HiTranquility phụ trách nối revision/caller và tích hợp tổng thể; giao gốc… |
 | Xác nhận cột "đã kiểm/sửa" mục 3b `AI_USAGE.md` cho phần mình nhận (đề Final §5.3, thiếu là −10%) | [ISSUE-017](issues/10-2026/ISSUE-017-phan-ai-cua-iplms-issue-126/issue.md) | Chủ module M1–M4 |  | 🚧 Mới giao 2026-10-18 |
+| Củng cố kết nối DB, quản lý tài liệu tri thức, batch upload và tối ưu phân bổ VRAM 4GB cho Console … | [ISSUE-027](issues/10-2026/ISSUE-027-console-tools-and-knowledge-management/issue.md) |  |  | 🚧 IN PROGRESS |
 
 ## ⏳ Chờ duyệt
 
@@ -105,10 +105,10 @@
 | Fallback kết nối DB sang cổng 5432 rồi tự `CREATE DATABASE` trên một Postgres khác | [bug-029](bugs/bug-029-db-fallback-tu-tao-database-tren-postgres-khac/bug.md) | 2026-10-31 |
 | Forecast Simulator luôn chạy baseline vì id bãi trên UI lệch `area_key` của Gold lake | [bug-028](bugs/bug-028-forecast-id-bai-lech-area-key/bug.md) | 2026-10-31 |
 | CI unit thiếu runtime dependencies và benchmark fixture bị làm tròn về 0 | [bug-010](bugs/bug-010-ci-fixture-dependencies-va-benchmark-rounding/bug.md) | 2026-10-31 |
+| Tách I/O Parquet khỏi `forecast/engines/parquet_lake_reader.py` sang `infra/datalake/` | [ISSUE-024](issues/10-2026/ISSUE-024-tach-io-parquet-lake-reader/issue.md) | 2026-10-30 |
 | Không gian làm việc dùng chung giữa tài khoản làm ẩn tính năng; Forecast không có mục menu | [bug-041](bugs/bug-041-khong-gian-lam-viec-dung-chung-an-tinh-nang/bug.md) | 2026-10-27 |
 | History hội thoại Copilot ở console không qua rào chắn đầu vào | [bug-040](bugs/bug-040-history-copilot-khong-qua-rao-chan-dau-vao/bug.md) | 2026-10-27 |
 | Trang Knowledge ghi cứng 110 màu, theme sáng tương phản chỉ 1.75–2.56:1 | [bug-039](bugs/bug-039-trang-knowledge-mau-ghi-cung-vo-tuong-phan-theme-sang/bug.md) | 2026-10-27 |
 | `rag_pipeline.query()` ném NameError `history`, mã audit `engine.reload_llm` thiếu ở UI | [bug-038](bugs/bug-038-rag-query-nameerror-history-va-thieu-ma-audit-reload-llm/bug.md) | 2026-10-27 |
 | Gateway Copilot nhận prompt dài tuỳ ý, output guard bị lách bằng cách tách chữ | [bug-037](bugs/bug-037-copilot-gateway-khong-gioi-han-prompt-va-guard-bi-lach-chu/bug.md) | 2026-10-27 |
 | "Duyệt nhanh N mẫu khớp 100%" đứt giữa lô thì im lặng và để dòng cũ trên màn hình | [bug-035](bugs/bug-035-duyet-nhanh-theo-lo-dut-giua-chung-im-lang/bug.md) | 2026-10-27 |
-| Giới hạn độ dài prompt Gateway và chống lách chữ trong Output Guard | [SUGGESTION-008](suggestions/10-2026/SUGGESTION-008-gioi-han-do-dai-prompt-gateway-va-chong-luan-chu-output-guard.md) | 2026-10-27 |

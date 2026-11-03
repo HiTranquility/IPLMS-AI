@@ -4,11 +4,11 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🚧 In progress — code xong và đã kiểm ở máy, chờ PR merge vào `develop` |
+| **Trạng thái** | ✅ Done — đã merge PR #118 vào `develop` |
 | **Người nhận** | @HiTranquility |
 | **Hạn** |  |
 | **Ưu tiên** | 🟡 |
-| **Ngày đóng** |  |
+| **Ngày đóng** | 2026-10-30 |
 | **Người phụ trách** | HiTranquility |
 | **Phạm vi** | IPLMS-AI: `app/core/forecast/`, `app/infra/datalake/`, `test/test_lakehouse_forecast_e2e.py`, ADR-0005, AI_CONVENTIONS |
 | **Bắt nguồn từ** | [ISSUE-023](../ISSUE-023-khuon-domain-core/issue.md) — ngoại lệ tạm cuối cùng ở [ADR-0005](../../../adrs/10-2026/0005-khuon-domain-core-ba-thu-muc-va-slot-tuy-chon.md) mục 3 |

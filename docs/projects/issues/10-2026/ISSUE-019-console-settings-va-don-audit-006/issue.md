@@ -62,5 +62,5 @@ Hợp thức hoá đợt WIP console ngày 2026-10-25, vốn đã sửa khoảng
 ## Hồ sơ liên quan
 
 - [AUDIT-006](../../../audits/10-2026/AUDIT-006-console-wip-2026-10-25.md) · [audit-2](review/audit-2.md) · [audit-3](review/audit-3.md)
-- [console tools & knowledge](../ISSUE-007-console-tools-and-knowledge-management/issue.md) (đã merge qua PR #71), [ISSUE-008](../ISSUE-008-console-access-policy-regression-tests/issue.md) (test quyền 7 vai)
+- [console tools & knowledge](../ISSUE-027-console-tools-and-knowledge-management/issue.md) (đã merge qua PR #71), [ISSUE-008](../ISSUE-008-console-access-policy-regression-tests/issue.md) (test quyền 7 vai)
 - IPLMS ADR-0048 (quyền console, step-up), ADR-0051 (accept policy), ADR-0029 (guardrail LLM)
