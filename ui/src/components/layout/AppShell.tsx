@@ -1,5 +1,5 @@
-import { ChevronDown, LogOut, Menu, Moon, PanelLeftClose, PanelLeftOpen, Settings, Sun } from 'lucide-react';
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { ChevronDown, LogOut, Menu, Moon, PanelLeftClose, PanelLeftOpen, Search, Settings, Sun } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { PageBoundary } from '@/components/common/Boundary/PageBoundary';
 import { ScrollToTop } from '@/components/common/System/ScrollToTop';
@@ -11,7 +11,7 @@ import { useWorkspaceStore } from '@/stores/useWorkspaceStore';
 import type { Me } from '@/types/auth';
 import { LanguageSwitch } from './LanguageSwitch';
 import { PersonaSwitcher } from './PersonaSwitcher';
-import { allowed, NAV_GROUPS, resolvePersona } from './navigation';
+import { allowed, NAV_GROUPS, PERSONA_LIST, resolvePersona } from './navigation';
 import styles from './AppShell.module.css';
 
 export interface AppShellProps {
@@ -25,7 +25,7 @@ const RAIL_COLLAPSED_KEY = 'iplms_rail_collapsed';
 const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 export function AppShell({ me, children }: AppShellProps) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const logout = useLogout();
   const { theme, toggleTheme } = useThemeStore();
   const { persona: savedPersona } = useWorkspaceStore(me.member_id);
@@ -33,6 +33,8 @@ export function AppShell({ me, children }: AppShellProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [quickJumpOpen, setQuickJumpOpen] = useState(false);
+  const [quickQuery, setQuickQuery] = useState('');
   const [railCollapsed, setRailCollapsed] = useState<boolean>(() => {
     try {
       return localStorage.getItem(RAIL_COLLAPSED_KEY) === 'true';
@@ -43,6 +45,7 @@ export function AppShell({ me, children }: AppShellProps) {
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const railRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const quickInputRef = useRef<HTMLInputElement>(null);
 
   const toggleRailCollapsed = () => {
     setRailCollapsed((prev) => {
@@ -60,8 +63,13 @@ export function AppShell({ me, children }: AppShellProps) {
     setCollapsedGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }));
   };
 
-  // Chuyển trang thì đóng ngăn kéo; lên màn rộng thì bỏ trạng thái mở.
-  useEffect(() => setDrawerOpen(false), [location.pathname]);
+  // Chuyển trang thì đóng ngăn kéo & đóng hộp nhảy nhanh; lên màn rộng thì bỏ trạng thái mở.
+  useEffect(() => {
+    setDrawerOpen(false);
+    setQuickJumpOpen(false);
+    setQuickQuery('');
+  }, [location.pathname]);
+
   useEffect(() => {
     const mq = window.matchMedia?.(DRAWER_QUERY);
     if (!mq) return;
@@ -71,6 +79,7 @@ export function AppShell({ me, children }: AppShellProps) {
     mq.addEventListener('change', onChange);
     return () => mq.removeEventListener('change', onChange);
   }, []);
+
   // Mở: đưa focus vào ngăn kéo. Đóng: trả focus về nút menu (chỉ khi nút đang hiện).
   // Đặt focus ở khung hình sau: lúc effect chạy, rail có thể chưa hết visibility: hidden.
   const wasOpen = useRef(false);
@@ -85,18 +94,33 @@ export function AppShell({ me, children }: AppShellProps) {
     return () => cancelAnimationFrame(frame);
   }, [drawerOpen]);
 
-  // Esc đóng ở bất kỳ đâu khi ngăn kéo mở (kể cả khi focus chưa vào được ngăn kéo).
+  // Esc đóng ngăn kéo hoặc hộp Quick Jump; Ctrl+K mở Quick Jump.
   useEffect(() => {
-    if (!drawerOpen) return;
     const onKey = (event: globalThis.KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
-        setDrawerOpen(false);
+        setQuickJumpOpen((prev) => !prev);
+        return;
+      }
+      if (event.key === 'Escape') {
+        if (quickJumpOpen) {
+          event.preventDefault();
+          setQuickJumpOpen(false);
+        } else if (drawerOpen) {
+          event.preventDefault();
+          setDrawerOpen(false);
+        }
       }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [drawerOpen]);
+  }, [drawerOpen, quickJumpOpen]);
+
+  useEffect(() => {
+    if (quickJumpOpen) {
+      requestAnimationFrame(() => quickInputRef.current?.focus());
+    }
+  }, [quickJumpOpen]);
 
   // Tab vòng trong ngăn kéo khi đang mở (focus trap).
   const onRailKeyDown = (event: KeyboardEvent<HTMLElement>) => {
@@ -114,10 +138,57 @@ export function AppShell({ me, children }: AppShellProps) {
     }
   };
 
-  const groups = NAV_GROUPS.map((group) => ({
-    ...group,
-    items: group.items.filter((item) => allowed(item, me.permissions, persona)),
-  })).filter((group) => group.items.length > 0);
+  const groups = useMemo(
+    () =>
+      NAV_GROUPS.map((group) => ({
+        ...group,
+        items: group.items.filter((item) => allowed(item, me.permissions, persona)),
+      })).filter((group) => group.items.length > 0),
+    [me.permissions, persona],
+  );
+
+  // Tìm nhóm và trang hiện tại cho Breadcrumb (C1)
+  const activeCrumb = useMemo(() => {
+    if (location.pathname.startsWith('/settings')) {
+      return { groupLabel: t.shell.scope, pageLabel: t.nav.settings };
+    }
+    for (const group of NAV_GROUPS) {
+      const exact = group.items.find((it) => it.to === location.pathname);
+      if (exact) {
+        return { groupLabel: t.nav[group.label], pageLabel: t.nav[exact.label] };
+      }
+    }
+    for (const group of NAV_GROUPS) {
+      const prefix = group.items.find((it) => it.to !== '/' && location.pathname.startsWith(it.to));
+      if (prefix) {
+        return { groupLabel: t.nav[group.label], pageLabel: t.nav[prefix.label] };
+      }
+    }
+    return { groupLabel: t.nav.copilot, pageLabel: t.nav.overview };
+  }, [location.pathname, t]);
+
+  const activePersonaMeta = useMemo(
+    () => PERSONA_LIST.find((p) => p.id === persona) ?? PERSONA_LIST[0],
+    [persona],
+  );
+
+  const quickJumpItems = useMemo(() => {
+    const q = quickQuery.trim().toLowerCase();
+    const allPermitted = NAV_GROUPS.flatMap((g) =>
+      g.items
+        .filter((it) => allowed(it, me.permissions, 'all'))
+        .map((it) => ({
+          to: it.to,
+          groupText: t.nav[g.label],
+          labelText: t.nav[it.label],
+          icon: it.icon,
+        })),
+    );
+    if (!q) return allPermitted;
+    return allPermitted.filter(
+      (it) => it.labelText.toLowerCase().includes(q) || it.groupText.toLowerCase().includes(q) || it.to.toLowerCase().includes(q),
+    );
+  }, [me.permissions, quickQuery, t]);
 
   const formatUserRoles = () => {
     if (!me.roles.length) return t.shell.rolesNone;
@@ -137,6 +208,7 @@ export function AppShell({ me, children }: AppShellProps) {
     me.permissions,
   );
   const isCompact = railCollapsed && !drawerOpen;
+  const quickJumpPlaceholder = lang === 'en' ? 'Jump to page…' : 'Chuyển nhanh tới trang…';
 
   return (
     <div className={isCompact ? `${styles.shell} ${styles.shellCollapsed}` : styles.shell}>
@@ -154,6 +226,7 @@ export function AppShell({ me, children }: AppShellProps) {
           <Menu size={18} aria-hidden />
         </button>
         <span className={styles.brandName}>AI Console</span>
+        <span className={styles.mobileCrumb}>{activeCrumb.pageLabel}</span>
       </header>
       {drawerOpen && (
         <button type="button" className={styles.scrim} aria-label={t.shell.closeMenu} tabIndex={-1} onClick={() => setDrawerOpen(false)} />
@@ -290,9 +363,76 @@ export function AppShell({ me, children }: AppShellProps) {
           </div>
         </div>
       </aside>
-      <main className={styles.main}>
-        <PageBoundary>{children ?? <Outlet />}</PageBoundary>
-      </main>
+
+      <div className={styles.contentCol}>
+        <div className={styles.contextBar}>
+          <div className={styles.contextLeft}>
+            <div className={styles.breadcrumb}>
+              <span className={styles.crumbGroup}>{activeCrumb.groupLabel}</span>
+              <span className={styles.crumbSep} aria-hidden>/</span>
+              <span className={styles.crumbPage}>{activeCrumb.pageLabel}</span>
+            </div>
+            <span className={styles.contextPill}>
+              <span className={styles.contextDot} aria-hidden />
+              <span>{t.workspace[activePersonaMeta.titleKey]}</span>
+              <span className={styles.contextBadge}>{activePersonaMeta.badge}</span>
+            </span>
+          </div>
+
+          <div className={styles.contextRight}>
+            <div className={styles.quickJumpWrap}>
+              <button
+                type="button"
+                className={styles.quickJumpTrigger}
+                onClick={() => setQuickJumpOpen((prev) => !prev)}
+                aria-expanded={quickJumpOpen}
+              >
+                <Search size={13} aria-hidden />
+                <span>{quickJumpPlaceholder}</span>
+                <kbd className={styles.kbd}>Ctrl K</kbd>
+              </button>
+
+              {quickJumpOpen && (
+                <div className={styles.quickJumpPopover}>
+                  <input
+                    ref={quickInputRef}
+                    type="search"
+                    className={styles.quickJumpInput}
+                    placeholder={quickJumpPlaceholder}
+                    value={quickQuery}
+                    onChange={(e) => setQuickQuery(e.target.value)}
+                  />
+                  <ul className={styles.quickJumpList}>
+                    {quickJumpItems.map((it) => {
+                      const Icon = it.icon;
+                      return (
+                        <li key={it.to}>
+                          <button
+                            type="button"
+                            className={styles.quickJumpItem}
+                            onClick={() => {
+                              navigate(it.to);
+                              setQuickJumpOpen(false);
+                            }}
+                          >
+                            <Icon size={14} aria-hidden />
+                            <span className={styles.quickJumpItemLabel}>{it.labelText}</span>
+                            <span className={styles.quickJumpItemGroup}>{it.groupText}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <main className={styles.main}>
+          <PageBoundary>{children ?? <Outlet />}</PageBoundary>
+        </main>
+      </div>
     </div>
   );
 }

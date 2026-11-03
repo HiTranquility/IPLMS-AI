@@ -52,7 +52,7 @@
 
 .link {
   display: flex; align-items: center; gap: var(--space-2);
-  min-height: 38px; padding: 0 var(--space-2);
+  min-height: 36px; padding: 0 var(--space-2);
   border-radius: var(--radius-md); text-decoration: none; color: var(--color-muted);
   border-left: 2px solid transparent;
   transition: background-color var(--transition), color var(--transition);
@@ -118,7 +118,184 @@
 .logoutButton { width: 100%; justify-content: flex-start; color: var(--color-muted); }
 .logoutButtonCollapsed { width: 36px; padding: 0; justify-content: center; color: var(--color-muted); }
 
-.main { padding: var(--space-6); min-width: 0; }
+/* ─── Content Column & Desktop Context Topbar ─────────────────── */
+.contentCol {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100vh;
+}
+
+.contextBar {
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 0 var(--space-6);
+  background: var(--color-surface);
+  border-bottom: var(--hairline);
+  position: sticky;
+  top: 0;
+  z-index: 15;
+}
+
+.contextLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  min-width: 0;
+}
+.crumbGroup { color: var(--color-muted); }
+.crumbSep { color: var(--color-faded); }
+.crumbPage { color: var(--color-text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+
+.contextPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  border: var(--hairline);
+  background: var(--color-surface-2);
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+.contextDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-success);
+}
+.contextBadge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-accent-dark);
+}
+
+.contextRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.quickJumpWrap {
+  position: relative;
+}
+
+.quickJumpTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 30px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  border: var(--hairline);
+  background: var(--color-surface-2);
+  color: var(--color-muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition);
+}
+@media (hover: hover) {
+  .quickJumpTrigger:hover {
+    color: var(--color-text);
+    border-color: var(--color-border-strong);
+  }
+}
+
+.kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--color-surface);
+  border: var(--hairline);
+  color: var(--color-text);
+}
+
+.quickJumpPopover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 280px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-2);
+  z-index: 50;
+}
+
+.quickJumpInput {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: var(--hairline);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  margin-bottom: var(--space-2);
+}
+
+.quickJumpList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.quickJumpItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  text-align: left;
+  cursor: pointer;
+}
+.quickJumpItem:hover {
+  background: var(--color-surface-2);
+}
+.quickJumpItemLabel {
+  font-weight: 600;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.quickJumpItemGroup {
+  color: var(--color-faded);
+  font-size: 11px;
+}
+
+.main { padding: var(--space-6); min-width: 0; flex: 1; }
 
 .menuButton {
   display: inline-flex;
@@ -128,12 +305,20 @@
   background: var(--color-surface); color: var(--color-text); cursor: pointer;
 }
 
-/* Thanh trên + lớp phủ chỉ dùng khi rail là ngăn kéo. */
+.mobileCrumb {
+  margin-left: auto;
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+/* Thanh trên mobile + lớp phủ chỉ dùng khi rail là ngăn kéo. */
 .topbar, .scrim { display: none; }
 
 /* < 768px: rail thành ngăn kéo trượt từ trái (SUGGESTION-003); khớp DRAWER_QUERY trong AppShell.tsx. */
 @media (max-width: 767px) {
   .shell, .shellCollapsed { grid-template-columns: minmax(0, 1fr); }
+  .contextBar { display: none; }
   .topbar {
     display: flex; align-items: center; gap: var(--space-3);
     position: sticky; top: 0; z-index: 20;
