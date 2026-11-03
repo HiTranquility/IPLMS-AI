@@ -202,6 +202,9 @@ class LlmFactory:
         """True khi gọi thẳng OpenAI; endpoint tương thích (Ollama…) thiếu vài tính năng."""
         return not self.base_url or "api.openai.com" in self.base_url
 
+    def _provider_label(self) -> str:
+        return self.base_url or self.provider or "dịch vụ LLM"
+
     def _request(
         self, system_prompt: str, user_query: str, context: str, temperature: float | None = None
     ) -> dict[str, Any]:
@@ -249,12 +252,12 @@ class LlmFactory:
                 logger.warning(f"Model '{self.model}' not found on provider: {exc}")
                 raise ModelConfigurationError(f"Provider không có model '{self.model}'.") from exc
             except APIConnectionError as exc:
-                logger.warning(f"Cannot connect to provider '{self.base_url or 'OpenAI'}': {exc}")
-                target = self.base_url or "OpenAI"
+                target = self._provider_label()
+                logger.warning(f"Cannot connect to provider '{target}': {exc}")
                 raise ModelConfigurationError(f"Không kết nối được provider '{target}'.") from exc
             except Exception as exc:
                 logger.exception("Responses API request failed")
-                raise RagPipelineError("Không sinh được câu trả lời từ OpenAI.") from exc
+                raise RagPipelineError("Không sinh được câu trả lời từ dịch vụ LLM.") from exc
 
         # Chat Completions (Local llama-server / Qwen3.5-4B-GGUF / Ollama)
         try:
@@ -329,12 +332,12 @@ class LlmFactory:
             logger.warning(f"Model '{target_model}' not found on provider: {exc}")
             raise ModelConfigurationError(f"Provider không có model '{target_model}'.") from exc
         except APIConnectionError as exc:
-            logger.warning(f"Cannot connect to provider '{self.base_url or 'OpenAI'}': {exc}")
-            target = self.base_url or "OpenAI"
+            target = self._provider_label()
+            logger.warning(f"Cannot connect to provider '{target}': {exc}")
             raise ModelConfigurationError(f"Không kết nối được provider '{target}'.") from exc
         except Exception as exc:
             logger.exception("Responses API JSON request failed")
-            raise RagPipelineError("Không nhận được kết quả JSON từ OpenAI.") from exc
+            raise RagPipelineError("Không nhận được kết quả JSON từ dịch vụ LLM.") from exc
 
     async def _generate_json_via_chat(
         self,
@@ -412,19 +415,19 @@ class LlmFactory:
                         message = getattr(error, "message", None) or "Responses API stream failed."
                         raise RagPipelineError(str(message))
                 if not completed:
-                    raise RagPipelineError("Luồng OpenAI kết thúc trước sự kiện response.completed.")
+                    raise RagPipelineError("Luồng dịch vụ LLM kết thúc trước sự kiện response.completed.")
             except (RagPipelineError, ModelNotLoadedError, ModelConfigurationError):
                 raise
             except NotFoundError as exc:
                 logger.warning(f"Model '{self.model}' not found on provider: {exc}")
                 raise ModelConfigurationError(f"Provider không có model '{self.model}'.") from exc
             except APIConnectionError as exc:
-                logger.warning(f"Cannot connect to provider '{self.base_url or 'OpenAI'}': {exc}")
-                target = self.base_url or "OpenAI"
+                target = self._provider_label()
+                logger.warning(f"Cannot connect to provider '{target}': {exc}")
                 raise ModelConfigurationError(f"Không kết nối được provider '{target}'.") from exc
             except Exception as exc:
                 logger.exception("Responses API stream failed")
-                raise RagPipelineError("Luồng trả lời từ OpenAI bị gián đoạn.") from exc
+                raise RagPipelineError("Luồng trả lời từ dịch vụ LLM bị gián đoạn.") from exc
             return
 
         # Chat completions stream (Local llama-server / Qwen / Ollama)

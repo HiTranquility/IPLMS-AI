@@ -340,5 +340,57 @@ class EvalServiceTest(unittest.TestCase):
             asyncio.run(service.upsert_case({"question": "Phí?", "kind": "fact", "expected_facts": []}, "u"))
 
 
+class EvalDtoAndMapperTest(unittest.TestCase):
+    def test_dto_dict_compatibility_and_mapper_canonical_names(self):
+        from app.api.grpc.generated_stubs import STUBS_READY, get_stub
+        from app.api.grpc.mappers import knowledge_eval_mapper as mapper
+        from app.core.knowledge_eval.dtos import (
+            EvalScopeDto,
+            ScopeReadinessDto,
+            TestCaseDto,
+            TestRunResultDto,
+            TestRunSummaryDto,
+        )
+
+        scope = EvalScopeDto.from_raw("lot-1")
+        self.assertEqual("lot-1", scope["parking_lot_id"])
+        self.assertEqual("lot-1", scope.get("parking_lot_id"))
+
+        case_dto = TestCaseDto(question="Phí giờ?", kind="fact", expected_facts=["25.000đ"])
+        unpacked = {**case_dto}
+        self.assertEqual("Phí giờ?", unpacked["question"])
+        self.assertEqual(["25.000đ"], case_dto["expected_facts"])
+
+        run_dto = TestRunSummaryDto.from_dict({"id": "r-1", "status": "PASSED", "total": 5})
+        self.assertEqual("PASSED", run_dto["status"])
+
+        res_dto = TestRunResultDto.from_dict(
+            {"case_id": "c-1", "question": "Phí?", "kind": "fact", "passed": True}
+        )
+        self.assertTrue(res_dto["passed"])
+
+        readiness_dto = ScopeReadinessDto.from_dict(
+            {"ready": True, "reasons": [], "latest_run": run_dto, "draft_count": 2}
+        )
+        self.assertTrue(readiness_dto["ready"])
+        self.assertEqual(2, readiness_dto["draft_count"])
+
+        if STUBS_READY:
+            pb2, _ = get_stub("knowledge_service")
+            proto_case = mapper.to_case_response(case_dto)
+            self.assertEqual("Phí giờ?", proto_case.question)
+            cmd = mapper.to_create_case_command(proto_case)
+            self.assertEqual("Phí giờ?", cmd["question"])
+            self.assertIs(mapper.scope_of, mapper.to_eval_scope_query)
+            self.assertIs(mapper.to_case_dict, mapper.to_create_case_command)
+            self.assertIs(mapper.to_case, mapper.to_case_response)
+            self.assertIs(mapper.to_case_list, mapper.to_case_list_response)
+            self.assertIs(mapper.to_run, mapper.to_run_response)
+            self.assertIs(mapper.to_run_detail, mapper.to_run_detail_response)
+            self.assertIs(mapper.to_result, mapper.to_result_response)
+            self.assertIs(mapper.to_run_list, mapper.to_run_list_response)
+            self.assertIs(mapper.to_readiness, mapper.to_readiness_response)
+
+
 if __name__ == "__main__":
     unittest.main()

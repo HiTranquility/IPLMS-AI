@@ -1,11 +1,11 @@
-from app.core.console.dtos import ExportedCapture
-from app.core.dataset.services.evaluation_service import EvaluationSample
 """Map protobuf DatasetService ↔ DTO domain dataset."""
 import json
 from typing import List
 
 from app.api.grpc.generated_stubs import get_stub
+from app.core.console.dtos import ExportedCapture
 from app.core.dataset.dtos import CurationResult, SnapshotSample
+from app.core.dataset.services.evaluation_service import EvaluationSample
 
 _pb2, _ = get_stub("dataset_service")
 
@@ -27,7 +27,7 @@ def to_evaluate_response(result: CurationResult):
     )
 
 
-def to_snapshot_samples(message) -> List[SnapshotSample]:
+def to_create_snapshot_command(message) -> List[SnapshotSample]:
     return [
         SnapshotSample(
             sample_id=s.sample_id,
@@ -41,8 +41,7 @@ def to_snapshot_samples(message) -> List[SnapshotSample]:
     ]
 
 
-def to_evaluation_samples(message):
-
+def to_evaluate_snapshot_query(message) -> List[EvaluationSample]:
     return [
         EvaluationSample(sample_id=s.sample_id, image_url=s.image_url, label=s.label)
         for s in message.samples
@@ -71,8 +70,7 @@ def to_snapshot_response(lock: dict):
     )
 
 
-def to_exported_captures(message):
-
+def to_export_for_console_command(message) -> List[ExportedCapture]:
     return [
         ExportedCapture(
             capture_id=s.capture_id.lower(),
@@ -93,6 +91,12 @@ def to_exported_captures(message):
         )
         for s in message.samples
     ]
+
+
+# Backward-compatible aliases
+to_snapshot_samples = to_create_snapshot_command
+to_evaluation_samples = to_evaluate_snapshot_query
+to_exported_captures = to_export_for_console_command
 
 
 def to_export_response(result: dict):

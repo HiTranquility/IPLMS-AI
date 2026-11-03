@@ -110,7 +110,7 @@ api/rest/routes/anpr_controller.py  ─┘
 | `interceptors/` | cắt ngang (hiện có `logging_interceptor.py`) |
 | `generated/`, `generated_stubs.py` | stub sinh tự động |
 
-**[MUST]** Mapper đặt tên theo chiều: `to_<dto>_command` / `to_<dto>_query` cho chiều vào, `to_<...>_response` cho chiều ra — đúng như `vision_mapper.py` đang làm. Ngoại lệ: message của server-streaming (`to_*_event`, `to_answer_chunk`).
+**[MUST]** Mapper đặt tên theo chiều: `to_<dto>_command` / `to_<dto>_query` cho chiều vào (proto → DTO/domain), `to_<...>_response` cho chiều ra (DTO/domain → proto) — áp dụng thống nhất trên cả 7 mapper (`vision`, `copilot`, `knowledge`, `knowledge_eval`, `forecast`, `dataset`, `model_policy`). Ngoại lệ: message từng khung của server-streaming đặt `to_*_event` (`to_progress_event`, `to_result_event`) hoặc `to_answer_chunk`.
 **[NEVER]** sửa tay file trong `generated/`. Sinh lại bằng `app/script/compile_proto.py`.
 
 ### REST

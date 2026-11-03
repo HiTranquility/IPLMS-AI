@@ -12,7 +12,7 @@ from app.core.copilot.dtos.copilot_dto import (
 _pb2, _ = get_stub("copilot_service")
 
 
-def to_ask_question_request(message) -> AskQuestionRequest:
+def to_ask_question_query(message) -> AskQuestionRequest:
     return AskQuestionRequest(
         query=message.query,
         user_id=message.user_id,
@@ -23,13 +23,18 @@ def to_ask_question_request(message) -> AskQuestionRequest:
     )
 
 
-def to_dispute_request(message) -> DisputeArbitrationRequest:
+def to_arbitrate_dispute_command(message) -> DisputeArbitrationRequest:
     return DisputeArbitrationRequest(
         dispute_id=message.dispute_id,
         session_id=message.session_id,
         claim_reason=message.claim_reason,
         claimed_amount=message.claimed_amount,
     )
+
+
+# Backward-compatible aliases
+to_ask_question_request = to_ask_question_query
+to_dispute_request = to_arbitrate_dispute_command
 
 
 def to_ask_question_response(answer: CopilotAnswer):

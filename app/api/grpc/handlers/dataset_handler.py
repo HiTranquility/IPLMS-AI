@@ -8,14 +8,14 @@ import asyncio
 from app.api.grpc.generated_stubs import get_stub
 from app.api.grpc.mappers.dataset_mapper import (
     to_accept_policy_response,
+    to_create_snapshot_command,
     to_evaluate_response,
+    to_evaluate_snapshot_query,
+    to_export_for_console_command,
     to_export_response,
-    to_exported_captures,
-    to_evaluation_samples,
     to_progress_event,
     to_result_event,
     to_snapshot_response,
-    to_snapshot_samples,
 )
 from app.core.console.services.accept_policy_service import console_accept_policy_service
 from app.core.console.services.vision_import_service import console_vision_import_service
@@ -45,14 +45,14 @@ class DatasetHandler(_pb2_grpc.DatasetServiceServicer):
 
     async def BuildSnapshot(self, request, context):
         # dataset_id rỗng / mẫu trùng / split lạ → ValueError → INVALID_ARGUMENT.
-        lock = SnapshotService.build_lock(request.dataset_id, to_snapshot_samples(request))
+        lock = SnapshotService.build_lock(request.dataset_id, to_create_snapshot_command(request))
         logger.info("DatasetService.BuildSnapshot dataset=%s samples=%d", lock["dataset_id"], lock["sample_count"])
         return to_snapshot_response(lock)
 
     async def EvaluateSnapshot(self, request, context):
         # Mỗi ảnh chạy ANPR (CPU-bound) trong thread pool; lỗi từng ảnh thành một
         # dòng số liệu chứ không huỷ cả lượt. Client ngắt stream → vòng lặp dừng.
-        samples = to_evaluation_samples(request)
+        samples = to_evaluate_snapshot_query(request)
         if not samples:
             raise ValueError("Snapshot không có mẫu test-golden nào để đo")
         rows = []
@@ -73,7 +73,7 @@ class DatasetHandler(_pb2_grpc.DatasetServiceServicer):
         # IPLMS ADR-0048 §5 (A2): ghi vào DB `ai_console`. Nhập trễ nạp để process
         # inference không cần cấu hình console khi backend chưa bật kênh xuất.
 
-        result = await console_vision_import_service.import_batch(to_exported_captures(request))
+        result = await console_vision_import_service.import_batch(to_export_for_console_command(request))
         logger.info(
             "DatasetService.ExportForConsole accepted=%d rejected=%d",
             result["accepted"],

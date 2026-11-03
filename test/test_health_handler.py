@@ -43,6 +43,12 @@ class HealthHandlerTest(unittest.TestCase):
     def test_vision_does_not_depend_on_llm(self):
         self.assertEqual(self.status.SERVING, self._check("iplms.ai.vision.v1.VisionService"))
 
+    def test_model_policy_service_is_serving(self):
+        self.assertEqual(
+            self.status.SERVING,
+            self._check("iplms.ai.modelpolicy.v1.ModelPolicyService"),
+        )
+
     def test_unknown_service(self):
         self.assertEqual(self.status.SERVICE_UNKNOWN, self._check("nope.Service"))
 

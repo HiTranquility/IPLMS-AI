@@ -180,7 +180,7 @@ class EmbeddingClient:
             )
             return [_deterministic_embedding(t, self._config.dimensions) for t in texts]
 
-        target = self._base_url or "OpenAI"
+        target = self._base_url or "dịch vụ embedding"
         logger.error("Không thể kết nối dịch vụ embedding (%s): %s", target, last_exc)
         raise EmbeddingError(
             f"Không thể kết nối dịch vụ embedding ({target}): {last_exc}"
@@ -200,7 +200,7 @@ class EmbeddingClient:
                 ordered = sorted(response.data, key=lambda item: item.index)
                 vectors = [list(item.embedding) for item in ordered]
                 if len(vectors) != len(texts):
-                    raise EmbeddingError("OpenAI trả về số vector không khớp số đoạn đầu vào.")
+                    raise EmbeddingError("Dịch vụ embedding trả về số vector không khớp số đoạn đầu vào.")
                 if any(len(vector) != self._config.dimensions for vector in vectors):
                     raise EmbeddingError("Số chiều embedding không khớp schema knowledge_chunks.")
                 return vectors

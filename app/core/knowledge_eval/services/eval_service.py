@@ -11,6 +11,13 @@ from typing import Any, Dict, List, Optional, Set
 from app.config import get_config
 from app.core.copilot.engines.rag_pipeline import rag_pipeline
 from app.core.exceptions import KnowledgeGateError, ModelNotLoadedError, RagPipelineError
+from app.core.knowledge_eval.dtos import (
+    EvalScopeDto,
+    ScopeReadinessDto,
+    TestCaseDto,
+    TestRunResultDto,
+    TestRunSummaryDto,
+)
 from app.core.knowledge_eval.engines import case_generator, gate, judge
 from app.core.knowledge_eval.engines.grader import KINDS, grade
 from app.infra.database.knowledge_eval_store import knowledge_eval_store
@@ -21,6 +28,12 @@ from app.util.logger import logger
 
 _MAX_QUESTION = 500
 _MAX_ANSWER = 2000
+
+
+def _scope_id(scope: Optional[str] | EvalScopeDto) -> Optional[str]:
+    if isinstance(scope, EvalScopeDto):
+        return scope.parking_lot_id
+    return scope
 
 
 class KnowledgeEvalService:
@@ -35,36 +48,38 @@ class KnowledgeEvalService:
         self._tasks: Set[asyncio.Task] = set()
 
     # ── test cases ───────────────────────────────────────────────────────────
-    async def list_cases(self, scope: Optional[str]) -> List[Dict[str, Any]]:
-        return await self.store.list_cases(scope)
+    async def list_cases(self, scope: Optional[str] | EvalScopeDto) -> List[Dict[str, Any]]:
+        return await self.store.list_cases(_scope_id(scope))
 
-    async def upsert_case(self, case: Dict[str, Any], actor_id: str) -> Dict[str, Any]:
-        question = (case.get("question") or "").strip()
+    async def upsert_case(self, case: Dict[str, Any] | TestCaseDto, actor_id: str) -> Dict[str, Any]:
+        payload = case.to_dict() if isinstance(case, TestCaseDto) else dict(case)
+        question = (payload.get("question") or "").strip()
         if not question:
             raise ValueError("Câu hỏi không được để trống.")
-        if len(question) > _MAX_QUESTION or len(case.get("expected_answer") or "") > _MAX_ANSWER:
+        if len(question) > _MAX_QUESTION or len(payload.get("expected_answer") or "") > _MAX_ANSWER:
             raise ValueError("Câu hỏi tối đa 500 ký tự, đáp án tối đa 2000 ký tự.")
-        if case.get("kind") not in KINDS:
+        if payload.get("kind") not in KINDS:
             raise ValueError("Loại câu hỏi phải là fact, explain hoặc abstain.")
-        facts = [f.strip() for f in case.get("expected_facts") or [] if f and f.strip()]
-        if case["kind"] == "fact" and not facts:
+        facts = [f.strip() for f in payload.get("expected_facts") or [] if f and f.strip()]
+        if payload["kind"] == "fact" and not facts:
             raise ValueError("Câu loại fact cần ít nhất một thông tin bắt buộc (vd 25.000đ).")
         return await self.store.upsert_case(
             {
-                **case,
+                **payload,
                 "question": question,
-                "expected_facts": [] if case["kind"] == "abstain" else facts,
-                "expected_source": "" if case["kind"] == "abstain" else (case.get("expected_source") or "").strip(),
+                "expected_facts": [] if payload["kind"] == "abstain" else facts,
+                "expected_source": "" if payload["kind"] == "abstain" else (payload.get("expected_source") or "").strip(),
             },
             actor_id,
         )
 
-    async def delete_case(self, case_id: str, scope: Optional[str]) -> bool:
-        return await self.store.delete_case(case_id, scope)
+    async def delete_case(self, case_id: str, scope: Optional[str] | EvalScopeDto) -> bool:
+        return await self.store.delete_case(case_id, _scope_id(scope))
 
-    async def generate_cases(self, scope: Optional[str], max_cases: int) -> List[Dict[str, Any]]:
+    async def generate_cases(self, scope: Optional[str] | EvalScopeDto, max_cases: int) -> List[Dict[str, Any]]:
+        scope_val = _scope_id(scope)
         limit = max(1, min(max_cases or self.config.max_generated_cases, self.config.max_generated_cases))
-        version_ids = await self.vector_store.latest_version_ids(scope)
+        version_ids = await self.vector_store.latest_version_ids(scope_val)
         if not version_ids:
             raise KnowledgeGateError("Chưa có tài liệu nào trong phạm vi này để AI đọc và soạn câu hỏi.")
         chunks = await self.store.chunks_for_versions(version_ids, limit=40)
@@ -76,24 +91,25 @@ class KnowledgeEvalService:
             case_generator.GENERATOR_SCHEMA,
         )
         proposals = case_generator.clean_proposals(payload, {c["source"] for c in chunks}, limit)
-        return [{**p, "id": "", "parking_lot_id": scope} for p in proposals]
+        return [{**p, "id": "", "parking_lot_id": scope_val} for p in proposals]
 
     # ── runs ─────────────────────────────────────────────────────────────────
-    async def start_run(self, scope: Optional[str], started_by: str,
+    async def start_run(self, scope: Optional[str] | EvalScopeDto, started_by: str,
                         answer_profile_id: str | None = None) -> Dict[str, Any]:
-        cases = await self.store.list_cases(scope)
+        scope_val = _scope_id(scope)
+        cases = await self.store.list_cases(scope_val)
         if not cases:
             raise KnowledgeGateError("Bộ test đang trống — thêm câu hỏi trước khi chạy.")
         if len(cases) > self.config.max_cases_per_run:
             raise KnowledgeGateError(
                 f"Bộ test có {len(cases)} câu, vượt trần {self.config.max_cases_per_run} câu mỗi lượt."
             )
-        version_ids = await self.vector_store.latest_version_ids(scope)
+        version_ids = await self.vector_store.latest_version_ids(scope_val)
         if not version_ids:
             raise KnowledgeGateError("Chưa có tài liệu nào trong phạm vi này để test.")
         answer_llm = None
         if answer_profile_id:
-            if scope is not None:
+            if scope_val is not None:
                 raise KnowledgeGateError("Bộ test ứng viên model chỉ chạy trên kho tri thức chung.")
             profile = await model_policy_store.get_profile(answer_profile_id)
             if not profile or profile["task"] != "copilot_answer":
@@ -106,7 +122,7 @@ class KnowledgeEvalService:
             answer_profile_id = answer_llm.profile_id or None
         judge_llm = await self.llm.for_task("test_judge") if isinstance(self.llm, LlmFactory) else self.llm
         run = await self.store.create_run(
-            scope,
+            scope_val,
             started_by,
             total=len(cases),
             version_ids=version_ids,
@@ -116,7 +132,7 @@ class KnowledgeEvalService:
             answer_profile_id=answer_profile_id,
             judge_profile_id=getattr(judge_llm, "profile_id", "") or None,
         )
-        task = asyncio.create_task(self._execute(run["id"], scope, cases, version_ids, answer_llm, judge_llm))
+        task = asyncio.create_task(self._execute(run["id"], scope_val, cases, version_ids, answer_llm, judge_llm))
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
         return run
@@ -213,23 +229,23 @@ class KnowledgeEvalService:
         except Exception:  # pragma: no cover - DB chết giữa chừng: nhịp tim sẽ tự báo ABORTED
             logger.exception("Could not finish knowledge test run %s", run_id)
 
-    async def get_run(self, run_id: str, scope: Optional[str]) -> Dict[str, Any]:
-        run = await self.store.get_run(run_id, scope)
+    async def get_run(self, run_id: str, scope: Optional[str] | EvalScopeDto) -> Dict[str, Any]:
+        run = await self.store.get_run(run_id, _scope_id(scope))
         if run is None:
             raise KnowledgeGateError("Không tìm thấy lượt chạy trong phạm vi này.")
         return {"run": run, "results": await self.store.list_results(run_id)}
 
-    async def list_runs(self, scope: Optional[str]) -> List[Dict[str, Any]]:
-        return await self.store.list_runs(scope)
+    async def list_runs(self, scope: Optional[str] | EvalScopeDto) -> List[Dict[str, Any]]:
+        return await self.store.list_runs(_scope_id(scope))
 
     async def review_result(
-        self, run_id: str, case_id: str, scope: Optional[str],
+        self, run_id: str, case_id: str, scope: Optional[str] | EvalScopeDto,
         approved: bool, note: str, reviewer_id: str,
     ) -> Dict[str, Any]:
         if len(note) > 1000:
             raise ValueError("Ghi chú đánh giá tối đa 1000 ký tự.")
         result = await self.store.review_result(
-            run_id, case_id, scope, approved, note.strip(), reviewer_id
+            run_id, case_id, _scope_id(scope), approved, note.strip(), reviewer_id
         )
         if result is None:
             raise KnowledgeGateError("Không tìm thấy kết quả đã chạy trong phạm vi này.")
@@ -259,11 +275,12 @@ class KnowledgeEvalService:
         reasons.extend(gate.injection_reasons(flagged or []))
         return reasons
 
-    async def readiness(self, scope: Optional[str]) -> Dict[str, Any]:
-        runs = await self.store.list_runs(scope, limit=1)
+    async def readiness(self, scope: Optional[str] | EvalScopeDto) -> Dict[str, Any]:
+        scope_val = _scope_id(scope)
+        runs = await self.store.list_runs(scope_val, limit=1)
         latest = runs[0] if runs else None
-        version_ids = await self.vector_store.latest_version_ids(scope)
-        cases = await self.store.list_cases(scope)
+        version_ids = await self.vector_store.latest_version_ids(scope_val)
+        cases = await self.store.list_cases(scope_val)
         unpublished = await self.store.count_unpublished(latest["version_ids"]) if latest else 0
         review = await self.store.review_summary(latest["id"]) if latest else {"reviewed": 0, "rejected": 0}
         flagged = await self.store.flagged_sources(version_ids) if version_ids else []
@@ -282,8 +299,8 @@ class KnowledgeEvalService:
             "draft_count": unpublished,
         }
 
-    async def publish(self, scope: Optional[str], published_by: str) -> int:
-        return await self.store.publish_scope(scope, published_by, self._readiness_reasons)
+    async def publish(self, scope: Optional[str] | EvalScopeDto, published_by: str) -> int:
+        return await self.store.publish_scope(_scope_id(scope), published_by, self._readiness_reasons)
 
 
 knowledge_eval_service = KnowledgeEvalService()

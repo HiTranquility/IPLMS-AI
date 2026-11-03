@@ -25,6 +25,7 @@ _KNOWN_SERVICES = frozenset({
     "iplms.ai.knowledge.v1.KnowledgeService",
     "iplms.ai.knowledge.v1.KnowledgeEvalService",
     "iplms.ai.dataset.v1.DatasetService",
+    "iplms.ai.modelpolicy.v1.ModelPolicyService",
 })
 
 
