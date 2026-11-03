@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Xoá mật khẩu DB cũ khỏi MỌI nhánh + tag của IPLMS-AI rồi force push (IPLMS-AI bug-053).
 # Cách dùng (Git Bash / Linux / macOS, cần git + perl — Git Bash có sẵn perl):
-#   1. bash clean_history.sh            -> chỉ chuẩn bị + kiểm, KHÔNG push
-#   2. bash clean_history.sh --push     -> force push sau khi đã xem kết quả kiểm
+#   1. bash clean-history.sh            -> chỉ chuẩn bị + kiểm, KHÔNG push
+#   2. bash clean-history.sh --push     -> force push sau khi đã xem kết quả kiểm
 # Mật khẩu cũ được script TỰ lấy từ dòng `PGPASSWORD=` trong .github/workflows/ci.yml
 # của nhánh main hiện tại, không in ra màn hình. Có file secret.txt cạnh script thì dùng file đó.
 # Trước khi --push: tạm tắt branch protection chặn force push trên main/develop (nếu có).

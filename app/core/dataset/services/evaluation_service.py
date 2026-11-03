@@ -23,11 +23,7 @@ MAX_FAILURES_REPORTED = 50
 CONFIDENCE_BUCKETS = 10
 
 
-@dataclass(frozen=True)
-class EvaluationSample:
-    sample_id: str
-    image_url: str
-    label: str
+from app.core.dataset.dtos.sample_dto import EvaluationSample
 
 
 def fetch_image(url: str) -> bytes:

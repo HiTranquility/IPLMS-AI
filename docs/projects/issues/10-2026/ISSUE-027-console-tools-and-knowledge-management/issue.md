@@ -1,6 +1,6 @@
-# 🏷️ ISSUE-007: Củng cố kết nối DB, quản lý tài liệu tri thức, batch upload và tối ưu phân bổ VRAM 4GB cho Console Tools
+# 🏷️ ISSUE-027: Củng cố kết nối DB, quản lý tài liệu tri thức, batch upload và tối ưu phân bổ VRAM 4GB cho Console Tools
 
-> **Đích:** `docs/projects/issues/10-2026/ISSUE-007-console-tools-and-knowledge-management/issue.md` · **Luật chung:** [templates/README](../../../../templates/README.md)
+> **Đích:** `docs/projects/issues/10-2026/ISSUE-027-console-tools-and-knowledge-management/issue.md` · **Luật chung:** [templates/README](../../../../templates/README.md)
 
 | | |
 |---|---|

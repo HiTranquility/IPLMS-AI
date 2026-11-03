@@ -32,7 +32,7 @@
 
 ### Chặng 2 — Connections
 
-- [x] ERD + thuộc tính + index chốt trước khi viết DDL: [schema-chang-2-connections.md](schema-chang-2-connections.md) — ✅ @HiTranquility 2026-10-28, nguyên đề xuất Q-A…Q-F.
+- [x] ERD + thuộc tính + index chốt trước khi viết DDL: [schema-chang-2-connections.md](phase/schema-chang-2-connections.md) — ✅ @HiTranquility 2026-10-28, nguyên đề xuất Q-A…Q-F.
 - [x] Bảng `ai_model_connections` + `uq_ai_model_connections_active_name` trong `ModelPolicyStore.ensure_schema()`; store tạo/sửa (bản mới + `replaces_id`)/tắt/ghi kết quả thử (`app/infra/database/model_policy_store.py`).
 - [x] API `GET/POST /api/models/connections`, `POST …/{id}/disable`, `POST …/{id}/test`, `POST …/test` (bản nháp, không ghi `ai-db`) — `app/api/rest/routes/console_model_controller.py`; xem `ai:metrics:read`, ghi/thử `ai:model:propose`; mỗi thao tác ghi `audit_event` (`model.connection_create|disable|test`).
 - [x] Chống SSRF: allowlist `AI_CONSOLE_MODEL_CONNECTION_HOSTS`, luôn chặn link-local/metadata sau khi phân giải DNS, nối thẳng IP đã kiểm, không theo redirect, đọc ≤ 1 MiB (`app/core/console/guardrails/model_endpoint.py`, `app/infra/llm/connection_probe.py`); timeout 10 s; 10 lần/phút/thành viên → 429 (`app/core/console/engines/rate_limiter.py`).
