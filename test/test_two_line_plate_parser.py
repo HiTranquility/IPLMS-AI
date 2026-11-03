@@ -304,7 +304,7 @@ class RunAnprTwoLineIntegrationTest(unittest.TestCase):
             "yolo_model": None,
             "initialized": True,
         }
-        with patch.dict("app.core.vision.engines.anpr.models._state", state):
+        with patch.dict("app.core.vision.engines.anpr.model_loader._state", state):
             res = run_anpr(buf.tobytes())
 
         self.assertTrue(res["is_two_line"])

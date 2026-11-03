@@ -6,8 +6,11 @@ from pydantic import BaseModel, Field
 from app.core.enums import ArbitrationVerdict
 
 
+MAX_QUERY_CHARS = 4000
+
+
 class AskQuestionRequest(BaseModel):
-    query: str
+    query: str = Field(..., max_length=MAX_QUERY_CHARS)
     user_id: str
     user_role: str = "member"
     parking_lot_id: Optional[str] = None

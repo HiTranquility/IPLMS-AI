@@ -10,24 +10,17 @@ from __future__ import annotations
 import hashlib
 import urllib.parse
 import urllib.request
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Optional
 
 from app.config import get_config
+from app.core.dataset.dtos.sample_dto import EvalSample
 from app.core.dataset.engines.plate_metrics import aggregate, score_one
 
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 FETCH_TIMEOUT_SECONDS = 15
 MAX_FAILURES_REPORTED = 50
 CONFIDENCE_BUCKETS = 10
-
-
-@dataclass(frozen=True)
-class EvaluationSample:
-    sample_id: str
-    image_url: str
-    label: str
 
 
 def fetch_image(url: str) -> bytes:
@@ -64,7 +57,7 @@ def model_version() -> str:
 
 
 def evaluate_one(
-    sample: EvaluationSample,
+    sample: EvalSample,
     *,
     fetch: Callable[[str], bytes] = fetch_image,
     run: Callable[[bytes], Dict[str, object]] = _run_engine,
@@ -124,3 +117,13 @@ def summarize(rows: List[Dict[str, object]]) -> Dict[str, object]:
         "confidenceBuckets": {"correct": _histogram(correct), "wrong": _histogram(wrong)},
         "failures": failures,
     }
+
+
+class EvalService:
+    fetch_image = staticmethod(fetch_image)
+    model_version = staticmethod(model_version)
+    evaluate_one = staticmethod(evaluate_one)
+    summarize = staticmethod(summarize)
+
+
+eval_service = EvalService()

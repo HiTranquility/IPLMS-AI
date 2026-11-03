@@ -11,7 +11,7 @@ from pathlib import Path
 
 from app.core.enums import IngestStatus
 from app.core.knowledge.dtos.knowledge_dto import IngestDocumentCommand
-from app.core.knowledge.services import ingestion_service
+from app.core.knowledge import ingestion_service
 
 
 async def _main() -> int:

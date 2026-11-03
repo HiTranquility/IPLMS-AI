@@ -1,4 +1,4 @@
-"""Đăng nhập AI Console (P1b): luật phiên, TOTP, mật khẩu, Google OIDC, ConsoleAuthService."""
+"""Đăng nhập AI Console (P1b): luật phiên, TOTP, mật khẩu, Google OIDC, AuthService."""
 import asyncio
 import base64
 import hashlib
@@ -13,7 +13,7 @@ import pyotp
 from cryptography.fernet import Fernet
 
 from app.core.console.engines import session_policy
-from app.core.console.services.auth_service import ConsoleAuthService
+from app.core.console.services.auth_service import AuthService
 from app.core.exceptions import ConsoleAccessDenied, ConsoleAuthError
 from app.infra.identity.google_oidc import GoogleIdentity, GoogleOidcClient, new_pkce_pair
 from app.infra.identity.password import hash_password, verify_password
@@ -138,7 +138,7 @@ class GoogleOidcTest(unittest.TestCase):
                 self.client._verify("t", "n")
 
 
-# ── ConsoleAuthService trên store giả ─────────────────────────────────────────
+# ── AuthService trên store giả ─────────────────────────────────────────
 
 class Clock:
     def __init__(self):
@@ -254,14 +254,14 @@ class FakeGoogle:
         return self.identity
 
 
-class ConsoleAuthServiceTest(unittest.TestCase):
+class AuthServiceTest(unittest.TestCase):
     def setUp(self):
         self.clock = Clock()
         self.store = FakeStore(self.clock)
         self.vault = TotpVault(Fernet.generate_key().decode(), "Test")
         self.google = FakeGoogle(GoogleIdentity("g-1", "lead@x.vn"))
         config = SimpleNamespace(session_ttl_hours=8, idle_timeout_minutes=30, step_up_minutes=5)
-        self.service = ConsoleAuthService(self.store, self.google, self.vault, config, self.clock)
+        self.service = AuthService(self.store, self.google, self.vault, config, self.clock)
 
     def code(self, err):
         return err.exception.code
@@ -392,7 +392,7 @@ class ConsoleAuthServiceTest(unittest.TestCase):
             pass
 
         self.store = ConsoleStore(self.clock)
-        self.service = ConsoleAuthService(self.store, self.google, self.vault, self.service._config, self.clock)
+        self.service = AuthService(self.store, self.google, self.vault, self.service._config, self.clock)
         self.store.add_member("lead@x.vn")
         raw = self.login_google()
         run(self.service.totp_enrollment_uri(raw))

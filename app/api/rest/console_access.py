@@ -4,7 +4,7 @@ from fastapi import Request, Response
 from app.config import get_config
 from app.core.console.dtos import ConsoleActor
 from app.core.console.engines import access_policy
-from app.core.console.services import console_auth_service
+from app.core.console import auth_service
 from app.core.exceptions import ConsoleAccessDenied
 
 SESSION_COOKIE = "ai_console_session"
@@ -32,7 +32,7 @@ def require_permission(permission: str):
         raise ValueError(f"Quyền console không tồn tại: {permission}")
 
     async def dependency(request: Request) -> ConsoleActor:
-        return await console_auth_service.authorize(session_token(request), permission)
+        return await auth_service.authorize(session_token(request), permission)
 
     return dependency
 
@@ -43,7 +43,7 @@ def require_any_permission(*permissions: str):
             raise ValueError(f"Quyền console không tồn tại: {permission}")
 
     async def dependency(request: Request) -> ConsoleActor:
-        return await console_auth_service.authorize_any(session_token(request), permissions)
+        return await auth_service.authorize_any(session_token(request), permissions)
 
     return dependency
 

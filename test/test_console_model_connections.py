@@ -15,7 +15,7 @@ from uuid import uuid4
 from app.core.console.dtos import ConsoleActor
 from app.core.console.engines.rate_limiter import SlidingWindowLimiter
 from app.core.console.guardrails import model_endpoint as guard
-from app.core.console.services.model_connection_service import ConsoleModelConnectionService
+from app.core.console.services.model_connection_service import ModelConnectionService
 from app.core.exceptions import ConsoleAccessDenied, ConsoleRateLimited, KnowledgeGateError
 from app.infra.llm import connection_probe
 
@@ -253,10 +253,10 @@ class ServiceTest(unittest.TestCase):
             self.probe_calls.append((provider, base_url, secret))
             return {"ok": True, "error": "", "latency_ms": 5, "models": ["m"], "detail": ""}
 
-        self.service = ConsoleModelConnectionService(
+        self.service = ModelConnectionService(
             self.store, self.audit, probe, SlidingWindowLimiter(10, 60),
         )
-        self.cfg = patch.object(ConsoleModelConnectionService, "_cfg", staticmethod(lambda: _Cfg))
+        self.cfg = patch.object(ModelConnectionService, "_cfg", staticmethod(lambda: _Cfg))
         self.cfg.start()
 
     def tearDown(self):
@@ -332,7 +332,7 @@ class ServiceTest(unittest.TestCase):
         def hang(*args):
             time.sleep(4)
 
-        service = ConsoleModelConnectionService(self.store, self.audit, hang, SlidingWindowLimiter(10, 60))
+        service = ModelConnectionService(self.store, self.audit, hang, SlidingWindowLimiter(10, 60))
         async def run():
             # Đo trong event loop: route trả lời sau timeout + 1 s, không chờ thread treo.
             started = time.monotonic()
@@ -355,13 +355,13 @@ class HttpTest(unittest.TestCase):
         self.H, self._session = H, _session
 
     def _as(self, roles):
-        from app.core.console.services import console_auth_service
+        from app.core.console import auth_service
 
-        return patch.object(console_auth_service, "resolve", new_callable=AsyncMock,
+        return patch.object(auth_service, "resolve", new_callable=AsyncMock,
                             return_value=self._session(roles))
 
     def test_quyen_va_429(self):
-        from app.core.console import console_model_connection_service as svc
+        from app.core.console import model_connection_service as svc
 
         ok = {"ok": True, "error": "", "latency_ms": 3, "models": ["m"], "detail": ""}
         limiter = SlidingWindowLimiter(10, 60)

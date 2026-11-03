@@ -26,7 +26,7 @@ class ConsoleHttpFlowTest(unittest.TestCase):
         from fastapi.testclient import TestClient
 
         from app.console_main import app
-        from app.core.console.services import console_auth_service, console_member_service
+        from app.core.console import auth_service, member_service
 
         base_url = os.environ["AI_TEST_DATABASE_URL"]
         self.schema = "console_http_" + uuid4().hex
@@ -43,9 +43,9 @@ class ConsoleHttpFlowTest(unittest.TestCase):
             "admin@x.vn", "Admin", hash_password(PASSWORD), vault.encrypt(self.secret), "ai_console_admin"
         ))
         self.patches = [
-            patch.object(console_auth_service, "store", store),
-            patch.object(console_auth_service, "_vault", vault),
-            patch.object(console_member_service, "store", store),
+            patch.object(auth_service, "store", store),
+            patch.object(auth_service, "_vault", vault),
+            patch.object(member_service, "store", store),
         ]
         for p in self.patches:
             p.start()

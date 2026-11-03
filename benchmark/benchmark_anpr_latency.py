@@ -54,7 +54,7 @@ if str(AI_ROOT) not in sys.path:
 import cv2
 import numpy as np
 
-from app.core.vision.engines.anpr import models
+from app.core.vision.engines.anpr import model_loader
 from app.core.vision.engines.anpr.detector import detect_plate as pytorch_detect_plate
 from app.core.vision.engines.anpr.onnx_engine import AnprOnnxEngine
 from app.util.logger import logger
@@ -176,11 +176,11 @@ def load_or_generate_test_images() -> Dict[str, Dict[str, Any]]:
 
 def init_pytorch_engine() -> Tuple[Callable[[np.ndarray], Tuple[Any, Optional[float]]], str]:
     """Khởi tạo PyTorch YOLO Engine."""
-    if models.yolo_model() is None:
+    if model_loader.yolo_model() is None:
         from app.config import get_config
 
-        models._load_yolo(get_config().vision)
-    yolo = models.yolo_model()
+        model_loader._load_yolo(get_config().vision)
+    yolo = model_loader.yolo_model()
     desc = "PyTorch YOLOv8n (CPU eager mode)"
     if yolo is not None:
         desc += f" [Model: {getattr(yolo, 'model_name', 'best.pt')}]"

@@ -13,7 +13,7 @@ import numpy as np
 
 from app.core.vision.engines.anpr.engine import run_anpr
 
-_STATE = "app.core.vision.engines.anpr.models._state"
+_STATE = "app.core.vision.engines.anpr.model_loader._state"
 
 
 class _Reader:

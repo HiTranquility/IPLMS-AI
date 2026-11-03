@@ -59,7 +59,7 @@ def _fold(text: str) -> tuple[str, list[int]]:
     return "".join(chars), origin
 
 
-def find_instructions(text: str) -> List[str]:
+def find_injection_phrases(text: str) -> List[str]:
     """Các trích dẫn (≤ 80 ký tự, theo text gốc) nghi là lệnh cho AI; rỗng = sạch."""
     folded, origin = _fold(text)
     source = unicodedata.normalize("NFC", text)

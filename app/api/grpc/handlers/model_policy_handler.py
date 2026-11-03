@@ -3,7 +3,7 @@ from app.api.grpc.generated_stubs import get_stub
 from app.api.grpc.mappers.model_policy_mapper import (
     to_create_profile_command, to_model_profile_response,
 )
-from app.core.model_policy.services import model_policy_service
+from app.core.model_policy import model_policy_service
 
 _pb2, _pb2_grpc = get_stub("model_policy_service")
 

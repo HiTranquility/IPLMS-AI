@@ -19,6 +19,7 @@ import torch
 from PIL import Image
 
 from app.core.vision.engines import vehicle_classifier
+from app.infra.model_registry import ArtifactResolutionError
 
 
 def _png() -> bytes:
@@ -88,6 +89,57 @@ class VehicleClassifierTest(unittest.TestCase):
             ):
                 self.assertIsNone(vehicle_classifier.classify_vehicle(_png()))
 
+        self.assertTrue(vehicle_classifier._state["init"])
+        self.assertIsNone(vehicle_classifier._state["model"])
+
+    def test_artifact_resolution_error_or_invalid_labels_degrades_gracefully(self):
+        # 1. Lệch số nhãn cấu hình -> không làm sập ANPR, tắt tầng phân loại
+        vehicle_classifier._state.update(init=False, model=None)
+        bad_labels_vision = SimpleNamespace(
+            vehicle_checkpoint="missing.pth",
+            vehicle_artifact_url="",
+            vehicle_artifact_sha256="",
+            vehicle_model_version="v1",
+            vehicle_model="NetV2",
+            vehicle_num_classes=4,
+            vehicle_label_list=["car_sedan", "motorbike"],
+            vehicle_img_size=32,
+            vehicle_min_confidence=0.6,
+            device="cpu",
+        )
+        with patch.object(
+            vehicle_classifier, "get_config", return_value=SimpleNamespace(vision=bad_labels_vision)
+        ):
+            self.assertIsNone(vehicle_classifier.classify_vehicle(_png()))
+        self.assertTrue(vehicle_classifier._state["init"])
+        self.assertIsNone(vehicle_classifier._state["model"])
+
+        # 2. ArtifactResolutionError -> không làm sập ANPR, tắt tầng phân loại
+        vehicle_classifier._state.update(init=False, model=None)
+        valid_vision = SimpleNamespace(
+            vehicle_checkpoint="missing.pth",
+            vehicle_artifact_url="https://example.invalid/vehicle.pth",
+            vehicle_artifact_sha256="",
+            vehicle_model_version="v1",
+            vehicle_model="NetV2",
+            vehicle_num_classes=4,
+            vehicle_label_list=["car_sedan", "car_suv", "motorbike", "truck"],
+            vehicle_img_size=32,
+            vehicle_min_confidence=0.6,
+            device="cpu",
+        )
+
+        def _raise_artifact_err(_spec):
+            raise ArtifactResolutionError("Không tải được vehicle-classifier")
+
+        with patch.object(
+            vehicle_classifier, "get_config", return_value=SimpleNamespace(vision=valid_vision)
+        ), patch.object(
+            vehicle_classifier,
+            "get_model_artifact_registry",
+            return_value=SimpleNamespace(resolve=_raise_artifact_err),
+        ):
+            self.assertIsNone(vehicle_classifier.classify_vehicle(_png()))
         self.assertTrue(vehicle_classifier._state["init"])
         self.assertIsNone(vehicle_classifier._state["model"])
 

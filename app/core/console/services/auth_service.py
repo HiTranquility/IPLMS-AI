@@ -37,7 +37,7 @@ def _reason(reason: str) -> str:
     return cleaned
 
 
-class ConsoleAuthService:
+class AuthService:
     def __init__(self, store=None, google=None, vault=None, config=None, clock=None) -> None:
         self.store = store or console_store
         self._config = config or get_config().console
@@ -199,4 +199,4 @@ class ConsoleAuthService:
             await self.store.revoke_session(session["session_id"], session["member_id"])
 
 
-console_auth_service = ConsoleAuthService()
+auth_service = AuthService()

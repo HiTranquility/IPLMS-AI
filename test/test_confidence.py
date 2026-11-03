@@ -75,7 +75,7 @@ class CombineConfidenceTest(unittest.TestCase):
 class ReadWithConfidenceTest(unittest.TestCase):
     def _read(self, results):
         with patch.dict(
-            "app.core.vision.engines.anpr.models._state",
+            "app.core.vision.engines.anpr.model_loader._state",
             {"ocr_reader": _FakeReader(results)},
         ):
             return read_with_confidence(object())
@@ -167,7 +167,7 @@ class DetectPlateYoloTest(unittest.TestCase):
         )
 
         with patch.dict(
-            "app.core.vision.engines.anpr.models._state",
+            "app.core.vision.engines.anpr.model_loader._state",
             {"yolo_model": model},
         ):
             crop, confidence = detect_plate(image)
@@ -180,7 +180,7 @@ class DetectPlateYoloTest(unittest.TestCase):
         model = _FakeYolo(xyxy=[[10, 10, 12, 12]], confidence=[0.90])
 
         with patch.dict(
-            "app.core.vision.engines.anpr.models._state",
+            "app.core.vision.engines.anpr.model_loader._state",
             {"yolo_model": model},
         ):
             with self.assertRaises(PlateRecognitionError):

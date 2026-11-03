@@ -28,7 +28,7 @@ api/          ⟶  core/           ⟶  infra/
 |---|---|---|
 | `app/api/` | gRPC handler · REST route · mapper · schema | `core/` |
 | `app/core/` | domain theo khuôn §2 | `infra/`, `util/`, `config/`; domain khác chỉ qua `__init__` của nó |
-| `app/infra/` | pgvector · Parquet · LLM factory + loader prompt · embedding · storage · ocr | `config/`, `util/`, `core.exceptions` |
+| `app/infra/` | pgvector · Parquet · LLM factory + loader prompt · embedding · storage · ocr | `config/`, `util/`, `core.exceptions` (ngoại lệ hợp thức: ném lỗi nghiệp vụ chuẩn để interceptor gRPC quy đổi status theo §9) |
 
 - **[NEVER]** `app/core/` import `grpc`, `_pb2`, hay `generated_stubs`. Đã kiểm: **0 chỗ vi phạm**. Giữ vậy — core không được biết nó đang được gọi qua giao thức nào.
 - **[NEVER]** `app/api/` import thẳng `engines/`. Đã kiểm: **0 chỗ vi phạm**. Handler/route chỉ gọi `services/`.
@@ -39,6 +39,17 @@ api/          ⟶  core/           ⟶  infra/
 Lý do và phương án đã loại: [ADR-0005](../projects/adrs/10-2026/0005-khuon-domain-core-ba-thu-muc-va-slot-tuy-chon.md).
 
 **Domain = bounded context, trùng tên gRPC service:** `vision` · `copilot` · `knowledge` · `knowledge_eval` · `forecast` · `dataset` · `model_policy`, cộng `console` (chỉ REST). Năng lực bên trong (`anpr`, `rag`, `dispute`) là **package con**, không phải domain riêng.
+
+| Domain | Cổng phục vụ | `dtos/` | `engines/` | `services/` | Slot tuỳ chọn (`workflows/` · `guardrails/` · `constants.py` · `messages.py`) |
+|---|---|---|---|---|---|
+| `vision` | gRPC `VisionService` + REST `/api/v1/anpr` | `vision_dto.py` | `anpr/`, `vehicle_classifier.py` | `anpr_service.py`, `anti_fraud_service.py` | `constants.py`, `README.md` |
+| `copilot` | gRPC `CopilotService` + REST `/api/v1/copilot` | `copilot_dto.py` | `rag_pipeline.py` | `copilot_service.py`, `usage_service.py` | `workflows/dispute/` (`state.py`, `nodes.py`, `graph.py`), `guardrails/` (`guardrail_manager.py`, `output_guard.py`, `pii_redactor.py`, `text_normalize.py`), `messages.py`, `README.md` |
+| `knowledge` | gRPC `KnowledgeService` + REST `/api/v1/knowledge` | `knowledge_dto.py` | `chunker.py`, `document_parser.py` | `ingestion_service.py` | `guardrails/injection_scan.py`, `constants.py` |
+| `knowledge_eval` | gRPC `KnowledgeEvalService` | `eval_dto.py` | `case_generator.py`, `gate.py`, `grader.py`, `judge.py` | `eval_service.py` | `README.md` |
+| `forecast` | gRPC `ForecastService` + REST `/api/v1/forecast` | `forecast_dto.py` | `baseline_forecaster.py`, `lake_forecaster.py`, `pricing_advisor.py` | `forecast_service.py` | `constants.py`, `README.md` |
+| `dataset` | gRPC `DatasetService` | `sample_dto.py` | `image_quality.py`, `plate_metrics.py`, `sample_selector.py` | `curation_service.py`, `eval_service.py`, `snapshot_service.py` | `README.md` |
+| `model_policy` | gRPC `ModelPolicyService` | `model_policy_dto.py` (`ModelProfileDraft`) | `validation.py` | `model_policy_service.py` | — |
+| `console` | REST `:8090` (`/console/api/*`) | `console_dto.py` (`ConsoleActor`, `ConsoleSession`, `ExportedCapture`) | `access_policy.py`, `audit_accuracy.py`, `demo_plate_generator.py`, `rate_limiter.py`, `session_policy.py` | `accept_policy_service.py`, `auth_service.py`, `copilot_lab_service.py`, `member_service.py`, `model_connection_service.py`, `model_lab_service.py`, `tools_service.py`, `vision_import_service.py`, `vision_lab_service.py` | `guardrails/model_endpoint.py` |
 
 ```text
 app/core/<domain>/
@@ -55,6 +66,7 @@ app/core/<domain>/
 
 - **[NEVER]** tạo thư mục/file ngoài danh sách trên. Cần slot mới thì sửa ADR-0005 trước. CI chạy `script/check_core_layout.py` để kiểm.
 - **[NEVER]** tạo thư mục rỗng chỉ để đủ khuôn. Domain chưa có DTO/engine thật thì để trống, thêm khi có.
+- **[MUST]** DTO khai báo trong `dtos/<tên>_dto.py` (không khai báo `class` trực tiếp trong `dtos/__init__.py` hay `@dataclass` trong `services/`). Mỗi file trong `services/` đặt tên `<stem>_service.py`, khai báo `class <Stem>Service` (PascalCase khớp `<stem>_service`, không lặp tiền tố domain) và singleton `<stem>_service = <Stem>Service()`. `services/__init__.py` chỉ giữ docstring để không che submodule `app.core.<domain>.services.<stem>_service`; public API xuất ở `<domain>/__init__.py`.
 - **[MUST]** Hằng số dùng ≥2 domain ở gốc `core/constants.py`; hằng chỉ một domain dùng ở `<domain>/constants.py`; ngưỡng riêng một module giữ cạnh code dùng nó. Gốc `core/` chỉ có `constants.py` · `enums.py` · `exceptions.py`.
 - **[MUST]** Code dùng chung giữa hai domain ở lại domain sở hữu, domain kia import qua `__init__`.
 - **[GOTCHA]** Import bất kỳ module nào trong một domain (kể cả `messages.py`) là chạy `__init__.py` của domain đó, kéo cả service và thư viện nặng (copilot ~2,3 s). Module cần nhẹ (như `knowledge_eval/engines/grader.py`, chỉ dùng stdlib) thì không import chéo domain. Muốn ràng buộc thì dùng test hợp đồng. Ví dụ: marker câu từ chối ở `grader.py`, và `test_knowledge_eval.py` kiểm nó nhận ra `copilot.messages.NO_CONTEXT_ANSWER`.
@@ -65,7 +77,7 @@ app/core/<domain>/
 |---|---|
 | Text gửi LLM: system prompt, khuôn user message, JSON schema output | `data/prompts/<tên>/vN.md` (+ `user.md`, `schema.json`), nạp qua `prompt_store` (`app/infra/llm/prompts.py`) |
 | Đọc file / DB / lake | `app/infra/` (Parquet occupancy: `infra/datalake/parquet_occupancy_store.py`) |
-| Dữ liệu mẫu, adapter giả | `test/` hoặc `app/script/` (ngoại lệ: `copilot/workflows/dispute/fixtures.py` khi workflow chưa nối backend) |
+| Dữ liệu mẫu, adapter giả | `test/` hoặc `app/script/` (ngoại lệ: `copilot/workflows/dispute/fixtures.py` khi workflow chưa nối backend; `console/engines/demo_plate_generator.py` sinh ảnh biển số mẫu cho sandbox khi bật `demo_seed_enabled`) |
 
 Hiện có: `copilot_rag_system` (Copilot), `eval_judge`, `eval_generator` (knowledge_eval), `redteam_attacker` (LLM tấn công của `app/script/redteam_agent.py`).
 
@@ -121,7 +133,8 @@ api/rest/routes/anpr_controller.py  ─┘
 
 ## 4. Config
 
-`app/config/` chia theo mối quan tâm, mỗi nhóm một file `<concern>_config.py` (xem thư mục để biết danh sách hiện tại; không liệt kê ở đây vì danh sách cũ đã trôi).
+`app/config/` chia theo mối quan tâm, mỗi nhóm một file `<concern>_config.py` được gom tại `app_config.py` (`AppConfig`):
+- `server_config.py`, `vision_config.py`, `llm_config.py`, `embedding_config.py`, `datalake_config.py`, `logging_config.py`, `model_registry_config.py`, `object_storage_config.py`, `workflow_config.py`, `eval_config.py`, `console_config.py`, `telemetry_config.py`, và `runtime_override_config.py`.
 
 - **[MUST]** đọc config qua `from app.config import get_config`. **[NEVER]** đọc `os.environ` rải rác trong engine/service.
 - **[MUST]** thêm nhóm cấu hình mới = thêm **một file** trong `app/config/`, không nhét vào `app_config.py`.

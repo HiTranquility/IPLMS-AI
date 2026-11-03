@@ -45,14 +45,14 @@ class AnprBenchmarkUnitTest(unittest.TestCase):
     """Kiểm thử toàn diện các module của runner benchmark."""
 
     def setUp(self):
-        from app.core.vision.engines.anpr import models as anpr_models
+        from app.core.vision.engines.anpr import model_loader as anpr_models
         from app.infra.ocr import reader as ocr_reader_module
 
         self._saved_anpr_state = dict(anpr_models._state)
         self._saved_reader = ocr_reader_module._reader
 
     def tearDown(self):
-        from app.core.vision.engines.anpr import models as anpr_models
+        from app.core.vision.engines.anpr import model_loader as anpr_models
         from app.infra.ocr import reader as ocr_reader_module
 
         anpr_models._state.update(self._saved_anpr_state)

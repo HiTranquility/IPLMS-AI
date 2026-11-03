@@ -25,7 +25,7 @@ def _reason(text: str) -> str:
     return cleaned
 
 
-class ConsoleAcceptPolicyService:
+class AcceptPolicyService:
     def __init__(self, store=None) -> None:
         self.store = store or console_vision_store
 
@@ -75,4 +75,4 @@ class ConsoleAcceptPolicyService:
         await self.store.decide_policy(policy_id, actor.member_id, decision, _reason(reason))
 
 
-console_accept_policy_service = ConsoleAcceptPolicyService()
+accept_policy_service = AcceptPolicyService()

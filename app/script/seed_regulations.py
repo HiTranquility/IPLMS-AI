@@ -89,7 +89,7 @@ async def _ingest_demo_data() -> None:
     made retrieval both unusable and misleading.
     """
     from app.core.knowledge.dtos.knowledge_dto import IngestDocumentCommand
-    from app.core.knowledge.services import ingestion_service
+    from app.core.knowledge import ingestion_service
     from app.infra.database.pgvector_client import pgvector_client
 
     for index, chunk in enumerate(SAMPLE_KNOWLEDGE_CHUNKS, start=1):

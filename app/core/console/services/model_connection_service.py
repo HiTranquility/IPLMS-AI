@@ -43,7 +43,7 @@ def _summary(values: dict[str, Any]) -> str:
     )
 
 
-class ConsoleModelConnectionService:
+class ModelConnectionService:
     def __init__(
         self, store=None, audit_store=None,
         probe: Optional[Callable[..., dict[str, Any]]] = None,
@@ -156,4 +156,4 @@ class ConsoleModelConnectionService:
         return result
 
 
-console_model_connection_service = ConsoleModelConnectionService()
+model_connection_service = ModelConnectionService()

@@ -9,18 +9,18 @@ from app.core.knowledge_eval.dtos import (
 
 __all__ = [
     "EvalScopeDto",
-    "KnowledgeEvalService",
+    "EvalService",
     "ScopeReadinessDto",
     "TestCaseDto",
     "TestRunResultDto",
     "TestRunSummaryDto",
-    "knowledge_eval_service",
+    "eval_service",
 ]
 
 
 def __getattr__(name: str):
-    if name in ("KnowledgeEvalService", "knowledge_eval_service"):
-        from app.core.knowledge_eval import services
+    if name in ("EvalService", "eval_service"):
+        from app.core.knowledge_eval.services import eval_service as _mod
 
-        return getattr(services, name)
+        return getattr(_mod, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

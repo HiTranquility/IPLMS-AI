@@ -14,7 +14,7 @@ import numpy as np
 
 from app.core.constants import FALLBACK_PLATE_NUMBER
 from app.core.exceptions import InvalidImageError, PlateRecognitionError
-from app.core.vision.engines.anpr import models
+from app.core.vision.engines.anpr import model_loader
 from app.core.vision.engines.anpr.detector import detect_plate
 from app.core.vision.engines.anpr.ocr import read_plate_details, read_with_confidence
 from app.core.vision.engines.anpr.plate_text import is_valid_plate, plate_key
@@ -32,7 +32,7 @@ from app.core.vision.engines.anpr.onnx_engine import AnprOnnxEngine
 from app.core.vision.engines.anpr.two_line_plate_parser import parse_two_line_vietnam_plate
 from app.util.logger import logger
 
-warmup = models.warmup
+warmup = model_loader.warmup
 _onnx_engine: Optional[AnprOnnxEngine] = None
 
 
@@ -74,7 +74,7 @@ def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
         InvalidImageError: ảnh rỗng hoặc không decode được.
         PlateRecognitionError: không encode được ảnh kết quả.
     """
-    models.ensure_models_loaded()
+    model_loader.ensure_models_loaded()
 
     if not ori_bytes:
         raise InvalidImageError("Ảnh đầu vào rỗng.")

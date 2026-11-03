@@ -4,8 +4,7 @@ from typing import List
 
 from app.api.grpc.generated_stubs import get_stub
 from app.core.console.dtos import ExportedCapture
-from app.core.dataset.dtos import CurationResult, SnapshotSample
-from app.core.dataset.services.evaluation_service import EvaluationSample
+from app.core.dataset.dtos import CurationResult, EvalSample, SnapshotSample
 
 _pb2, _ = get_stub("dataset_service")
 
@@ -41,9 +40,9 @@ def to_create_snapshot_command(message) -> List[SnapshotSample]:
     ]
 
 
-def to_evaluate_snapshot_query(message) -> List[EvaluationSample]:
+def to_evaluate_snapshot_query(message) -> List[EvalSample]:
     return [
-        EvaluationSample(sample_id=s.sample_id, image_url=s.image_url, label=s.label)
+        EvalSample(sample_id=s.sample_id, image_url=s.image_url, label=s.label)
         for s in message.samples
     ]
 

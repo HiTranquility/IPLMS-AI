@@ -135,7 +135,7 @@ class RunAnprQualityFlagsIntegrationTest(unittest.TestCase):
             "yolo_model": _Yolo(),
             "initialized": True,
         }
-        with patch.dict("app.core.vision.engines.anpr.models._state", state), patch(
+        with patch.dict("app.core.vision.engines.anpr.model_loader._state", state), patch(
             "app.core.vision.engines.anpr.engine.suppress_glare_for_ocr",
             wraps=suppress_glare_for_ocr,
         ) as mock_glare:

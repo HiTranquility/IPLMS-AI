@@ -27,7 +27,7 @@ import json
 
 from app.core.copilot.guardrails.output_guard import GUARD_NOTICE
 from app.core.copilot.engines.rag_pipeline import RagPipelineEngine
-from app.core.knowledge.guardrails.injection_scan import find_instructions
+from app.core.knowledge.guardrails.injection_scan import find_injection_phrases
 from app.infra.llm.llm_factory import LlmFactory
 from app.script.redteam_agent import REGRESSION_FILE, leaks, load_regression_cases
 
@@ -110,7 +110,7 @@ async def run(n: int, active_profile: bool, show: bool) -> dict:
         else:
             row.update(answered=hit, ok=None)
         results.append(row)
-    scan_ok = bool(find_instructions(POISON["content"]))
+    scan_ok = bool(find_injection_phrases(POISON["content"]))
     return {
         "model": "active-profile" if active_profile else factory.model,
         "results": results,

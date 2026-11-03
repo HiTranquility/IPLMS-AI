@@ -29,7 +29,7 @@ class PipelineObservationTest(unittest.TestCase):
         self.data = cv2.imencode(".png", self.image)[1].tobytes()
 
     def test_no_detector_has_no_observed_plate_color(self):
-        with patch.object(anpr_engine.models, "ensure_models_loaded"), patch.object(
+        with patch.object(anpr_engine.model_loader, "ensure_models_loaded"), patch.object(
             anpr_engine, "get_anpr_detector"
         ) as detector, patch.object(anpr_engine, "read_plate_details", return_value=("", 0, False, {})):
             detector.return_value.detect_plate.side_effect = lambda image: (image, None)
@@ -39,7 +39,7 @@ class PipelineObservationTest(unittest.TestCase):
 
     def test_strong_raw_crop_keeps_color_evidence_and_skips_enhancement(self):
         crop = self.image[20:140, 30:290].copy()
-        with patch.object(anpr_engine.models, "ensure_models_loaded"), patch.object(
+        with patch.object(anpr_engine.model_loader, "ensure_models_loaded"), patch.object(
             anpr_engine, "get_anpr_detector"
         ) as detector, patch.object(
             anpr_engine, "read_plate_details", return_value=("59-V1-793.79", 0.95, True, {})

@@ -14,7 +14,7 @@ from app.api.grpc.mappers.forecast_mapper import (
 )
 from app.api.grpc.generated_stubs import get_stub
 from app.core.console.dtos import ConsoleActor
-from app.core.console.services.tools_service import ConsoleToolsService
+from app.core.console.services.tools_service import ToolsService
 from app.core.enums import ForecastDataSource
 from app.core.forecast.dtos.forecast_dto import OccupancyForecastQuery, TariffRecommendationQuery
 from app.core.forecast.engines.parquet_lake_reader import ParquetLakeReader
@@ -64,7 +64,7 @@ class ForecastLakeAreaTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual([], svc.list_lake_areas())
 
     async def test_simulator_chon_bai_tu_danh_sach_thi_chay_tren_du_lieu_lake(self):
-        tools = ConsoleToolsService(store=None, copilot=None, ingestion=None)
+        tools = ToolsService(store=None, copilot=None, ingestion=None)
         with patch("app.core.console.services.tools_service.forecast_service", self.svc), patch(
             "app.core.console.services.tools_service._resolve_default_gold_lake_path", return_value=self.lake
         ):

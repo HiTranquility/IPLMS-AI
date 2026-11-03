@@ -1,8 +1,10 @@
 """Serializable state contract for the dispute graph."""
 from __future__ import annotations
 
+import math
 from typing import Any, Literal, TypedDict
 
+from app.core.copilot.guardrails.output_guard import violation as output_guard_violation
 from app.core.exceptions import WorkflowStateError
 
 
@@ -10,7 +12,8 @@ SCHEMA_VERSION = 1
 # Lý do khiếu nại do member viết: đầu vào độc hại mặc định (ADR-0029 luật 2).
 MAX_CLAIM_REASON_CHARS = 2000
 MAX_JUSTIFICATION_CHARS = 1000
-# Khớp `ArbitrationVerdict` trong copilot_service.proto; MANUAL_REVIEW = LLM không đủ căn cứ.
+# Khớp 3 giá trị `ArbitrationVerdict` trong copilot_service.proto cộng MANUAL_REVIEW
+# (trạng thái nội bộ workflow khi LLM không đủ căn cứ, cần người duyệt quyết).
 VERDICTS = ("APPROVE_REFUND", "PARTIAL_REFUND", "REJECT", "MANUAL_REVIEW")
 
 WorkflowStatus = Literal[
@@ -63,6 +66,12 @@ def _required_text(name: str, value: str) -> str:
     return normalized
 
 
+def _is_finite_non_negative_number(value: Any) -> bool:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return False
+    return math.isfinite(float(value)) and float(value) >= 0.0
+
+
 def make_initial_state(
     *,
     workflow_id: str,
@@ -72,8 +81,8 @@ def make_initial_state(
     claim_reason: str,
     claimed_amount: float,
 ) -> DisputeWorkflowState:
-    if claimed_amount < 0:
-        raise WorkflowStateError("claimed_amount không được âm.")
+    if not _is_finite_non_negative_number(claimed_amount):
+        raise WorkflowStateError("claimed_amount phải là số hữu hạn không âm.")
     if len(claim_reason) > MAX_CLAIM_REASON_CHARS:
         raise WorkflowStateError(f"claim_reason tối đa {MAX_CLAIM_REASON_CHARS} ký tự.")
     return {
@@ -108,7 +117,12 @@ def validate_review(value: Any) -> ReviewDecision:
 
 
 def validate_recommendation(
-    value: Any, *, claimed_amount: float, session_fee: Any, sources: list[str]
+    value: Any,
+    *,
+    claimed_amount: float,
+    session_fee: Any,
+    sources: list[str],
+    context_text: str = "",
 ) -> dict[str, Any]:
     """Đề xuất của LLM chỉ là dữ liệu: kiểm tất định trước khi tới người duyệt (ADR-0029 luật 1, 3).
 
@@ -124,11 +138,13 @@ def validate_recommendation(
     verdict = value["verdict"]
     if verdict not in VERDICTS:
         raise WorkflowStateError(f"verdict chỉ nhận {', '.join(VERDICTS)}.")
+    if not _is_finite_non_negative_number(claimed_amount):
+        raise WorkflowStateError("claimed_amount phải là số hữu hạn không âm.")
     refund = value["recommended_refund"]
-    if isinstance(refund, bool) or not isinstance(refund, (int, float)) or refund < 0:
+    if not _is_finite_non_negative_number(refund):
         raise WorkflowStateError("recommended_refund phải là số không âm.")
     if refund > 0:
-        if isinstance(session_fee, bool) or not isinstance(session_fee, (int, float)):
+        if not _is_finite_non_negative_number(session_fee):
             raise WorkflowStateError("Phiên đỗ không có phí hợp lệ nên không đề xuất hoàn tiền được.")
         cap = min(float(claimed_amount), float(session_fee))
         if refund > cap:
@@ -142,6 +158,9 @@ def validate_recommendation(
         raise WorkflowStateError("justification không được để trống.")
     if len(justification) > MAX_JUSTIFICATION_CHARS:
         raise WorkflowStateError(f"justification tối đa {MAX_JUSTIFICATION_CHARS} ký tự.")
+    guard_rule = output_guard_violation(justification, context_text)
+    if guard_rule:
+        raise WorkflowStateError(f"justification vi phạm output guard ({guard_rule}).")
     cited = value["cited_sources"]
     if not isinstance(cited, list) or any(source not in sources for source in cited):
         raise WorkflowStateError("cited_sources chỉ được trích quy chế đã truy xuất.")
@@ -154,9 +173,11 @@ def validate_recommendation(
 
 
 def assert_json_safe(value: Any, *, path: str = "state") -> None:
-    """Reject bytes/secrets-shaped values before they enter a checkpoint."""
+    """Reject bytes/secrets-shaped/non-finite values before they enter a checkpoint."""
     if isinstance(value, (bytes, bytearray, memoryview)):
         raise WorkflowStateError(f"{path} không được chứa bytes.")
+    if isinstance(value, float) and not math.isfinite(value):
+        raise WorkflowStateError(f"{path} không được chứa NaN/Infinity.")
     if value is None or isinstance(value, (str, int, float, bool)):
         return
     if isinstance(value, list):

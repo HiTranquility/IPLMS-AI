@@ -7,11 +7,11 @@ from app.core.knowledge.dtos.knowledge_dto import (
     KnowledgeDocumentSummary,
     TextChunk,
 )
-from app.core.knowledge.guardrails.injection_scan import find_instructions
+from app.core.knowledge.guardrails.injection_scan import find_injection_phrases
 from app.core.knowledge.services.ingestion_service import IngestionService, ingestion_service
 
 __all__ = [
-    "find_instructions",
+    "find_injection_phrases",
     "IngestDocumentCommand",
     "IngestResult",
     "IngestionService",

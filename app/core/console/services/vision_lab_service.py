@@ -14,9 +14,8 @@ from app.config import get_config
 from app.core.console.dtos import ConsoleActor
 from app.core.console.engines import access_policy
 from app.core.console.engines.demo_plate_generator import DEMO_SAMPLES, generate_plate_image
-from app.core.dataset.dtos import SnapshotSample
+from app.core.dataset import SnapshotSample, snapshot_service
 from app.core.dataset.engines.plate_metrics import normalize_strict
-from app.core.dataset.services.snapshot_service import SnapshotService
 from app.core.exceptions import ConsoleAccessDenied
 from app.infra.database.console_vision_store import console_vision_store
 
@@ -55,7 +54,7 @@ def split_for(group_ref: str) -> str:
     return "val" if bucket == 0 else "train"
 
 
-class ConsoleVisionLabService:
+class VisionLabService:
     def __init__(self, store=None, demo_seed_enabled: Optional[bool] = None) -> None:
         self.store = store or console_vision_store
         self._demo_seed_enabled = demo_seed_enabled
@@ -150,7 +149,7 @@ class ConsoleVisionLabService:
             )
             for s in approved
         ]
-        lock = SnapshotService.build_lock(name, samples)  # rỗng → ValueError
+        lock = snapshot_service.build_lock(name, samples)  # rỗng → ValueError
         snapshot_id = await self.store.create_snapshot(kind, name, lock, actor.member_id)
         return {"id": snapshot_id, "sample_count": lock["sample_count"], "samples_sha256": lock["samples_sha256"]}
 
@@ -160,4 +159,4 @@ class ConsoleVisionLabService:
         await self.store.freeze_snapshot(_uuid(snapshot_id, "snapshot_id"), actor.member_id, _reason(reason))
 
 
-console_vision_lab_service = ConsoleVisionLabService()
+vision_lab_service = VisionLabService()

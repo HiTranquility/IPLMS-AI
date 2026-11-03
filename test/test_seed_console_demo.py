@@ -37,9 +37,9 @@ class SeedEnvironmentGuardTest(unittest.TestCase):
         with (
             patch("app.script.seed_console_demo.connect_with_fallback", return_value=(fake_conn, "postgresql://local/test")),
             patch("app.script.seed_console_demo.generate_plate_image", return_value=b"fake-png"),
-            patch("app.script.seed_console_demo.ConsoleVisionLabService") as MockLab,
-            patch("app.script.seed_console_demo.ConsoleModelLabService") as MockModelSvc,
-            patch("app.script.seed_console_demo.ConsoleAcceptPolicyService") as MockPolicySvc,
+            patch("app.script.seed_console_demo.VisionLabService") as MockLab,
+            patch("app.script.seed_console_demo.ModelLabService") as MockModelSvc,
+            patch("app.script.seed_console_demo.AcceptPolicyService") as MockPolicySvc,
         ):
             lab = MockLab.return_value
             lab.add_label = AsyncMock(return_value="lbl-1")

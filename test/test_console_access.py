@@ -21,7 +21,7 @@ from app.api.rest.console_access import (
 )
 from app.core.console.dtos import ConsoleActor, ConsoleSession
 from app.core.console.engines import access_policy as policy
-from app.core.console.services import console_auth_service
+from app.core.console import auth_service
 from app.core.exceptions import ConsoleAccessDenied, ConsoleAuthError
 
 # Bảng kỳ vọng chép tay từ tài liệu — cố ý lặp lại để đổi quyền phải sửa ở hai nơi.
@@ -224,7 +224,7 @@ class ConsoleApiAccessGuardRegressionTest(unittest.TestCase):
 
     def test_require_permission_grants_access_for_authorized_role(self):
         session = self._make_session("m-analyst", ("ai_analyst",))
-        with patch.object(console_auth_service, "resolve", return_value=session):
+        with patch.object(auth_service, "resolve", return_value=session):
             res = self.client.get(
                 "/test/metrics",
                 headers={"Cookie": f"{SESSION_COOKIE}=valid-analyst-token"},
@@ -238,7 +238,7 @@ class ConsoleApiAccessGuardRegressionTest(unittest.TestCase):
     def test_require_permission_denies_unauthorized_role_with_403(self):
         # Annotator không có quyền 'ai:metrics:read' -> Bị chặn 403 FORBIDDEN
         session = self._make_session("m-annotator", ("ai_annotator",))
-        with patch.object(console_auth_service, "resolve", return_value=session):
+        with patch.object(auth_service, "resolve", return_value=session):
             res = self.client.get(
                 "/test/metrics",
                 headers={"Cookie": f"{SESSION_COOKIE}=valid-annotator-token"},
@@ -252,7 +252,7 @@ class ConsoleApiAccessGuardRegressionTest(unittest.TestCase):
         def _no_session(*_, **__):
             raise ConsoleAuthError("Phiên đã hết hạn, vui lòng đăng nhập lại.", "NO_SESSION")
 
-        with patch.object(console_auth_service, "resolve", side_effect=_no_session):
+        with patch.object(auth_service, "resolve", side_effect=_no_session):
             res = self.client.get("/test/metrics")
             self.assertEqual(401, res.status_code)
             body = res.json()
@@ -269,7 +269,7 @@ class ConsoleApiAccessGuardRegressionTest(unittest.TestCase):
         reviewer_sess = self._make_session("m-reviewer", ("ai_reviewer",))
 
         # Annotator có 'ai:task:label'
-        with patch.object(console_auth_service, "resolve", return_value=annotator_sess):
+        with patch.object(auth_service, "resolve", return_value=annotator_sess):
             res = self.client.get(
                 "/test/label-work",
                 headers={"Cookie": f"{SESSION_COOKIE}=annotator-token"},
@@ -277,7 +277,7 @@ class ConsoleApiAccessGuardRegressionTest(unittest.TestCase):
             self.assertEqual(200, res.status_code)
 
         # Reviewer có 'ai:label:approve'
-        with patch.object(console_auth_service, "resolve", return_value=reviewer_sess):
+        with patch.object(auth_service, "resolve", return_value=reviewer_sess):
             res = self.client.get(
                 "/test/label-work",
                 headers={"Cookie": f"{SESSION_COOKIE}=reviewer-token"},
@@ -286,7 +286,7 @@ class ConsoleApiAccessGuardRegressionTest(unittest.TestCase):
 
     def test_require_any_permission_denies_actor_with_none_of_permissions(self):
         analyst_sess = self._make_session("m-analyst", ("ai_analyst",))
-        with patch.object(console_auth_service, "resolve", return_value=analyst_sess):
+        with patch.object(auth_service, "resolve", return_value=analyst_sess):
             res = self.client.get(
                 "/test/label-work",
                 headers={"Cookie": f"{SESSION_COOKIE}=analyst-token"},
@@ -302,9 +302,9 @@ class ConsoleApiAccessGuardRegressionTest(unittest.TestCase):
     def test_authorize_any_rejects_step_up_permissions(self):
         import asyncio
 
-        with patch.object(console_auth_service, "resolve", return_value=self._make_session("m-1", ("ai_lead",))):
+        with patch.object(auth_service, "resolve", return_value=self._make_session("m-1", ("ai_lead",))):
             with self.assertRaises(ValueError) as ctx:
-                asyncio.run(console_auth_service.authorize_any("token", ("ai:golden:freeze",)))
+                asyncio.run(auth_service.authorize_any("token", ("ai:golden:freeze",)))
             self.assertIn("step-up", str(ctx.exception))
 
     def test_csrf_safe_methods_bypass_csrf_header_check(self):
@@ -341,7 +341,7 @@ class ConsoleApiAccessGuardRegressionTest(unittest.TestCase):
     def test_step_up_permission_enforcement(self):
         # Lead có quyền 'ai:golden:freeze' nhưng chưa nhập TOTP step-up gần đây -> 401 STEP_UP_REQUIRED
         stale_sess = self._make_session("m-lead", ("ai_lead",), fresh_step_up=False)
-        with patch.object(console_auth_service, "resolve", return_value=stale_sess):
+        with patch.object(auth_service, "resolve", return_value=stale_sess):
             res = self.client.post(
                 "/test/golden/freeze",
                 headers={
@@ -354,7 +354,7 @@ class ConsoleApiAccessGuardRegressionTest(unittest.TestCase):
 
         # Lead đã qua TOTP step-up gần đây -> Thành công 200 OK
         fresh_sess = self._make_session("m-lead", ("ai_lead",), fresh_step_up=True)
-        with patch.object(console_auth_service, "resolve", return_value=fresh_sess):
+        with patch.object(auth_service, "resolve", return_value=fresh_sess):
             res = self.client.post(
                 "/test/golden/freeze",
                 headers={

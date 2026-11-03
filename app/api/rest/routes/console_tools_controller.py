@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from app.api.rest.console_access import require_any_permission, require_permission
 from app.api.rest.schemas.base_response import BaseResponse
 from app.config import get_config
-from app.core.console import ConsoleActor, console_tools_service
+from app.core.console import ConsoleActor, tools_service
 from app.core.constants import KNOWLEDGE_MAX_FILE_BYTES
 from app.core.copilot.dtos.copilot_dto import CopilotAnswer
 from app.util.logger import logger
@@ -190,7 +190,7 @@ class ForecastAreasOut(BaseModel):
 
 @router.get("/forecast/areas", response_model=BaseResponse[ForecastAreasOut])
 async def forecast_areas(actor: ConsoleActor = Depends(require_permission("ai:metrics:read"))):
-    result = await console_tools_service.list_forecast_areas(actor)
+    result = await tools_service.list_forecast_areas(actor)
     return BaseResponse.ok([ForecastAreasOut(**result)], "Danh sách bãi có dữ liệu trong Gold lake.")
 
 
@@ -199,7 +199,7 @@ async def simulate_forecast(
     payload: ForecastSimulateIn,
     actor: ConsoleActor = Depends(require_permission("ai:metrics:read")),
 ):
-    result = await console_tools_service.simulate_forecast(
+    result = await tools_service.simulate_forecast(
         actor,
         area_id=payload.area_id,
         day_of_week=payload.day_of_week,
@@ -211,7 +211,7 @@ async def simulate_forecast(
 
 @router.get("/system", response_model=BaseResponse[SystemCheck])
 async def system(actor: ConsoleActor = Depends(require_permission("ai:metrics:read"))):
-    return BaseResponse.ok([SystemCheck(**await console_tools_service.system_check(actor))], "OK")
+    return BaseResponse.ok([SystemCheck(**await tools_service.system_check(actor))], "OK")
 
 
 @router.post("/anpr/recognize", response_model=BaseResponse[AnprTryOut])
@@ -221,7 +221,7 @@ async def try_anpr(
     actor: ConsoleActor = Depends(require_permission("ai:model:evaluate")),
 ):
     image = await file.read(KNOWLEDGE_MAX_FILE_BYTES + 1)
-    result = await console_tools_service.try_anpr(actor, image, lane_id)
+    result = await tools_service.try_anpr(actor, image, lane_id)
     if result.get("crop_image") and not result.get("crop_plate_image_url"):
         result["crop_plate_image_url"] = result["crop_image"]
     return BaseResponse.ok([AnprTryOut(**result)], "Kết quả từ engine ANPR đang nạp (ảnh không được lưu).")
@@ -236,14 +236,14 @@ async def try_anpr_clip(
     # Đọc tối đa giới hạn + 1 byte: đủ để service báo "vượt dung lượng" mà không nạp cả file lớn.
     clip = await file.read(get_config().vision.clip_max_bytes + 1)
     started = time.perf_counter()
-    result = await console_tools_service.try_anpr_clip(actor, clip, file.content_type or "", mode == "motion")
+    result = await tools_service.try_anpr_clip(actor, clip, file.content_type or "", mode == "motion")
     result["latency_ms"] = round((time.perf_counter() - started) * 1000, 1)
     return BaseResponse.ok([AnprClipOut(**result)], "Kết quả đọc clip (clip không được lưu).")
 
 
 @router.post("/vision/verify-match", response_model=BaseResponse[VerifyMatchOut])
 async def verify_match(payload: VerifyMatchIn, actor: ConsoleActor = Depends(require_permission("ai:model:evaluate"))):
-    result = await console_tools_service.verify_match(
+    result = await tools_service.verify_match(
         actor, payload.expected_vehicle_type, payload.current_vehicle_type
     )
     return BaseResponse.ok([VerifyMatchOut(**result)], "Đối chiếu theo loại xe; chưa so ảnh.")
@@ -254,7 +254,7 @@ async def knowledge_documents(
     parking_lot_id: Optional[str] = Query(None, max_length=128),
     actor: ConsoleActor = Depends(require_permission("ai:prompt:edit")),
 ):
-    docs = await console_tools_service.knowledge_documents(actor, parking_lot_id)
+    docs = await tools_service.knowledge_documents(actor, parking_lot_id)
     return BaseResponse.ok([KnowledgeDocOut(**d) for d in docs], "OK")
 
 
@@ -264,7 +264,7 @@ async def delete_knowledge_document(
     parking_lot_id: Optional[str] = Query(None, max_length=128),
     actor: ConsoleActor = Depends(require_permission("ai:prompt:edit")),
 ):
-    deleted_count = await console_tools_service.delete_knowledge_document(actor, document_id, parking_lot_id)
+    deleted_count = await tools_service.delete_knowledge_document(actor, document_id, parking_lot_id)
     return BaseResponse.ok([DeleteDocOut(deleted=deleted_count, document_id=document_id)], f"Đã xóa tài liệu {document_id}")
 
 
@@ -275,7 +275,7 @@ async def get_document_chunks(
     version_no: int = Query(0, ge=0),
     actor: ConsoleActor = Depends(require_permission("ai:prompt:edit")),
 ):
-    chunks_data = await console_tools_service.document_chunks(actor, document_id, parking_lot_id, version_no)
+    chunks_data = await tools_service.document_chunks(actor, document_id, parking_lot_id, version_no)
     return BaseResponse.ok([DocumentChunksOut(**chunks_data)], "OK")
 
 
@@ -283,7 +283,7 @@ async def get_document_chunks(
 async def try_copilot_stream(payload: AskIn, actor: ConsoleActor = Depends(require_any_permission("ai:prompt:edit", "ai:chatlog:read"))):
     async def event_generator():
         try:
-            async for chunk in console_tools_service.try_copilot_stream(
+            async for chunk in tools_service.try_copilot_stream(
                 actor, payload.query, payload.parking_lot_id, **payload.tuning()
             ):
                 data = {
@@ -329,7 +329,7 @@ async def try_copilot_stream(payload: AskIn, actor: ConsoleActor = Depends(requi
 
 @router.post("/copilot", response_model=BaseResponse[CopilotAnswer])
 async def try_copilot(payload: AskIn, actor: ConsoleActor = Depends(require_any_permission("ai:prompt:edit", "ai:chatlog:read"))):
-    answer = await console_tools_service.try_copilot(actor, payload.query, payload.parking_lot_id, **payload.tuning())
+    answer = await tools_service.try_copilot(actor, payload.query, payload.parking_lot_id, **payload.tuning())
     return BaseResponse.ok([answer], "Trả lời từ pipeline RAG có guard (lượt thử, không tính vào số sản phẩm).")
 
 
@@ -344,7 +344,7 @@ async def ingest_draft(
     content = await file.read(KNOWLEDGE_MAX_FILE_BYTES + 1)
     if len(content) > KNOWLEDGE_MAX_FILE_BYTES:
         raise ValueError("Tệp vượt 8 MB.")
-    result = await console_tools_service.ingest_draft(
+    result = await tools_service.ingest_draft(
         actor, document_id, file.filename or "", content, category, parking_lot_id
     )
     out = IngestOut(**result)
@@ -407,7 +407,7 @@ class RevokeSessionIn(BaseModel):
 async def get_settings(
     actor: ConsoleActor = Depends(require_any_permission("ai:metrics:read", "ai:member:manage", "ai:audit:read")),
 ):
-    data = await console_tools_service.get_runtime_settings(actor)
+    data = await tools_service.get_runtime_settings(actor)
     return BaseResponse.ok([data], "OK")
 
 
@@ -417,7 +417,7 @@ async def update_compute_settings(
     payload: ComputeSettingsIn,
     actor: ConsoleActor = Depends(require_any_permission("ai:prompt:edit", "ai:model:evaluate")),
 ):
-    data = await console_tools_service.update_compute_settings(actor, payload.model_dump(exclude_none=True))
+    data = await tools_service.update_compute_settings(actor, payload.model_dump(exclude_none=True))
     return BaseResponse.ok([data], "Đã cập nhật cấu hình phần cứng GPU/CPU & Engine.")
 
 
@@ -427,7 +427,7 @@ async def update_policy_settings(
     payload: PolicySettingsIn,
     actor: ConsoleActor = Depends(require_permission("ai:policy:threshold")),
 ):
-    data = await console_tools_service.update_policy_settings(actor, payload.model_dump(exclude_none=True))
+    data = await tools_service.update_policy_settings(actor, payload.model_dump(exclude_none=True))
     return BaseResponse.ok([data], "Đã cập nhật ngưỡng AI & chính sách vận hành.")
 
 
@@ -436,7 +436,7 @@ async def engine_action(
     payload: EngineActionIn,
     actor: ConsoleActor = Depends(require_any_permission("ai:model:evaluate", "ai:prompt:edit")),
 ):
-    data = await console_tools_service.engine_action(actor, payload.action)
+    data = await tools_service.engine_action(actor, payload.action)
     if payload.action == "warmup":
         msg = "Đã nạp sẵn model Vision vào bộ nhớ."
     elif payload.action in ("reload_llm", "restart_llm"):
@@ -450,7 +450,7 @@ async def engine_action(
 async def list_sessions(
     actor: ConsoleActor = Depends(require_any_permission("ai:metrics:read", "ai:member:manage", "ai:audit:read")),
 ):
-    rows = await console_tools_service.list_sessions(actor)
+    rows = await tools_service.list_sessions(actor)
     return BaseResponse.ok(rows, "OK")
 
 
@@ -460,5 +460,5 @@ async def revoke_session(
     payload: RevokeSessionIn,
     actor: ConsoleActor = Depends(require_any_permission("ai:metrics:read", "ai:member:manage", "ai:audit:read")),
 ):
-    res = await console_tools_service.revoke_session_by_id(actor, str(session_id), payload.reason or "")
+    res = await tools_service.revoke_session_by_id(actor, str(session_id), payload.reason or "")
     return BaseResponse.ok([res], "Đã thu hồi phiên đăng nhập.")

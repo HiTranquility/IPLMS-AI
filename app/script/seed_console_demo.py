@@ -16,9 +16,9 @@ if str(ROOT) not in sys.path:
 from app.config import get_config
 from app.core.console.dtos import ConsoleActor
 from app.core.console.engines.demo_plate_generator import DEMO_SAMPLES, generate_plate_image
-from app.core.console.services.accept_policy_service import ConsoleAcceptPolicyService
-from app.core.console.services.model_lab_service import ConsoleModelLabService
-from app.core.console.services.vision_lab_service import ConsoleVisionLabService
+from app.core.console.services.accept_policy_service import AcceptPolicyService
+from app.core.console.services.model_lab_service import ModelLabService
+from app.core.console.services.vision_lab_service import VisionLabService
 from app.infra.database.ai_request_log_store import ai_request_log_store
 from app.infra.database.console_store import console_store
 from app.infra.database.console_vision_store import console_vision_store
@@ -488,7 +488,7 @@ async def seed_vision_pipeline(vision_store=None) -> None:
         90,
     )
 
-    lab = ConsoleVisionLabService(store=vstore, demo_seed_enabled=True)
+    lab = VisionLabService(store=vstore, demo_seed_enabled=True)
     for idx, (machine_p, truth_p, _, _, two_line) in enumerate(audit_plates, start=1):
         cid = f"b0000000-0000-4000-8000-{idx:012d}"
         verdict = "CORRECT" if machine_p == truth_p else "CORRECTED"
@@ -562,7 +562,7 @@ async def seed_vision_pipeline(vision_store=None) -> None:
 
     # 3. Đăng ký Model ANPR, chạy Eval trên Golden đã khóa, chỉ đề xuất (demo - A-70)
     weights_sha = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    models_svc = ConsoleModelLabService(
+    models_svc = ModelLabService(
         store=vstore,
         run=lambda image: {"plate_number": "51A10101", "confidence": 0.94, "process_time": 0.018},
         engine_version=lambda: f"yolo:{weights_sha[:12]}+easyocr:1.7",
@@ -584,7 +584,7 @@ async def seed_vision_pipeline(vision_store=None) -> None:
         await models_svc.propose(engineer, m1, f"[DEMO] Đề xuất thử luồng duyệt; xem số đo thật ở lượt đo {run_id}.")
 
     # 4. Đề xuất Chính sách Ngưỡng Tự Nhận (Accept Policy — chỉ đề xuất để thử duyệt bốn mắt trên Console, A-71)
-    policy_svc = ConsoleAcceptPolicyService(store=vstore)
+    policy_svc = AcceptPolicyService(store=vstore)
     existing_policies = await vstore.list_policies()
     if not existing_policies:
         await policy_svc.propose(

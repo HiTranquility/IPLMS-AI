@@ -20,7 +20,7 @@ from app.core.knowledge.dtos.knowledge_dto import (
 )
 from app.core.knowledge.engines.chunker import chunk_text
 from app.core.knowledge.engines.document_parser import parse_document
-from app.core.knowledge.guardrails.injection_scan import find_instructions
+from app.core.knowledge.guardrails.injection_scan import find_injection_phrases
 from app.infra.database.pgvector_client import pgvector_client
 from app.infra.embedding import embedding_client
 from app.util.logger import logger
@@ -28,7 +28,7 @@ from app.util.logger import logger
 
 def _injection_flags(content: str) -> dict:
     # Cổng xuất bản đọc khoá này (PROB-046 phase 2); đoạn sạch thì không có khoá.
-    flags = find_instructions(content)
+    flags = find_injection_phrases(content)
     return {"injection_flags": flags} if flags else {}
 
 

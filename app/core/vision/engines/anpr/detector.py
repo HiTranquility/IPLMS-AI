@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 
 from app.core.exceptions import PlateRecognitionError
-from app.core.vision.engines.anpr import models
+from app.core.vision.engines.anpr import model_loader
 
 
 def detect_plate(img_cv) -> Tuple[Any, Optional[float]]:
@@ -15,7 +15,7 @@ def detect_plate(img_cv) -> Tuple[Any, Optional[float]]:
     hẳn với "detector chạy rồi và tự tin 0.0". Người gọi phải phân biệt hai ca
     này, nếu không điểm cuối cùng sẽ bị nhân với 0 một cách oan uổng.
     """
-    model = models.yolo_model()
+    model = model_loader.yolo_model()
     if model is None:
         return img_cv, None
     img_rgb = cv2.cvtColor(img_cv, cv2.COLOR_BGR2RGB)

@@ -43,10 +43,10 @@ class SeedDemoGuardTest(unittest.TestCase):
     actor = ConsoleActor(member_id="m1", roles=frozenset({"ai_annotator"}))
 
     def _service(self, enabled):
-        from app.core.console.services.vision_lab_service import ConsoleVisionLabService
+        from app.core.console.services.vision_lab_service import VisionLabService
 
         store = _Store()
-        return ConsoleVisionLabService(store=store, demo_seed_enabled=enabled), store
+        return VisionLabService(store=store, demo_seed_enabled=enabled), store
 
     def test_tat_co_thi_khong_ghi_gi(self):
         service, store = self._service(False)
@@ -60,7 +60,7 @@ class SeedDemoGuardTest(unittest.TestCase):
         from unittest import mock
 
         from app.config.console_config import ConsoleConfig
-        from app.core.console.services.vision_lab_service import ConsoleVisionLabService
+        from app.core.console.services.vision_lab_service import VisionLabService
 
         store = _Store()
         # get_config có cache và đọc .env.dev: dựng config sạch để đo đúng giá trị mặc định.
@@ -69,7 +69,7 @@ class SeedDemoGuardTest(unittest.TestCase):
             cfg = SimpleNamespace(console=ConsoleConfig(_env_file=None))
         with mock.patch("app.core.console.services.vision_lab_service.get_config", return_value=cfg):
             with self.assertRaises(ConsoleAccessDenied):
-                asyncio.run(ConsoleVisionLabService(store=store).seed_demo_samples(self.actor))
+                asyncio.run(VisionLabService(store=store).seed_demo_samples(self.actor))
         self.assertEqual([], store.calls)
 
     def test_bat_co_thi_service_dung_anh_va_hash(self):

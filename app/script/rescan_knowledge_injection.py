@@ -18,7 +18,7 @@ import json
 
 from psycopg2.extras import Json
 
-from app.core.knowledge.guardrails.injection_scan import find_instructions
+from app.core.knowledge.guardrails.injection_scan import find_injection_phrases
 from app.infra.database.pgvector_client import pgvector_client
 
 _SELECT = """
@@ -37,7 +37,7 @@ def plan(rows) -> tuple[list[tuple[str, dict]], dict]:
     flagged: dict[tuple, dict] = {}
     for chunk_id, source, scope, status, content, metadata in rows:
         metadata = dict(metadata or {})
-        flags = find_instructions(content)
+        flags = find_injection_phrases(content)
         if flags:
             entry = flagged.setdefault((scope or "", source, status), {
                 "scope": scope or "(chung)", "source": source, "status": status,

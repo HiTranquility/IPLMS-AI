@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from app.config import get_config
 from app.core.console.dtos import ConsoleActor
-from app.core.console.services.tools_service import ConsoleToolsService
+from app.core.console.services.tools_service import ToolsService
 from app.core.exceptions import ConsoleAccessDenied
 from app.core.vision import AnprService
 from app.core.vision.engines.anpr.video import ClipLimits, PlateRead, analyze_clip, group_reads
@@ -157,7 +157,7 @@ class RealEngineClipTest(_IsolatedTempDir):
 
 class ConsoleClipTest(unittest.IsolatedAsyncioTestCase):
     async def test_can_quyen_va_tra_anh_crop_base64(self):
-        svc = ConsoleToolsService(store=None, copilot=None, ingestion=None)
+        svc = ToolsService(store=None, copilot=None, ingestion=None)
         with self.assertRaises(ConsoleAccessDenied):
             await svc.try_anpr_clip(ANALYST, b"x", "video/mp4")
         fake = {"sampled_frames": 2, "plate_reads": 2, "events": [

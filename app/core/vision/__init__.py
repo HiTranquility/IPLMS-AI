@@ -6,7 +6,7 @@ from app.core.vision.dtos.vision_dto import (
     VehicleMatchQuery,
     VehicleMatchResult,
 )
-from app.core.vision.services.anpr_service import AnprService
+from app.core.vision.services.anpr_service import AnprService, anpr_service
 from app.core.vision.services.anti_fraud_service import AntiFraudService, anti_fraud_service
 
 __all__ = [
@@ -17,5 +17,6 @@ __all__ = [
     "RecognizePlateCommand",
     "VehicleMatchQuery",
     "VehicleMatchResult",
+    "anpr_service",
     "anti_fraud_service",
 ]

@@ -38,3 +38,6 @@ class SnapshotService:
             "samples_sha256": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
             "samples": entries,
         }
+
+
+snapshot_service = SnapshotService()

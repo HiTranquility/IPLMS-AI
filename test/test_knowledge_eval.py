@@ -5,7 +5,7 @@ import unittest
 from app.core.exceptions import KnowledgeGateError, ModelNotLoadedError
 from app.core.knowledge_eval.engines import case_generator, gate
 from app.core.knowledge_eval.engines.grader import grade, is_refusal, normalize
-from app.core.knowledge_eval.services.eval_service import KnowledgeEvalService
+from app.core.knowledge_eval.services.eval_service import EvalService
 
 
 class NormalizeTest(unittest.TestCase):
@@ -211,7 +211,7 @@ async def _drain(service):
 class EvalServiceTest(unittest.TestCase):
     def _service(self, cases, answers):
         store, vectors = FakeStore(cases), FakeVectors()
-        return KnowledgeEvalService(store, vectors, FakeRag(answers), FakeLlm()), store, vectors
+        return EvalService(store, vectors, FakeRag(answers), FakeLlm()), store, vectors
 
     def test_model_revision_change_invalidates_publish_gate(self):
         cases = [_case(i) for i in range(5)]

@@ -10,7 +10,7 @@ from uuid import uuid4
 from app.core.copilot.dtos.copilot_dto import AskQuestionRequest
 from app.core.copilot.guardrails.pii_redactor import redact
 from app.core.copilot.engines.rag_pipeline import NO_CONTEXT_ANSWER, PROMPT_VERSION, RagPipelineEngine
-from app.core.copilot.services.usage_service import CopilotUsageService
+from app.core.copilot.services.usage_service import UsageService
 from app.infra.llm.llm_factory import LlmFactory
 
 UUID = re.compile(r"^[0-9a-f-]{36}$")
@@ -42,20 +42,20 @@ class RedactTest(unittest.TestCase):
 
 class UsageServiceTest(unittest.TestCase):
     def test_user_hash_needs_key_and_is_stable(self):
-        self.assertIsNone(CopilotUsageService(AsyncMock(), cfg(hmac_key="")).user_hash("u-1"))
-        service = CopilotUsageService(AsyncMock(), cfg())
+        self.assertIsNone(UsageService(AsyncMock(), cfg(hmac_key="")).user_hash("u-1"))
+        service = UsageService(AsyncMock(), cfg())
         self.assertEqual(service.user_hash("u-1"), service.user_hash("u-1"))
         self.assertNotEqual(service.user_hash("u-1"), service.user_hash("u-2"))
         self.assertNotIn("u-1", service.user_hash("u-1"))
 
     def test_cost_is_unknown_without_prices(self):
-        self.assertIsNone(CopilotUsageService(AsyncMock(), cfg()).cost(1000, 500))
-        priced = CopilotUsageService(AsyncMock(), cfg(price_input_per_mtok=2.0, price_output_per_mtok=8.0))
+        self.assertIsNone(UsageService(AsyncMock(), cfg()).cost(1000, 500))
+        priced = UsageService(AsyncMock(), cfg(price_input_per_mtok=2.0, price_output_per_mtok=8.0))
         self.assertAlmostEqual(0.006, priced.cost(1000, 500))
         self.assertIsNone(priced.cost(None, 500))  # provider không báo token → không đoán
 
     def test_entry_is_redacted_and_versioned(self):
-        service = CopilotUsageService(AsyncMock(), cfg())
+        service = UsageService(AsyncMock(), cfg())
         entry = service.build_entry(
             turn_id="t", task="copilot_ask", status="SUCCESS", started=0.0, request=request(),
             result={"usage": {"input_tokens": 10, "output_tokens": 4}, "model": "m", "model_revision": "r"},
@@ -72,7 +72,7 @@ class UsageServiceTest(unittest.TestCase):
     def test_record_failure_never_breaks_request_and_disabled_skips(self):
         store = AsyncMock()
         store.record.side_effect = RuntimeError("db down")
-        service = CopilotUsageService(store, cfg())
+        service = UsageService(store, cfg())
 
         async def scenario():
             service.record_soon({"turn_id": "x"})
@@ -80,7 +80,7 @@ class UsageServiceTest(unittest.TestCase):
 
         run(scenario())  # không ném lỗi
         store.record.assert_awaited_once()
-        silent = CopilotUsageService(AsyncMock(), cfg(enabled=False))
+        silent = UsageService(AsyncMock(), cfg(enabled=False))
         run(self._record_and_drain(silent))
         silent.store.record.assert_not_awaited()
 
@@ -91,7 +91,7 @@ class UsageServiceTest(unittest.TestCase):
     def test_feedback_validation_and_owner_hash(self):
         store = AsyncMock()
         store.set_feedback.return_value = True
-        service = CopilotUsageService(store, cfg())
+        service = UsageService(store, cfg())
         turn = str(uuid4())
         with self.assertRaises(ValueError):
             run(service.feedback(turn, "u-1", 5))
@@ -99,12 +99,12 @@ class UsageServiceTest(unittest.TestCase):
             run(service.feedback("không-phải-uuid", "u-1", 1))
         self.assertTrue(run(service.feedback(turn, "u-1", -1)))
         store.set_feedback.assert_awaited_once_with(turn, service.user_hash("u-1"), -1)
-        no_key = CopilotUsageService(AsyncMock(), cfg(hmac_key=""))
+        no_key = UsageService(AsyncMock(), cfg(hmac_key=""))
         self.assertFalse(run(no_key.feedback(turn, "u-1", 1)))
         no_key.store.set_feedback.assert_not_awaited()
 
     def test_summary_window_bounds(self):
-        service = CopilotUsageService(AsyncMock(), cfg())
+        service = UsageService(AsyncMock(), cfg())
         for days in (0, 91):
             with self.assertRaises(ValueError):
                 run(service.summary(days))
@@ -123,7 +123,7 @@ class CopilotServiceTelemetryTest(unittest.TestCase):
 
         self.module = module
         self.store = AsyncMock()
-        self.usage = CopilotUsageService(self.store, cfg())
+        self.usage = UsageService(self.store, cfg())
         self.patches = [patch.object(module, "usage_service", self.usage)]
         for p in self.patches:
             p.start()
@@ -315,7 +315,7 @@ class AiRequestLogStoreDatabaseTest(unittest.TestCase):
             cur.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(self.schema)))
         sep = "&" if "?" in base_url else "?"
         self.store = AiRequestLogStore(f"{base_url}{sep}options=-csearch_path%3D{self.schema}", 30)
-        self.service = CopilotUsageService(self.store, cfg(price_input_per_mtok=1.0, price_output_per_mtok=2.0))
+        self.service = UsageService(self.store, cfg(price_input_per_mtok=1.0, price_output_per_mtok=2.0))
 
     def tearDown(self):
         from psycopg2 import sql
@@ -354,7 +354,7 @@ class AiRequestLogStoreDatabaseTest(unittest.TestCase):
         self.assertEqual((1, 0), (s.thumbs_up, s.thumbs_down))
         self.assertEqual(4, sum(d.requests for d in s.days))
 
-        unpriced = CopilotUsageService(self.store, cfg())
+        unpriced = UsageService(self.store, cfg())
         run(self.store.record(unpriced.build_entry(
             turn_id=str(uuid4()), task="copilot_ask", status="SUCCESS", started=0.0,
             request=AskQuestionRequest(query="q", user_id="u-1"), result={}, answer="a")))

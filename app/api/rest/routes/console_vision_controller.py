@@ -13,9 +13,9 @@ from app.api.rest.console_access import require_any_permission, require_permissi
 from app.api.rest.schemas.base_response import BaseResponse
 from app.core.console import (
     ConsoleActor,
-    console_accept_policy_service,
-    console_model_lab_service,
-    console_vision_lab_service,
+    accept_policy_service,
+    model_lab_service,
+    vision_lab_service,
 )
 
 router = APIRouter(prefix="/vision", tags=["AI Console vision"])
@@ -222,12 +222,12 @@ def _image_type(data: bytes) -> str:
 
 @router.get("/status", response_model=BaseResponse[Status])
 async def status(actor: ConsoleActor = Depends(require_permission("ai:metrics:read"))):
-    return BaseResponse.ok([Status(**await console_vision_lab_service.status(actor))], "OK")
+    return BaseResponse.ok([Status(**await vision_lab_service.status(actor))], "OK")
 
 
 @router.post("/seed-demo", response_model=BaseResponse[SeedResult])
 async def seed_demo(actor: ConsoleActor = Depends(require_any_permission("ai:task:label", "ai:label:approve", "ai:member:manage"))):
-    result = await console_vision_lab_service.seed_demo_samples(actor, reset=True)
+    result = await vision_lab_service.seed_demo_samples(actor, reset=True)
     return BaseResponse.ok([SeedResult(**result)], f"Đã nạp {result['seeded_samples']} mẫu thực hành.")
 
 
@@ -236,7 +236,7 @@ async def label_queue(
     limit: int = Query(20, ge=1, le=100),
     actor: ConsoleActor = Depends(require_permission("ai:task:label")),
 ):
-    rows = await console_vision_lab_service.label_queue(actor, limit)
+    rows = await vision_lab_service.label_queue(actor, limit)
     return BaseResponse.ok([Sample(**r) for r in rows], "OK")
 
 
@@ -245,7 +245,7 @@ async def crop(
     capture_id: str,
     _: ConsoleActor = Depends(require_any_permission("ai:task:label", "ai:label:approve")),
 ) -> Response:
-    image = await console_vision_lab_service.crop(capture_id)
+    image = await vision_lab_service.crop(capture_id)
     if image is None:
         return Response(status_code=404)
     # Ảnh biển số là PII: không cache (middleware đặt no-store), không cho nhúng chỗ khác.
@@ -257,7 +257,7 @@ async def add_label(
     capture_id: str, payload: LabelIn,
     actor: ConsoleActor = Depends(require_permission("ai:task:label")),
 ):
-    label_id = await console_vision_lab_service.add_label(
+    label_id = await vision_lab_service.add_label(
         actor, capture_id, payload.verdict, payload.plate_text, payload.quality_flags
     )
     return BaseResponse.ok([Created(id=label_id)], "Đã gán nhãn — chờ người khác duyệt.")
@@ -268,7 +268,7 @@ async def review_queue(
     limit: int = Query(20, ge=1, le=100),
     actor: ConsoleActor = Depends(require_permission("ai:label:approve")),
 ):
-    rows = await console_vision_lab_service.review_queue(actor, limit)
+    rows = await vision_lab_service.review_queue(actor, limit)
     return BaseResponse.ok([ReviewItem(**r) for r in rows], "OK")
 
 
@@ -277,7 +277,7 @@ async def decide_label(
     label_id: str, payload: DecisionIn,
     actor: ConsoleActor = Depends(require_permission("ai:label:approve")),
 ):
-    await console_vision_lab_service.decide(actor, label_id, payload.decision, payload.note)
+    await vision_lab_service.decide(actor, label_id, payload.decision, payload.note)
     return BaseResponse.ok([Done(ok=True)], "Đã duyệt." if payload.decision == "APPROVED" else "Đã trả lại.")
 
 
@@ -285,7 +285,7 @@ async def decide_label(
 async def snapshots(
     actor: ConsoleActor = Depends(require_any_permission("ai:dataset:snapshot", "ai:model:evaluate")),
 ):
-    rows = await console_vision_lab_service.list_snapshots(actor)
+    rows = await vision_lab_service.list_snapshots(actor)
     return BaseResponse.ok([Snapshot(**r) for r in rows], "OK")
 
 
@@ -293,7 +293,7 @@ async def snapshots(
 async def create_snapshot(
     payload: SnapshotIn, actor: ConsoleActor = Depends(require_permission("ai:dataset:snapshot")),
 ):
-    created = await console_vision_lab_service.create_snapshot(actor, payload.kind, payload.name)
+    created = await vision_lab_service.create_snapshot(actor, payload.kind, payload.name)
     return BaseResponse.ok([SnapshotCreated(**created)], "Đã tạo snapshot.")
 
 
@@ -302,7 +302,7 @@ async def freeze_snapshot(
     snapshot_id: str, payload: ReasonIn,
     actor: ConsoleActor = Depends(require_permission("ai:golden:freeze")),
 ):
-    await console_vision_lab_service.freeze(actor, snapshot_id, payload.reason)
+    await vision_lab_service.freeze(actor, snapshot_id, payload.reason)
     return BaseResponse.ok([Done(ok=True)], "Đã khoá golden.")
 
 
@@ -310,7 +310,7 @@ async def freeze_snapshot(
 
 @router.get("/models", response_model=BaseResponse[ModelVersion])
 async def models(actor: ConsoleActor = Depends(require_permission("ai:metrics:read"))):
-    rows = await console_model_lab_service.list_models(actor)
+    rows = await model_lab_service.list_models(actor)
     return BaseResponse.ok([ModelVersion(**r) for r in rows], "OK")
 
 
@@ -318,7 +318,7 @@ async def models(actor: ConsoleActor = Depends(require_permission("ai:metrics:re
 async def register_model(
     payload: ModelIn, actor: ConsoleActor = Depends(require_permission("ai:model:propose")),
 ):
-    model_id = await console_model_lab_service.register(actor, payload.model_dump())
+    model_id = await model_lab_service.register(actor, payload.model_dump())
     return BaseResponse.ok([Created(id=model_id)], "Đã đăng ký model.")
 
 
@@ -327,7 +327,7 @@ async def propose_model(
     model_id: str, payload: ReasonIn,
     actor: ConsoleActor = Depends(require_permission("ai:model:propose")),
 ):
-    await console_model_lab_service.propose(actor, model_id, payload.reason)
+    await model_lab_service.propose(actor, model_id, payload.reason)
     return BaseResponse.ok([Done(ok=True)], "Đã đề xuất — chờ AI Lead khác duyệt.")
 
 
@@ -336,13 +336,13 @@ async def promote_model(
     model_id: str, payload: ReasonIn,
     actor: ConsoleActor = Depends(require_permission("ai:model:promote")),
 ):
-    await console_model_lab_service.promote(actor, model_id, payload.reason)
+    await model_lab_service.promote(actor, model_id, payload.reason)
     return BaseResponse.ok([Done(ok=True)], "Đã đưa model lên production.")
 
 
 @router.get("/evals", response_model=BaseResponse[EvalRun])
 async def evals(actor: ConsoleActor = Depends(require_permission("ai:metrics:read"))):
-    rows = await console_model_lab_service.list_evals(actor)
+    rows = await model_lab_service.list_evals(actor)
     return BaseResponse.ok([EvalRun(**r) for r in rows], "OK")
 
 
@@ -350,7 +350,7 @@ async def evals(actor: ConsoleActor = Depends(require_permission("ai:metrics:rea
 async def start_eval(
     payload: EvalIn, actor: ConsoleActor = Depends(require_permission("ai:model:evaluate")),
 ):
-    run_id = await console_model_lab_service.start_eval(actor, payload.snapshot_id)
+    run_id = await model_lab_service.start_eval(actor, payload.snapshot_id)
     return BaseResponse.ok([Created(id=run_id)], "Đã bắt đầu đo.")
 
 
@@ -358,13 +358,13 @@ async def start_eval(
 
 @router.get("/accuracy", response_model=BaseResponse[Accuracy])
 async def accuracy(actor: ConsoleActor = Depends(require_permission("ai:metrics:read"))):
-    report = await console_accept_policy_service.accuracy(actor)
+    report = await accept_policy_service.accuracy(actor)
     return BaseResponse.ok([Accuracy(**report)], "OK")
 
 
 @router.get("/policies", response_model=BaseResponse[Policy])
 async def policies(actor: ConsoleActor = Depends(require_permission("ai:metrics:read"))):
-    rows = await console_accept_policy_service.list_policies(actor)
+    rows = await accept_policy_service.list_policies(actor)
     return BaseResponse.ok([Policy(**r) for r in rows], "OK")
 
 
@@ -372,7 +372,7 @@ async def policies(actor: ConsoleActor = Depends(require_permission("ai:metrics:
 async def propose_policy(
     payload: PolicyIn, actor: ConsoleActor = Depends(require_permission("ai:model:propose")),
 ):
-    created = await console_accept_policy_service.propose(
+    created = await accept_policy_service.propose(
         actor, payload.auto_accept_threshold, payload.audit_rate, payload.reason
     )
     return BaseResponse.ok([PolicyCreated(**created)], "Đã đề xuất ngưỡng — chờ AI Lead khác duyệt.")
@@ -383,5 +383,5 @@ async def decide_policy(
     policy_id: str, payload: DecisionIn,
     actor: ConsoleActor = Depends(require_permission("ai:policy:threshold")),
 ):
-    await console_accept_policy_service.decide(actor, policy_id, payload.decision, payload.note)
+    await accept_policy_service.decide(actor, policy_id, payload.decision, payload.note)
     return BaseResponse.ok([Done(ok=True)], "Đã quyết ngưỡng.")

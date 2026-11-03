@@ -15,7 +15,7 @@ from typing import Callable, Iterable, Optional
 
 from app.config import get_config
 from app.core.console.dtos import ExportedCapture
-from app.core.dataset.services.evaluation_service import fetch_image
+from app.core.dataset.services.eval_service import fetch_image
 from app.infra.database.console_vision_store import console_vision_store
 from app.util.logger import logger
 
@@ -74,7 +74,7 @@ def _permanent(exc: Exception) -> bool:
     return isinstance(exc, ValueError)
 
 
-class ConsoleVisionImportService:
+class VisionImportService:
     def __init__(self, store=None, fetch: Callable[[str], bytes] = fetch_image, retention_days: Optional[int] = None) -> None:
         self.store = store or console_vision_store
         self._fetch = fetch
@@ -142,4 +142,4 @@ class ConsoleVisionImportService:
         }
 
 
-console_vision_import_service = ConsoleVisionImportService()
+vision_import_service = VisionImportService()

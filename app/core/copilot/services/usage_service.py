@@ -23,7 +23,7 @@ _UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{1
 _MAX_TEXT = 4000
 
 
-class CopilotUsageService:
+class UsageService:
     def __init__(self, store=None, config=None) -> None:
         self.store = store or ai_request_log_store
         self._config = config or get_config().telemetry
@@ -105,4 +105,4 @@ class CopilotUsageService:
         return UsageSummary(**{**data, "days": [UsageDay(**d) for d in data["days"]]})
 
 
-usage_service = CopilotUsageService()
+usage_service = UsageService()

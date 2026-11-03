@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock
 from uuid import uuid4
 
 from app.core.console.dtos import ConsoleActor
-from app.core.console.services.member_service import ConsoleMemberService
+from app.core.console.services.member_service import MemberService
 from app.core.exceptions import ConsoleAccessDenied, ConsoleStoreError
 from app.infra.database.console_store import ConsoleStore
 
@@ -18,10 +18,10 @@ def run(coro):
     return asyncio.run(coro)
 
 
-class ConsoleMemberServiceTest(unittest.TestCase):
+class MemberServiceTest(unittest.TestCase):
     def setUp(self):
         self.store = AsyncMock()
-        self.service = ConsoleMemberService(store=self.store)
+        self.service = MemberService(store=self.store)
 
     def test_only_console_admin_invites(self):
         with self.assertRaises(ConsoleAccessDenied):

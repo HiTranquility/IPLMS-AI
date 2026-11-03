@@ -50,10 +50,10 @@ class VisionLabFlowTest(unittest.TestCase):
         import psycopg2
         from psycopg2 import sql
 
-        from app.core.console.services.accept_policy_service import ConsoleAcceptPolicyService
-        from app.core.console.services.model_lab_service import ConsoleModelLabService
-        from app.core.console.services.vision_import_service import ConsoleVisionImportService
-        from app.core.console.services.vision_lab_service import ConsoleVisionLabService
+        from app.core.console.services.accept_policy_service import AcceptPolicyService
+        from app.core.console.services.model_lab_service import ModelLabService
+        from app.core.console.services.vision_import_service import VisionImportService
+        from app.core.console.services.vision_lab_service import VisionLabService
         from app.infra.database.console_vision_store import ConsoleVisionStore
         from app.infra.identity.password import hash_password
 
@@ -64,14 +64,14 @@ class VisionLabFlowTest(unittest.TestCase):
             cur.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(self.schema)))
         sep = "&" if "?" in base_url else "?"
         self.store = ConsoleVisionStore(f"{base_url}{sep}options=-csearch_path%3D{self.schema}")
-        self.importer = ConsoleVisionImportService(store=self.store, fetch=lambda url: IMG, retention_days=90)
-        self.lab = ConsoleVisionLabService(store=self.store)
-        self.models = ConsoleModelLabService(
+        self.importer = VisionImportService(store=self.store, fetch=lambda url: IMG, retention_days=90)
+        self.lab = VisionLabService(store=self.store)
+        self.models = ModelLabService(
             store=self.store,
             run=lambda image: {"plate_number": "51A12345", "confidence": 0.9, "process_time": 0.01},
             engine_version=lambda: f"yolo:{WEIGHTS[:12]}+easyocr:1.7",
         )
-        self.policies = ConsoleAcceptPolicyService(store=self.store)
+        self.policies = AcceptPolicyService(store=self.store)
 
         def member(email, *roles):
             member_id = asyncio.run(self.store.create_emergency_admin(
@@ -148,9 +148,9 @@ class VisionLabFlowTest(unittest.TestCase):
 
     def test_nap_mau_demo_lap_lai_khong_loi_va_giu_bon_mat(self):
         from app.core.console.engines.demo_plate_generator import DEMO_SAMPLES
-        from app.core.console.services.vision_lab_service import ConsoleVisionLabService
+        from app.core.console.services.vision_lab_service import VisionLabService
 
-        lab = ConsoleVisionLabService(store=self.store, demo_seed_enabled=True)
+        lab = VisionLabService(store=self.store, demo_seed_enabled=True)
         first = asyncio.run(lab.seed_demo_samples(self.reviewer))
         self.assertEqual({"seeded_samples": len(DEMO_SAMPLES), "seeded_reviews": 2}, first)
         # Nạp lại khi nhãn mẫu vẫn chờ duyệt: không vướng unique index, không đếm nhãn đã có.
@@ -167,12 +167,12 @@ class VisionLabFlowTest(unittest.TestCase):
     def test_nap_mau_demo_khi_khong_co_nguoi_khac_thi_bo_nhan(self):
         from psycopg2 import sql
 
-        from app.core.console.services.vision_lab_service import ConsoleVisionLabService
+        from app.core.console.services.vision_lab_service import VisionLabService
 
         with self.admin_conn, self.admin_conn.cursor() as cur:
             cur.execute(sql.SQL("UPDATE {}.console_member SET status = 'DISABLED' WHERE id <> %s")
                         .format(sql.Identifier(self.schema)), (self.reviewer.member_id,))
-        lab = ConsoleVisionLabService(store=self.store, demo_seed_enabled=True)
+        lab = VisionLabService(store=self.store, demo_seed_enabled=True)
         self.assertEqual(0, asyncio.run(lab.seed_demo_samples(self.reviewer))["seeded_reviews"])
         self.assertEqual([], asyncio.run(lab.review_queue(self.reviewer)))
 
@@ -281,8 +281,8 @@ class VisionLabFlowTest(unittest.TestCase):
         from unittest.mock import patch
 
         from app.console_main import app
-        from app.core.console.services import console_auth_service
-        from app.core.console.services.vision_lab_service import console_vision_lab_service
+        from app.core.console import auth_service
+        from app.core.console.services.vision_lab_service import vision_lab_service
         from app.infra.identity.password import hash_password
         from app.infra.identity.totp import TotpVault
 
@@ -294,9 +294,9 @@ class VisionLabFlowTest(unittest.TestCase):
         self._label_and_approve(capture_id)
         golden = asyncio.run(self.lab.create_snapshot(self.engineer, "golden", "golden http"))
         h = {"X-Console-Request": "1"}
-        with patch.object(console_auth_service, "store", self.store), \
-                patch.object(console_auth_service, "_vault", vault), \
-                patch.object(console_vision_lab_service, "store", self.store):
+        with patch.object(auth_service, "store", self.store), \
+                patch.object(auth_service, "_vault", vault), \
+                patch.object(vision_lab_service, "store", self.store):
             c = TestClient(app)
             c.post("/api/auth/password", json={"email": "lead-http@x.vn", "password": "mật-khẩu-đủ-dài-123"}, headers=h)
             totp = pyotp.TOTP(secret)

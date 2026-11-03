@@ -6,7 +6,7 @@ import numpy as np
 
 from app.core.dataset.dtos import ImageQualityReport, SnapshotSample
 from app.core.dataset.engines import inspect_image_quality, select_sample
-from app.core.dataset.services import CurationService, SnapshotService
+from app.core.dataset import CurationService, SnapshotService
 
 
 class ImageQualityTest(unittest.TestCase):

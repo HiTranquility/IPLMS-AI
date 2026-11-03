@@ -55,7 +55,7 @@ def _engine_status(vision) -> dict[str, Any]:
     try:
         # Chỉ lazy-import adapter chứa trọng số nặng YOLO/EasyOCR để không ép nạp PyTorch khi khởi động.
         cfg = get_config()
-        from app.core.vision.engines.anpr import models as anpr_models
+        from app.core.vision.engines.anpr import model_loader as anpr_models
 
         loaded_yolo = anpr_models.yolo_model() is not None
         loaded_ocr = anpr_models.ocr_reader() is not None
@@ -292,7 +292,7 @@ async def _effective_models() -> list[dict[str, Any]]:
     return rows
 
 
-class ConsoleToolsService:
+class ToolsService:
     def __init__(self, store=None, copilot=None, ingestion=None) -> None:
         self.store = store or console_store
         self.copilot = copilot or copilot_service
@@ -301,7 +301,7 @@ class ConsoleToolsService:
     def _ingestion_service(self):
         # Nạp trễ: parser PDF/DOCX + client embedding chỉ cần khi có người nạp.
         if self._ingestion is None:
-            from app.core.knowledge.services.ingestion_service import ingestion_service
+            from app.core.knowledge import ingestion_service
 
             self._ingestion = ingestion_service
         return self._ingestion
@@ -784,7 +784,7 @@ class ConsoleToolsService:
         if not (access_policy.can(actor, "ai:model:evaluate") or access_policy.can(actor, "ai:prompt:edit")):
             access_policy.require(actor, "ai:model:evaluate")
         cfg = get_config()
-        from app.core.vision.engines.anpr import models as anpr_models
+        from app.core.vision.engines.anpr import model_loader as anpr_models
 
         if action == "unload":
             res = await asyncio.to_thread(anpr_models.unload_models)
@@ -830,4 +830,4 @@ class ConsoleToolsService:
         return {"session_id": session_id, "revoked": bool(revoked)}
 
 
-console_tools_service = ConsoleToolsService()
+tools_service = ToolsService()

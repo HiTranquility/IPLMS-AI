@@ -8,7 +8,7 @@ import urllib.error
 from uuid import uuid4
 
 from app.core.console.dtos import ExportedCapture
-from app.core.console.services.vision_import_service import ConsoleVisionImportService
+from app.core.console.services.vision_import_service import VisionImportService
 
 IMG = b"\xff\xd8 crop bytes"
 SHA = hashlib.sha256(IMG).hexdigest()
@@ -48,7 +48,7 @@ class FakeStore:
 
 def service(fetch=lambda url: IMG):
     store = FakeStore()
-    return ConsoleVisionImportService(store=store, fetch=fetch, retention_days=90), store
+    return VisionImportService(store=store, fetch=fetch, retention_days=90), store
 
 
 class VisionImportTest(unittest.TestCase):
@@ -166,7 +166,7 @@ class VisionImportStoreTest(unittest.TestCase):
             cur.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(self.schema)))
         sep = "&" if "?" in base_url else "?"
         self.store = ConsoleVisionStore(f"{base_url}{sep}options=-csearch_path%3D{self.schema}")
-        self.svc = ConsoleVisionImportService(store=self.store, fetch=lambda url: IMG, retention_days=90)
+        self.svc = VisionImportService(store=self.store, fetch=lambda url: IMG, retention_days=90)
 
     def tearDown(self):
         from psycopg2 import sql
@@ -182,7 +182,7 @@ class VisionImportStoreTest(unittest.TestCase):
         self.assertEqual(IMG, asyncio.run(self.store.crop(sample.capture_id)))
 
         # Process khác (backend khởi động lại) hỏi lượt rỗng vẫn thấy đúng mốc.
-        again = ConsoleVisionImportService(store=self.store, fetch=lambda url: IMG, retention_days=90)
+        again = VisionImportService(store=self.store, fetch=lambda url: IMG, retention_days=90)
         self.assertEqual(sample.capture_id, asyncio.run(again.import_batch([]))["watermark_id"])
         status = asyncio.run(self.store.import_status())
         self.assertEqual(1, status["sample_count"])

@@ -10,7 +10,7 @@ from app.api.rest.console_access import (
     set_flow_cookie, set_session_cookie,
 )
 from app.api.rest.schemas.base_response import BaseResponse
-from app.core.console import access_policy, console_auth_service
+from app.core.console import access_policy, auth_service
 from app.core.exceptions import ConsoleAuthError
 from app.util.logger import logger
 
@@ -60,7 +60,7 @@ async def google_start(request: Request) -> RedirectResponse:
         target_url = str(request.url).replace("127.0.0.1", "localhost", 1)
         logger.info(f"[Google Auth] Normalizing 127.0.0.1 -> localhost: {target_url}")
         return RedirectResponse(target_url, status_code=302)
-    url, browser = await console_auth_service.start_google()
+    url, browser = await auth_service.start_google()
     response = RedirectResponse(url, status_code=302)
     set_flow_cookie(response, browser)
     return response
@@ -85,7 +85,7 @@ async def google_callback(
         response = RedirectResponse(f"{_UI_HOME}?login_error=GOOGLE_DENIED", status_code=302)
     else:
         try:
-            raw = await console_auth_service.finish_google(
+            raw = await auth_service.finish_google(
                 code or "", state or "", flow_cookie
             )
         except ConsoleAuthError as exc:
@@ -104,39 +104,39 @@ async def google_callback(
 
 @router.post("/auth/password", response_model=BaseResponse[LoginState])
 async def password_login(payload: PasswordLogin, response: Response) -> BaseResponse[LoginState]:
-    raw = await console_auth_service.password_login(payload.email, payload.password)
+    raw = await auth_service.password_login(payload.email, payload.password)
     set_session_cookie(response, raw)
     return BaseResponse.ok([LoginState(mfa_required=True)], "Nhập mã TOTP để hoàn tất đăng nhập.")
 
 
 @router.post("/auth/totp/enroll", response_model=BaseResponse[Enrollment])
 async def totp_enroll(request: Request) -> BaseResponse[Enrollment]:
-    uri = await console_auth_service.totp_enrollment_uri(session_token(request))
+    uri = await auth_service.totp_enrollment_uri(session_token(request))
     return BaseResponse.ok([Enrollment(otpauth_uri=uri)], "Quét mã bằng ứng dụng xác thực.")
 
 
 @router.post("/auth/totp", response_model=BaseResponse[LoginState])
 async def totp_verify(request: Request, payload: TotpCode) -> BaseResponse[LoginState]:
-    await console_auth_service.verify_totp(session_token(request), payload.code)
+    await auth_service.verify_totp(session_token(request), payload.code)
     return BaseResponse.ok([LoginState(mfa_required=False)], "Đã đăng nhập console.")
 
 
 @router.post("/auth/step-up", response_model=BaseResponse[LoginState])
 async def step_up(request: Request, payload: StepUp) -> BaseResponse[LoginState]:
-    await console_auth_service.step_up(session_token(request), payload.code, payload.reason)
+    await auth_service.step_up(session_token(request), payload.code, payload.reason)
     return BaseResponse.ok([LoginState(mfa_required=False)], "Đã xác thực lại.")
 
 
 @router.post("/auth/logout", response_model=BaseResponse[LoginState])
 async def logout(request: Request, response: Response) -> BaseResponse[LoginState]:
-    await console_auth_service.logout(session_token(request))
+    await auth_service.logout(session_token(request))
     clear_session_cookie(response)
     return BaseResponse.ok([], "Đã đăng xuất.")
 
 
 @router.get("/me", response_model=BaseResponse[Me])
 async def me(request: Request) -> BaseResponse[Me]:
-    session = await console_auth_service.resolve(session_token(request), require_mfa=False)
+    session = await auth_service.resolve(session_token(request), require_mfa=False)
     permissions = (
         [p for p in access_policy.PERMISSIONS if access_policy.can(session.actor, p)]
         if session.mfa_done else []

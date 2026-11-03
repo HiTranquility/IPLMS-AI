@@ -4,7 +4,7 @@ import types
 import unittest
 from unittest.mock import patch
 
-from app.core.vision.engines.anpr import models as anpr_models
+from app.core.vision.engines.anpr import model_loader as anpr_models
 from app.infra.model_registry import ArtifactResolutionError
 
 

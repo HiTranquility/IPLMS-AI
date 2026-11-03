@@ -2,7 +2,7 @@ from typing import Any, Dict, Tuple
 
 from app.core.vision.constants import PLATE_OCR_ALLOWLIST
 from app.core.exceptions import ModelNotLoadedError
-from app.core.vision.engines.anpr import models
+from app.core.vision.engines.anpr import model_loader
 from app.core.vision.engines.anpr.plate_text import (
     correct_plate_confusions,
     sanitize_plate_text,
@@ -41,7 +41,7 @@ def read_with_confidence(img) -> Tuple[str, float]:
     ĐỘ DÀI: một cụm 1 ký tự đọc chắc chắn không được kéo điểm của cả biển lên.
     Không đọc được cụm nào → 0.0, KHÔNG bịa số.
     """
-    reader = models.ocr_reader()
+    reader = model_loader.ocr_reader()
     if reader is None:
         raise ModelNotLoadedError("EasyOCR reader chưa được load.")
 
@@ -63,7 +63,7 @@ def read_plate_details(img) -> Tuple[str, float, bool, Dict[str, Any]]:
     Returns:
         Tuple (plate_number, confidence, is_two_line, parsed_details)
     """
-    reader = models.ocr_reader()
+    reader = model_loader.ocr_reader()
     if reader is None:
         raise ModelNotLoadedError("EasyOCR reader chưa được load.")
 

@@ -102,3 +102,6 @@ class AnprService:
             motion_threshold=cfg.clip_motion_threshold if motion else None,
         )
         return analyze_clip(data, suffix, limits, run_anpr, cfg.clip_event_iou, cfg.clip_event_max_gap_s)
+
+
+anpr_service = AnprService()

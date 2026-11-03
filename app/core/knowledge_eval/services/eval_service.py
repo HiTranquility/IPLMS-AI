@@ -36,7 +36,7 @@ def _scope_id(scope: Optional[str] | EvalScopeDto) -> Optional[str]:
     return scope
 
 
-class KnowledgeEvalService:
+class EvalService:
     def __init__(self, store=None, vector_store=None, rag=None, llm=None) -> None:
         self.store = store or knowledge_eval_store
         self.vector_store = vector_store or pgvector_client
@@ -303,4 +303,4 @@ class KnowledgeEvalService:
         return await self.store.publish_scope(_scope_id(scope), published_by, self._readiness_reasons)
 
 
-knowledge_eval_service = KnowledgeEvalService()
+eval_service = EvalService()

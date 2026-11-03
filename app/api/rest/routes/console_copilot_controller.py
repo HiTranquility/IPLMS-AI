@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 from app.api.rest.console_access import require_permission
 from app.api.rest.schemas.base_response import BaseResponse
-from app.core.console import ConsoleActor, console_copilot_lab_service
+from app.core.console import ConsoleActor, copilot_lab_service
 from app.core.copilot import UsageSummary
 
 router = APIRouter(prefix="/copilot", tags=["AI Console Copilot Lab"])
@@ -63,7 +63,7 @@ async def usage(
     days: int = Query(7, ge=1, le=90),
     actor: ConsoleActor = Depends(require_permission("ai:metrics:read")),
 ) -> BaseResponse[UsageSummary]:
-    return BaseResponse.ok([await console_copilot_lab_service.usage_summary(actor, days)], "OK")
+    return BaseResponse.ok([await copilot_lab_service.usage_summary(actor, days)], "OK")
 
 
 @router.get("/review-stats", response_model=BaseResponse[ReviewStats])
@@ -71,7 +71,7 @@ async def review_stats(
     days: int = Query(7, ge=1, le=90),
     actor: ConsoleActor = Depends(require_permission("ai:metrics:read")),
 ) -> BaseResponse[ReviewStats]:
-    stats = await console_copilot_lab_service.review_stats(actor, days)
+    stats = await copilot_lab_service.review_stats(actor, days)
     return BaseResponse.ok([ReviewStats(**stats)], "OK")
 
 
@@ -83,7 +83,7 @@ async def turns(
     before: Optional[str] = Query(None, max_length=40),
     actor: ConsoleActor = Depends(require_permission("ai:chatlog:read")),
 ) -> BaseResponse[Turn]:
-    rows = await console_copilot_lab_service.list_turns(actor, limit, status, feedback, before)
+    rows = await copilot_lab_service.list_turns(actor, limit, status, feedback, before)
     return BaseResponse.ok([Turn(**r) for r in rows], "OK")
 
 
@@ -92,7 +92,7 @@ async def review(
     turn_id: str, payload: Review,
     actor: ConsoleActor = Depends(require_permission("ai:label:approve")),
 ) -> BaseResponse[Reviewed]:
-    await console_copilot_lab_service.review_turn(actor, turn_id, payload.verdict, payload.note)
+    await copilot_lab_service.review_turn(actor, turn_id, payload.verdict, payload.note)
     return BaseResponse.ok([Reviewed(turn_id=turn_id, verdict=payload.verdict)], "Đã chấm lượt này.")
 
 
@@ -109,7 +109,7 @@ async def promote_to_eval(
     payload: PromoteEvalIn,
     actor: ConsoleActor = Depends(require_permission("ai:chatlog:read")),
 ) -> BaseResponse[dict]:
-    item = await console_copilot_lab_service.promote_to_eval(
+    item = await copilot_lab_service.promote_to_eval(
         actor,
         turn_id=turn_id,
         query=payload.query,
@@ -124,5 +124,5 @@ async def promote_to_eval(
 async def list_eval_candidates(
     actor: ConsoleActor = Depends(require_permission("ai:chatlog:read")),
 ) -> BaseResponse[dict]:
-    items = await console_copilot_lab_service.list_eval_candidates(actor)
+    items = await copilot_lab_service.list_eval_candidates(actor)
     return BaseResponse.ok(items, "OK")

@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock
 from uuid import uuid4
 
 from app.core.console.dtos import ConsoleActor
-from app.core.console.services.copilot_lab_service import ConsoleCopilotLabService
+from app.core.console.services.copilot_lab_service import CopilotLabService
 from app.core.exceptions import ConsoleAccessDenied
 
 TURN = "3f1c2a64-5b7d-4e8f-9a01-23456789abcd"
@@ -40,7 +40,7 @@ def service(**overrides):
     store.save_eval_candidate.side_effect = _fake_save_eval_candidate
     usage = AsyncMock()
     deps = {"usage": usage, "request_log": request_log, "store": store, **overrides}
-    return ConsoleCopilotLabService(**deps), deps
+    return CopilotLabService(**deps), deps
 
 
 class CopilotLabPolicyTest(unittest.IsolatedAsyncioTestCase):
@@ -142,7 +142,7 @@ class CopilotLabStoreTest(unittest.TestCase):
         self.reviewer_id = asyncio.run(self.console.create_emergency_admin(
             "rv@x.vn", "Người chấm", hash_password("mật-khẩu-đủ-dài-123"), None, "ai_reviewer"
         ))
-        self.svc = ConsoleCopilotLabService(usage=AsyncMock(), request_log=self.log, store=self.console)
+        self.svc = CopilotLabService(usage=AsyncMock(), request_log=self.log, store=self.console)
 
     def tearDown(self):
         from psycopg2 import sql

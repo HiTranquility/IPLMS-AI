@@ -255,6 +255,31 @@ class DisputeGuardrailTest(unittest.IsolatedAsyncioTestCase):
             make_initial_state(workflow_id="w", dispute_id="d", evidence_bundle_id="b", actor_id="a",
                                claim_reason="x" * 2001, claimed_amount=1)
 
+    def test_nan_and_infinity_are_rejected_everywhere(self):
+        for non_finite in (float("nan"), float("inf"), float("-inf")):
+            with self.assertRaises(WorkflowStateError):
+                make_initial_state(
+                    workflow_id="w", dispute_id="d", evidence_bundle_id="b", actor_id="a",
+                    claim_reason="Sai phí", claimed_amount=non_finite,
+                )
+            with self.assertRaises(WorkflowStateError):
+                self._validate(self._rec(recommended_refund=non_finite))
+            with self.assertRaises(WorkflowStateError):
+                self._validate(self._rec(), claimed=non_finite)
+            with self.assertRaises(WorkflowStateError):
+                self._validate(self._rec(), fee=non_finite)
+            with self.assertRaises(WorkflowStateError):
+                assert_json_safe({"amount": non_finite})
+
+    def test_justification_output_guard_blocks_ungrounded_numbers_links_and_free_claims(self):
+        for bad_justification in (
+            "Chuyển khoản hoàn về STK 012345678910 ngay.",
+            "Liên hệ nhận tiền tại https://zalo.me/hoan-tien-bai-xe",
+            "Bãi đỗ xe này hoàn toàn miễn phí cho mọi xe.",
+        ):
+            with self.assertRaises(WorkflowStateError, msg=bad_justification):
+                self._validate(self._rec(justification=bad_justification))
+
     async def test_injected_claim_cannot_push_overreach_to_reviewer(self):
         class _InjectedWriter:
             async def draft(self, state):

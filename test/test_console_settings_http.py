@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, patch
 from fastapi.testclient import TestClient
 
 from app.api.rest.console_access import SESSION_COOKIE
-from app.core.console import console_tools_service
+from app.core.console import tools_service
 from app.core.console.dtos import ConsoleActor, ConsoleSession
-from app.core.console.services import console_auth_service
+from app.core.console import auth_service
 
 H = {"X-Console-Request": "1", "Cookie": f"{SESSION_COOKIE}=tok"}
 BASE = "/api/tools"
@@ -33,10 +33,10 @@ class ConsoleSettingsHttpTest(unittest.TestCase):
 
         self.client = TestClient(app)
         self.patches = [
-            patch.object(console_tools_service, "update_policy_settings", new_callable=AsyncMock, return_value={}),
-            patch.object(console_tools_service, "update_compute_settings", new_callable=AsyncMock, return_value={}),
-            patch.object(console_tools_service, "get_runtime_settings", new_callable=AsyncMock, return_value={}),
-            patch.object(console_tools_service, "revoke_session_by_id", new_callable=AsyncMock, return_value={"revoked": True}),
+            patch.object(tools_service, "update_policy_settings", new_callable=AsyncMock, return_value={}),
+            patch.object(tools_service, "update_compute_settings", new_callable=AsyncMock, return_value={}),
+            patch.object(tools_service, "get_runtime_settings", new_callable=AsyncMock, return_value={}),
+            patch.object(tools_service, "revoke_session_by_id", new_callable=AsyncMock, return_value={"revoked": True}),
         ]
         self.mocks = [p.start() for p in self.patches]
 
@@ -45,7 +45,7 @@ class ConsoleSettingsHttpTest(unittest.TestCase):
             p.stop()
 
     def _as(self, roles, fresh_step_up=False):
-        return patch.object(console_auth_service, "resolve", new_callable=AsyncMock,
+        return patch.object(auth_service, "resolve", new_callable=AsyncMock,
                             return_value=_session(roles, fresh_step_up))
 
     def test_policy_can_step_up_khi_chua_nhap_lai_totp(self):

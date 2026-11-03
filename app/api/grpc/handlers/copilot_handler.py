@@ -10,8 +10,7 @@ from app.api.grpc.mappers.copilot_mapper import (
     to_feedback_response,
     to_usage_summary_response,
 )
-from app.core.copilot.services.copilot_service import copilot_service
-from app.core.copilot.services.usage_service import usage_service
+from app.core.copilot import copilot_service, usage_service
 from app.util.logger import logger
 
 _, _pb2_grpc = get_stub("copilot_service")

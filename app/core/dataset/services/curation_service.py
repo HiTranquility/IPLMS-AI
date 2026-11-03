@@ -50,3 +50,6 @@ class CurationService:
             random_audit_sample=draw() < rate,
             low_confidence_threshold=low_confidence_threshold,
         )
+
+
+curation_service = CurationService()

@@ -7,7 +7,7 @@ from app.api.grpc.mappers.knowledge_mapper import (
     to_ingest_response,
     to_list_response,
 )
-from app.core.knowledge.services import ingestion_service
+from app.core.knowledge import ingestion_service
 from app.util.logger import logger
 
 _, _pb2_grpc = get_stub("knowledge_service")

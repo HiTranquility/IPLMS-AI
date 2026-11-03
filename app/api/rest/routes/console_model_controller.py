@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.rest.console_access import require_permission
 from app.api.rest.schemas.base_response import BaseResponse
-from app.core.console import ConsoleActor, console_model_connection_service
+from app.core.console import ConsoleActor, model_connection_service
 
 router = APIRouter(prefix="/models", tags=["AI Console models"])
 
@@ -62,7 +62,7 @@ class TestResult(BaseModel):
 async def list_connections(
     actor: ConsoleActor = Depends(require_permission("ai:metrics:read")),
 ) -> BaseResponse[Connection]:
-    rows = await console_model_connection_service.list_connections(actor)
+    rows = await model_connection_service.list_connections(actor)
     return BaseResponse.ok([Connection(**r) for r in rows], "OK")
 
 
@@ -71,7 +71,7 @@ async def create_connection(
     payload: ConnectionCreate, actor: ConsoleActor = Depends(require_permission("ai:model:propose")),
 ) -> BaseResponse[Connection]:
     data = payload.model_dump(exclude={"reason", "replaces_id"})
-    row = await console_model_connection_service.create_connection(
+    row = await model_connection_service.create_connection(
         actor, data, payload.reason, payload.replaces_id,
     )
     return BaseResponse.ok([Connection(**row)], "Đã lưu connection.")
@@ -81,7 +81,7 @@ async def create_connection(
 async def test_draft(
     payload: ConnectionDraft, actor: ConsoleActor = Depends(require_permission("ai:model:propose")),
 ) -> BaseResponse[TestResult]:
-    result = await console_model_connection_service.test_draft(actor, payload.model_dump())
+    result = await model_connection_service.test_draft(actor, payload.model_dump())
     return BaseResponse.ok([TestResult(**result)], "OK" if result["ok"] else "Thử kết nối không đạt.")
 
 
@@ -89,7 +89,7 @@ async def test_draft(
 async def test_connection(
     connection_id: str, actor: ConsoleActor = Depends(require_permission("ai:model:propose")),
 ) -> BaseResponse[TestResult]:
-    result = await console_model_connection_service.test_connection(actor, connection_id)
+    result = await model_connection_service.test_connection(actor, connection_id)
     return BaseResponse.ok([TestResult(**result)], "OK" if result["ok"] else "Thử kết nối không đạt.")
 
 
@@ -98,5 +98,5 @@ async def disable_connection(
     connection_id: str, payload: Reason,
     actor: ConsoleActor = Depends(require_permission("ai:model:propose")),
 ) -> BaseResponse[Connection]:
-    row = await console_model_connection_service.disable_connection(actor, connection_id, payload.reason)
+    row = await model_connection_service.disable_connection(actor, connection_id, payload.reason)
     return BaseResponse.ok([Connection(**row)], "Đã tắt connection.")

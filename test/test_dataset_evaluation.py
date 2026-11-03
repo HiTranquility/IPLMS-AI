@@ -3,8 +3,7 @@ import asyncio
 import unittest
 
 from app.api.grpc.generated_stubs import STUBS_READY, get_stub
-from app.core.dataset.services import evaluation_service as ev
-from app.core.dataset.services.evaluation_service import EvaluationSample
+from app.core.dataset import EvalSample, eval_service as ev
 
 
 def fake_run(mapping):
@@ -17,9 +16,9 @@ def fake_run(mapping):
     return run
 
 
-class EvaluationServiceTest(unittest.TestCase):
+class EvalServiceTest(unittest.TestCase):
     def _rows(self, mapping):
-        samples = [EvaluationSample(k, f"https://cdn/{k}.jpg", v[0]) for k, v in LABELS.items()]
+        samples = [EvalSample(k, f"https://cdn/{k}.jpg", v[0]) for k, v in LABELS.items()]
         run = fake_run(mapping)
         return [ev.evaluate_one(s, fetch=lambda url: url.split("/")[-1][:-4].encode(), run=run) for s in samples]
 

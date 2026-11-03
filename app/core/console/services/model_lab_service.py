@@ -1,6 +1,6 @@
 """Phiên bản model, lượt đo trên golden đã khoá và promote bốn mắt (ISSUE-126 P4, PROB-049 §3).
 
-Lượt đo chạy ĐÚNG engine đang nạp trên AI host (`evaluation_service`) với ảnh cắt
+Lượt đo chạy ĐÚNG engine đang nạp trên AI host (`eval_service`) với ảnh cắt
 lấy từ DB console. Model chỉ được đề xuất khi đã có lượt đo xong trên golden đã
 khoá mà weights khớp `sha256` của model — không đo thì không có số để duyệt.
 """
@@ -12,8 +12,7 @@ from typing import Callable, Dict, Optional
 
 from app.core.console.dtos import ConsoleActor
 from app.core.console.engines import access_policy
-from app.core.dataset.services import evaluation_service
-from app.core.dataset.services.evaluation_service import EvaluationSample
+from app.core.dataset import EvalSample, eval_service
 from app.infra.database.console_vision_store import console_vision_store
 from app.util.logger import logger
 
@@ -35,7 +34,7 @@ def _uuid(value: str, what: str) -> str:
     return value
 
 
-class ConsoleModelLabService:
+class ModelLabService:
     def __init__(
         self, store=None,
         run: Optional[Callable[[bytes], Dict[str, object]]] = None,
@@ -43,7 +42,7 @@ class ConsoleModelLabService:
     ) -> None:
         self.store = store or console_vision_store
         self._run = run
-        self._engine_version = engine_version or evaluation_service.model_version
+        self._engine_version = engine_version or eval_service.model_version
         self._tasks: set[asyncio.Task] = set()
 
     async def list_models(self, actor: ConsoleActor) -> list[dict]:
@@ -106,7 +105,7 @@ class ConsoleModelLabService:
         if snapshot["kind"] != "golden" or snapshot["frozen_at"] is None:
             raise ValueError("Chỉ đo trên snapshot golden đã khoá — thước đo phải đứng yên.")
         samples = [
-            EvaluationSample(sample_id=s["sample_id"], image_url=s["sample_id"], label=s["label"])
+            EvalSample(sample_id=s["sample_id"], image_url=s["sample_id"], label=s["label"])
             for s in snapshot["manifest"]["samples"]
             if s["split"] == "test-golden"
         ]
@@ -118,7 +117,7 @@ class ConsoleModelLabService:
         task.add_done_callback(self._tasks.discard)
         return run_id
 
-    async def _evaluate(self, run_id: str, samples: list[EvaluationSample]) -> None:
+    async def _evaluate(self, run_id: str, samples: list[EvalSample]) -> None:
         loop = asyncio.get_running_loop()
 
         def fetch(capture_id: str) -> bytes:
@@ -134,8 +133,8 @@ class ConsoleModelLabService:
         try:
             rows = []
             for sample in samples:
-                rows.append(await asyncio.to_thread(evaluation_service.evaluate_one, sample, **kwargs))
-            summary = evaluation_service.summarize(rows)
+                rows.append(await asyncio.to_thread(eval_service.evaluate_one, sample, **kwargs))
+            summary = eval_service.summarize(rows)
             version = await asyncio.to_thread(self._engine_version)
             await self.store.finish_eval(run_id, "DONE", version, summary, None)
         except Exception as exc:  # noqa: BLE001 — lỗi phải hiện trên lượt đo, không chết lặng
@@ -147,4 +146,4 @@ class ConsoleModelLabService:
             await asyncio.gather(*list(self._tasks), return_exceptions=True)
 
 
-console_model_lab_service = ConsoleModelLabService()
+model_lab_service = ModelLabService()

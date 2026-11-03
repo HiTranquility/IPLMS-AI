@@ -60,8 +60,14 @@ def to_answer_chunk(chunk: AnswerChunk):
 
 
 def to_arbitrate_dispute_response(verdict: DisputeVerdict):
+    verdict_key = str(getattr(verdict.verdict, "value", verdict.verdict))
+    proto_verdict = (
+        _pb2.ArbitrationVerdict.ARBITRATION_VERDICT_UNSPECIFIED
+        if verdict_key == "MANUAL_REVIEW"
+        else _pb2.ArbitrationVerdict.Value(verdict_key)
+    )
     return _pb2.ArbitrateDisputeResponse(
-        verdict=_pb2.ArbitrationVerdict.Value(verdict.verdict),
+        verdict=proto_verdict,
         recommended_refund=verdict.recommended_refund,
         justification=verdict.justification,
         evidence_urls=verdict.evidence_urls,

@@ -31,3 +31,11 @@ class SnapshotSample:
     label: str
     split: str
     group_id: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class EvalSample:
+    sample_id: str
+    image_url: str
+    label: str
+

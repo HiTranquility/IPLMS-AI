@@ -17,7 +17,7 @@ def _reason(reason: str) -> str:
     return cleaned
 
 
-class ConsoleMemberService:
+class MemberService:
     def __init__(self, store=None) -> None:
         self.store = store or console_store
 
@@ -62,4 +62,4 @@ class ConsoleMemberService:
         return await self.store.list_audit(limit)
 
 
-console_member_service = ConsoleMemberService()
+member_service = MemberService()

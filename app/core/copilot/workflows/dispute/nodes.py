@@ -12,7 +12,7 @@ from app.core.copilot.workflows.dispute.state import (
     validate_recommendation,
     validate_review,
 )
-from app.core.knowledge import find_instructions
+from app.core.knowledge import find_injection_phrases
 from app.core.exceptions import WorkflowStateError
 
 
@@ -97,11 +97,13 @@ def make_draft_recommendation_node(deps: DisputeWorkflowDependencies) -> Node:
         assert_json_safe(recommendation, path="recommendation")
         if not recommendation:
             raise WorkflowStateError("Recommendation writer trả kết quả rỗng.")
+        policy_chunks = state.get("policy_chunks", [])
         recommendation = validate_recommendation(
             recommendation,
             claimed_amount=state["claimed_amount"],
             session_fee=state["session_snapshot"].get("fee"),
-            sources=[c["source"] for c in state.get("policy_chunks", []) if c.get("source")],
+            sources=[c["source"] for c in policy_chunks if c.get("source")],
+            context_text="\n".join(str(c.get("content") or "") for c in policy_chunks),
         )
         return {
             "recommendation": recommendation,
@@ -125,7 +127,7 @@ def _review_payload(state: DisputeWorkflowState) -> dict[str, Any]:
             if chunk.get("source")
         ],
         # Người duyệt cần biết khiếu nại có câu ra lệnh cho AI (ADR-0029 luật 2).
-        "claim_injection_flags": find_instructions(state.get("claim_reason", "")),
+        "claim_injection_flags": find_injection_phrases(state.get("claim_reason", "")),
         "question": "Duyệt, từ chối hoặc sửa đề xuất xử lý tranh chấp?",
     }
 

@@ -27,7 +27,7 @@ def _days(days: int) -> int:
     return days
 
 
-class ConsoleCopilotLabService:
+class CopilotLabService:
     def __init__(self, usage=None, request_log=None, store=None) -> None:
         self.usage = usage or usage_service
         self.request_log = request_log or ai_request_log_store
@@ -135,4 +135,4 @@ class ConsoleCopilotLabService:
         return await self.store.list_eval_candidates(retention_days=retention_days)
 
 
-console_copilot_lab_service = ConsoleCopilotLabService()
+copilot_lab_service = CopilotLabService()

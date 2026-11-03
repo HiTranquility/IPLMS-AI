@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 from app.core.console.dtos import ConsoleActor
-from app.core.console.services.tools_service import CONSOLE_TRY_TASK, ConsoleToolsService
+from app.core.console.services.tools_service import CONSOLE_TRY_TASK, ToolsService
 from app.core.enums import IngestStatus
 from app.core.exceptions import ConsoleAccessDenied
 
@@ -24,7 +24,7 @@ def service():
         message="ok", version_id="v-1", version_no=2,
     )
     store = AsyncMock()
-    return ConsoleToolsService(store=store, copilot=copilot, ingestion=ingestion), copilot, ingestion, store
+    return ToolsService(store=store, copilot=copilot, ingestion=ingestion), copilot, ingestion, store
 
 
 class ConsoleToolsTest(unittest.IsolatedAsyncioTestCase):
@@ -201,8 +201,8 @@ class ChatStudioContractTest(unittest.IsolatedAsyncioTestCase):
 
         app = FastAPI()
         app.include_router(ctl.router)
-        with patch.object(ctl.console_tools_service, "try_copilot_stream", fake_stream), \
-                patch.object(console_access.console_auth_service, "authorize_any", AsyncMock(return_value=ML)):
+        with patch.object(ctl.tools_service, "try_copilot_stream", fake_stream), \
+                patch.object(console_access.auth_service, "authorize_any", AsyncMock(return_value=ML)):
             response = TestClient(app).post("/tools/copilot/stream", json=self.BODY)
         self.assertEqual(200, response.status_code, response.text)
         self.assertIn('"token": "ok"', response.text)
@@ -471,7 +471,7 @@ class ConsoleSettingsAndToolsEndpointTest(unittest.IsolatedAsyncioTestCase):
         req_policy = MagicMock()
         req_policy.model_name = "anpr"
 
-        with patch("app.core.console.services.accept_policy_service.console_accept_policy_service.approved", new_callable=AsyncMock) as mock_approved:
+        with patch("app.core.console.services.accept_policy_service.accept_policy_service.approved", new_callable=AsyncMock) as mock_approved:
             mock_approved.return_value = {
                 "id": "pol-1",
                 "model_name": "anpr",

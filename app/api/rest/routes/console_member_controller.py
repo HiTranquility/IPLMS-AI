@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from app.api.rest.console_access import require_permission
 from app.api.rest.schemas.base_response import BaseResponse
 from app.core.console.dtos import ConsoleActor
-from app.core.console.services import console_member_service
+from app.core.console import member_service
 
 router = APIRouter(tags=["AI Console members"])
 
@@ -49,7 +49,7 @@ class AuditEntry(BaseModel):
 async def list_members(
     actor: ConsoleActor = Depends(require_permission("ai:member:manage")),
 ) -> BaseResponse[Member]:
-    members = await console_member_service.list_members(actor)
+    members = await member_service.list_members(actor)
     return BaseResponse.ok([Member(**m) for m in members], "OK")
 
 
@@ -57,7 +57,7 @@ async def list_members(
 async def invite(
     payload: Invite, actor: ConsoleActor = Depends(require_permission("ai:member:manage"))
 ) -> BaseResponse[Member]:
-    member = await console_member_service.invite(
+    member = await member_service.invite(
         actor, payload.email, payload.display_name, payload.reason
     )
     return BaseResponse.ok([Member(**member)], "Đã mời thành viên.")
@@ -68,7 +68,7 @@ async def grant_role(
     member_id: str, role: str, payload: RoleChange,
     actor: ConsoleActor = Depends(require_permission("ai:member:manage")),
 ) -> BaseResponse[Changed]:
-    changed = await console_member_service.grant_role(actor, member_id, role, payload.reason)
+    changed = await member_service.grant_role(actor, member_id, role, payload.reason)
     return BaseResponse.ok([Changed(changed=changed)], "Đã cấp vai trò." if changed else "Đã có vai trò này.")
 
 
@@ -77,7 +77,7 @@ async def revoke_role(
     member_id: str, role: str, payload: RoleChange,
     actor: ConsoleActor = Depends(require_permission("ai:member:manage")),
 ) -> BaseResponse[Changed]:
-    changed = await console_member_service.revoke_role(actor, member_id, role, payload.reason)
+    changed = await member_service.revoke_role(actor, member_id, role, payload.reason)
     return BaseResponse.ok([Changed(changed=changed)], "Đã thu hồi vai trò." if changed else "Không có vai trò này.")
 
 
@@ -86,5 +86,5 @@ async def audit(
     limit: int = Query(100, ge=1, le=500),
     actor: ConsoleActor = Depends(require_permission("ai:audit:read")),
 ) -> BaseResponse[AuditEntry]:
-    entries = await console_member_service.list_audit(actor, limit)
+    entries = await member_service.list_audit(actor, limit)
     return BaseResponse.ok([AuditEntry(**e) for e in entries], "OK")
