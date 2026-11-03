@@ -51,28 +51,28 @@ export function OverviewPage() {
           {/* Hàng 4 Thẻ KPI trên cùng */}
           <div className={styles.kpiGrid}>
             <MemberStatCard
-              icon={<CheckCircle2 size={22} />}
+              icon={<CheckCircle2 size={20} />}
               label={t.overview.kpiSuccessRate}
               value={successRate !== null ? fmtPercent(successRate) : DASH}
               tone="success"
               subtext={t.overview.kpiTotalRequestsSub(fmtInt(u.success_requests), fmtInt(u.total_requests))}
             />
             <MemberStatCard
-              icon={<ShieldAlert size={22} />}
+              icon={<ShieldAlert size={20} />}
               label={t.overview.kpiAuditedAccuracy}
               value={r.accuracy !== null ? fmtPercent(r.accuracy) : DASH}
               tone="accent"
               subtext={r.reviewed > 0 ? t.overview.reviewedHint(fmtInt(r.reviewed)) : t.overview.noReviews}
             />
             <MemberStatCard
-              icon={<Clock size={22} />}
+              icon={<Clock size={20} />}
               label={t.overview.kpiP95Latency}
               value={fmtMs(u.p95_latency_ms)}
               tone="primary"
               subtext={`${t.overview.avgLatency}: ${fmtMs(u.avg_latency_ms)}`}
             />
             <MemberStatCard
-              icon={<Coins size={22} />}
+              icon={<Coins size={20} />}
               label={t.overview.kpiTotalCost}
               value={u.cost_known ? fmtUsd(u.total_cost_usd) : `${fmtInt(u.input_tokens + u.output_tokens)} tok`}
               tone="warning"
@@ -101,9 +101,9 @@ export function OverviewPage() {
                     <tr>
                       <th scope="col">{t.overview.day}</th>
                       <th scope="col" className={table.num}>{t.overview.turns}</th>
-                      <th scope="col" className={table.num} style={{ color: 'var(--color-success)' }}>{t.overview.answered}</th>
-                      <th scope="col" className={table.num} style={{ color: 'var(--color-warning)' }}>{t.overview.refusedShort}</th>
-                      <th scope="col" className={table.num} style={{ color: 'var(--color-danger)' }}>{t.overview.errors}</th>
+                      <th scope="col" className={`${table.num} ${table.toneSuccess}`}>{t.overview.answered}</th>
+                      <th scope="col" className={`${table.num} ${table.toneWarning}`}>{t.overview.refusedShort}</th>
+                      <th scope="col" className={`${table.num} ${table.toneDanger}`}>{t.overview.errors}</th>
                       <th scope="col" className={table.num}>{t.overview.avgLatency}</th>
                     </tr>
                   </thead>
@@ -119,13 +119,13 @@ export function OverviewPage() {
 
                       return (
                         <tr key={day.date}>
-                          <td style={{ fontWeight: 500 }}>{fmtDay(day.date)}</td>
-                          <td className={table.num} style={{ fontWeight: 600 }}>{fmtInt(day.requests)}</td>
-                          <td className={table.num} style={{ color: 'var(--color-success)' }}>{fmtInt(success)}</td>
-                          <td className={table.num} style={{ color: day.refused > 0 ? 'var(--color-warning)' : 'var(--color-faded)' }}>
+                          <td className={table.mono}>{fmtDay(day.date)}</td>
+                          <td className={table.numStrong}>{fmtInt(day.requests)}</td>
+                          <td className={`${table.num} ${table.toneSuccess}`}>{fmtInt(success)}</td>
+                          <td className={`${table.num} ${day.refused > 0 ? table.toneWarning : table.faded}`}>
                             {fmtInt(day.refused)}
                           </td>
-                          <td className={table.num} style={{ color: day.errors > 0 ? 'var(--color-danger)' : 'var(--color-faded)' }}>
+                          <td className={`${table.num} ${day.errors > 0 ? table.toneDanger : table.faded}`}>
                             {fmtInt(day.errors)}
                           </td>
                           <td className={table.num}>

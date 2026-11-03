@@ -1,9 +1,102 @@
-/* Bảng dữ liệu dùng chung các trang console: hàng hairline, số tabular, không zebra. */
-.wrap { overflow-x: auto; border: var(--hairline); border-radius: var(--radius-md); background: var(--color-surface); }
-.table { width: 100%; border-collapse: collapse; }
-.table th, .table td { padding: var(--space-2) var(--space-3); text-align: left; border-bottom: var(--hairline); vertical-align: top; }
-.table th { font-size: var(--text-xs); font-weight: 600; color: var(--color-muted); background: var(--color-surface-2); white-space: nowrap; }
-.table tr:last-child td { border-bottom: 0; }
-.num { text-align: right !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.mono { font-family: var(--font-mono); font-size: var(--text-xs); }
-.muted { color: var(--color-muted); }
+/* Bảng dữ liệu Enterprise dùng chung các trang AI Console: sticky header, hàng hairline, số tabular-nums, không zebra. */
+.wrap {
+  overflow-x: auto;
+  border: var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.table th,
+.table td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: var(--hairline);
+  vertical-align: middle;
+}
+
+.compact th,
+.compact td {
+  padding: 6px 12px;
+}
+
+.table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-faded);
+  background: var(--color-surface-2);
+  white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+@media (hover: hover) {
+  .table tbody tr:hover td {
+    background: var(--color-surface-2);
+  }
+}
+
+.table tbody tr[aria-selected='true'] td,
+.rowSelected td {
+  background: var(--color-primary-soft, var(--color-surface-2));
+}
+
+.table tbody tr[aria-selected='true'] td:first-child,
+.rowSelected td:first-child {
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.num {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.numStrong {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.muted {
+  color: var(--color-muted);
+}
+
+.faded {
+  color: var(--color-faded);
+}
+
+.toneSuccess {
+  color: var(--color-success) !important;
+}
+
+.toneWarning {
+  color: var(--color-warning) !important;
+}
+
+.toneDanger {
+  color: var(--color-danger) !important;
+}
+
+.actions {
+  text-align: right !important;
+  white-space: nowrap;
+}

@@ -75,28 +75,28 @@ export function MembersPage() {
       {/* 4 Thẻ chỉ số tổng quan */}
       <div className={styles.statsGrid}>
         <MemberStatCard
-          icon={<Users size={22} />}
+          icon={<Users size={20} />}
           label={t.members.statsTotal}
           value={stats.total}
           tone="primary"
           subtext={t.members.statsTotalSub}
         />
         <MemberStatCard
-          icon={<UserCheck size={22} />}
+          icon={<UserCheck size={20} />}
           label={t.members.statsActive}
           value={stats.active}
           tone="success"
           subtext={t.members.statsActiveSub}
         />
         <MemberStatCard
-          icon={<Mail size={22} />}
+          icon={<Mail size={20} />}
           label={t.members.statsInvited}
           value={stats.invited}
           tone="warning"
           subtext={t.members.statsInvitedSub}
         />
         <MemberStatCard
-          icon={<ShieldCheck size={22} />}
+          icon={<ShieldCheck size={20} />}
           label={t.members.statsRoles}
           value={stats.totalRoles}
           tone="accent"
@@ -150,20 +150,21 @@ export function MembersPage() {
                     <th scope="col">{t.members.member}</th>
                     <th scope="col">{t.members.role}</th>
                     <th scope="col">{t.common.status}</th>
-                    <th scope="col">{t.members.invitedAt}</th>
-                    <th scope="col" style={{ textAlign: 'right' }}>{t.common.actions}</th>
+                    <th scope="col" className={table.num}>{t.members.invitedAt}</th>
+                    <th scope="col" className={table.actions}>{t.common.actions}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredMembers.map((m) => {
                     const isSelf = me.data?.member_id === m.id;
+                    const isSelected = selectedMemberId === m.id;
                     const cleanRoles = m.roles.map((r) => r.replace(/^ai_/, ''));
                     const maxDisplayRoles = 3;
                     const visibleRoles = m.roles.slice(0, maxDisplayRoles);
                     const remainingCount = m.roles.length - maxDisplayRoles;
 
                     return (
-                      <tr key={m.id}>
+                      <tr key={m.id} aria-selected={isSelected}>
                         <td>
                           <div className={styles.memberCell}>
                             <div className={`${styles.avatar} ${isSelf ? styles.avatarSelf : ''}`}>
@@ -195,9 +196,7 @@ export function MembersPage() {
                               )}
                             </div>
                           ) : (
-                            <span style={{ color: 'var(--color-faded)', fontSize: 'var(--text-xs)' }}>
-                              —
-                            </span>
+                            <span className={table.faded}>—</span>
                           )}
                         </td>
 
@@ -210,7 +209,7 @@ export function MembersPage() {
 
                         <td className={table.num}>{fmtDateTime(m.created_at)}</td>
 
-                        <td style={{ textAlign: 'right' }}>
+                        <td className={table.actions}>
                           <button
                             type="button"
                             className={styles.manageBtn}

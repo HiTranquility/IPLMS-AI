@@ -74,6 +74,7 @@ export const vi = {
     rolesLeadAll: 'lead (toàn quyền)',
     openMenu: 'Mở menu',
     closeMenu: 'Đóng menu',
+    quickJumpPlaceholder: 'Chuyển nhanh tới trang…',
   },
   nav: {
     copilot: 'Copilot',

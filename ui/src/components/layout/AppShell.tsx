@@ -25,7 +25,7 @@ const RAIL_COLLAPSED_KEY = 'iplms_rail_collapsed';
 const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 export function AppShell({ me, children }: AppShellProps) {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const logout = useLogout();
   const { theme, toggleTheme } = useThemeStore();
   const { persona: savedPersona } = useWorkspaceStore(me.member_id);
@@ -208,7 +208,7 @@ export function AppShell({ me, children }: AppShellProps) {
     me.permissions,
   );
   const isCompact = railCollapsed && !drawerOpen;
-  const quickJumpPlaceholder = lang === 'en' ? 'Jump to page…' : 'Chuyển nhanh tới trang…';
+  const quickJumpPlaceholder = t.shell.quickJumpPlaceholder;
 
   return (
     <div className={isCompact ? `${styles.shell} ${styles.shellCollapsed}` : styles.shell}>

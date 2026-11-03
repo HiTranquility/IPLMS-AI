@@ -88,6 +88,7 @@ export const en: Messages = {
     rolesLeadAll: 'lead (full access)',
     openMenu: 'Open menu',
     closeMenu: 'Close menu',
+    quickJumpPlaceholder: 'Jump to page…',
   },
   nav: {
     copilot: 'Copilot',

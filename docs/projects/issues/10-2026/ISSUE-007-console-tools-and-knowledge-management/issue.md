@@ -4,8 +4,10 @@
 
 | | |
 |---|---|
-| **Trạng thái** | 🚧 IN PROGRESS |
+| **Trạng thái** | ✅ DONE |
 | **Ngày tạo** | 2026-10-25 |
+| **Ngày hoàn thành** | 2026-11-03 |
+| **Ngày đóng** | 2026-11-03 |
 | **Người phụ trách** | Khoa (cùng Antigravity) |
 | **Phạm vi** | `ai` (backend FastAPI + gRPC stubs + console stores + UI) |
 | **Nhánh** | `feature/ISSUE-007-2026-10-console-tools-and-knowledge-management` |
@@ -26,3 +28,8 @@
 - [x] Tự động reset lỗi cũ khi chọn tệp, xóa tệp hoặc tạo mã mới.
 - [x] Không còn bị chặn bởi lỗi `httpcore.ConnectError` khi máy dev offline.
 - [x] Toàn bộ test pass: Unittest backend (38/38) và Vitest frontend (74/74 bao gồm `noHardcodedVi.test.ts`).
+
+## Definition of Done
+
+- [x] Toàn bộ unit test và kiểm thử tích hợp của hạng mục đạt PASS.
+
