@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { mockApi, ok, renderWithProviders } from '@/test/utils';
 import { SystemDiagnostics } from './SystemDiagnostics';
@@ -52,10 +52,14 @@ describe('SystemDiagnostics Component', () => {
     expect(screen.queryByText('CPU')).toBeNull();
   });
 
-  it('handles refresh button click without crashing', () => {
+  it('handles refresh button click without crashing', async () => {
+    mockApi((url) => (url.endsWith('/tools/system') ? ok(systemData) : undefined));
     renderWithProviders(<SystemDiagnostics />);
     const refreshBtn = screen.getByRole('button', { name: /Làm mới/i });
     expect(refreshBtn).toBeTruthy();
-    fireEvent.click(refreshBtn);
+    await act(async () => {
+      fireEvent.click(refreshBtn);
+    });
+    await waitFor(() => expect((refreshBtn as HTMLButtonElement).disabled).toBe(false));
   });
 });
