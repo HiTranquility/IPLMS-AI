@@ -7,10 +7,6 @@
 
 | Việc | Hồ sơ | Ưu tiên | Trạng thái |
 |---|---|---|---|
-| RAG không có ngữ cảnh vẫn gọi LLM — 2 test đỏ trên `develop` | [bug-047](bugs/bug-047-rag-khong-ngu-canh-van-goi-llm/bug.md) | 🟠 | 🆕 New |
-| Guard "ngoài phạm vi" không chuẩn hoá Unicode và dễ lách bằng cách diễn đạt lại | [bug-051](bugs/bug-051-guard-ngoai-pham-vi-khong-chuan-hoa-unicode-va-de-lach-bang-dien-dat-lai/bug.md) | 🟠 | 🆕 New |
-| `main` ghim `grpcio-tools==1.84.1` cùng `protobuf==5.29.5`, pip không cài được nên image build hỏng | [bug-054](bugs/bug-054-main-ghim-grpcio-tools-xung-dot-protobuf/bug.md) | 🟠 | 🆕 New |
-| Copilot báo "chưa tìm thấy thông tin" khi LLM/embedding sập, không báo lỗi AI | [bug-052](bugs/bug-052-copilot-bao-khong-co-thong-tin-khi-llm-hoac-embedding-sap/bug.md) | 🟡 | 🆕 New |
 | Đo weights ứng viên chưa nạp: nạp theo `artifact_key` trong process đo riêng (module M4) | [ISSUE-017](issues/10-2026/ISSUE-017-phan-ai-cua-iplms-issue-126/issue.md) | 🟢 | 🆕 Cần người nhận |
 
 ## 🗓️ Đã giao, chưa bắt đầu
@@ -40,7 +36,6 @@
 |---|---|---|---|---|
 | Models & Connections trong AI Console — chặng 1: một nguồn model (sửa X2) | [ISSUE-022](issues/10-2026/ISSUE-022-models-connections-mot-nguon-model/issue.md) | @HiTranquility |  | 🚧 In progress — chặng 1 (X2) PR #119; chặng 2 code + test xong (cả DB thật), cùng PR #119; chặng 3–… |
 | Sửa `backend/docker-compose.yml` (service AI build) sang `context: ../ai`, `dockerfile: Dockerfile`… | [bug-053](bugs/bug-053-db-init-hong-va-build-can-repo-cha/bug.md) | HiTranquility |  | 🛠️ HiTranquility/IPLMS-Backend#65 (nhánh cùng tên); merge cùng #127 rồi mới nâng gitlink |
-| CI `AI · CI` dừng ở bước khởi tạo Postgres vì thiếu `POSTGRES_PASSWORD`, unittest và kiểm khuôn khô… | [bug-055](bugs/bug-055-ci-thieu-postgres-password-test-khong-chay/bug.md) | @HiTranquility |  | 🛠️ Fixing |
 | Đọc biển số từ clip ở Vision Lab (IPLMS REQ-021 hướng A) | [ISSUE-025](issues/10-2026/ISSUE-025-doc-bien-so-tu-clip-vision-lab/issue.md) | @HiTranquility | 2026-11-04 | 🚧 In progress |
 | Agent tấn công sinh biến thể từ bộ red-team và bắn vào Copilot thật (IPLMS REQ-024 phần A) | [ISSUE-026](issues/10-2026/ISSUE-026-redteam-agent-sinh-bien-the-tan-cong/issue.md) | @HiTranquility | 2026-11-04 | 🚧 In progress — code + test lõi xong; chưa đo với LLM thật |
 | Sửa `deployment/registry/push-images-local.{ps1,sh}` và `operations.md:267` sang context `ai/` | [bug-053](bugs/bug-053-db-init-hong-va-build-can-repo-cha/bug.md) | HiTranquility |  | 🛠️ HiTranquility/IPLMS-Deployment#17 |
@@ -49,7 +44,6 @@
 | Nạp liệu tri thức RAG — phần AI | [ISSUE-012](issues/10-2026/ISSUE-012-phan-ai-cua-iplms-issue-004/issue.md) | Dương | 2026-10-16 | 🚧 Giữ phần ingest/retrieve và test AI; E2E container, caller backend và nối FE chuyển HiTranquility… |
 | Làm nốt 1.3 `materialize_dataset` (tải theo manifest + sha256) | [ISSUE-015](issues/10-2026/ISSUE-015-phan-ai-cua-iplms-issue-013/issue.md) | Khoa | 2026-10-16 | 🚧 Đang viết CLI & loader từ private storage |
 | Đo ANPR trên test-golden snapshot — phần AI | [ISSUE-014](issues/10-2026/ISSUE-014-phan-ai-cua-iplms-issue-010/issue.md) | Khoa | 2026-10-17 | 🚧 Chuẩn bị test suite & dữ liệu snapshot; phần nối backend/operator và đối chiếu chống tráo do HiTr… |
-| Sửa vi phạm so với AI_CONVENTIONS (bổ sung luật lỗi & test doc) | [ISSUE-011](issues/10-2026/ISSUE-011-phan-ai-cua-iplms-audit-004/issue.md) | Dương | 2026-10-19 | 🚧 Đã có báo cáo AUDIT-004; cập nhật doc & gRPC mapping |
 | Việc vặt tháng 10/2026 | [CHORE-001](chores/10-2026/CHORE-001-monthly-maintenance/issue.md) | @HiTranquility | 2026-10-31 | 🚧 In progress |
 | Định tuyến trực tiếp Root URL và Nâng cấp Copilot Chat Studio 3-Panel | [ISSUE-003](issues/10-2026/ISSUE-003-console-root-routing-copilot-studio/issue.md) | AI Team | 2026-10-31 | 🚧 In progress |
 | Việc vặt tháng 11/2026 | [CHORE-002](chores/11-2026/CHORE-002-monthly-maintenance/issue.md) | @HiTranquility | 2026-11-30 | 🚧 In progress |
@@ -57,7 +51,6 @@
 | AI Console nội bộ: DB riêng, 7 vai trò, đăng nhập Google + TOTP, `ai/ui` | [ISSUE-017](issues/10-2026/ISSUE-017-phan-ai-cua-iplms-issue-126/issue.md) | Claude Code |  | 🚧 P1a–P6 + EN (`98c2a88`) + cổng từ chối RAG (`e616fee`) đã code; PR #22, #23 + nhánh xếp chồng chờ… |
 | Hoàn thiện phần AI của `khoa-develop`: lọc thẻ `<think>`, rà `guardrail_manager`/`prompt_manager`/`… | [ISSUE-017](issues/10-2026/ISSUE-017-phan-ai-cua-iplms-issue-126/issue.md) | Khoa |  | 🚧 Giữ sửa/test trong AI; HiTranquility phụ trách nối revision/caller và tích hợp tổng thể; giao gốc… |
 | Xác nhận cột "đã kiểm/sửa" mục 3b `AI_USAGE.md` cho phần mình nhận (đề Final §5.3, thiếu là −10%) | [ISSUE-017](issues/10-2026/ISSUE-017-phan-ai-cua-iplms-issue-126/issue.md) | Chủ module M1–M4 |  | 🚧 Mới giao 2026-10-18 |
-| Củng cố kết nối DB, quản lý tài liệu tri thức, batch upload và tối ưu phân bổ VRAM 4GB cho Console … | [ISSUE-027](issues/10-2026/ISSUE-027-console-tools-and-knowledge-management/issue.md) |  |  | 🚧 IN PROGRESS |
 
 ## ⏳ Chờ duyệt
 
@@ -92,6 +85,14 @@
 
 | Việc | Hồ sơ | Ngày đóng |
 |---|---|---|
+| CI `AI · CI` dừng ở bước khởi tạo Postgres vì thiếu `POSTGRES_PASSWORD`, unittest và kiểm khuôn khô… | [bug-055](bugs/bug-055-ci-thieu-postgres-password-test-khong-chay/bug.md) | 2026-11-03 |
+| `main` ghim `grpcio-tools==1.84.1` cùng `protobuf==5.29.5`, pip không cài được nên image build hỏng | [bug-054](bugs/bug-054-main-ghim-grpcio-tools-xung-dot-protobuf/bug.md) | 2026-11-03 |
+| Copilot báo "chưa tìm thấy thông tin" khi LLM/embedding sập, không báo lỗi AI | [bug-052](bugs/bug-052-copilot-bao-khong-co-thong-tin-khi-llm-hoac-embedding-sap/bug.md) | 2026-11-03 |
+| Guard "ngoài phạm vi" không chuẩn hoá Unicode và dễ lách bằng cách diễn đạt lại | [bug-051](bugs/bug-051-guard-ngoai-pham-vi-khong-chuan-hoa-unicode-va-de-lach-bang-dien-dat-lai/bug.md) | 2026-11-03 |
+| RAG không có ngữ cảnh vẫn gọi LLM — 2 test đỏ trên `develop` | [bug-047](bugs/bug-047-rag-khong-ngu-canh-van-goi-llm/bug.md) | 2026-11-03 |
+| Đồng nhất quy ước đặt tên và bố cục trên `app/core/`, `app/infra/`, `app/api/rest/` (ADR-0005 & AI_… | [ISSUE-027](issues/11-2026/ISSUE-027-core-naming-consistency/issue.md) | 2026-11-03 |
+| Sửa vi phạm so với AI_CONVENTIONS (bổ sung luật lỗi & test doc) | [ISSUE-011](issues/10-2026/ISSUE-011-phan-ai-cua-iplms-audit-004/issue.md) | 2026-11-03 |
+| Củng cố kết nối DB, quản lý tài liệu tri thức, batch upload và tối ưu phân bổ VRAM 4GB cho Console … | [ISSUE-007](issues/10-2026/ISSUE-007-console-tools-and-knowledge-management/issue.md) | 2026-11-03 |
 | `ANPR_MAX_IMAGE_BYTES` / `ANPR_MAX_FILES_PER_REQUEST` mất khỏi `app/core/constants.py` sau khi merg… | [bug-050](bugs/bug-050-anpr-thieu-hang-so-upload-sau-merge/bug.md) | 2026-10-31 |
 | Guard Copilot so regex trên chuỗi thô, link và "miễn phí" có ký tự ẩn hoặc chữ Cyrillic đi qua | [bug-049](bugs/bug-049-guard-copilot-khong-chuan-hoa-unicode-truoc-khi-so-regex/bug.md) | 2026-10-31 |
 | `server_config.py` mất `from typing import List` sau merge, `app.config` lỗi `NameError` nên servic… | [bug-048](bugs/bug-048-server-config-thieu-import-list-service-khong-khoi-dong/bug.md) | 2026-10-31 |
@@ -104,11 +105,3 @@
 | Phiên "chờ MFA" tồn đọng trong danh sách Phiên đăng nhập | [bug-030](bugs/bug-030-phien-cho-mfa-ton-dong-trong-danh-sach/bug.md) | 2026-10-31 |
 | Fallback kết nối DB sang cổng 5432 rồi tự `CREATE DATABASE` trên một Postgres khác | [bug-029](bugs/bug-029-db-fallback-tu-tao-database-tren-postgres-khac/bug.md) | 2026-10-31 |
 | Forecast Simulator luôn chạy baseline vì id bãi trên UI lệch `area_key` của Gold lake | [bug-028](bugs/bug-028-forecast-id-bai-lech-area-key/bug.md) | 2026-10-31 |
-| CI unit thiếu runtime dependencies và benchmark fixture bị làm tròn về 0 | [bug-010](bugs/bug-010-ci-fixture-dependencies-va-benchmark-rounding/bug.md) | 2026-10-31 |
-| Tách I/O Parquet khỏi `forecast/engines/parquet_lake_reader.py` sang `infra/datalake/` | [ISSUE-024](issues/10-2026/ISSUE-024-tach-io-parquet-lake-reader/issue.md) | 2026-10-30 |
-| Không gian làm việc dùng chung giữa tài khoản làm ẩn tính năng; Forecast không có mục menu | [bug-041](bugs/bug-041-khong-gian-lam-viec-dung-chung-an-tinh-nang/bug.md) | 2026-10-27 |
-| History hội thoại Copilot ở console không qua rào chắn đầu vào | [bug-040](bugs/bug-040-history-copilot-khong-qua-rao-chan-dau-vao/bug.md) | 2026-10-27 |
-| Trang Knowledge ghi cứng 110 màu, theme sáng tương phản chỉ 1.75–2.56:1 | [bug-039](bugs/bug-039-trang-knowledge-mau-ghi-cung-vo-tuong-phan-theme-sang/bug.md) | 2026-10-27 |
-| `rag_pipeline.query()` ném NameError `history`, mã audit `engine.reload_llm` thiếu ở UI | [bug-038](bugs/bug-038-rag-query-nameerror-history-va-thieu-ma-audit-reload-llm/bug.md) | 2026-10-27 |
-| Gateway Copilot nhận prompt dài tuỳ ý, output guard bị lách bằng cách tách chữ | [bug-037](bugs/bug-037-copilot-gateway-khong-gioi-han-prompt-va-guard-bi-lach-chu/bug.md) | 2026-10-27 |
-| "Duyệt nhanh N mẫu khớp 100%" đứt giữa lô thì im lặng và để dòng cũ trên màn hình | [bug-035](bugs/bug-035-duyet-nhanh-theo-lo-dut-giua-chung-im-lang/bug.md) | 2026-10-27 |
