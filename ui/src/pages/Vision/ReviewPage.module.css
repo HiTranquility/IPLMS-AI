@@ -4,6 +4,70 @@
   gap: var(--space-5);
 }
 
+.workflowBanner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: var(--text-xs);
+  box-shadow: var(--shadow-xs);
+}
+
+.workflowDesc {
+  color: var(--color-muted);
+}
+
+.workflowLinks {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.workflowLinkGhost {
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color var(--transition), border-color var(--transition);
+}
+
+.workflowLinkGhost:hover {
+  background: var(--color-surface-2);
+  border-color: var(--color-border-strong);
+}
+
+.workflowLinkAccent {
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  text-decoration: none;
+  font-weight: 600;
+  transition: filter var(--transition);
+}
+
+.workflowLinkAccent:hover {
+  filter: brightness(1.06);
+}
+
+.emptyWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.emptySeedRow {
+  display: flex;
+  justify-content: center;
+}
+
 .toolbarCard {
   display: flex;
   align-items: center;
@@ -41,6 +105,36 @@
   font-weight: 700;
   color: var(--color-text);
   font-variant-numeric: tabular-nums;
+}
+
+.statValueSuccess {
+  color: var(--color-success);
+}
+
+.statValueAccent {
+  color: var(--color-accent-dark);
+}
+
+.toolbarActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.filterPillGroup {
+  display: flex;
+  gap: 4px;
+  background: var(--color-surface-2);
+  padding: 2px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.flagFilterGroup {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
 .reviewList {

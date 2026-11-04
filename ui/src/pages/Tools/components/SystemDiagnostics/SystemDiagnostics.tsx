@@ -49,8 +49,8 @@ export function SystemDiagnostics() {
           </h2>
           <p className={styles.desc}>{t.tools.diagnosticsDesc}</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-          <Link to="/settings" className={styles.refreshBtn} style={{ textDecoration: 'none' }}>
+        <div className={styles.headerActions}>
+          <Link to="/settings" className={`${styles.refreshBtn} ${styles.settingsLinkBtn}`}>
             <Sliders size={14} aria-hidden />
             <span>{t.settings.openSettingsBtn}</span>
           </Link>

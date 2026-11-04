@@ -218,3 +218,8 @@
   color: var(--color-text);
   border-color: var(--color-border-strong);
 }
+
+
+.colRight {
+  text-align: right;
+}

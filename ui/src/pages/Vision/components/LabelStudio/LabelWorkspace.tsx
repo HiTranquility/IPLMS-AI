@@ -348,7 +348,7 @@ export function LabelWorkspace({ sample, remaining, onLabeled, onSkip }: LabelWo
                   style={{ width: `${confPercent}%`, backgroundColor: confColor }}
                 />
               </div>
-              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: confColor }}>
+              <span className={styles.confValueText} style={{ color: confColor }}>
                 {fmtPercent(sample.machine_confidence)}
               </span>
             </div>
@@ -357,7 +357,7 @@ export function LabelWorkspace({ sample, remaining, onLabeled, onSkip }: LabelWo
           <div className={styles.comparisonCol}>
             <span className={styles.comparisonLabel}>{w.atGate}</span>
             <div className={styles.plateDisplay}>{sample.confirmed_plate || DASH}</div>
-            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)' }}>
+            <span className={styles.sourceStatusText}>
               {w.sourceStatus(sample.source_status || 'CONFIRMED')}
             </span>
           </div>
@@ -366,7 +366,7 @@ export function LabelWorkspace({ sample, remaining, onLabeled, onSkip }: LabelWo
         {/* Lý do chọn mẫu */}
         {sample.selection_reasons.length > 0 && (
           <div className={styles.reasonsRow}>
-            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', marginRight: 4 }}>
+            <span className={styles.queueReasonLabel}>
               {w.queueReasons}
             </span>
             {sample.selection_reasons.map((r) => (
@@ -495,7 +495,7 @@ export function LabelWorkspace({ sample, remaining, onLabeled, onSkip }: LabelWo
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+            <div className={styles.correctionButtons}>
               <Button type="submit" variant="accent" loading={add.isPending}>
                 {t.label.saveFix}
               </Button>

@@ -232,7 +232,7 @@ export function AuditPage() {
                   <th scope="col">{t.audit.actorCol}</th>
                   <th scope="col">{t.audit.targetCol}</th>
                   <th scope="col">{t.audit.reasonCol}</th>
-                  <th scope="col" style={{ textAlign: 'right' }}>{t.common.actions}</th>
+                  <th scope="col" className={styles.colRight}>{t.common.actions}</th>
                 </tr>
               </thead>
               <tbody>
@@ -301,7 +301,7 @@ export function AuditPage() {
                       </td>
 
                       {/* Thao tác xem chi tiết */}
-                      <td style={{ textAlign: 'right' }}>
+                      <td className={styles.colRight}>
                         <button
                           type="button"
                           className={styles.inspectBtn}

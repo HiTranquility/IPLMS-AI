@@ -489,3 +489,13 @@
   gap: 0.3rem;
   align-items: center;
 }
+
+
+.hiddenFileInput {
+  display: none;
+}
+
+.chunkCountStrong {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

@@ -64,6 +64,39 @@
   border-radius: 1px;
 }
 
+.bgSuccess {
+  background: var(--color-success);
+}
+
+.bgWarning {
+  background: var(--color-warning);
+}
+
+.bgDanger {
+  background: var(--color-danger);
+}
+
+.bgAccent {
+  background: var(--color-accent);
+}
+
+.textSuccess {
+  color: var(--color-success);
+}
+
+.textWarning {
+  color: var(--color-warning);
+}
+
+.textDanger {
+  color: var(--color-danger);
+}
+
+.tooltipLatency {
+  color: var(--color-accent-dark);
+  font-weight: 600;
+}
+
 .svgWrap {
   width: 100%;
   overflow-x: auto;
@@ -86,6 +119,10 @@
   fill: var(--color-faded);
   font-size: 10px;
   font-family: inherit;
+}
+
+.barGroup {
+  cursor: pointer;
 }
 
 .barSuccess {

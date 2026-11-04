@@ -73,86 +73,85 @@ export function AccuracySection({ report, selectedThreshold, onSelectThreshold }
         />
       </div>
 
-      {/* Biểu đồ đường cong Threshold */}
+      {/* 2-Column Threshold Workbench: Curve Chart + Interactive Points Table */}
       {report.total > 0 && (
-        <div className={styles.chartCard}>
-          <div className={styles.chartCardHeader}>
-            <div>
-              <h3 className={styles.chartCardTitle}>{t.visionOverview.curveTitle}</h3>
-              <p className={styles.chartCardSubtitle}>
-                {t.visionOverview.curveSubtitle}
-              </p>
+        <div className={styles.curveAndTableGrid}>
+          <div className={styles.chartCard}>
+            <div className={styles.chartCardHeader}>
+              <div>
+                <h3 className={styles.chartCardTitle}>{t.visionOverview.curveTitle}</h3>
+                <p className={styles.chartCardSubtitle}>
+                  {t.visionOverview.curveSubtitle}
+                </p>
+              </div>
             </div>
+
+            <ThresholdCurve curve={report.curve} suggested={report.suggested_threshold} target={report.target} />
           </div>
 
-          <ThresholdCurve curve={report.curve} suggested={report.suggested_threshold} target={report.target} />
-        </div>
-      )}
+          <div className={styles.tableCard}>
+            <div className={styles.tableCardHeader}>
+              <h4 className={styles.tableCardTitle}>{t.visionOverview.pointsTitle}</h4>
+              {onSelectThreshold && (
+                <span className={styles.tableCardHint}>{t.visionOverview.pointsClickHint}</span>
+              )}
+            </div>
+            <div className={table.wrap}>
+              <table className={table.table}>
+                <thead>
+                  <tr>
+                    <th scope="col" className={table.num}>{t.visionOverview.threshold}</th>
+                    <th scope="col" className={table.num}>{t.visionOverview.aboveThreshold}</th>
+                    <th scope="col" className={table.num}>{t.visionOverview.correct}</th>
+                    <th scope="col" className={table.num}>{t.visionOverview.autoAccepted}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((p) => {
+                    const isSuggested = p.threshold === report.suggested_threshold;
+                    const isSelected = selectedThreshold != null && Math.abs(p.threshold - selectedThreshold) < 0.001;
+                    const rowClasses = [
+                      onSelectThreshold ? styles.clickableRow : '',
+                      isSuggested ? styles.suggestedRow : '',
+                      isSelected ? styles.selectedRow : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ');
 
-      {/* Bảng phân tích chi tiết các điểm ngưỡng */}
-      {report.total > 0 && (
-        <div className={styles.tableCard}>
-          <div className={styles.tableCardHeader}>
-            <h4 className={styles.tableCardTitle}>{t.visionOverview.pointsTitle}</h4>
-            {onSelectThreshold && (
-              <span className={styles.tableCardHint}>{t.visionOverview.pointsClickHint}</span>
-            )}
-          </div>
-          <div className={table.wrap}>
-            <table className={table.table}>
-              <thead>
-                <tr>
-                  <th scope="col" className={table.num}>{t.visionOverview.threshold}</th>
-                  <th scope="col" className={table.num}>{t.visionOverview.aboveThreshold}</th>
-                  <th scope="col" className={table.num}>{t.visionOverview.correct}</th>
-                  <th scope="col" className={table.num}>{t.visionOverview.autoAccepted}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((p) => {
-                  const isSuggested = p.threshold === report.suggested_threshold;
-                  const isSelected = selectedThreshold != null && Math.abs(p.threshold - selectedThreshold) < 0.001;
-                  const rowClasses = [
-                    onSelectThreshold ? styles.clickableRow : '',
-                    isSuggested ? styles.suggestedRow : '',
-                    isSelected ? styles.selectedRow : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ');
-
-                  return (
-                    <tr
-                      key={p.threshold}
-                      className={rowClasses || undefined}
-                      onClick={onSelectThreshold ? () => onSelectThreshold(p.threshold) : undefined}
-                    >
-                      <td className={table.num}>
-                        {p.threshold.toFixed(2)}{' '}
-                        {isSuggested && <Badge tone="accent">{t.visionOverview.suggestedBadge}</Badge>}{' '}
-                        {isSelected && <Badge tone="success">{t.visionOverview.selectedBadge}</Badge>}
-                      </td>
-                      <td className={table.num}>{fmtInt(p.total)}</td>
-                      <td className={`${table.num} ${p.accuracy && p.accuracy >= report.target ? styles.targetMetCell : ''}`}>
-                        {fmtPercent(p.accuracy)}
-                      </td>
-                      <td className={table.num}>
-                        <div className={styles.coverageCell}>
-                          <span>{fmtPercent(p.coverage)}</span>
-                          {p.coverage !== null && (
-                            <span className={styles.coverageTrack}>
-                              <span
-                                className={styles.coverageFill}
-                                style={{ width: `${p.coverage * 100}%` }}
-                              />
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                    return (
+                      <tr
+                        key={p.threshold}
+                        className={rowClasses || undefined}
+                        onClick={onSelectThreshold ? () => onSelectThreshold(p.threshold) : undefined}
+                      >
+                        <td className={table.num}>
+                          {p.threshold.toFixed(2)}{' '}
+                          {isSuggested && <Badge tone="accent">{t.visionOverview.suggestedBadge}</Badge>}{' '}
+                          {isSelected && <Badge tone="success">{t.visionOverview.selectedBadge}</Badge>}
+                        </td>
+                        <td className={table.num}>{fmtInt(p.total)}</td>
+                        <td className={`${table.num} ${p.accuracy && p.accuracy >= report.target ? styles.targetMetCell : ''}`}>
+                          {fmtPercent(p.accuracy)}
+                        </td>
+                        <td className={table.num}>
+                          <div className={styles.coverageCell}>
+                            <span>{fmtPercent(p.coverage)}</span>
+                            {p.coverage !== null && (
+                              <span className={styles.coverageTrack}>
+                                <span
+                                  className={styles.coverageFill}
+                                  style={{ width: `${p.coverage * 100}%` }}
+                                />
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

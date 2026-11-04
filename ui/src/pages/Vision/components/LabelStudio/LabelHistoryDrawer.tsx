@@ -24,7 +24,7 @@ export function LabelHistoryDrawer({ items }: LabelHistoryDrawerProps) {
           <History size={16} aria-hidden />
           {s.historyTitle}
         </div>
-        <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--color-muted)' }}>
+        <p className={styles.historyEmptyText}>
           {s.historyEmpty}
         </p>
       </div>
@@ -54,8 +54,8 @@ export function LabelHistoryDrawer({ items }: LabelHistoryDrawerProps) {
       <ul className={styles.historyList}>
         {items.map((item, idx) => (
           <li key={`${item.captureId}-${idx}`} className={styles.historyItem}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+            <div className={styles.historyPlateRow}>
+              <span className={styles.historyPlateMono}>
                 {item.plateText || '—'}
               </span>
               <Badge tone={getTone(item.verdict)}>
@@ -66,7 +66,7 @@ export function LabelHistoryDrawer({ items }: LabelHistoryDrawerProps) {
                   : s.verdictUnusable}
               </Badge>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', color: 'var(--color-muted)' }}>
+            <div className={styles.historyTimeRow}>
               <Clock size={12} aria-hidden />
               <span>{item.timestamp.toLocaleTimeString()}</span>
             </div>

@@ -91,19 +91,19 @@ export function TrendChart({ days }: TrendChartProps) {
 
         <div className={styles.legend}>
           <span className={styles.legendItem}>
-            <span className={styles.legendDot} style={{ background: 'var(--color-success)' }} />
+            <span className={`${styles.legendDot} ${styles.bgSuccess}`} />
             {t.overview.chartRequestsLegend}
           </span>
           <span className={styles.legendItem}>
-            <span className={styles.legendDot} style={{ background: 'var(--color-warning)' }} />
+            <span className={`${styles.legendDot} ${styles.bgWarning}`} />
             {t.overview.chartRefusedLegend}
           </span>
           <span className={styles.legendItem}>
-            <span className={styles.legendDot} style={{ background: 'var(--color-danger)' }} />
+            <span className={`${styles.legendDot} ${styles.bgDanger}`} />
             {t.overview.chartErrorsLegend}
           </span>
           <span className={styles.legendItem}>
-            <span className={styles.legendLine} style={{ background: 'var(--color-accent)' }} />
+            <span className={`${styles.legendLine} ${styles.bgAccent}`} />
             {t.overview.chartLatencyLegend}
           </span>
         </div>
@@ -141,7 +141,6 @@ export function TrendChart({ days }: TrendChartProps) {
               className={styles.barGroup}
               onMouseEnter={() => setHoveredIdx(idx)}
               onMouseLeave={() => setHoveredIdx(null)}
-              style={{ cursor: 'pointer' }}
             >
               {/* Vùng cảm ứng chuột rộng hơn */}
               <rect
@@ -220,25 +219,25 @@ export function TrendChart({ days }: TrendChartProps) {
         <div className={styles.tooltip}>
           <span>
             <strong>{fmtDay(activeDay.date)}:</strong> {t.overview.turnCount(fmtInt(activeDay.requests))} (
-            <span style={{ color: 'var(--color-success)' }}>
+            <span className={styles.textSuccess}>
               {fmtInt(Math.max(0, activeDay.requests - activeDay.refused - activeDay.errors))}{' '}
               {t.overview.chartRequestsLegend.toLowerCase()}
             </span>
             {activeDay.refused > 0 && (
-              <span style={{ color: 'var(--color-warning)' }}>
+              <span className={styles.textWarning}>
                 {' '}
                 · {fmtInt(activeDay.refused)} {t.overview.chartRefusedLegend.toLowerCase()}
               </span>
             )}
             {activeDay.errors > 0 && (
-              <span style={{ color: 'var(--color-danger)' }}>
+              <span className={styles.textDanger}>
                 {' '}
                 · {fmtInt(activeDay.errors)} {t.overview.chartErrorsLegend.toLowerCase()}
               </span>
             )}
             )
           </span>
-          <span style={{ color: 'var(--color-accent-dark)', fontWeight: 600 }}>
+          <span className={styles.tooltipLatency}>
             {t.overview.avgLatency}: {fmtMs(activeDay.avg_latency_ms)}
           </span>
         </div>

@@ -324,7 +324,7 @@ export function KnowledgePage() {
                 type="file"
                 accept=".pdf,.docx,.txt,.md,.markdown"
                 multiple
-                style={{ display: 'none' }}
+                className={styles.hiddenFileInput}
                 onChange={onFileChange}
                 aria-label={t.tools.file}
               />
@@ -542,7 +542,7 @@ export function KnowledgePage() {
                           <Badge tone="neutral">{doc.category}</Badge>
                         </td>
                         <td>
-                          <span style={{ fontWeight: 600 }}>{fmtInt(doc.chunk_count)}</span>
+                          <span className={styles.chunkCountStrong}>{fmtInt(doc.chunk_count)}</span>
                         </td>
                         <td>
                           <span className={styles.cellMeta}>v{doc.latest_version_no || 1}</span>

@@ -85,67 +85,23 @@ export function ReviewPage() {
       />
 
       {/* Thanh điều hướng Quy trình 4-Mắt */}
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 'var(--space-2)',
-          padding: '10px 14px',
-          borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--color-border)',
-          background: 'var(--color-surface)',
-          fontSize: 'var(--text-xs)',
-          marginBottom: 'var(--space-3)',
-        }}
-      >
+      <div className={styles.workflowBanner}>
         <div>
           <strong>{t.review.workflowTitle} </strong>
-          <span style={{ color: 'var(--color-muted)' }}>{t.review.workflowDesc}</span>
+          <span className={styles.workflowDesc}>{t.review.workflowDesc}</span>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div className={styles.workflowLinks}>
           {canLabel && (
-            <Link
-              to="/vision/label"
-              style={{
-                padding: '4px 10px',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--color-border)',
-                color: 'var(--color-text)',
-                textDecoration: 'none',
-                fontWeight: 500,
-              }}
-            >
+            <Link to="/vision/label" className={styles.workflowLinkGhost}>
               {t.review.goToLabel}
             </Link>
           )}
           {canOpenDatasets ? (
-            <Link
-              to="/vision/datasets"
-              style={{
-                padding: '4px 10px',
-                borderRadius: 'var(--radius-sm)',
-                background: 'var(--color-accent)',
-                color: 'var(--color-accent-ink)',
-                textDecoration: 'none',
-                fontWeight: 600,
-              }}
-            >
+            <Link to="/vision/datasets" className={styles.workflowLinkAccent}>
               {t.review.goToDatasets}
             </Link>
           ) : canOpenVision ? (
-            <Link
-              to="/vision"
-              style={{
-                padding: '4px 10px',
-                borderRadius: 'var(--radius-sm)',
-                background: 'var(--color-accent)',
-                color: 'var(--color-accent-ink)',
-                textDecoration: 'none',
-                fontWeight: 600,
-              }}
-            >
+            <Link to="/vision" className={styles.workflowLinkAccent}>
               {t.nav.visionOverview} →
             </Link>
           ) : null}
@@ -157,13 +113,13 @@ export function ReviewPage() {
       {batchError != null && <ErrorBlock error={batchError} />}
 
       {items.length === 0 && !queue.isPending && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <div className={styles.emptyWrap}>
           <EmptyState
             icon={<ClipboardCheck size={28} />}
             title={t.review.empty}
             description={t.review.emptyDesc}
           />
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <div className={styles.emptySeedRow}>
             <Button
               variant="accent"
               loading={seedMutation.isPending}
@@ -187,21 +143,21 @@ export function ReviewPage() {
               </div>
               <div className={styles.statItem}>
                 <span className={styles.statLabel}>{t.review.statExact}</span>
-                <span className={styles.statValue} style={{ color: 'var(--color-success)' }}>
+                <span className={`${styles.statValue} ${styles.statValueSuccess}`}>
                   {t.review.samples(exactMatches.length)}
                 </span>
               </div>
               <div className={styles.statItem}>
                 <span className={styles.statLabel}>{t.review.statCorrected}</span>
-                <span className={styles.statValue} style={{ color: 'var(--color-accent-dark)' }}>
+                <span className={`${styles.statValue} ${styles.statValueAccent}`}>
                   {t.review.samples(correctedItems.length)}
                 </span>
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+            <div className={styles.toolbarActions}>
               {/* Filter buttons */}
-              <div style={{ display: 'flex', gap: '4px', background: 'var(--color-surface-2)', padding: '2px', borderRadius: 'var(--radius-md)' }}>
+              <div className={styles.filterPillGroup}>
                 <Button
                   variant={filterMode === 'ALL' ? 'secondary' : 'ghost'}
                   size="sm"
@@ -228,7 +184,7 @@ export function ReviewPage() {
               <div
                 role="group"
                 aria-label={t.label.flagsTitle}
-                style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}
+                className={styles.flagFilterGroup}
               >
                 {QUALITY_FLAGS.map((flag) => {
                   const active = flagFilter === flag;

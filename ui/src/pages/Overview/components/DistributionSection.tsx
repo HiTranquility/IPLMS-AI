@@ -35,16 +35,16 @@ export function DistributionSection({ usage, review }: DistributionSectionProps)
         </div>
 
         <div className={styles.barTrack} aria-hidden>
-          <div className={styles.barSegment} style={{ width: `${pSuccess}%`, background: 'var(--color-success)' }} />
-          <div className={styles.barSegment} style={{ width: `${pRefused}%`, background: 'var(--color-warning)' }} />
-          <div className={styles.barSegment} style={{ width: `${pNoContext}%`, background: 'var(--color-info)' }} />
-          <div className={styles.barSegment} style={{ width: `${pError}%`, background: 'var(--color-danger)' }} />
+          <div className={`${styles.barSegment} ${styles.bgSuccess}`} style={{ width: `${pSuccess}%` }} />
+          <div className={`${styles.barSegment} ${styles.bgWarning}`} style={{ width: `${pRefused}%` }} />
+          <div className={`${styles.barSegment} ${styles.bgInfo}`} style={{ width: `${pNoContext}%` }} />
+          <div className={`${styles.barSegment} ${styles.bgDanger}`} style={{ width: `${pError}%` }} />
         </div>
 
         <div className={styles.list}>
           <div className={styles.row}>
             <span className={styles.rowLabel}>
-              <span className={styles.rowDot} style={{ background: 'var(--color-success)' }} />
+              <span className={`${styles.rowDot} ${styles.bgSuccess}`} />
               {t.overview.answered}
             </span>
             <span className={styles.rowValue}>
@@ -55,7 +55,7 @@ export function DistributionSection({ usage, review }: DistributionSectionProps)
 
           <div className={styles.row}>
             <span className={styles.rowLabel}>
-              <span className={styles.rowDot} style={{ background: 'var(--color-warning)' }} />
+              <span className={`${styles.rowDot} ${styles.bgWarning}`} />
               {t.overview.refused}
             </span>
             <span className={styles.rowValue}>
@@ -66,7 +66,7 @@ export function DistributionSection({ usage, review }: DistributionSectionProps)
 
           <div className={styles.row}>
             <span className={styles.rowLabel}>
-              <span className={styles.rowDot} style={{ background: 'var(--color-info)' }} />
+              <span className={`${styles.rowDot} ${styles.bgInfo}`} />
               {t.overview.noContext}
             </span>
             <span className={styles.rowValue}>
@@ -77,7 +77,7 @@ export function DistributionSection({ usage, review }: DistributionSectionProps)
 
           <div className={styles.row}>
             <span className={styles.rowLabel}>
-              <span className={styles.rowDot} style={{ background: 'var(--color-danger)' }} />
+              <span className={`${styles.rowDot} ${styles.bgDanger}`} />
               {t.overview.errors}
             </span>
             <span className={styles.rowValue}>
@@ -98,7 +98,7 @@ export function DistributionSection({ usage, review }: DistributionSectionProps)
         <div className={styles.list}>
           <div className={styles.row}>
             <span className={styles.rowLabel}>
-              <CheckCircle size={13} style={{ color: 'var(--color-success)' }} />
+              <CheckCircle size={13} className={styles.textSuccess} />
               {t.overview.accuracy}
             </span>
             <span className={styles.rowValue}>
@@ -110,11 +110,11 @@ export function DistributionSection({ usage, review }: DistributionSectionProps)
           <div className={styles.row}>
             <span className={styles.rowLabel}>{t.overview.correct} / {t.overview.incorrect}</span>
             <span className={styles.rowValue}>
-              <span style={{ color: 'var(--color-success)' }}>{review.correct}</span>
+              <span className={styles.textSuccess}>{review.correct}</span>
               {' / '}
-              <span style={{ color: 'var(--color-danger)' }}>{review.incorrect}</span>
+              <span className={styles.textDanger}>{review.incorrect}</span>
               {review.unsafe > 0 && (
-                <span style={{ color: 'var(--color-warning)', marginLeft: 4 }}>
+                <span className={styles.unsafeCount}>
                   {t.overview.unsafeCount(review.unsafe)}
                 </span>
               )}
@@ -125,7 +125,7 @@ export function DistributionSection({ usage, review }: DistributionSectionProps)
 
           <div className={styles.row}>
             <span className={styles.rowLabel}>
-              <ThumbsUp size={13} style={{ color: 'var(--color-accent)' }} />
+              <ThumbsUp size={13} className={styles.textAccent} />
               {t.overview.helpful}
             </span>
             <span className={styles.rowValue}>
@@ -150,14 +150,14 @@ export function DistributionSection({ usage, review }: DistributionSectionProps)
         </div>
 
         <div className={styles.barTrack} aria-hidden>
-          <div className={styles.barSegment} style={{ width: `${pInputToken}%`, background: 'var(--color-accent)' }} />
-          <div className={styles.barSegment} style={{ width: `${pOutputToken}%`, background: 'var(--color-info)' }} />
+          <div className={`${styles.barSegment} ${styles.bgAccent}`} style={{ width: `${pInputToken}%` }} />
+          <div className={`${styles.barSegment} ${styles.bgInfo}`} style={{ width: `${pOutputToken}%` }} />
         </div>
 
         <div className={styles.list}>
           <div className={styles.row}>
             <span className={styles.rowLabel}>
-              <span className={styles.rowDot} style={{ background: 'var(--color-accent)' }} />
+              <span className={`${styles.rowDot} ${styles.bgAccent}`} />
               {t.overview.tokenInput}
             </span>
             <span className={styles.rowValue}>
@@ -168,7 +168,7 @@ export function DistributionSection({ usage, review }: DistributionSectionProps)
 
           <div className={styles.row}>
             <span className={styles.rowLabel}>
-              <span className={styles.rowDot} style={{ background: 'var(--color-info)' }} />
+              <span className={`${styles.rowDot} ${styles.bgInfo}`} />
               {t.overview.tokenOutput}
             </span>
             <span className={styles.rowValue}>
@@ -181,7 +181,7 @@ export function DistributionSection({ usage, review }: DistributionSectionProps)
 
           <div className={styles.row}>
             <span className={styles.rowLabel}>{t.overview.cost}</span>
-            <span className={styles.rowValue} style={{ color: 'var(--color-accent-dark)', fontSize: '13px' }}>
+            <span className={`${styles.rowValue} ${styles.costTotal}`}>
               {usage.cost_known ? fmtUsd(usage.total_cost_usd) : DASH}
             </span>
           </div>

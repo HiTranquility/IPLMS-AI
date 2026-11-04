@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ShieldCheck, Sliders, FileCheck2 } from 'lucide-react';
 import { Badge } from '@/components/common/Ui/data-display/Badge';
 import { Stat } from '@/components/common/Ui/data-display/Stat';
 import table from '@/components/common/Ui/data-display/table.module.css';
@@ -63,8 +64,43 @@ function VisionOverviewPageContent() {
           </section>
 
           <section className={styles.section} aria-labelledby="policy-title">
-            <h2 id="policy-title" className={styles.sectionTitle}>{t.visionOverview.policyTitle}</h2>
-            <p className={styles.note}>{t.visionOverview.policyNote}</p>
+            <div className={styles.sectionHeaderRow}>
+              <div>
+                <h2 id="policy-title" className={styles.sectionTitle}>{t.visionOverview.policyTitle}</h2>
+                <p className={styles.note}>{t.visionOverview.policyNote}</p>
+              </div>
+            </div>
+
+            <div className={styles.governanceStepper}>
+              <div className={styles.stepCard}>
+                <span className={styles.stepIconWrap}>
+                  <Sliders size={15} aria-hidden="true" />
+                </span>
+                <div>
+                  <strong className={styles.stepTitle}>01 · {t.visionOverview.pointsTitle}</strong>
+                  <span className={styles.stepSub}>{t.visionOverview.pointsClickHint}</span>
+                </div>
+              </div>
+              <div className={styles.stepCard}>
+                <span className={styles.stepIconWrap}>
+                  <FileCheck2 size={15} aria-hidden="true" />
+                </span>
+                <div>
+                  <strong className={styles.stepTitle}>02 · {t.visionOverview.proposeTitle}</strong>
+                  <span className={styles.stepSub}>{t.visionOverview.proposeNote}</span>
+                </div>
+              </div>
+              <div className={styles.stepCard}>
+                <span className={styles.stepIconWrap}>
+                  <ShieldCheck size={15} aria-hidden="true" />
+                </span>
+                <div>
+                  <strong className={styles.stepTitle}>03 · {t.visionOverview.policyTitle}</strong>
+                  <span className={styles.stepSub}>{t.visionOverview.fourEyes}</span>
+                </div>
+              </div>
+            </div>
+
             {canPropose && accuracy.data && (
               <ProposePolicyForm
                 suggested={accuracy.data.suggested_threshold}
@@ -156,26 +192,28 @@ function VisionOverviewPageContent() {
                   <Stat label={t.visionOverview.rejected} value={fmtInt(status.data.rejected)} />
                 </dl>
                 {status.data.recent_errors.length > 0 && (
-                  <div className={table.wrap}>
-                    <table className={table.table}>
-                      <caption className="visually-hidden">{t.visionOverview.importErrors}</caption>
-                      <thead>
-                        <tr>
-                          <th scope="col">{t.common.at}</th>
-                          <th scope="col">{t.visionOverview.captureId}</th>
-                          <th scope="col">{t.common.error}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {status.data.recent_errors.map((e) => (
-                          <tr key={`${e.capture_id}-${e.at}`}>
-                            <td className={table.num}>{fmtDateTime(e.at)}</td>
-                            <td className={table.mono}>{e.capture_id}</td>
-                            <td>{e.reason}</td>
+                  <div className={styles.tableCard}>
+                    <div className={table.wrap}>
+                      <table className={table.table}>
+                        <caption className="visually-hidden">{t.visionOverview.importErrors}</caption>
+                        <thead>
+                          <tr>
+                            <th scope="col">{t.common.at}</th>
+                            <th scope="col">{t.visionOverview.captureId}</th>
+                            <th scope="col">{t.common.error}</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {status.data.recent_errors.map((e) => (
+                            <tr key={`${e.capture_id}-${e.at}`}>
+                              <td className={table.num}>{fmtDateTime(e.at)}</td>
+                              <td className={table.mono}>{e.capture_id}</td>
+                              <td>{e.reason}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </>

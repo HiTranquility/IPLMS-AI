@@ -51,15 +51,15 @@ export function AuditDetailModal({ entry, members, onClose }: AuditDetailModalPr
         <div className={styles.body}>
           <div className={styles.grid}>
             <span className={styles.fieldLabel}>{t.audit.eventId}:</span>
-            <div className={styles.fieldValue} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <code style={{ fontSize: '11px', fontFamily: 'var(--font-mono)' }}>{entry.id}</code>
+            <div className={`${styles.fieldValue} ${styles.fieldValueInline}`}>
+              <code className={styles.monoId}>{entry.id}</code>
               <button
                 type="button"
                 onClick={handleCopyId}
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--color-muted)' }}
+                className={styles.copyInlineBtn}
                 title={t.audit.copyJson}
               >
-                {copiedId ? <Check size={13} style={{ color: 'var(--color-success)' }} /> : <Copy size={13} />}
+                {copiedId ? <Check size={13} className={styles.iconSuccess} /> : <Copy size={13} />}
               </button>
             </div>
 
@@ -69,7 +69,7 @@ export function AuditDetailModal({ entry, members, onClose }: AuditDetailModalPr
             <span className={styles.fieldLabel}>{t.audit.actionCol}:</span>
             <div className={styles.fieldValue}>
               <AuditActionBadge action={entry.action} />
-              <div style={{ fontSize: '11px', color: 'var(--color-muted)', marginTop: 2, fontFamily: 'var(--font-mono)' }}>
+              <div className={styles.subMono}>
                 {entry.action}
               </div>
             </div>
@@ -79,7 +79,7 @@ export function AuditDetailModal({ entry, members, onClose }: AuditDetailModalPr
               {actorMember ? (
                 <div>
                   <strong>{actorMember.display_name}</strong>
-                  <div style={{ fontSize: '11px', color: 'var(--color-muted)' }}>{actorMember.email}</div>
+                  <div className={styles.subMuted}>{actorMember.email}</div>
                 </div>
               ) : (
                 <span>{entry.actor_id || t.audit.system}</span>
@@ -91,7 +91,7 @@ export function AuditDetailModal({ entry, members, onClose }: AuditDetailModalPr
               {targetMember ? (
                 <div>
                   <strong>{targetMember.display_name}</strong> ({entry.target_type})
-                  <div style={{ fontSize: '11px', color: 'var(--color-muted)' }}>{targetMember.email}</div>
+                  <div className={styles.subMuted}>{targetMember.email}</div>
                 </div>
               ) : (
                 <span>{entry.target_type}:{entry.target_id || '—'}</span>
@@ -99,14 +99,14 @@ export function AuditDetailModal({ entry, members, onClose }: AuditDetailModalPr
             </div>
 
             <span className={styles.fieldLabel}>{t.audit.reasonCol}:</span>
-            <span className={styles.fieldValue} style={{ fontWeight: 600 }}>{entry.reason}</span>
+            <span className={`${styles.fieldValue} ${styles.fieldValueStrong}`}>{entry.reason}</span>
           </div>
 
           <div className={styles.jsonBox}>
             <div className={styles.jsonHeader}>
               <span className={styles.jsonTitle}>Raw JSON Payload</span>
               <Button variant="ghost" size="sm" onClick={handleCopyJson}>
-                {copiedJson ? <Check size={13} style={{ color: 'var(--color-success)' }} /> : <Copy size={13} />}
+                {copiedJson ? <Check size={13} className={styles.iconSuccess} /> : <Copy size={13} />}
                 {copiedJson ? t.audit.copied : t.audit.copyJson}
               </Button>
             </div>

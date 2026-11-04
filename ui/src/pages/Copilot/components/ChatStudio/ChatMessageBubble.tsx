@@ -131,7 +131,7 @@ export function ChatMessageBubble({
         {/* Form xác nhận đưa vào Eval (S4 / SUGGESTION-005) */}
         {showPromoteBox && hasTurn && (
           <div className={styles.quickRejectBox} role="region" aria-label={t.copilot.promoteTitle}>
-            <div className={styles.quickTagLabel} style={{ fontWeight: 600, color: "var(--color-primary)" }}>
+            <div className={`${styles.quickTagLabel} ${styles.promoteHeaderTitle}`}>
               {t.copilot.promoteTitle}
             </div>
 
@@ -139,8 +139,7 @@ export function ChatMessageBubble({
               <span className={styles.quickTagLabel}>{t.copilot.promoteQuery}</span>
               <input
                 type="text"
-                className={styles.quickRejectInput}
-                style={{ width: "100%", marginTop: "2px" }}
+                className={`${styles.quickRejectInput} ${styles.promoteFullInput}`}
                 aria-label={t.copilot.promoteQuery}
                 value={promoteQuery}
                 onChange={(e) => setPromoteQuery(e.target.value)}
@@ -149,12 +148,11 @@ export function ChatMessageBubble({
               />
             </div>
 
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              <div style={{ flex: "1", minWidth: "120px" }}>
+            <div className={styles.promoteGridRow}>
+              <div className={styles.promoteColFlex}>
                 <span className={styles.quickTagLabel}>{t.copilot.promoteExpected}</span>
                 <select
-                  className={styles.quickRejectInput}
-                  style={{ width: "100%", marginTop: "2px" }}
+                  className={`${styles.quickRejectInput} ${styles.promoteFullInput}`}
                   aria-label={t.copilot.promoteExpected}
                   value={promoteBehavior}
                   onChange={(e) => setPromoteBehavior(e.target.value as "ANSWER" | "REFUSE")}
@@ -164,11 +162,10 @@ export function ChatMessageBubble({
                 </select>
               </div>
 
-              <div style={{ flex: "1", minWidth: "150px" }}>
+              <div className={styles.promoteColWide}>
                 <span className={styles.quickTagLabel}>{t.copilot.promoteCategory}</span>
                 <select
-                  className={styles.quickRejectInput}
-                  style={{ width: "100%", marginTop: "2px" }}
+                  className={`${styles.quickRejectInput} ${styles.promoteFullInput}`}
                   aria-label={t.copilot.promoteCategory}
                   value={promoteCategory}
                   onChange={(e) => setPromoteCategory(e.target.value)}
@@ -185,8 +182,7 @@ export function ChatMessageBubble({
               <span className={styles.quickTagLabel}>{t.copilot.promoteNote}</span>
               <input
                 type="text"
-                className={styles.quickRejectInput}
-                style={{ width: "100%", marginTop: "2px" }}
+                className={`${styles.quickRejectInput} ${styles.promoteFullInput}`}
                 placeholder={t.copilot.promoteNotePlaceholder}
                 aria-label={t.copilot.promoteNote}
                 value={promoteNote}
@@ -195,11 +191,10 @@ export function ChatMessageBubble({
               />
             </div>
 
-            <div className={styles.quickRejectActions} style={{ justifyContent: "flex-end", marginTop: "4px" }}>
+            <div className={`${styles.quickRejectActions} ${styles.promoteFooterActions}`}>
               <button
                 type="button"
-                className={styles.quickRejectCancelBtn}
-                style={{ padding: "3px 8px", fontSize: "var(--text-xs)" }}
+                className={`${styles.quickRejectCancelBtn} ${styles.promoteCancelBtn}`}
                 onClick={() => setShowPromoteBox(false)}
               >
                 {t.copilot.cancel}

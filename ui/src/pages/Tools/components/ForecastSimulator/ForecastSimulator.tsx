@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { apiClient } from '@/api/client';
+import table from '@/components/common/Ui/data-display/table.module.css';
 import { SimulatedBanner } from '@/components/common/Ui/feedback/SimulatedBanner';
 import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
 import { useI18n } from '@/i18n/I18nProvider';
@@ -72,9 +73,7 @@ interface PipelineSimulateResponse {
   };
 }
 
-// Kịch bản lấp đầy minh hoạ theo giờ (0h–23h), KHÔNG phải dự báo: Forecast server chưa có
-// model (FeatureNotImplemented). UI gắn nhãn MÔ PHỎNG và ghi rõ trên biểu đồ (ai bug-018).
-// Bãi lấy từ Gold lake nên không còn đường cong riêng theo id cứng (ai bug-028).
+// Illustrative 24h occupancy curve (0h-23h) when backend pipeline has not been synced yet.
 const ILLUSTRATIVE_CURVE: number[] = [
   18, 15, 12, 10, 12, 20, 38, 68, 86, 89, 84, 78,
   74, 79, 83, 85, 87, 91, 93, 88, 76, 58, 40, 25,
@@ -107,8 +106,7 @@ export function ForecastSimulator() {
   const { t } = useI18n();
   const selectId = useId();
 
-  // Simulation states
-  // Chỉ chọn được bãi có trong Gold lake: id cứng cũ không khớp `area_key` nên luôn rơi baseline (ai bug-028).
+  // Simulation states backed by Gold lake areas
   const lakeAreasQuery = useForecastAreas();
   const lakeAreas = lakeAreasQuery.data?.areas ?? [];
   const [pickedLot, setLotId] = useState<string>('');
@@ -123,7 +121,6 @@ export function ForecastSimulator() {
   const [pipelineData, setPipelineData] = useState<PipelineSimulateResponse | null>(null);
   const [syncingPipeline, setSyncingPipeline] = useState<boolean>(false);
 
-  // Current series based on selected parking lot
   const currentBaseline = useMemo(() => {
     if (pipelineData?.stage3_inference?.hourly_predictions?.length === 24) {
       return pipelineData.stage3_inference.hourly_predictions.map((p) =>
@@ -181,13 +178,12 @@ export function ForecastSimulator() {
         }
       }
     } catch {
-      // Giữ trạng thái mô phỏng local nếu chưa gọi được
+      // Keep local simulation state if backend call fails
     } finally {
       setSyncingPipeline(false);
     }
   };
 
-  // KPI Calculations
   const peakHoursCount = useMemo(() => {
     return currentBaseline.filter((rate) => rate >= surgeThreshold).length;
   }, [currentBaseline, surgeThreshold]);
@@ -196,12 +192,9 @@ export function ForecastSimulator() {
     return Math.round(baseRate * multiplier);
   }, [baseRate, multiplier]);
 
-
-  // Coordinate mappers
   const getX = (hour: number) => PAD.left + (hour / 23) * (CHART_W - PAD.left - PAD.right);
   const getY = (rate: number) => CHART_H - PAD.bottom - (rate / 100) * (CHART_H - PAD.top - PAD.bottom);
 
-  // SVG Chart points and paths
   const chartPoints = useMemo(() => {
     return currentBaseline.map((rate, hour) => ({
       hour,
@@ -243,71 +236,64 @@ export function ForecastSimulator() {
       <SimulatedBanner />
 
       {/* 3-Stage ML Pipeline Architecture Cards */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-          gap: 'var(--space-3)',
-          marginBottom: 'var(--space-3)',
-        }}
-      >
-        <div className={styles.controlCard} style={{ padding: 'var(--space-3)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: '6px' }}>
-            <Database size={16} style={{ color: 'var(--color-accent)' }} aria-hidden />
-            <strong style={{ fontSize: 'var(--text-sm)' }}>{t.tools.stage1Title}</strong>
+      <div className={styles.pipelineGrid}>
+        <div className={styles.stageCard}>
+          <div className={styles.stageCardHeader}>
+            <span className={styles.stageIconWrap}>
+              <Database size={16} aria-hidden />
+            </span>
+            <strong className={styles.stageTitle}>{t.tools.stage1Title}</strong>
           </div>
-          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', margin: '0 0 8px' }}>
-            {t.tools.stage1Sub}
-          </p>
-          <div style={{ fontSize: 'var(--text-xs)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <p className={styles.stageSub}>{t.tools.stage1Sub}</p>
+          <div className={styles.stageMetaList}>
             <div>
-              <span style={{ color: 'var(--color-muted)' }}>{t.tools.stage1Source} </span>
+              <span className={styles.stageMetaLabel}>{t.tools.stage1Source} </span>
               <code>{pipelineData?.stage1_datalake.source_path ?? 'analytic/var/datalake/gold/occupancy'}</code>
             </div>
             <div>
-              <span style={{ color: 'var(--color-muted)' }}>{t.tools.stage1Records} </span>
+              <span className={styles.stageMetaLabel}>{t.tools.stage1Records} </span>
               <strong className="num">{pipelineData ? fmtInt(pipelineData.stage1_datalake.total_records) : DASH}</strong>
               <span> (7 × 24h)</span>
             </div>
           </div>
         </div>
 
-        <div className={styles.controlCard} style={{ padding: 'var(--space-3)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: '6px' }}>
-            <Cpu size={16} style={{ color: 'var(--color-accent)' }} aria-hidden />
-            <strong style={{ fontSize: 'var(--text-sm)' }}>{t.tools.stage2Title}</strong>
+        <div className={styles.stageCard}>
+          <div className={styles.stageCardHeader}>
+            <span className={styles.stageIconWrap}>
+              <Cpu size={16} aria-hidden />
+            </span>
+            <strong className={styles.stageTitle}>{t.tools.stage2Title}</strong>
           </div>
-          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', margin: '0 0 8px' }}>
-            {t.tools.stage2Sub}
-          </p>
-          <div style={{ fontSize: 'var(--text-xs)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <p className={styles.stageSub}>{t.tools.stage2Sub}</p>
+          <div className={styles.stageMetaList}>
             <div>
-              <span style={{ color: 'var(--color-muted)' }}>{t.tools.stage2Features} </span>
+              <span className={styles.stageMetaLabel}>{t.tools.stage2Features} </span>
               <code>day_of_week, hour_of_day, is_weekend, total_slots, hour_sin/cos, dow_sin/cos</code>
             </div>
             <div>
-              <span style={{ color: 'var(--color-muted)' }}>{t.tools.stage2Prophet} </span>
+              <span className={styles.stageMetaLabel}>{t.tools.stage2Prophet} </span>
               <strong className="num">{pipelineData ? fmtInt(pipelineData.stage2_features.prophet_points) : DASH}</strong>
               <span> (ds, y)</span>
             </div>
           </div>
         </div>
 
-        <div className={styles.controlCard} style={{ padding: 'var(--space-3)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: '6px' }}>
-            <Sparkles size={16} style={{ color: 'var(--color-accent)' }} aria-hidden />
-            <strong style={{ fontSize: 'var(--text-sm)' }}>{t.tools.stage3Title}</strong>
+        <div className={styles.stageCard}>
+          <div className={styles.stageCardHeader}>
+            <span className={styles.stageIconWrap}>
+              <Sparkles size={16} aria-hidden />
+            </span>
+            <strong className={styles.stageTitle}>{t.tools.stage3Title}</strong>
           </div>
-          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', margin: '0 0 8px' }}>
-            {t.tools.stage3Sub}
-          </p>
-          <div style={{ fontSize: 'var(--text-xs)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <p className={styles.stageSub}>{t.tools.stage3Sub}</p>
+          <div className={styles.stageMetaList}>
             <div>
-              <span style={{ color: 'var(--color-muted)' }}>{t.tools.stage3ModelVer} </span>
+              <span className={styles.stageMetaLabel}>{t.tools.stage3ModelVer} </span>
               <code>{pipelineData?.stage3_inference.model_version ?? DASH}</code>
             </div>
             <div>
-              <span style={{ color: 'var(--color-muted)' }}>{t.tools.dataSourceLabel} </span>
+              <span className={styles.stageMetaLabel}>{t.tools.dataSourceLabel} </span>
               <strong>
                 {!pipelineData
                   ? t.tools.dataSourceLocalSim
@@ -317,7 +303,7 @@ export function ForecastSimulator() {
               </strong>
             </div>
             <div>
-              <span style={{ color: 'var(--color-muted)' }}>{t.tools.stage3Reason} </span>
+              <span className={styles.stageMetaLabel}>{t.tools.stage3Reason} </span>
               <code>
                 {pipelineData?.stage3_inference.surge_quote.reason_code ??
                   pipelineData?.stage3_inference.surge_quote.reason ??
@@ -374,24 +360,16 @@ export function ForecastSimulator() {
             {/* Day of Week Selector */}
             <div className={styles.fieldGroup}>
               <span className={styles.fieldLabel}>{t.tools.dayLabel}</span>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+              <div className={styles.dayBtnGroup}>
                 {t.tools.dayNames.map((name, idx) => (
                   <button
                     key={name}
                     type="button"
+                    aria-pressed={dayOfWeek === idx}
+                    className={`${styles.dayBtn} ${dayOfWeek === idx ? styles.dayBtnActive : ''}`}
                     onClick={() => {
                       setDayOfWeek(idx);
                       if (pipelineData) void runBackendPipeline(idx, lotId);
-                    }}
-                    style={{
-                      padding: '4px 8px',
-                      fontSize: 'var(--text-xs)',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px solid var(--color-border)',
-                      background: dayOfWeek === idx ? 'var(--color-accent)' : 'var(--color-surface)',
-                      color: dayOfWeek === idx ? 'var(--color-accent-ink)' : 'var(--color-text)',
-                      cursor: 'pointer',
-                      fontWeight: dayOfWeek === idx ? 600 : 400,
                     }}
                   >
                     {name}
@@ -479,8 +457,7 @@ export function ForecastSimulator() {
             {/* Run Pipeline 3 on Backend Button */}
             <button
               type="button"
-              className={styles.testApiBtn}
-              style={{ marginBottom: '8px', background: 'var(--color-accent)', color: 'var(--color-accent-ink)', borderColor: 'var(--color-accent)' }}
+              className={styles.primarySyncBtn}
               onClick={() => void runBackendPipeline()}
               disabled={syncingPipeline || !lotId}
             >
@@ -499,7 +476,7 @@ export function ForecastSimulator() {
             </button>
           </div>
 
-          {/* Thẻ giải thích "Thà lỗi hơn bịa" */}
+          {/* ADR-0008 Safety Principle Card */}
           <div className={styles.adrCard}>
             <div className={styles.adrTitle}>
               <Scale size={16} aria-hidden />
@@ -536,7 +513,6 @@ export function ForecastSimulator() {
             <div className={styles.kpiCard}>
               <span className={styles.kpiLabel}>{t.tools.kpiRevenueDiff}</span>
               <div className={styles.kpiValueRow}>
-                {/* Chưa có mô hình doanh thu: không dùng hệ số tự đặt. */}
                 <span className={`${styles.kpiValue} ${styles.kpiInfo}`}>—</span>
                 <span className={styles.kpiUnit}>{t.studio.revenueUnknown}</span>
               </div>
@@ -560,7 +536,6 @@ export function ForecastSimulator() {
                 role="img"
                 aria-label={t.tools.chartTitle}
               >
-                {/* Y-axis Grid Lines & Labels */}
                 {[0, 25, 50, 75, 100].map((v) => (
                   <g key={`y-${v}`}>
                     <line
@@ -580,7 +555,6 @@ export function ForecastSimulator() {
                   </g>
                 ))}
 
-                {/* X-axis Labels (every 3 hours) */}
                 {[0, 3, 6, 9, 12, 15, 18, 21, 23].map((hour) => (
                   <text
                     key={`x-${hour}`}
@@ -592,7 +566,6 @@ export function ForecastSimulator() {
                   </text>
                 ))}
 
-                {/* Surge Threshold Line */}
                 <line
                   x1={PAD.left}
                   x2={CHART_W - PAD.right}
@@ -608,11 +581,9 @@ export function ForecastSimulator() {
                   {surgeThreshold}%
                 </text>
 
-                {/* Area and Line */}
                 <path d={areaPath} className={styles.areaFill} />
                 <path d={linePath} className={styles.curveLine} />
 
-                {/* Data Points */}
                 {chartPoints.map((pt) => (
                   <circle
                     key={`dot-${pt.hour}`}
@@ -629,12 +600,11 @@ export function ForecastSimulator() {
               </svg>
             </div>
 
-            {/* Hover details if active */}
             {hoveredHour !== null && (
-              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text)', display: 'flex', gap: 'var(--space-2)' }}>
+              <div className={styles.hoverReadoutBar}>
                 <span>{t.tools.forecastHour(hoveredHour)}</span>
-                <strong style={{ color: 'var(--color-accent-dark)' }}>{`${currentBaseline[hoveredHour]}%`}</strong>
-                <span style={{ color: 'var(--color-muted)' }}>
+                <strong className={styles.hoverReadoutStrong}>{`${currentBaseline[hoveredHour]}%`}</strong>
+                <span className={styles.hoverReadoutMuted}>
                   {`${t.tools.forecastSlots(Math.round((capacity * currentBaseline[hoveredHour]) / 100), capacity)} · ${
                     currentBaseline[hoveredHour] >= surgeThreshold
                       ? t.tools.forecastSurgeRate(fmtInt(suggestedPeakRate))
@@ -644,7 +614,6 @@ export function ForecastSimulator() {
               </div>
             )}
 
-            {/* Chart Legend */}
             <div className={styles.chartLegend}>
               <div className={styles.legendItem}>
                 <span className={`${styles.legendColorBox} ${styles.legendColorOccupancy}`} />
@@ -662,7 +631,7 @@ export function ForecastSimulator() {
           </div>
 
           {/* Weekly Profile & LightGBM 8-Feature Matrix */}
-          <div className={styles.chartCard} style={{ marginTop: 'var(--space-3)' }}>
+          <div className={styles.chartCard}>
             <div className={styles.chartHeader}>
               <h3 className={styles.chartTitle}>
                 <Database size={16} aria-hidden />
@@ -672,61 +641,54 @@ export function ForecastSimulator() {
                 <span className={styles.chartBaselineBadge}>{t.tools.backendSyncedBadge}</span>
               )}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(4.5rem, 1fr))', gap: '8px', marginBottom: '16px' }}>
+            <div className={styles.weeklyGrid}>
               {weeklyProfile.map((w) => (
-                <div
+                <button
                   key={w.day}
-                  style={{
-                    padding: '8px',
-                    borderRadius: 'var(--radius-sm)',
-                    border: w.day === dayOfWeek ? '1px solid var(--color-accent)' : '1px solid var(--color-border)',
-                    background: w.day === dayOfWeek ? 'var(--color-surface-2, rgba(37,99,235,0.08))' : 'var(--color-surface)',
-                    textAlign: 'center',
+                  type="button"
+                  className={`${styles.weeklyCard} ${w.day === dayOfWeek ? styles.weeklyCardActive : ''}`}
+                  onClick={() => {
+                    setDayOfWeek(w.day);
+                    if (pipelineData) void runBackendPipeline(w.day, lotId);
                   }}
                 >
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)' }}>
-                    {t.tools.dayNames[w.day]}
-                  </div>
-                  <strong className="num" style={{ fontSize: 'var(--text-sm)' }}>
-                    {`${w.avg.toFixed(1)}%`}
-                  </strong>
-                </div>
+                  <span className={styles.weeklyDayLabel}>{t.tools.dayNames[w.day]}</span>
+                  <strong className={styles.weeklyDayVal}>{`${w.avg.toFixed(1)}%`}</strong>
+                </button>
               ))}
             </div>
 
-            <div style={{ marginBottom: '6px' }}>
-              <strong style={{ fontSize: 'var(--text-sm)' }}>{t.tools.featureMatrixTitle}</strong>
-              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', margin: '2px 0 8px' }}>
-                {t.tools.featureMatrixSub}
-              </p>
+            <div className={styles.featureMatrixHeader}>
+              <strong className={styles.featureMatrixTitle}>{t.tools.featureMatrixTitle}</strong>
+              <p className={styles.featureMatrixSub}>{t.tools.featureMatrixSub}</p>
             </div>
-            <div style={{ overflowX: 'auto' }}>
-              <table aria-label={t.tools.featureMatrixTitle} style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-xs)' }}>
+            <div className={table.wrap}>
+              <table aria-label={t.tools.featureMatrixTitle} className={table.table}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>
-                    <th style={{ padding: '6px' }}>day_of_week</th>
-                    <th style={{ padding: '6px' }}>hour_of_day</th>
-                    <th style={{ padding: '6px' }}>is_weekend</th>
-                    <th style={{ padding: '6px' }}>total_slots</th>
-                    <th style={{ padding: '6px' }}>hour_sin</th>
-                    <th style={{ padding: '6px' }}>hour_cos</th>
-                    <th style={{ padding: '6px' }}>dow_sin</th>
-                    <th style={{ padding: '6px' }}>dow_cos</th>
-                    <th style={{ padding: '6px' }}>y (occ_pct)</th>
+                  <tr>
+                    <th scope="col" className={table.num}>day_of_week</th>
+                    <th scope="col" className={table.num}>hour_of_day</th>
+                    <th scope="col" className={table.num}>is_weekend</th>
+                    <th scope="col" className={table.num}>total_slots</th>
+                    <th scope="col" className={table.num}>hour_sin</th>
+                    <th scope="col" className={table.num}>hour_cos</th>
+                    <th scope="col" className={table.num}>dow_sin</th>
+                    <th scope="col" className={table.num}>dow_cos</th>
+                    <th scope="col" className={table.num}>y (occ_pct)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {computedFeatureRows.map((row) => (
-                    <tr key={row.hour_of_day} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                      <td className="num" style={{ padding: '6px' }}>{row.day_of_week}</td>
-                      <td className="num" style={{ padding: '6px' }}>{`${row.hour_of_day}:00`}</td>
-                      <td className="num" style={{ padding: '6px' }}>{row.is_weekend}</td>
-                      <td className="num" style={{ padding: '6px' }}>{row.total_slots}</td>
-                      <td className="num" style={{ padding: '6px' }}>{row.hour_sin.toFixed(4)}</td>
-                      <td className="num" style={{ padding: '6px' }}>{row.hour_cos.toFixed(4)}</td>
-                      <td className="num" style={{ padding: '6px' }}>{row.dow_sin.toFixed(4)}</td>
-                      <td className="num" style={{ padding: '6px' }}>{row.dow_cos.toFixed(4)}</td>
-                      <td className="num" style={{ padding: '6px', fontWeight: 600 }}>{`${row.occupancy_pct}%`}</td>
+                    <tr key={row.hour_of_day}>
+                      <td className={table.num}>{row.day_of_week}</td>
+                      <td className={table.num}>{`${row.hour_of_day}:00`}</td>
+                      <td className={table.num}>{row.is_weekend}</td>
+                      <td className={table.num}>{row.total_slots}</td>
+                      <td className={table.num}>{row.hour_sin.toFixed(4)}</td>
+                      <td className={table.num}>{row.hour_cos.toFixed(4)}</td>
+                      <td className={table.num}>{row.dow_sin.toFixed(4)}</td>
+                      <td className={table.num}>{row.dow_cos.toFixed(4)}</td>
+                      <td className={`${table.num} ${styles.occStrongCell}`}>{`${row.occupancy_pct}%`}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -736,7 +698,7 @@ export function ForecastSimulator() {
         </div>
       </div>
 
-      {/* Modal kiểm cổng an toàn API */}
+      {/* ADR-0008 Gate Safety Modal */}
       {showSafetyModal && (
         <div className={styles.modalOverlay} role="dialog" aria-modal="true" aria-labelledby="modal-adr-title">
           <div className={styles.modalCard}>
