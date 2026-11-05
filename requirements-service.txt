@@ -3,8 +3,8 @@
 # Keep the matching CPU wheels in lockstep; a mismatched torchvision prevents
 # EasyOCR from loading its reader at runtime.
 # 2.6.0: vá CVE-2025-32434 (RCE qua torch.load) — cổng Trivy chặn 2.5.1 (ADR-0006).
-torch==2.14.1+cpu
-torchvision==0.29.1+cpu
+torch==2.15.0+cpu
+torchvision==0.29.2+cpu
 numpy>=2.5.4
 pillow>=13.0.0
 opencv-python-headless>=5.0.0.93
@@ -16,8 +16,8 @@ fastapi>=0.162.0
 uvicorn[standard]>=0.27
 python-multipart>=0.0.9
 # Keep generated stubs and the protobuf runtime on the same compatible line.
-grpcio==1.84.1
-grpcio-tools==1.84.1
+grpcio==1.85.1
+grpcio-tools==1.85.1
 protobuf==5.29.5
 pydantic-settings>=2.0.0
 pgvector>=0.5.1

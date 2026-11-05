@@ -4,8 +4,8 @@
 # PyTorch and Torchvision ship binary operators together. Keep this tested pair
 # in lockstep: torchvision 0.26 cannot load against torch 2.5.
 # 2.6.0: vá CVE-2025-32434 (RCE qua torch.load) — cổng Trivy chặn 2.5.1 (ADR-0006).
-torch==2.14.1+cpu
-torchvision==0.29.1+cpu
+torch==2.15.0+cpu
+torchvision==0.29.2+cpu
 numpy>=2.5.4
 pillow>=13.0.0
 opencv-python-headless>=5.0.0.93
@@ -21,8 +21,8 @@ uvicorn[standard]>=0.27
 python-multipart>=0.0.9
 # Pin generator/runtime together. Newer grpcio-tools emits protobuf 7 code,
 # which cannot run with the protobuf 5 runtime used by the rest of this stack.
-grpcio==1.84.1
-grpcio-tools==1.84.1
+grpcio==1.85.1
+grpcio-tools==1.85.1
 protobuf==5.29.5
 pydantic-settings>=2.0.0
 pgvector>=0.5.1
