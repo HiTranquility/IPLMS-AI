@@ -1,0 +1,15 @@
+Bãi đỗ xe,Mã bãi (UUID),Loại phương tiện / Dịch vụ,Khung giờ áp dụng,Đơn giá (VNĐ),Đơn vị tính,Chính sách & Điều kiện
+Bãi xe Bệnh viện Đa khoa Trần Phú (Q5-243),26be7495-5890-4066-9f9c-437b02c12875,Ô tô 4-7 chỗ (Tiêu chuẩn),09:00-17:00 & 21:00-22:00,25000,VNĐ/giờ,Miễn phí 15 phút đầu tiên
+Bãi xe Bệnh viện Đa khoa Trần Phú (Q5-243),26be7495-5890-4066-9f9c-437b02c12875,Ô tô 4-7 chỗ (Cao điểm sáng),07:00-09:00 (Thứ 2-Thứ 6),29000,VNĐ/giờ,+15% giờ cao điểm sáng
+Bãi xe Bệnh viện Đa khoa Trần Phú (Q5-243),26be7495-5890-4066-9f9c-437b02c12875,Ô tô 4-7 chỗ (Cao điểm tối),17:00-21:00 (Hàng ngày),31000,VNĐ/giờ,+25% giờ cao điểm tối
+Bãi xe Bệnh viện Đa khoa Trần Phú (Q5-243),26be7495-5890-4066-9f9c-437b02c12875,Ô tô 4-7 chỗ (Thấp điểm đêm),22:00-06:00,19000,VNĐ/giờ,-25% ưu đãi gửi lẻ ban đêm
+Bãi xe Bệnh viện Đa khoa Trần Phú (Q5-243),26be7495-5890-4066-9f9c-437b02c12875,Ô tô 4-7 chỗ (Trọn gói qua đêm),22:00-06:00,90000,VNĐ/đêm,Áp dụng trọn gói từ 22h đến 6h sáng
+Bãi xe Bệnh viện Đa khoa Trần Phú (Q5-243),26be7495-5890-4066-9f9c-437b02c12875,Ô tô 4-7 chỗ (Trần phí 24h),00:00-24:00,150000,VNĐ/ngày,Tối đa cho 24 giờ liên tục
+Bãi xe Bệnh viện Đa khoa Trần Phú (Q5-243),26be7495-5890-4066-9f9c-437b02c12875,Ô tô 4-7 chỗ (Vé tháng 24/7),Cả tuần 24/7,1400000,VNĐ/tháng,Không giới hạn số lượt ra vào
+Bãi xe Bệnh viện Đa khoa Trần Phú (Q5-243),26be7495-5890-4066-9f9c-437b02c12875,Ô tô 4-7 chỗ (Vé tháng hành chính),07:00-19:00 (Thứ 2-Thứ 7),1000000,VNĐ/tháng,Dành cho khối văn phòng
+Bãi xe Bệnh viện Đa khoa Trần Phú (Q5-243),26be7495-5890-4066-9f9c-437b02c12875,Xe máy / Mô tô (Ban ngày),06:00-18:00,6000,VNĐ/lượt,Kiểm soát bằng LPR & QR
+Bãi xe Bệnh viện Đa khoa Trần Phú (Q5-243),26be7495-5890-4066-9f9c-437b02c12875,Xe máy / Mô tô (Ban đêm),18:00-06:00,10000,VNĐ/lượt,Kiểm soát bằng LPR & QR
+Bãi xe Bệnh viện Đa khoa Trần Phú (Q5-243),26be7495-5890-4066-9f9c-437b02c12875,Sạc xe điện nhanh DC,24/7,3858,VNĐ/kWh,Miễn phí đỗ xe 30 phút đầu khi sạc
+Bãi xe Bệnh viện Đa khoa Trần Phú (Q5-243),26be7495-5890-4066-9f9c-437b02c12875,Sạc xe điện tiêu chuẩn AC,24/7,3200,VNĐ/kWh,Phí chiếm chỗ sau khi đầy: 1.000đ/phút
+Bãi xe Bệnh viện Đa khoa Trần Phú (Q5-243),26be7495-5890-4066-9f9c-437b02c12875,Phụ phí quá giờ (Overstay),Sau 10 phút ân hạn,100000,VNĐ/lần + 150% giá giờ,Bảo vệ chỗ cho khách đặt kế tiếp
+Bãi xe Bệnh viện Đa khoa Trần Phú (Q5-243),26be7495-5890-4066-9f9c-437b02c12875,Phí đền bù mất thẻ RFID,Khi làm mất thẻ vật lý,50000,VNĐ/thẻ,Chỉ thu phí phôi thẻ sau khi xác minh chính chủ
