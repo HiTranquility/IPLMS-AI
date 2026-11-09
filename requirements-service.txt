@@ -25,9 +25,9 @@ psycopg2-binary>=2.9.9
 
 # ── Nạp liệu tri thức (RAG) — xem SUGGESTION-008 ───────────────────────────────────
 # Service runtime CẦN cả ba (AI_CONVENTIONS §5: dependency runtime ⇒ thêm vào
-# CẢ HAI file requirements). [MUST] pypdf >=6.19.0 — 6 CVE DoS trong 2026, xem
+# CẢ HAI file requirements). [MUST] pypdf >=7.0.0 — 6 CVE DoS trong 2026, xem
 # ghi chú dài ở requirements.txt.
-pypdf>=6.19.0
+pypdf>=7.0.0
 pypdfium2==5.14.0
 python-docx>=1.2.0
 openai>=1.68.0,<2.0.0

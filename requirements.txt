@@ -35,7 +35,7 @@ psycopg2-binary>=2.9.9
 # -54651 ở 6.13.1). Ta nhận PDF tuỳ ý từ người ngoài nên đây đúng mô hình đe
 # doạ; ghim phiên bản chỉ chặn được CVE đã biết, vì vậy còn có thêm trần kích
 # thước + trần thời gian parse trong app/core/constants.py.
-pypdf>=6.19.0
+pypdf>=7.0.0
 pypdfium2==5.14.0
 python-docx>=1.2.0
 # Responses API + typed streaming events are required by LlmFactory.
