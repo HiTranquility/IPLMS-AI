@@ -28,7 +28,7 @@ psycopg2-binary>=2.9.9
 # CẢ HAI file requirements). [MUST] pypdf >=6.19.0 — 6 CVE DoS trong 2026, xem
 # ghi chú dài ở requirements.txt.
 pypdf>=6.19.0
-pypdfium2==5.14.0
+pypdfium2==5.15.0
 python-docx>=1.2.0
 openai>=1.68.0,<2.0.0
 

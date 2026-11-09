@@ -36,7 +36,7 @@ psycopg2-binary>=2.9.9
 # doạ; ghim phiên bản chỉ chặn được CVE đã biết, vì vậy còn có thêm trần kích
 # thước + trần thời gian parse trong app/core/constants.py.
 pypdf>=6.19.0
-pypdfium2==5.14.0
+pypdfium2==5.15.0
 python-docx>=1.2.0
 # Responses API + typed streaming events are required by LlmFactory.
 openai>=1.68.0,<2.0.0
