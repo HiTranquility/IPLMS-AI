@@ -139,6 +139,7 @@ class ParquetLakeReader:
                         "hour_of_day": h,
                         "datetime_iso": slot_dt.isoformat().replace("+00:00", "Z"),
                         "is_fallback": True,
+                        "data_source": "synthetic_fallback",
                     }
                 )
 
