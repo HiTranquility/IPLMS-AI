@@ -78,7 +78,11 @@ def _parse_timestamp(val: Any) -> int:
     return int(val)
 
 
+_FALLBACK_DATA_SOURCES = {"synthetic_fallback", "heuristic_baseline", "fallback"}
+
+
 class ParquetOccupancyStore:
+
     """Đọc và chuẩn hoá Parquet occupancy; ghi bản ghi occupancy ra Parquet."""
 
     def __init__(
@@ -313,6 +317,15 @@ class ParquetOccupancyStore:
                 ratio = 0.0
 
             dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+            raw_source = str(row.get("data_source") or "").strip()
+            is_fallback_row = bool(row.get("is_fallback", False)) or (
+                raw_source.lower() in _FALLBACK_DATA_SOURCES
+            )
+            data_source = (
+                raw_source
+                if raw_source
+                else ("synthetic_fallback" if is_fallback_row else "clickhouse")
+            )
             normalized.append(
                 {
                     "area_id": area,
@@ -323,7 +336,8 @@ class ParquetOccupancyStore:
                     "day_of_week": dt.weekday(),
                     "hour_of_day": dt.hour,
                     "datetime_iso": dt.isoformat().replace("+00:00", "Z"),
-                    "is_fallback": bool(row.get("is_fallback", False)),
+                    "is_fallback": is_fallback_row,
+                    "data_source": data_source,
                 }
             )
 
@@ -347,6 +361,17 @@ class ParquetOccupancyStore:
         occupied_slots = [int(r.get("occupied_slots", 0)) for r in records]
         total_slots = [int(r.get("total_slots", self.fallback_total_slots)) for r in records]
         occupancy_ratios = [float(r.get("occupancy_ratio", 0.0)) for r in records]
+        is_fallbacks = [
+            bool(r.get("is_fallback", False))
+            or str(r.get("data_source") or "").strip().lower() in _FALLBACK_DATA_SOURCES
+            for r in records
+        ]
+        data_sources = [
+            str(r.get("data_source")).strip()
+            if r.get("data_source")
+            else ("synthetic_fallback" if is_fb else "clickhouse")
+            for r, is_fb in zip(records, is_fallbacks)
+        ]
 
         table = pa.Table.from_pydict(
             {
@@ -355,6 +380,8 @@ class ParquetOccupancyStore:
                 "occupied_slots": occupied_slots,
                 "total_slots": total_slots,
                 "occupancy_ratio": occupancy_ratios,
+                "is_fallback": is_fallbacks,
+                "data_source": data_sources,
             }
         )
 

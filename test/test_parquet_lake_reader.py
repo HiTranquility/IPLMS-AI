@@ -322,6 +322,28 @@ class ParquetLakeReaderTest(unittest.TestCase):
         self.assertAlmostEqual(ratio, 86.0, delta=1.0)
         self.assertGreaterEqual(confidence, 0.70)
 
+    def test_data_source_column_sets_is_fallback_automatically(self):
+        """Kiểm tra cột data_source='synthetic_fallback' tự động bật is_fallback=True khi đọc Parquet."""
+        table = pa.Table.from_pydict(
+            {
+                "area_key": ["lot-analytic-01", "lot-analytic-02"],
+                "date_actual": ["2026-11-14", "2026-11-14"],
+                "hour_of_day": [8, 9],
+                "avg_occupancy_rate": [0.80, 0.65],
+                "data_source": ["synthetic_fallback", "clickhouse"],
+            }
+        )
+        file_path = self.test_dir / "analytic_provenance.parquet"
+        pq.write_table(table, file_path)
+
+        records = self.reader.read_occupancy_parquet(file_path, fallback_on_error=False)
+        self.assertEqual(len(records), 2)
+        by_area = {r["area_id"]: r for r in records}
+        self.assertTrue(by_area["lot-analytic-01"]["is_fallback"])
+        self.assertEqual(by_area["lot-analytic-01"]["data_source"], "synthetic_fallback")
+        self.assertFalse(by_area["lot-analytic-02"]["is_fallback"])
+        self.assertEqual(by_area["lot-analytic-02"]["data_source"], "clickhouse")
+
 
 if __name__ == "__main__":
     unittest.main()
