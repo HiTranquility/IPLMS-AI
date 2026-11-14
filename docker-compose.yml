@@ -33,6 +33,12 @@ services:
     expose:
       - "8000"
       - "50051"
+    networks:
+      default: {}
+      shared:
+        aliases:
+          - ai-api
+          - ai-gateway
     depends_on:
       database-vector:
         condition: service_healthy

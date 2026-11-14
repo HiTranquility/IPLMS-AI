@@ -4,10 +4,14 @@ Handler không cần try/except: lỗi nghiệp vụ ném thẳng, tới đây m
 Bảng ánh xạ dưới đây PHẢI phủ hết `core.exceptions` — sai một dòng là NestJS
 nhận 500 cho lỗi vốn của người dùng (ảnh mờ, không có biển).
 """
+import hmac
+import re
 import time
 
 import grpc
 from grpc import aio
+
+from app.config import get_config
 
 from app.core.exceptions import (
     AiServiceError,
@@ -79,13 +83,89 @@ def status_for(exc: Exception) -> grpc.StatusCode:
     return grpc.StatusCode.INTERNAL
 
 
+_HEALTH_CHECK_METHOD = "/grpc.health.v1.Health/Check"
+_INTERNAL_TOKEN_METADATA_KEY = "x-internal-token"
+_CORRELATION_METADATA_KEYS = ("x-request-id", "x-correlation-id")
+_SAFE_CORRELATION_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
+
+
+def _extract_correlation_id(handler_call_details) -> str:
+    metadata = getattr(handler_call_details, "invocation_metadata", None) or ()
+    for item in metadata:
+        key = getattr(item, "key", item[0] if isinstance(item, tuple) else "")
+        value = getattr(item, "value", item[1] if isinstance(item, tuple) else "")
+        if key in _CORRELATION_METADATA_KEYS and isinstance(value, str):
+            candidate = value.strip()
+            if _SAFE_CORRELATION_ID_RE.match(candidate):
+                return candidate
+    return "-"
+
+
+def _has_valid_internal_token(handler_call_details, expected_token: str) -> bool:
+    active_keys = [k.strip() for k in (expected_token or "").split(",") if k.strip()]
+    if not active_keys:
+        return True
+    if getattr(handler_call_details, "method", None) == _HEALTH_CHECK_METHOD:
+        return True
+    metadata = getattr(handler_call_details, "invocation_metadata", None) or ()
+    for item in metadata:
+        key = getattr(item, "key", item[0] if isinstance(item, tuple) else "")
+        value = getattr(item, "value", item[1] if isinstance(item, tuple) else "")
+        if key == _INTERNAL_TOKEN_METADATA_KEY and isinstance(value, str):
+            candidate = value.strip()
+            matched = False
+            for secret in active_keys:
+                if hmac.compare_digest(candidate, secret):
+                    matched = True
+            return matched
+    return False
+
+
 class LoggingInterceptor(aio.ServerInterceptor):
+    def __init__(self, expected_token: str | None = None) -> None:
+        self._expected_token = expected_token
+
+    def _resolve_expected_token(self) -> str:
+        if self._expected_token is not None:
+            return self._expected_token
+        return get_config().server.internal_api_token
+
     async def intercept_service(self, continuation, handler_call_details):
         handler = await continuation(handler_call_details)
         if handler is None:
             return None
 
         method = handler_call_details.method
+        correlation_id = _extract_correlation_id(handler_call_details)
+        expected_token = self._resolve_expected_token()
+        if not _has_valid_internal_token(handler_call_details, expected_token):
+            async def _unauthenticated_unary(request, context):
+                logger.warning(f"{method} → UNAUTHENTICATED: Missing or invalid x-internal-token")
+                await context.abort(
+                    grpc.StatusCode.UNAUTHENTICATED,
+                    "Missing or invalid x-internal-token",
+                )
+
+            async def _unauthenticated_stream(request, context):
+                logger.warning(f"{method} → UNAUTHENTICATED: Missing or invalid x-internal-token")
+                await context.abort(
+                    grpc.StatusCode.UNAUTHENTICATED,
+                    "Missing or invalid x-internal-token",
+                )
+                if False:  # pragma: no cover - keeps generator signature for unary_stream
+                    yield None
+
+            if handler.unary_stream is not None:
+                return grpc.unary_stream_rpc_method_handler(
+                    _unauthenticated_stream,
+                    request_deserializer=handler.request_deserializer,
+                    response_serializer=handler.response_serializer,
+                )
+            return grpc.unary_unary_rpc_method_handler(
+                _unauthenticated_unary,
+                request_deserializer=handler.request_deserializer,
+                response_serializer=handler.response_serializer,
+            )
 
         if handler.unary_unary is not None:
             inner = handler.unary_unary
@@ -97,7 +177,7 @@ class LoggingInterceptor(aio.ServerInterceptor):
                 except Exception as exc:
                     await _abort(context, method, exc)
                     raise
-                logger.info(f"{method} OK in {(time.perf_counter() - started) * 1000:.1f}ms")
+                logger.info(f"{method} OK in {(time.perf_counter() - started) * 1000:.1f}ms rid={correlation_id}")
                 return response
 
             return grpc.unary_unary_rpc_method_handler(

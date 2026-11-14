@@ -1,0 +1,64 @@
+{
+  "parking_lot_id": "efd024a2-cb56-4e95-b351-039b3f0f2700",
+  "slug": "bai-xe-q1-ham-nghi-441",
+  "parking_area_name": "Bãi xe Trung tâm Thể thao & Giải trí Hàm Nghi (Q1-441)",
+  "address": "Số 298 Hàm Nghi, Quận 1, TP.HCM",
+  "currency": "VND",
+  "hourly_tariff_tiers": [
+    {
+      "tier": "standard",
+      "time_window": "09:00-17:00 & 21:00-22:00",
+      "days": "Mon-Sun",
+      "price_per_hour_vnd": 15000
+    },
+    {
+      "tier": "morning_peak",
+      "time_window": "07:00-09:00",
+      "days": "Mon-Fri",
+      "price_per_hour_vnd": 17000
+    },
+    {
+      "tier": "evening_peak",
+      "time_window": "17:00-21:00",
+      "days": "Mon-Sun",
+      "price_per_hour_vnd": 19000
+    },
+    {
+      "tier": "night_off_peak",
+      "time_window": "22:00-06:00",
+      "days": "Mon-Sun",
+      "price_per_hour_vnd": 11000
+    }
+  ],
+  "packages_and_caps": {
+    "overnight_flat_fee_vnd": 50000,
+    "overnight_window": "22:00-06:00",
+    "daily_max_cap_24h_vnd": 90000,
+    "monthly_pass_24_7_vnd": 800000,
+    "monthly_pass_office_hours_vnd": 600000,
+    "motorbike_day_vnd": 6000,
+    "motorbike_night_vnd": 10000,
+    "motorbike_monthly_vnd": 180000,
+    "walk_in_entry_fee_vnd": 5000
+  },
+  "dynamic_surge_policy": {
+    "enabled": true,
+    "occupancy_threshold_pct": 90,
+    "surge_multiplier": 1.2,
+    "pre_booked_price_lock": "Khách đặt chỗ trước được khóa giá cố định lúc đặt, không chịu phụ phí cao điểm phát sinh sau đó."
+  },
+  "grace_period_and_penalties": {
+    "free_drop_off_minutes": 15,
+    "booking_check_out_grace_minutes": 15,
+    "late_overstay_fixed_penalty_vnd": 50000,
+    "overstay_hourly_rate_multiplier": 1.5,
+    "lost_rfid_card_replacement_fee_vnd": 50000
+  },
+  "ev_charging_tariff": {
+    "has_ev_station": false,
+    "dc_fast_charging_vnd_per_kwh": 3858,
+    "ac_standard_charging_vnd_per_kwh": 3200,
+    "idle_grace_minutes_after_full": 15,
+    "idle_fee_vnd_per_minute": 1000
+  }
+}
