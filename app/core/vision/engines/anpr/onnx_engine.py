@@ -5,15 +5,20 @@ fallback an toàn sang PyTorch engine nếu chưa có file model ONNX
 hoặc chưa cài đặt thư viện `onnxruntime`.
 """
 import os
-import time
 from pathlib import Path
+import threading
+import time
 from typing import Any, List, Optional, Tuple, Union
 
 import cv2
 import numpy as np
 
+from app.config import get_config
 from app.core.exceptions import PlateRecognitionError
+from app.core.vision.engines.anpr.detector import detect_plate as pt_detect
 from app.util.logger import logger
+
+AI_ROOT = Path(__file__).resolve().parents[5]
 
 try:
     import onnxruntime as ort
@@ -53,33 +58,56 @@ class AnprOnnxEngine:
         self.resolved_onnx_path: Optional[Path] = None
         self.is_onnx_available: bool = False
         self._fallback_detector = None
+        self._configured_model_path = model_path
+        self._configured_providers = providers
+        self._session_lock = threading.Lock()
+        self._load_attempted: bool = False
 
-        # Kiểm tra cờ kích hoạt ONNX (AI_ONNX_ENABLED)
-        onnx_env = os.environ.get("AI_ONNX_ENABLED", "true").lower()
-        if onnx_env in ("0", "false", "no", "off"):
-            logger.info("ONNX engine disabled via AI_ONNX_ENABLED=false. Operating in PyTorch fallback mode.")
-            self.is_onnx_available = False
+        if not self._is_onnx_enabled_in_config():
+            logger.info("ONNX engine disabled via VisionConfig.onnx_enabled=false. Operating in PyTorch fallback mode.")
             return
 
-        resolved = self._resolve_model_path(model_path)
-        if HAS_ONNXRUNTIME and resolved is not None and resolved.exists():
-            try:
-                self._init_session(resolved, providers)
-                self.resolved_onnx_path = resolved
-                self.is_onnx_available = True
-                logger.info(f"AnprOnnxEngine initialized successfully with model: {resolved}")
-            except Exception as exc:
-                logger.warning(f"Failed to initialize ONNX session ({exc}). Falling back to PyTorch.")
-                self.is_onnx_available = False
-        else:
+        self._try_load_session()
+
+    @staticmethod
+    def _is_onnx_enabled_in_config() -> bool:
+        """Đọc cờ onnx_enabled trực tiếp từ cấu hình hiện hành (hỗ trợ bật/tắt nóng từ AI Console)."""
+        try:
+            vision = get_config().vision
+            if vision is not None:
+                return bool(vision.onnx_enabled)
+        except Exception:
+            pass
+        return True
+
+    def _try_load_session(self) -> bool:
+        """Nạp lười ONNX InferenceSession có khóa luồng (AI_CONVENTIONS §6)."""
+        with self._session_lock:
+            if self.is_onnx_available and self.session is not None:
+                return True
+            self._load_attempted = True
+            resolved = self._resolve_model_path(self._configured_model_path)
+            if HAS_ONNXRUNTIME and resolved is not None and resolved.exists():
+                try:
+                    self._init_session(resolved, self._configured_providers)
+                    self.resolved_onnx_path = resolved
+                    self.is_onnx_available = True
+                    logger.info(f"AnprOnnxEngine initialized successfully with model: {resolved}")
+                    return True
+                except Exception as exc:
+                    logger.warning(f"Failed to initialize ONNX session ({exc}). Falling back to PyTorch.")
+                    self.is_onnx_available = False
+                    return False
+
             if not HAS_ONNXRUNTIME:
                 logger.info("onnxruntime is not installed. AnprOnnxEngine operates in PyTorch fallback mode.")
             elif resolved is None or not resolved.exists():
                 logger.info(f"ONNX model file not found ({resolved}). AnprOnnxEngine operates in PyTorch fallback mode.")
             self.is_onnx_available = False
+            return False
 
     def _resolve_model_path(self, model_path: Optional[Union[str, Path]]) -> Optional[Path]:
-        """Tìm kiếm file model .onnx trong cấu hình và các thư mục tiềm năng."""
+        """Tìm kiếm file model .onnx trong cấu hình VisionConfig và các thư mục dự án."""
         if model_path:
             p = Path(model_path)
             if p.exists():
@@ -89,51 +117,36 @@ class AnprOnnxEngine:
                 if onnx_candidate.exists():
                     return onnx_candidate
 
-        # Kiểm tra biến môi trường AI_ONNX_MODEL_DIR
-        onnx_dir_env = os.environ.get("AI_ONNX_MODEL_DIR")
-        if onnx_dir_env:
-            p_dir = Path(onnx_dir_env)
-            if p_dir.is_file() and p_dir.suffix == ".onnx" and p_dir.exists():
-                return p_dir
-            for candidate_name in ["best.onnx", "model.onnx", "yolov8n.onnx"]:
-                candidate = p_dir / candidate_name
-                if candidate.exists():
-                    return candidate
-
-        # Kiểm tra qua config nếu có
         try:
-            from app.config import get_config
             vision = get_config().vision
             if vision:
                 if getattr(vision, "onnx_model_dir", None):
                     cfg_dir = Path(vision.onnx_model_dir)
-                    for candidate_name in ["best.onnx", "model.onnx"]:
-                        cand = cfg_dir / candidate_name
-                        if cand.exists():
-                            return cand
+                    base_dirs = [cfg_dir] if cfg_dir.is_absolute() else [cfg_dir, AI_ROOT / cfg_dir]
+                    for b_dir in base_dirs:
+                        if b_dir.is_file() and b_dir.suffix == ".onnx" and b_dir.exists():
+                            return b_dir
+                        for candidate_name in ("best.onnx", "model.onnx", "yolov8n.onnx"):
+                            cand = b_dir / candidate_name
+                            if cand.exists():
+                                return cand
                 if getattr(vision, "yolo_model_path", None):
                     cfg_path = Path(vision.yolo_model_path)
-                    if cfg_path.suffix == ".onnx" and cfg_path.exists():
-                        return cfg_path
-                    onnx_variant = cfg_path.with_suffix(".onnx")
-                    if onnx_variant.exists():
-                        return onnx_variant
+                    path_variants = [cfg_path] if cfg_path.is_absolute() else [cfg_path, AI_ROOT / cfg_path]
+                    for p_var in path_variants:
+                        if p_var.suffix == ".onnx" and p_var.exists():
+                            return p_var
+                        onnx_variant = p_var.with_suffix(".onnx")
+                        if onnx_variant.exists():
+                            return onnx_variant
         except Exception:
             pass
 
-        # Kiểm tra biến môi trường YOLO_ONNX_MODEL_PATH
-        env_path = os.environ.get("YOLO_ONNX_MODEL_PATH")
-        if env_path and Path(env_path).exists():
-            return Path(env_path)
-
-        # Kiểm tra các đường dẫn mặc định
         search_candidates = [
+            AI_ROOT / "data" / "models" / "best.onnx",
             Path("data/models/best.onnx"),
-            Path("ai/data/models/best.onnx"),
+            AI_ROOT / "model" / "artifacts" / "bootstrap" / "anpr" / "best.onnx",
             Path("model/artifacts/bootstrap/anpr/best.onnx"),
-            Path("models/best.onnx"),
-            Path("ai/models/best.onnx"),
-            Path("app/core/vision/models/best.onnx"),
             Path("best.onnx"),
         ]
         for candidate in search_candidates:
@@ -170,7 +183,13 @@ class AnprOnnxEngine:
 
     def is_using_onnx(self) -> bool:
         """Kiểm tra xem engine hiện đang dùng ONNX Runtime hay PyTorch Fallback."""
-        return self.is_onnx_available and self.session is not None
+        if not self._is_onnx_enabled_in_config():
+            return False
+        if self.is_onnx_available and self.session is not None:
+            return True
+        if not self._load_attempted:
+            return self._try_load_session()
+        return False
 
     def _preprocess(self, img_cv: np.ndarray) -> Tuple[np.ndarray, float, Tuple[int, int]]:
         """Letterbox resize và chuẩn hóa ảnh sang dạng NCHW float32.
@@ -325,7 +344,6 @@ class AnprOnnxEngine:
     def _fallback_pytorch_detect(self, img_cv: np.ndarray) -> Tuple[np.ndarray, Optional[float]]:
         """Fallback an toàn sang PyTorch engine (ultralytics YOLO) hiện tại."""
         try:
-            from app.core.vision.engines.anpr.detector import detect_plate as pt_detect
             return pt_detect(img_cv)
         except Exception as exc:
             if isinstance(exc, PlateRecognitionError):
