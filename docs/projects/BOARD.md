@@ -85,6 +85,7 @@
 
 | Việc | Hồ sơ | Ngày đóng |
 |---|---|---|
+| `ParquetOccupancyStore` bỏ qua cột `data_source='synthetic_fallback'` từ `analytic` khiến dữ liệu g… | [bug-060](bugs/bug-060-parquet-occupancy-store-bo-qua-cot-data-source-fallback/bug.md) | 2026-11-14 |
 | `console_access.py` gọi tên cũ `console_auth_service` gây nổ 35 lỗi `NameError` trên `AI · CI` | [bug-059](bugs/bug-059-console-access-undefined-auth-service/bug.md) | 2026-11-14 |
 | Cờ `onnx_enabled` của AI Console không có hiệu lực lúc chạy và thiếu bước xuất `best.onnx` thật | [bug-058](bugs/bug-058-anpr-onnx-toggle-va-thieu-script-export/bug.md) | 2026-11-14 |
 | CI `AI · CI` dừng ở bước khởi tạo Postgres vì thiếu `POSTGRES_PASSWORD`, unittest và kiểm khuôn khô… | [bug-055](bugs/bug-055-ci-thieu-postgres-password-test-khong-chay/bug.md) | 2026-11-03 |
@@ -104,4 +105,3 @@
 | REST ANPR đọc cả file upload vào RAM, không giới hạn kích thước, không kiểm loại file | [bug-043](bugs/bug-043-anpr-rest-doc-anh-khong-gioi-han-kich-thuoc/bug.md) | 2026-10-31 |
 | Prompt Copilot không vào image, service âm thầm chạy prompt dự phòng | [bug-042](bugs/bug-042-prompt-copilot-khong-vao-image-chay-prompt-du-phong/bug.md) | 2026-10-31 |
 | Đăng nhập từ `/console/` xong rơi vào trang "Không có trang này" | [bug-033](bugs/bug-033-dang-nhap-tu-goc-console-roi-vao-trang-404/bug.md) | 2026-10-31 |
-| Phiên "chờ MFA" tồn đọng trong danh sách Phiên đăng nhập | [bug-030](bugs/bug-030-phien-cho-mfa-ton-dong-trong-danh-sach/bug.md) | 2026-10-31 |
