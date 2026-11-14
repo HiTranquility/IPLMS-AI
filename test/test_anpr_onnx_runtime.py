@@ -54,7 +54,7 @@ class AnprOnnxRuntimeToggleTest(unittest.TestCase):
         self.cfg.vision.onnx_enabled = False
         self.assertFalse(engine.is_using_onnx())
         fallback_crop = img[10:50, 10:80]
-        with patch("app.core.vision.engines.anpr.onnx_engine.pt_detect", return_value=(fallback_crop, 0.77)) as mock_pt:
+        with patch("app.core.vision.engines.anpr.detector.detect_plate", return_value=(fallback_crop, 0.77)) as mock_pt:
             crop2, conf2 = engine.detect_plate(img)
             self.assertEqual(mock_pt.call_count, 1)
             self.assertEqual(conf2, 0.77)

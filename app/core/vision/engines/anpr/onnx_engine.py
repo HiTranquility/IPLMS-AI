@@ -15,7 +15,7 @@ import numpy as np
 
 from app.config import get_config
 from app.core.exceptions import PlateRecognitionError
-from app.core.vision.engines.anpr.detector import detect_plate as pt_detect
+from app.core.vision.engines.anpr import detector as anpr_detector
 from app.util.logger import logger
 
 AI_ROOT = Path(__file__).resolve().parents[5]
@@ -108,7 +108,7 @@ class AnprOnnxEngine:
 
     def _resolve_model_path(self, model_path: Optional[Union[str, Path]]) -> Optional[Path]:
         """Tìm kiếm file model .onnx trong cấu hình VisionConfig và các thư mục dự án."""
-        if model_path:
+        if model_path is not None:
             p = Path(model_path)
             if p.exists():
                 return p
@@ -116,6 +116,7 @@ class AnprOnnxEngine:
                 onnx_candidate = p.with_suffix(".onnx")
                 if onnx_candidate.exists():
                     return onnx_candidate
+            return None
 
         try:
             vision = get_config().vision
@@ -344,7 +345,7 @@ class AnprOnnxEngine:
     def _fallback_pytorch_detect(self, img_cv: np.ndarray) -> Tuple[np.ndarray, Optional[float]]:
         """Fallback an toàn sang PyTorch engine (ultralytics YOLO) hiện tại."""
         try:
-            return pt_detect(img_cv)
+            return anpr_detector.detect_plate(img_cv)
         except Exception as exc:
             if isinstance(exc, PlateRecognitionError):
                 raise
