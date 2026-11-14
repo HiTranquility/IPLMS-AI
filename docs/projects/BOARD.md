@@ -85,6 +85,7 @@
 
 | Việc | Hồ sơ | Ngày đóng |
 |---|---|---|
+| `console_access.py` gọi tên cũ `console_auth_service` gây nổ 35 lỗi `NameError` trên `AI · CI` | [bug-059](bugs/bug-059-console-access-undefined-auth-service/bug.md) | 2026-11-14 |
 | CI `AI · CI` dừng ở bước khởi tạo Postgres vì thiếu `POSTGRES_PASSWORD`, unittest và kiểm khuôn khô… | [bug-055](bugs/bug-055-ci-thieu-postgres-password-test-khong-chay/bug.md) | 2026-11-03 |
 | `main` ghim `grpcio-tools==1.84.1` cùng `protobuf==5.29.5`, pip không cài được nên image build hỏng | [bug-054](bugs/bug-054-main-ghim-grpcio-tools-xung-dot-protobuf/bug.md) | 2026-11-03 |
 | Copilot báo "chưa tìm thấy thông tin" khi LLM/embedding sập, không báo lỗi AI | [bug-052](bugs/bug-052-copilot-bao-khong-co-thong-tin-khi-llm-hoac-embedding-sap/bug.md) | 2026-11-03 |
@@ -104,4 +105,3 @@
 | Đăng nhập từ `/console/` xong rơi vào trang "Không có trang này" | [bug-033](bugs/bug-033-dang-nhap-tu-goc-console-roi-vao-trang-404/bug.md) | 2026-10-31 |
 | Phiên "chờ MFA" tồn đọng trong danh sách Phiên đăng nhập | [bug-030](bugs/bug-030-phien-cho-mfa-ton-dong-trong-danh-sach/bug.md) | 2026-10-31 |
 | Fallback kết nối DB sang cổng 5432 rồi tự `CREATE DATABASE` trên một Postgres khác | [bug-029](bugs/bug-029-db-fallback-tu-tao-database-tren-postgres-khac/bug.md) | 2026-10-31 |
-| Forecast Simulator luôn chạy baseline vì id bãi trên UI lệch `area_key` của Gold lake | [bug-028](bugs/bug-028-forecast-id-bai-lech-area-key/bug.md) | 2026-10-31 |
