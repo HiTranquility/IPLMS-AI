@@ -28,7 +28,7 @@ def require_same_origin_write(request: Request) -> None:
 
 
 def require_permission(permission: str):
-    console_auth_service.validate_permission(permission)
+    auth_service.validate_permission(permission)
 
     async def dependency(request: Request) -> ConsoleActor:
         return await auth_service.authorize(session_token(request), permission)
@@ -38,7 +38,7 @@ def require_permission(permission: str):
 
 def require_any_permission(*permissions: str):
     for permission in permissions:
-        console_auth_service.validate_permission(permission)
+        auth_service.validate_permission(permission)
 
     async def dependency(request: Request) -> ConsoleActor:
         return await auth_service.authorize_any(session_token(request), permissions)
