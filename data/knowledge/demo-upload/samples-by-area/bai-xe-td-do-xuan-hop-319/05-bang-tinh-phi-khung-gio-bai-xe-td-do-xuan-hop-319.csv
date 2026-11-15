@@ -1,0 +1,15 @@
+Bãi đỗ xe,Mã bãi (UUID),Loại phương tiện / Dịch vụ,Khung giờ áp dụng,Đơn giá (VNĐ),Đơn vị tính,Chính sách & Điều kiện
+Bãi xe TTTM & Mua sắm Đỗ Xuân Hợp (TĐ-319),b5ebd5b3-c19a-4374-bb98-663f7150e818,Ô tô 4-7 chỗ (Tiêu chuẩn),09:00-17:00 & 21:00-22:00,30000,VNĐ/giờ,Miễn phí 15 phút đầu tiên
+Bãi xe TTTM & Mua sắm Đỗ Xuân Hợp (TĐ-319),b5ebd5b3-c19a-4374-bb98-663f7150e818,Ô tô 4-7 chỗ (Cao điểm sáng),07:00-09:00 (Thứ 2-Thứ 6),34000,VNĐ/giờ,+15% giờ cao điểm sáng
+Bãi xe TTTM & Mua sắm Đỗ Xuân Hợp (TĐ-319),b5ebd5b3-c19a-4374-bb98-663f7150e818,Ô tô 4-7 chỗ (Cao điểm tối),17:00-21:00 (Hàng ngày),38000,VNĐ/giờ,+25% giờ cao điểm tối
+Bãi xe TTTM & Mua sắm Đỗ Xuân Hợp (TĐ-319),b5ebd5b3-c19a-4374-bb98-663f7150e818,Ô tô 4-7 chỗ (Thấp điểm đêm),22:00-06:00,22000,VNĐ/giờ,-25% ưu đãi gửi lẻ ban đêm
+Bãi xe TTTM & Mua sắm Đỗ Xuân Hợp (TĐ-319),b5ebd5b3-c19a-4374-bb98-663f7150e818,Ô tô 4-7 chỗ (Trọn gói qua đêm),22:00-06:00,105000,VNĐ/đêm,Áp dụng trọn gói từ 22h đến 6h sáng
+Bãi xe TTTM & Mua sắm Đỗ Xuân Hợp (TĐ-319),b5ebd5b3-c19a-4374-bb98-663f7150e818,Ô tô 4-7 chỗ (Trần phí 24h),00:00-24:00,180000,VNĐ/ngày,Tối đa cho 24 giờ liên tục
+Bãi xe TTTM & Mua sắm Đỗ Xuân Hợp (TĐ-319),b5ebd5b3-c19a-4374-bb98-663f7150e818,Ô tô 4-7 chỗ (Vé tháng 24/7),Cả tuần 24/7,1650000,VNĐ/tháng,Không giới hạn số lượt ra vào
+Bãi xe TTTM & Mua sắm Đỗ Xuân Hợp (TĐ-319),b5ebd5b3-c19a-4374-bb98-663f7150e818,Ô tô 4-7 chỗ (Vé tháng hành chính),07:00-19:00 (Thứ 2-Thứ 7),1200000,VNĐ/tháng,Dành cho khối văn phòng
+Bãi xe TTTM & Mua sắm Đỗ Xuân Hợp (TĐ-319),b5ebd5b3-c19a-4374-bb98-663f7150e818,Xe máy / Mô tô (Ban ngày),06:00-18:00,6000,VNĐ/lượt,Kiểm soát bằng LPR & QR
+Bãi xe TTTM & Mua sắm Đỗ Xuân Hợp (TĐ-319),b5ebd5b3-c19a-4374-bb98-663f7150e818,Xe máy / Mô tô (Ban đêm),18:00-06:00,10000,VNĐ/lượt,Kiểm soát bằng LPR & QR
+Bãi xe TTTM & Mua sắm Đỗ Xuân Hợp (TĐ-319),b5ebd5b3-c19a-4374-bb98-663f7150e818,Sạc xe điện nhanh DC,24/7,3858,VNĐ/kWh,Miễn phí đỗ xe 30 phút đầu khi sạc
+Bãi xe TTTM & Mua sắm Đỗ Xuân Hợp (TĐ-319),b5ebd5b3-c19a-4374-bb98-663f7150e818,Sạc xe điện tiêu chuẩn AC,24/7,3200,VNĐ/kWh,Phí chiếm chỗ sau khi đầy: 1.000đ/phút
+Bãi xe TTTM & Mua sắm Đỗ Xuân Hợp (TĐ-319),b5ebd5b3-c19a-4374-bb98-663f7150e818,Phụ phí quá giờ (Overstay),Sau 10 phút ân hạn,100000,VNĐ/lần + 150% giá giờ,Bảo vệ chỗ cho khách đặt kế tiếp
+Bãi xe TTTM & Mua sắm Đỗ Xuân Hợp (TĐ-319),b5ebd5b3-c19a-4374-bb98-663f7150e818,Phí đền bù mất thẻ RFID,Khi làm mất thẻ vật lý,50000,VNĐ/thẻ,Chỉ thu phí phôi thẻ sau khi xác minh chính chủ

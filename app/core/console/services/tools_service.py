@@ -35,7 +35,7 @@ from app.util.logger import logger
 CONSOLE_TRY_TASK = "console_try"
 # Ảnh thử ANPR trên console: cùng trần với tệp tri thức, đủ cho ảnh camera cổng.
 ANPR_TRY_MAX_BYTES = KNOWLEDGE_MAX_FILE_BYTES
-_ALLOWED_SUFFIXES = (".pdf", ".docx", ".txt", ".md", ".markdown")
+_ALLOWED_SUFFIXES = (".pdf", ".docx", ".txt", ".md", ".markdown", ".csv", ".json")
 
 
 def _lot(parking_lot_id: Optional[str]) -> Optional[str]:

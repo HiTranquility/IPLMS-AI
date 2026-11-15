@@ -30,6 +30,7 @@ from app.core.vision.engines.anpr.preprocess import (
 from app.core.vision.engines.anpr.scoring import PlateCandidate, select_plate_candidate
 from app.core.vision.engines.anpr.onnx_engine import AnprOnnxEngine
 from app.core.vision.engines.anpr.two_line_plate_parser import parse_two_line_vietnam_plate
+from app.infra.metrics import observe_ai_inference
 from app.util.logger import logger
 
 warmup = model_loader.warmup
@@ -176,13 +177,20 @@ def run_anpr(ori_bytes: bytes) -> Dict[str, Any]:
 
     success, buffer = cv2.imencode(".jpg", evidence_image)
     if not success:
+        err_elapsed = time.perf_counter() - start_time
+        observe_ai_inference("anpr", "error", err_elapsed)
+        observe_ai_inference("anpr_yolo_ocr", "error", err_elapsed)
         raise PlateRecognitionError("Chuyển ảnh crop sang bytes thất bại.")
+
+    elapsed = time.perf_counter() - start_time
+    observe_ai_inference("anpr", "success", elapsed)
+    observe_ai_inference("anpr_yolo_ocr", "success", elapsed)
 
     return {
         "crop_bytes": buffer.tobytes(),
         "plate_number": plate_number,
         "confidence": round(plate_confidence, 4),
-        "process_time": round(time.perf_counter() - start_time, 3),
+        "process_time": round(elapsed, 3),
         "is_two_line": is_two_line,
         # No detector crop means no observed plate background. Never infer from vehicle paint.
         "plate_color": detect_plate_color(plate_crop) if plate_crop is not None else None,

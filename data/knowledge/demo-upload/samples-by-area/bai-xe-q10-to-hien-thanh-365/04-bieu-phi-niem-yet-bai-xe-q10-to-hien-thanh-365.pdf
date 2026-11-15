@@ -1,0 +1,60 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 1770 >>
+stream
+BT
+/F1 10 Tf
+14 TL
+42 790 Td
+(BIEU PHI NIEM YET VA QUY DINH AN NINH - BAI XE KHACH SAN & HOI NGHI TO HIEN THANH \(Q10-365\)) Tj
+T* (Ma bai xe \(Parking Lot ID\): b3ce1a3f-9e15-4114-bd3c-e867cf2f8d11 | Slug: bai-xe-q10-to-hien-thanh-365) Tj
+T* (Dia chi: So 356 To Hien Thanh, Quan 10, TP.HCM) Tj
+T* (------------------------------------------------------------------------) Tj
+T* (1. BIEU PHI GUI XE O TO \(4-7 CHO\) THEO KHUNG GIO:) Tj
+T* (   - Gia tieu chuan \(09:00 - 17:00 & 21:00 - 22:00\): 15.000d/gio) Tj
+T* (   - Khung cao diem sang \(07:00 - 09:00, Thu 2 - Thu 6\): 17.000d/gio) Tj
+T* (   - Khung cao diem chieu toi \(17:00 - 21:00, Hang ngay\): 19.000d/gio) Tj
+T* (   - Khung thap diem ban dem \(22:00 - 06:00\): 11.000d/gio) Tj
+T* (   - Tron goi gui xe qua dem \(22:00 - 06:00\): 50.000d/dem) Tj
+T* (   - Tran phi toi da theo ngay \(24 gio lien tuc\): 90.000d/ngay) Tj
+T* (   - Ve thang o to 24/7: 800.000d/thang | Hanh chinh: 600.000d/thang) Tj
+T* (2. BIEU PHI XE MAY & MO TO:) Tj
+T* (   - Ban ngay \(06:00 - 18:00\): 6.000d/luot | Ban dem \(18:00 - 06:00\): 10.000d/luot) Tj
+T* (   - Ve thang xe may: 180.000d/thang) Tj
+T* (3. CHINH SACH AN HAN, QUA GIO, SURGE PRICING VA MAT THE:) Tj
+T* (   - Mien phi 15 phut dau tien cho xe don tra khach nhanh.) Tj
+T* (   - An han nhan/tra cho dat truoc: 20 phut.) Tj
+T* (   - Phu phi qua gio \(Overstay\): Phat co dinh 30.000d + 150% don gia gio.) Tj
+T* (   - He so gia linh hoat \(Surge\): 1.2x \(+20%\) khi lap day >= 90%.) Tj
+T* (   - Phi den bu mat the tu RFID: 50.000d/the \(xac minh CCCD & bien so LPR\).) Tj
+T* (4. TRAM SAC XE DIEN \(EV CHARGING\):) Tj
+T* (   - Sac nhanh DC: 3.858d/kWh | Sac tieu chuan AC: 3.200d/kWh) Tj
+T* (   - Phi chiem cho tru sac sau khi pin day \(qua 15 phut an han\): 1.000d/phut.) Tj
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000311 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+2133
+%%EOF

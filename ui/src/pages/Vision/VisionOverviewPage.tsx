@@ -14,13 +14,14 @@ import { AccuracySection } from './components/AccuracySection';
 import { ProposePolicyForm } from './components/ProposePolicyForm';
 import { AnprSandbox } from './components/AnprSandbox';
 import { ClipLab } from './components/ClipLab';
+import { LiveStreamLab } from './components/LiveStreamLab';
 import { POLICY_TONE } from './labels';
 import { VisionOverviewPageProvider, useVisionOverviewPageContext } from './VisionOverviewPageContext';
 import styles from './VisionOverviewPage.module.css';
 
 function VisionOverviewPageContent() {
   const { t } = useI18n();
-  const [viewMode, setViewMode] = useState<'metrics' | 'sandbox' | 'clip'>('metrics');
+  const [viewMode, setViewMode] = useState<'metrics' | 'sandbox' | 'clip' | 'live'>('metrics');
   const [selectedThreshold, setSelectedThreshold] = useState<number | null>(null);
   const { me, status, accuracy, policies, decide, stepUp, canPropose, canDecide } = useVisionOverviewPageContext();
   const handleStepUp = (code: string, reason: string) => stepUp.mutateAsync({ code, reason });
@@ -38,13 +39,16 @@ function VisionOverviewPageContent() {
               { value: 'metrics', label: t.visionOverview.viewMetrics },
               { value: 'sandbox', label: t.visionOverview.viewSandbox },
               { value: 'clip', label: t.visionOverview.viewClip },
+              { value: 'live', label: t.visionOverview.viewLive },
             ]}
             onChange={setViewMode}
           />
         }
       />
 
-      {viewMode === 'clip' ? (
+      {viewMode === 'live' ? (
+        <LiveStreamLab />
+      ) : viewMode === 'clip' ? (
         <ClipLab />
       ) : viewMode === 'sandbox' ? (
         <AnprSandbox />

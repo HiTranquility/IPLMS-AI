@@ -34,3 +34,7 @@ class ServerConfig(BaseConfig):
     # không đổi biến môi trường; trang `/dashboard` cũ đã dời vào AI Console (IPLMS ADR-0050).
     # [NEVER] bật trên service dùng chung/production.
     developer_dashboard_enabled: bool = False
+    # Token xác thực nội bộ service-to-server (`x-internal-token` trong gRPC metadata).
+    # Khi để rỗng (dev mặc định) thì không bắt buộc; khi đặt giá trị thì mọi RPC trừ
+    # `/grpc.health.v1.Health/Check` phải kèm header khớp hằng thời gian (REQ-038).
+    internal_api_token: str = ""

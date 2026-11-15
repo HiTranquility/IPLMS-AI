@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import time
+from collections import defaultdict, deque
 from uuid import uuid4
 
 from app.core.knowledge.constants import DOCUMENT_PARSE_TIMEOUT_SECONDS
@@ -44,13 +46,36 @@ def _ingest_message(flagged: list[str]) -> str:
 
 
 class IngestionService:
+    _SCOPE_WINDOW_SECONDS = 60.0
+    _MAX_INGESTS_PER_WINDOW = 15
+
     def __init__(self, embedder=None, vector_store=None) -> None:
         self.embedder = embedder or embedding_client
         self.vector_store = vector_store or pgvector_client
+        self._scope_buckets: dict[str, deque[float]] = defaultdict(deque)
+
+    def _check_scope_rate_limit(self, scope_key: str) -> bool:
+        now = time.monotonic()
+        bucket = self._scope_buckets[scope_key]
+        while bucket and now - bucket[0] > self._SCOPE_WINDOW_SECONDS:
+            bucket.popleft()
+        if len(bucket) >= self._MAX_INGESTS_PER_WINDOW:
+            return False
+        bucket.append(now)
+        return True
 
     async def ingest(self, command: IngestDocumentCommand) -> IngestResult:
         started = time.perf_counter()
         document_id = str(command.document_id or uuid4())
+        scope_key = str(command.parking_lot_id or "global")
+        if not self._check_scope_rate_limit(scope_key):
+            return self._result(
+                document_id,
+                IngestStatus.FILE_TOO_LARGE,
+                started,
+                "Tốc độ nạp tài liệu vượt ngưỡng an toàn (chống DDoS). Vui lòng đợi ít giây rồi thử lại.",
+            )
+        file_sha256 = hashlib.sha256(command.file_data).hexdigest()
 
         try:
             parsed = await asyncio.wait_for(
@@ -101,6 +126,7 @@ class IngestionService:
                     "document_format": parsed.doc_format.value,
                     "page_count": parsed.page_count,
                     "warnings": parsed.warnings,
+                    "file_sha256": file_sha256,
                     **_injection_flags(chunk.content),
                 },
             }

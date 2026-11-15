@@ -28,11 +28,18 @@ services:
       context: .
       dockerfile: Dockerfile
     image: ${AI_IMAGE:-iplms-ai:latest}
+    mem_limit: 2g
     restart: unless-stopped
     logging: *default-logging
     expose:
       - "8000"
       - "50051"
+    networks:
+      default: {}
+      shared:
+        aliases:
+          - ai-api
+          - ai-gateway
     depends_on:
       database-vector:
         condition: service_healthy
@@ -93,6 +100,8 @@ services:
   # ─── Dedicated pgvector Database for Copilot Knowledge Base ────────────────
   database-vector:
     image: pgvector/pgvector:0.8.6-pg16-bookworm
+    mem_limit: 320m
+    command: ["postgres", "-c", "shared_buffers=64MB", "-c", "work_mem=4MB", "-c", "max_connections=40"]
     restart: unless-stopped
     logging: *default-logging
     environment:
@@ -154,6 +163,7 @@ services:
     # v3.6.16+ negotiates a modern Docker API; v3.3 falls back to v1.24 and
     # cannot discover routes on Docker Engine 29.
     image: traefik:v3.6.16
+    mem_limit: 128m
     restart: unless-stopped
     logging: *default-logging
     environment:

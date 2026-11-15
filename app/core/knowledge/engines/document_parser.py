@@ -19,7 +19,9 @@ Ba điều đáng nói về thiết kế ở đây:
 việc canh giờ thuộc về người biết cả lượt nạp kéo dài bao lâu. Xem
 ``DOCUMENT_PARSE_TIMEOUT_SECONDS`` trong ``app/core/knowledge/constants.py``.
 """
+import csv
 import io
+import json
 import math
 import multiprocessing
 import os
@@ -49,9 +51,11 @@ _THEO_DUOI_FILE = {
     ".txt": DocumentFormat.TXT,
     ".md": DocumentFormat.MARKDOWN,
     ".markdown": DocumentFormat.MARKDOWN,
+    ".csv": DocumentFormat.MARKDOWN,
+    ".json": DocumentFormat.MARKDOWN,
 }
 
-# Chữ ký đầu file. TXT/MD không có chữ ký nào — văn bản thuần trông như bất cứ thứ gì.
+# Chữ ký đầu file. TXT/MD/CSV/JSON không có chữ ký nhị phân cố định.
 _CHU_KY = {
     DocumentFormat.PDF: b"%PDF-",
     DocumentFormat.DOCX: b"PK\x03\x04",
@@ -64,7 +68,7 @@ def _doan_dinh_dang(file_name: str) -> DocumentFormat:
     if dinh_dang is None:
         raise UnsupportedFormatError(
             f"Không đọc được định dạng '{duoi or 'không rõ'}'. "
-            f"Chỉ nhận: PDF, DOCX, TXT, MD."
+            f"Chỉ nhận: PDF, DOCX, TXT, MD, CSV, JSON."
         )
     return dinh_dang
 
@@ -309,6 +313,88 @@ def _tach_van_ban(file_data: bytes, dinh_dang: DocumentFormat) -> ParsedDocument
     )
 
 
+def _tach_csv(file_data: bytes) -> ParsedDocument:
+    canh_bao: List[str] = []
+    try:
+        raw = file_data.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        raw = file_data.decode("utf-8", errors="replace")
+        canh_bao.append("File CSV không phải UTF-8 chuẩn; một số ký tự được thay thế.")
+
+    reader = csv.reader(io.StringIO(raw))
+    rows = [[cell.strip() for cell in row] for row in reader if any(cell.strip() for cell in row)]
+    if not rows:
+        return ParsedDocument(text="", doc_format=DocumentFormat.MARKDOWN, page_count=None, warnings=canh_bao)
+
+    header = rows[0]
+    lines: List[str] = ["# Bảng dữ liệu biểu phí & quy định (CSV)", ""]
+    lines.append("| " + " | ".join(header) + " |")
+    lines.append("| " + " | ".join(["---"] * len(header)) + " |")
+    for row in rows[1:]:
+        padded = row + [""] * max(0, len(header) - len(row))
+        lines.append("| " + " | ".join(padded[: len(header)]) + " |")
+        summary_pairs = [
+            f"{header[i]}: {padded[i]}"
+            for i in range(min(len(header), len(padded)))
+            if padded[i]
+        ]
+        if summary_pairs:
+            lines.append(f"- {' · '.join(summary_pairs)}")
+
+    return ParsedDocument(
+        text="\n".join(lines),
+        doc_format=DocumentFormat.MARKDOWN,
+        page_count=None,
+        warnings=canh_bao,
+    )
+
+
+def _format_json_node(data: Any, level: int = 1) -> List[str]:
+    lines: List[str] = []
+    if isinstance(data, dict):
+        for k, v in data.items():
+            label = str(k).replace("_", " ").strip()
+            if isinstance(v, (dict, list)):
+                prefix = "#" * min(level + 1, 4)
+                lines.append(f"\n{prefix} {label}")
+                lines.extend(_format_json_node(v, level + 1))
+            else:
+                lines.append(f"- **{label}**: {v}")
+    elif isinstance(data, list):
+        for idx, item in enumerate(data, start=1):
+            if isinstance(item, dict):
+                parts = [f"**{k}**: {v}" for k, v in item.items() if v is not None and v != ""]
+                lines.append(f"- Mục {idx}: " + " | ".join(parts))
+            else:
+                lines.append(f"- {item}")
+    else:
+        lines.append(str(data))
+    return lines
+
+
+def _tach_json(file_data: bytes) -> ParsedDocument:
+    canh_bao: List[str] = []
+    try:
+        raw = file_data.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        raw = file_data.decode("utf-8", errors="replace")
+        canh_bao.append("File JSON không phải UTF-8 chuẩn; một số ký tự được thay thế.")
+
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise UnsupportedFormatError(f"Cú pháp file JSON không hợp lệ: {exc}") from exc
+
+    lines = ["# Tài liệu cấu hình biểu phí & chính sách bãi đỗ xe (JSON)"]
+    lines.extend(_format_json_node(parsed, level=1))
+    return ParsedDocument(
+        text="\n".join(lines),
+        doc_format=DocumentFormat.MARKDOWN,
+        page_count=None,
+        warnings=canh_bao,
+    )
+
+
 def parse_document(file_data: bytes, file_name: str) -> ParsedDocument:
     """Tách text từ raw bytes. Ném lỗi có phân loại thay vì trả về rỗng.
 
@@ -326,6 +412,7 @@ def parse_document(file_data: bytes, file_name: str) -> ParsedDocument:
             f"{KNOWLEDGE_MAX_FILE_BYTES / 1024 / 1024:.0f}MB."
         )
 
+    duoi = os.path.splitext(file_name or "")[1].lower()
     dinh_dang = _doan_dinh_dang(file_name)
     _doi_chieu_chu_ky(file_data, dinh_dang)
 
@@ -333,6 +420,10 @@ def parse_document(file_data: bytes, file_name: str) -> ParsedDocument:
         ket_qua = _tach_pdf(file_data)
     elif dinh_dang is DocumentFormat.DOCX:
         ket_qua = _tach_docx(file_data)
+    elif duoi == ".csv":
+        ket_qua = _tach_csv(file_data)
+    elif duoi == ".json":
+        ket_qua = _tach_json(file_data)
     else:
         ket_qua = _tach_van_ban(file_data, dinh_dang)
 

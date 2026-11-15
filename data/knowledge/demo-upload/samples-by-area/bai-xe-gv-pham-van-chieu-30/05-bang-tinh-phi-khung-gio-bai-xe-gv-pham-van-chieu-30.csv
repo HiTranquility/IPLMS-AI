@@ -1,0 +1,15 @@
+Bãi đỗ xe,Mã bãi (UUID),Loại phương tiện / Dịch vụ,Khung giờ áp dụng,Đơn giá (VNĐ),Đơn vị tính,Chính sách & Điều kiện
+Bãi xe Chung cư Cao cấp Phạm Văn Chiêu (GV-030),bc7180a1-0569-4153-83b2-941a53eba22b,Ô tô 4-7 chỗ (Tiêu chuẩn),09:00-17:00 & 21:00-22:00,15000,VNĐ/giờ,Miễn phí 15 phút đầu tiên
+Bãi xe Chung cư Cao cấp Phạm Văn Chiêu (GV-030),bc7180a1-0569-4153-83b2-941a53eba22b,Ô tô 4-7 chỗ (Cao điểm sáng),07:00-09:00 (Thứ 2-Thứ 6),17000,VNĐ/giờ,+15% giờ cao điểm sáng
+Bãi xe Chung cư Cao cấp Phạm Văn Chiêu (GV-030),bc7180a1-0569-4153-83b2-941a53eba22b,Ô tô 4-7 chỗ (Cao điểm tối),17:00-21:00 (Hàng ngày),19000,VNĐ/giờ,+25% giờ cao điểm tối
+Bãi xe Chung cư Cao cấp Phạm Văn Chiêu (GV-030),bc7180a1-0569-4153-83b2-941a53eba22b,Ô tô 4-7 chỗ (Thấp điểm đêm),22:00-06:00,11000,VNĐ/giờ,-25% ưu đãi gửi lẻ ban đêm
+Bãi xe Chung cư Cao cấp Phạm Văn Chiêu (GV-030),bc7180a1-0569-4153-83b2-941a53eba22b,Ô tô 4-7 chỗ (Trọn gói qua đêm),22:00-06:00,50000,VNĐ/đêm,Áp dụng trọn gói từ 22h đến 6h sáng
+Bãi xe Chung cư Cao cấp Phạm Văn Chiêu (GV-030),bc7180a1-0569-4153-83b2-941a53eba22b,Ô tô 4-7 chỗ (Trần phí 24h),00:00-24:00,90000,VNĐ/ngày,Tối đa cho 24 giờ liên tục
+Bãi xe Chung cư Cao cấp Phạm Văn Chiêu (GV-030),bc7180a1-0569-4153-83b2-941a53eba22b,Ô tô 4-7 chỗ (Vé tháng 24/7),Cả tuần 24/7,800000,VNĐ/tháng,Không giới hạn số lượt ra vào
+Bãi xe Chung cư Cao cấp Phạm Văn Chiêu (GV-030),bc7180a1-0569-4153-83b2-941a53eba22b,Ô tô 4-7 chỗ (Vé tháng hành chính),07:00-19:00 (Thứ 2-Thứ 7),600000,VNĐ/tháng,Dành cho khối văn phòng
+Bãi xe Chung cư Cao cấp Phạm Văn Chiêu (GV-030),bc7180a1-0569-4153-83b2-941a53eba22b,Xe máy / Mô tô (Ban ngày),06:00-18:00,6000,VNĐ/lượt,Kiểm soát bằng LPR & QR
+Bãi xe Chung cư Cao cấp Phạm Văn Chiêu (GV-030),bc7180a1-0569-4153-83b2-941a53eba22b,Xe máy / Mô tô (Ban đêm),18:00-06:00,10000,VNĐ/lượt,Kiểm soát bằng LPR & QR
+Bãi xe Chung cư Cao cấp Phạm Văn Chiêu (GV-030),bc7180a1-0569-4153-83b2-941a53eba22b,Sạc xe điện nhanh DC,24/7,3858,VNĐ/kWh,Miễn phí đỗ xe 30 phút đầu khi sạc
+Bãi xe Chung cư Cao cấp Phạm Văn Chiêu (GV-030),bc7180a1-0569-4153-83b2-941a53eba22b,Sạc xe điện tiêu chuẩn AC,24/7,3200,VNĐ/kWh,Phí chiếm chỗ sau khi đầy: 1.000đ/phút
+Bãi xe Chung cư Cao cấp Phạm Văn Chiêu (GV-030),bc7180a1-0569-4153-83b2-941a53eba22b,Phụ phí quá giờ (Overstay),Sau 20 phút ân hạn,30000,VNĐ/lần + 150% giá giờ,Bảo vệ chỗ cho khách đặt kế tiếp
+Bãi xe Chung cư Cao cấp Phạm Văn Chiêu (GV-030),bc7180a1-0569-4153-83b2-941a53eba22b,Phí đền bù mất thẻ RFID,Khi làm mất thẻ vật lý,50000,VNĐ/thẻ,Chỉ thu phí phôi thẻ sau khi xác minh chính chủ
