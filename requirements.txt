@@ -11,6 +11,8 @@ pillow>=10.1
 opencv-python-headless>=5.0.0.93
 easyocr>=1.7
 ultralytics>=8.3
+# Giữ <1.23.0 để tương thích protobuf==5.29.5 của grpcio-tools 1.71.0; >=1.22.0 vá CVE-2026-28500 (CRITICAL), CVE-2026-34445, CVE-2026-49114, CVE-2026-44512, CVE-2026-63632.
+onnx>=1.22.0,<1.23.0
 onnxruntime>=1.17.0
 pyarrow>=14.0.0
 matplotlib>=3.7

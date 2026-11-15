@@ -32,9 +32,10 @@ COPY proto ./proto
 RUN mkdir -p /app/data/models /app/model/artifacts /app/var/model-cache \
     && chmod -R 755 /app/model /app/data /app/var
 
-# Sinh stub gRPC ngay lúc build — nếu thiếu, server sẽ chết ở entrypoint chứ
-# không phải giữa một request nhận diện.
-RUN python app/script/compile_proto.py
+# Sinh stub gRPC và xuất sẵn trọng số ANPR ONNX ngay lúc build — nếu hỏng, build
+# dừng sớm thay vì âm thầm rơi về PyTorch chậm lúc chạy.
+RUN python app/script/compile_proto.py \
+    && python app/script/export_anpr_onnx.py
 
 # Nướng sẵn model EasyOCR (~113MB) vào image. Nếu không, chúng được tải về lúc
 # xử lý ẢNH ĐẦU TIÊN: pod restart là tải lại, và cụm không có Internet (kịch bản

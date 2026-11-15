@@ -111,6 +111,34 @@ class ForecastLakeAreaTest(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual((ForecastDataSource.HEURISTIC_BASELINE, True), (mixed.data_source, mixed.is_fallback))
 
+    def test_synthetic_fallback_data_source_column_from_analytic_exporter_is_treated_as_fallback(self):
+        """bug-060: file Parquet từ analytic ParquetLakeExporter mang data_source='synthetic_fallback'
+        (chưa có cột is_fallback) phải được đánh dấu is_fallback=True, không lọt vào list_lake_areas()
+        hay _telemetry_cache làm giả nhãn LAKEHOUSE_PARQUET.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            lake = Path(tmp) / "gold" / "occupancy"
+            part = lake / "year=2026" / "month=11"
+            part.mkdir(parents=True)
+            table = pa.Table.from_pydict(
+                {
+                    "date_key": [20261015] * 24,
+                    "date_actual": ["2026-10-15"] * 24,
+                    "hour_of_day": list(range(24)),
+                    "area_key": ["area-zone-a"] * 24,
+                    "avg_occupancy_rate": [0.82] * 24,
+                    "data_source": ["synthetic_fallback"] * 24,
+                }
+            )
+            pq.write_table(table, part / "occupancy_fallback.parquet")
+
+            svc = ForecastService(datalake_dir=lake, lake_reader=ParquetLakeReader(base_path=lake))
+            self.assertEqual([], svc.list_lake_areas())
+            svc.load_lakehouse_dataset(datalake_dir=lake, force_reload=True)
+            res = svc.predict_area_occupancy("area-zone-a", target_timestamp=THURSDAY_08H)
+            self.assertTrue(res.is_fallback)
+            self.assertEqual(ForecastDataSource.HEURISTIC_BASELINE, res.data_source)
+
 
 if __name__ == "__main__":
     unittest.main()

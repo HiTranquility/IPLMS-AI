@@ -25,6 +25,7 @@
 | Dựng môi trường demo + 6 tài khoản tách vai, giao phiếu audit AI Console | [ISSUE-020](issues/10-2026/ISSUE-020-ke-hoach-demo-audit-ai-console/issue.md) | HiTranquility |  | 🟠 |
 | Nhận phản hồi audit, phân loại và sửa UI/khác | [ISSUE-020](issues/10-2026/ISSUE-020-ke-hoach-demo-audit-ai-console/issue.md) | Claude Code (qua HiTranquility) |  | 🟠 |
 | Nhờ GitHub Support xoá các ref `refs/pull/*` của PR cũ còn trỏ tới commit cũ (36 lần xuất hiện) và … | [bug-053](bugs/bug-053-db-init-hong-va-build-can-repo-cha/bug.md) | HiTranquility |  | 🟠 |
+| ISSUE-007 và ISSUE-020 mỗi mã có hai hồ sơ trên `develop` | [bug-056](bugs/bug-056-trung-ma-issue-007-va-issue-020/bug.md) | @HiTranquility |  | 🟠 |
 | Sửa `AI_GUIDE.md:315` và `AI_USAGE.md:34`, `:79`, `:102` cho khớp việc AI không còn tự bật llama-se… | [ISSUE-019](issues/10-2026/ISSUE-019-console-settings-va-don-audit-006/issue.md) | Khoa |  | 🟡 |
 | Thêm Helper Text Lý Do Trả Lại Nhãn và Bộ Chuyển Đổi Vai Trò Nhanh Trên Môi Trường Dev | [SUGGESTION-007](suggestions/10-2026/SUGGESTION-007-helper-text-ly-do-tra-lai-nhan-va-role-quick-switch.md) | @HiTranquility | 2026-10-31 | 🟢 |
 | Điều phối gỡ chặn dữ liệu Forecast F0 với analytic | [ISSUE-018](issues/10-2026/ISSUE-018-ke-hoach-theo-thanh-vien/issue.md) | HiTranquility |  | 🟢 |
@@ -85,6 +86,9 @@
 
 | Việc | Hồ sơ | Ngày đóng |
 |---|---|---|
+| `ParquetOccupancyStore` bỏ qua cột `data_source='synthetic_fallback'` từ `analytic` khiến dữ liệu g… | [bug-060](bugs/bug-060-parquet-occupancy-store-bo-qua-cot-data-source-fallback/bug.md) | 2026-11-14 |
+| `console_access.py` gọi tên cũ `console_auth_service` gây nổ 35 lỗi `NameError` trên `AI · CI` | [bug-059](bugs/bug-059-console-access-undefined-auth-service/bug.md) | 2026-11-14 |
+| Cờ `onnx_enabled` của AI Console không có hiệu lực lúc chạy và thiếu bước xuất `best.onnx` thật | [bug-058](bugs/bug-058-anpr-onnx-toggle-va-thieu-script-export/bug.md) | 2026-11-14 |
 | CI `AI · CI` dừng ở bước khởi tạo Postgres vì thiếu `POSTGRES_PASSWORD`, unittest và kiểm khuôn khô… | [bug-055](bugs/bug-055-ci-thieu-postgres-password-test-khong-chay/bug.md) | 2026-11-03 |
 | `main` ghim `grpcio-tools==1.84.1` cùng `protobuf==5.29.5`, pip không cài được nên image build hỏng | [bug-054](bugs/bug-054-main-ghim-grpcio-tools-xung-dot-protobuf/bug.md) | 2026-11-03 |
 | Copilot báo "chưa tìm thấy thông tin" khi LLM/embedding sập, không báo lỗi AI | [bug-052](bugs/bug-052-copilot-bao-khong-co-thong-tin-khi-llm-hoac-embedding-sap/bug.md) | 2026-11-03 |
@@ -102,6 +106,3 @@
 | REST ANPR đọc cả file upload vào RAM, không giới hạn kích thước, không kiểm loại file | [bug-043](bugs/bug-043-anpr-rest-doc-anh-khong-gioi-han-kich-thuoc/bug.md) | 2026-10-31 |
 | Prompt Copilot không vào image, service âm thầm chạy prompt dự phòng | [bug-042](bugs/bug-042-prompt-copilot-khong-vao-image-chay-prompt-du-phong/bug.md) | 2026-10-31 |
 | Đăng nhập từ `/console/` xong rơi vào trang "Không có trang này" | [bug-033](bugs/bug-033-dang-nhap-tu-goc-console-roi-vao-trang-404/bug.md) | 2026-10-31 |
-| Phiên "chờ MFA" tồn đọng trong danh sách Phiên đăng nhập | [bug-030](bugs/bug-030-phien-cho-mfa-ton-dong-trong-danh-sach/bug.md) | 2026-10-31 |
-| Fallback kết nối DB sang cổng 5432 rồi tự `CREATE DATABASE` trên một Postgres khác | [bug-029](bugs/bug-029-db-fallback-tu-tao-database-tren-postgres-khac/bug.md) | 2026-10-31 |
-| Forecast Simulator luôn chạy baseline vì id bãi trên UI lệch `area_key` của Gold lake | [bug-028](bugs/bug-028-forecast-id-bai-lech-area-key/bug.md) | 2026-10-31 |
