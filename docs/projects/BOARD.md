@@ -25,6 +25,7 @@
 | Dựng môi trường demo + 6 tài khoản tách vai, giao phiếu audit AI Console | [ISSUE-020](issues/10-2026/ISSUE-020-ke-hoach-demo-audit-ai-console/issue.md) | HiTranquility |  | 🟠 |
 | Nhận phản hồi audit, phân loại và sửa UI/khác | [ISSUE-020](issues/10-2026/ISSUE-020-ke-hoach-demo-audit-ai-console/issue.md) | Claude Code (qua HiTranquility) |  | 🟠 |
 | Nhờ GitHub Support xoá các ref `refs/pull/*` của PR cũ còn trỏ tới commit cũ (36 lần xuất hiện) và … | [bug-053](bugs/bug-053-db-init-hong-va-build-can-repo-cha/bug.md) | HiTranquility |  | 🟠 |
+| ISSUE-007 và ISSUE-020 mỗi mã có hai hồ sơ trên `develop` | [bug-056](bugs/bug-056-trung-ma-issue-007-va-issue-020/bug.md) | @HiTranquility |  | 🟠 |
 | Sửa `AI_GUIDE.md:315` và `AI_USAGE.md:34`, `:79`, `:102` cho khớp việc AI không còn tự bật llama-se… | [ISSUE-019](issues/10-2026/ISSUE-019-console-settings-va-don-audit-006/issue.md) | Khoa |  | 🟡 |
 | Thêm Helper Text Lý Do Trả Lại Nhãn và Bộ Chuyển Đổi Vai Trò Nhanh Trên Môi Trường Dev | [SUGGESTION-007](suggestions/10-2026/SUGGESTION-007-helper-text-ly-do-tra-lai-nhan-va-role-quick-switch.md) | @HiTranquility | 2026-10-31 | 🟢 |
 | Điều phối gỡ chặn dữ liệu Forecast F0 với analytic | [ISSUE-018](issues/10-2026/ISSUE-018-ke-hoach-theo-thanh-vien/issue.md) | HiTranquility |  | 🟢 |
