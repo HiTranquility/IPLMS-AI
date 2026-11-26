@@ -39,7 +39,7 @@ class ForecastService:
         self,
         datalake_dir: Optional[str | Path] = None,
         lake_reader: Optional[Any] = None,
-    ):
+    ) -> None:
         # Cache telemetry: (area_id, day_of_week, hour_of_day) -> AreaOccupancyTelemetryItem
         self._telemetry_cache: Dict[Tuple[str, int, int], AreaOccupancyTelemetryItem] = {}
         self._datalake_dir = Path(datalake_dir) if datalake_dir else None

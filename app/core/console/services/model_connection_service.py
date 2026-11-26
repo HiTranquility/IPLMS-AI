@@ -45,7 +45,7 @@ def _summary(values: dict[str, Any]) -> str:
 
 class ModelConnectionService:
     def __init__(
-        self, store=None, audit_store=None,
+        self, store: Any = None, audit_store: Any = None,
         probe: Optional[Callable[..., dict[str, Any]]] = None,
         limiter: Optional[SlidingWindowLimiter] = None,
     ) -> None:
@@ -55,7 +55,7 @@ class ModelConnectionService:
         self._limiter = limiter
 
     @staticmethod
-    def _cfg():
+    def _cfg() -> Any:
         return get_config().console
 
     def _limit(self, actor: ConsoleActor) -> None:

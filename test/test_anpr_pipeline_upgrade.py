@@ -19,6 +19,7 @@ from app.core.vision.engines.anpr.preprocess import (
     assess_crop_quality,
     suppress_glare_for_ocr,
 )
+from app.config import get_config
 from app.core.vision.engines.anpr.engine import run_anpr
 
 
@@ -100,6 +101,15 @@ class SuppressGlareForOcrTest(unittest.TestCase):
 
 
 class RunAnprQualityFlagsIntegrationTest(unittest.TestCase):
+    def setUp(self) -> None:
+        cfg = get_config()
+        self._saved_onnx_enabled = cfg.vision.onnx_enabled
+        cfg.vision.onnx_enabled = False
+        self.addCleanup(self._restore_onnx_enabled)
+
+    def _restore_onnx_enabled(self) -> None:
+        get_config().vision.onnx_enabled = self._saved_onnx_enabled
+
     def test_run_anpr_tra_ve_quality_flags_va_goi_suppress_glare_khi_can(self):
         img = np.full((300, 600, 3), 255, dtype=np.uint8)
         ok, buf = cv2.imencode(".jpg", img)

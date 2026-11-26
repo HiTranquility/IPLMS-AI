@@ -38,7 +38,7 @@ class AnprOnnxEngine:
         iou_threshold: float = 0.45,
         input_size: Tuple[int, int] = (640, 640),
         providers: Optional[List[str]] = None,
-    ):
+    ) -> None:
         """Khởi tạo ONNX Engine.
 
         Args:

@@ -20,7 +20,7 @@ RUNTIME_SETTINGS_PATH = os.environ.get(
 LOCAL_LLM_PROVIDERS = ("ollama", "local")
 
 
-def _clamp(cast: Callable[[Any], Any], lo, hi) -> Callable[[Any], Any]:
+def _clamp(cast: Callable[[Any], Any], lo: int | float, hi: int | float) -> Callable[[Any], Any]:
     return lambda v: max(lo, min(hi, cast(v)))
 
 
@@ -47,7 +47,7 @@ _FIELDS: dict[str, tuple[str, str, Callable[[Any], Any]]] = {
 }
 
 
-def apply_runtime_overrides(config) -> None:
+def apply_runtime_overrides(config: Any) -> None:
     """Áp file override lên `config`. File hỏng thì bỏ cả file và log, không áp dở dang."""
     if not os.path.isfile(RUNTIME_SETTINGS_PATH):
         return
@@ -67,12 +67,12 @@ def apply_runtime_overrides(config) -> None:
         setattr(getattr(config, group), attr, value)
 
 
-def snapshot_runtime_fields(config) -> dict[str, Any]:
+def snapshot_runtime_fields(config: Any) -> dict[Any, Any]:
     """Chụp giá trị hiện tại của các trường đổi được, để hoàn tác khi ghi file lỗi (A-53)."""
     return {(group, attr): getattr(getattr(config, group), attr) for group, attr, _ in _FIELDS.values()}
 
 
-def restore_runtime_fields(config, snapshot: dict[str, Any]) -> None:
+def restore_runtime_fields(config: Any, snapshot: dict[Any, Any]) -> None:
     for (group, attr), value in snapshot.items():
         setattr(getattr(config, group), attr, value)
 

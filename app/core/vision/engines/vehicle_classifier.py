@@ -2,7 +2,7 @@
 import io
 import threading
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from app.config import get_config
 from app.infra.model_registry import (
@@ -16,7 +16,7 @@ _state: dict = {"init": False, "model": None, "device": None, "labels": None, "t
 _load_lock = threading.Lock()
 
 
-def _load_checkpoint_safely(torch_mod, checkpoint_path: Path, device, has_verified_sha256: bool):
+def _load_checkpoint_safely(torch_mod: Any, checkpoint_path: Path, device: Any, has_verified_sha256: bool) -> Any:
     try:
         return torch_mod.load(checkpoint_path, map_location=device, weights_only=True)
     except TypeError:

@@ -1,4 +1,6 @@
 """Map message protobuf ↔ DTO Domain Vision. Handler không tự đụng field proto."""
+from typing import Any
+
 from app.api.grpc.generated_stubs import get_stub
 from app.core.vision.dtos.vision_dto import (
     PlateResult,
@@ -10,7 +12,7 @@ from app.core.vision.dtos.vision_dto import (
 _pb2, _ = get_stub("vision_service")
 
 
-def to_recognize_plate_command(message) -> RecognizePlateCommand:
+def to_recognize_plate_command(message: Any) -> RecognizePlateCommand:
     return RecognizePlateCommand(
         image_data=message.image_data,
         lane_id=message.lane_id or None,
@@ -18,7 +20,7 @@ def to_recognize_plate_command(message) -> RecognizePlateCommand:
     )
 
 
-def to_vehicle_match_query(message) -> VehicleMatchQuery:
+def to_vehicle_match_query(message: Any) -> VehicleMatchQuery:
     return VehicleMatchQuery(
         checkin_crop_url=message.checkin_crop_url,
         checkout_crop_url=message.checkout_crop_url,
@@ -27,7 +29,7 @@ def to_vehicle_match_query(message) -> VehicleMatchQuery:
     )
 
 
-def to_recognize_plate_response(result: PlateResult, process_time_ms: float):
+def to_recognize_plate_response(result: PlateResult, process_time_ms: float) -> Any:
     return _pb2.RecognizePlateResponse(
         event_id=result.event_id,
         plate_number=result.plate_number,
@@ -39,7 +41,7 @@ def to_recognize_plate_response(result: PlateResult, process_time_ms: float):
     )
 
 
-def to_verify_vehicle_match_response(result: VehicleMatchResult):
+def to_verify_vehicle_match_response(result: VehicleMatchResult) -> Any:
     return _pb2.VerifyVehicleMatchResponse(
         is_matched=result.is_matched,
         similarity_score=result.similarity_score,

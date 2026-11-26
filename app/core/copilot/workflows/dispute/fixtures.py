@@ -47,7 +47,7 @@ STANDARD_BACKEND_EVIDENCE_BUNDLE: Dict[str, Any] = {
 class ContractEvidenceClient:
     """In-memory evidence provider backed by contract-compliant bundles."""
 
-    def __init__(self, bundles: Dict[str, Dict[str, Any]] | None = None):
+    def __init__(self, bundles: Dict[str, Dict[str, Any]] | None = None) -> None:
         self._bundles = bundles or {
             "bundle-default": STANDARD_BACKEND_EVIDENCE_BUNDLE,
             "bundle-contract-001": STANDARD_BACKEND_EVIDENCE_BUNDLE,

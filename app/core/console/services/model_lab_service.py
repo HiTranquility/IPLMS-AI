@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import re
-from typing import Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from app.core.console.dtos import ConsoleActor
 from app.core.console.engines import access_policy
@@ -36,7 +36,7 @@ def _uuid(value: str, what: str) -> str:
 
 class ModelLabService:
     def __init__(
-        self, store=None,
+        self, store: Any = None,
         run: Optional[Callable[[bytes], Dict[str, object]]] = None,
         engine_version: Optional[Callable[[], str]] = None,
     ) -> None:

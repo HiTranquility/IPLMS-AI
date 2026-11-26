@@ -5,7 +5,7 @@ Hai quyết định tách khỏi pipeline vì chúng được chỉnh theo dữ 
 """
 import cv2
 import numpy as np
-from typing import Optional
+from typing import Any, Optional
 
 # Ảnh cắt nhỏ/tối hơn ngưỡng này thì OCR thô thường hỏng → đi thẳng nhánh làm nét.
 MIN_CROP_WIDTH = 220
@@ -32,7 +32,7 @@ _TWO_LINE_ASPECT_RATIO_MIN = 0.52
 
 
 def is_valid_crop(
-    crop_img,
+    crop_img: Any,
     min_w: int = MIN_CROP_WIDTH,
     min_h: int = MIN_CROP_HEIGHT,
     min_brightness: int = MIN_CROP_BRIGHTNESS,
@@ -46,7 +46,7 @@ def is_valid_crop(
     return np.mean(gray) >= min_brightness
 
 
-def enhance_for_ocr(plate_crop):
+def enhance_for_ocr(plate_crop: np.ndarray) -> np.ndarray:
     """Phóng to (nếu nhỏ) → xám → khử nhiễu → CLAHE → làm nét → kéo giãn tương phản."""
     h, w = plate_crop.shape[:2]
     if w < _UPSCALE_BELOW_WIDTH or h < _UPSCALE_BELOW_HEIGHT:

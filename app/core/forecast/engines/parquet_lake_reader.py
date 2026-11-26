@@ -30,7 +30,7 @@ class ParquetLakeReader:
         base_path: str | Path | None = None,
         fallback_area_id: str = "area-central-01",
         fallback_total_slots: int = 100,
-    ):
+    ) -> None:
         self.store = ParquetOccupancyStore(
             base_path=base_path,
             fallback_area_id=fallback_area_id,

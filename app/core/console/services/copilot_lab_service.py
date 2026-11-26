@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from app.config import get_config
 from app.core.console.dtos import ConsoleActor
@@ -28,12 +28,12 @@ def _days(days: int) -> int:
 
 
 class CopilotLabService:
-    def __init__(self, usage=None, request_log=None, store=None) -> None:
+    def __init__(self, usage: Any = None, request_log: Any = None, store: Any = None) -> None:
         self.usage = usage or usage_service
         self.request_log = request_log or ai_request_log_store
         self.store = store or console_store
 
-    async def usage_summary(self, actor: ConsoleActor, days: int):
+    async def usage_summary(self, actor: ConsoleActor, days: int) -> Any:
         access_policy.require(actor, "ai:metrics:read")
         return await self.usage.summary(_days(days))
 

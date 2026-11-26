@@ -1,4 +1,6 @@
 """Map message protobuf ↔ DTO Domain Copilot."""
+from typing import Any
+
 from app.api.grpc.generated_stubs import get_stub
 from app.core.copilot.dtos.copilot_dto import (
     AnswerChunk,
@@ -12,7 +14,7 @@ from app.core.copilot.dtos.copilot_dto import (
 _pb2, _ = get_stub("copilot_service")
 
 
-def to_ask_question_query(message) -> AskQuestionRequest:
+def to_ask_question_query(message: Any) -> AskQuestionRequest:
     return AskQuestionRequest(
         query=message.query,
         user_id=message.user_id,
@@ -23,7 +25,7 @@ def to_ask_question_query(message) -> AskQuestionRequest:
     )
 
 
-def to_arbitrate_dispute_command(message) -> DisputeArbitrationRequest:
+def to_arbitrate_dispute_command(message: Any) -> DisputeArbitrationRequest:
     return DisputeArbitrationRequest(
         dispute_id=message.dispute_id,
         session_id=message.session_id,
@@ -37,7 +39,7 @@ to_ask_question_request = to_ask_question_query
 to_dispute_request = to_arbitrate_dispute_command
 
 
-def to_ask_question_response(answer: CopilotAnswer):
+def to_ask_question_response(answer: CopilotAnswer) -> Any:
     return _pb2.AskQuestionResponse(
         answer=answer.answer,
         sources=answer.sources,
@@ -48,7 +50,7 @@ def to_ask_question_response(answer: CopilotAnswer):
     )
 
 
-def to_answer_chunk(chunk: AnswerChunk):
+def to_answer_chunk(chunk: AnswerChunk) -> Any:
     return _pb2.AnswerChunk(
         token=chunk.token,
         is_finished=chunk.is_finished,
@@ -59,7 +61,7 @@ def to_answer_chunk(chunk: AnswerChunk):
     )
 
 
-def to_arbitrate_dispute_response(verdict: DisputeVerdict):
+def to_arbitrate_dispute_response(verdict: DisputeVerdict) -> Any:
     verdict_key = str(getattr(verdict.verdict, "value", verdict.verdict))
     proto_verdict = (
         _pb2.ArbitrationVerdict.ARBITRATION_VERDICT_UNSPECIFIED
@@ -74,15 +76,15 @@ def to_arbitrate_dispute_response(verdict: DisputeVerdict):
     )
 
 
-def to_feedback_command(message) -> tuple[str, str, int]:
+def to_feedback_command(message: Any) -> tuple[str, str, int]:
     return message.turn_id, message.user_id, message.rating
 
 
-def to_feedback_response(recorded: bool):
+def to_feedback_response(recorded: bool) -> Any:
     return _pb2.RecordFeedbackResponse(recorded=recorded)
 
 
-def to_usage_summary_response(summary: UsageSummary):
+def to_usage_summary_response(summary: UsageSummary) -> Any:
     return _pb2.UsageSummaryResponse(
         **summary.model_dump(exclude={"days", "avg_speed_tok_s"}),
         days=[

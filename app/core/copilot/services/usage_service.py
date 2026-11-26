@@ -24,7 +24,7 @@ _MAX_TEXT = 4000
 
 
 class UsageService:
-    def __init__(self, store=None, config=None) -> None:
+    def __init__(self, store: Any = None, config: Any = None) -> None:
         self.store = store or ai_request_log_store
         self._config = config or get_config().telemetry
         self._pending: set[asyncio.Task] = set()

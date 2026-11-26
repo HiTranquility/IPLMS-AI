@@ -10,7 +10,7 @@ import asyncio
 import importlib.metadata
 import json
 import os
-from typing import Any, List, Optional
+from typing import Any, AsyncIterator, List, Optional
 from uuid import UUID
 
 from app.config import get_config
@@ -45,7 +45,7 @@ def _lot(parking_lot_id: Optional[str]) -> Optional[str]:
     return value or None
 
 
-def _engine_status(vision) -> dict[str, Any]:
+def _engine_status(vision: Any) -> dict[str, Any]:
     """Trạng thái engine Vision đọc từ cấu hình, đĩa và bộ nhớ process — không nạp model.
 
     Trường nào không biết chắc thì None để UI hiện "—" (ai bug-018: không hằng số).
@@ -185,7 +185,7 @@ def _hardware_telemetry() -> dict[str, Any]:
     }
 
 
-def _detect_compute_profile(cfg) -> str:
+def _detect_compute_profile(cfg: Any) -> str:
     v_dev = (cfg.vision.device or "auto").lower()
     layers = int(getattr(cfg.llm, "local_llm_gpu_layers", 33))
     if v_dev == "cpu" and layers == 0:
@@ -197,7 +197,7 @@ def _detect_compute_profile(cfg) -> str:
     return "custom"
 
 
-def _ollama_api_bases(cfg) -> list[str]:
+def _ollama_api_bases(cfg: Any) -> list[str]:
     """Danh sách gốc API Ollama ứng viên (tự dịch giữa 127.0.0.1 và host.docker.internal)."""
     raw_urls = [
         getattr(cfg.llm, "ollama_url", "") or "",
@@ -223,7 +223,7 @@ def _ollama_api_bases(cfg) -> list[str]:
     return candidates
 
 
-def _reload_llm(cfg) -> dict[str, Any]:
+def _reload_llm(cfg: Any) -> dict[str, Any]:
     """Khởi động lại / nạp lại mô hình LLM theo cấu hình hiện thời."""
     prov = getattr(cfg.llm, "llm_provider", "local")
     if prov == "local":
@@ -293,12 +293,12 @@ async def _effective_models() -> list[dict[str, Any]]:
 
 
 class ToolsService:
-    def __init__(self, store=None, copilot=None, ingestion=None) -> None:
+    def __init__(self, store: Any = None, copilot: Any = None, ingestion: Any = None) -> None:
         self.store = store or console_store
         self.copilot = copilot or copilot_service
         self._ingestion = ingestion
 
-    def _ingestion_service(self):
+    def _ingestion_service(self) -> Any:
         # Nạp trễ: parser PDF/DOCX + client embedding chỉ cần khi có người nạp.
         if self._ingestion is None:
             from app.core.knowledge import ingestion_service
@@ -438,7 +438,7 @@ class ToolsService:
         self, actor: ConsoleActor, query: str, parking_lot_id: Optional[str] = None,
         top_k: Optional[int] = None, min_similarity: Optional[float] = None,
         temperature: Optional[float] = None, history: Optional[List[dict]] = None,
-    ):
+    ) -> AsyncIterator[Any]:
         # Tham số thử chỉ dùng được với quyền sửa prompt, cùng quyền của cả lượt thử.
         access_policy.require(actor, "ai:prompt:edit")
         query = (query or "").strip()
@@ -684,7 +684,7 @@ class ToolsService:
         return await self.get_runtime_settings(actor)
 
     @staticmethod
-    def _apply_compute(cfg, payload: dict[str, Any]) -> None:
+    def _apply_compute(cfg: Any, payload: dict[str, Any]) -> None:
         preset = payload.get("preset")
         if preset == "safe_4gb":
             cfg.vision.device = "cpu"

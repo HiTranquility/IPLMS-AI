@@ -5,6 +5,7 @@ import asyncio
 import hashlib
 import time
 from collections import defaultdict, deque
+from typing import Any
 from uuid import uuid4
 
 from app.core.knowledge.constants import DOCUMENT_PARSE_TIMEOUT_SECONDS
@@ -49,7 +50,7 @@ class IngestionService:
     _SCOPE_WINDOW_SECONDS = 60.0
     _MAX_INGESTS_PER_WINDOW = 15
 
-    def __init__(self, embedder=None, vector_store=None) -> None:
+    def __init__(self, embedder: Any = None, vector_store: Any = None) -> None:
         self.embedder = embedder or embedding_client
         self.vector_store = vector_store or pgvector_client
         self._scope_buckets: dict[str, deque[float]] = defaultdict(deque)

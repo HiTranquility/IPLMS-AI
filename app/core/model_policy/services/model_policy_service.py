@@ -1,6 +1,8 @@
 """Draft, probe, and activate model profiles by AI task."""
 from __future__ import annotations
 
+from typing import Any
+
 from app.config import get_config
 from app.core.exceptions import KnowledgeGateError
 from app.core.model_policy.engines.validation import clean_profile
@@ -12,7 +14,7 @@ from app.infra.llm.llm_factory import LlmFactory
 
 
 class ModelPolicyService:
-    def __init__(self, store=None) -> None:
+    def __init__(self, store: Any = None) -> None:
         self.store = store or model_policy_store
 
     async def list_profiles(self) -> list[dict]:
@@ -69,7 +71,10 @@ class ModelPolicyService:
             return await self.store.activate(profile_id, actor)
         await knowledge_eval_store.ensure_schema()
 
-        def validate(candidate, run, versions, cases, reviewed, rejected, active_judge_id):
+        def validate(
+            candidate: Any, run: Any, versions: Any, cases: Any,
+            reviewed: Any, rejected: Any, active_judge_id: Any,
+        ) -> list[str]:
             if not run or run[5] != candidate["id"]:
                 return ["Chạy bộ test RAG chung với đúng hồ sơ ứng viên trước."]
             reasons = []

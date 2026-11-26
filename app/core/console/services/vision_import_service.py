@@ -11,7 +11,7 @@ import hashlib
 import re
 import urllib.error
 from datetime import datetime
-from typing import Callable, Iterable, Optional
+from typing import Any, Callable, Iterable, Optional
 
 from app.config import get_config
 from app.core.console.dtos import ExportedCapture
@@ -75,7 +75,7 @@ def _permanent(exc: Exception) -> bool:
 
 
 class VisionImportService:
-    def __init__(self, store=None, fetch: Callable[[str], bytes] = fetch_image, retention_days: Optional[int] = None) -> None:
+    def __init__(self, store: Any = None, fetch: Callable[[str], bytes] = fetch_image, retention_days: Optional[int] = None) -> None:
         self.store = store or console_vision_store
         self._fetch = fetch
         self._retention_days = retention_days
@@ -132,7 +132,7 @@ class VisionImportService:
         return self._result(len(accepted), [cid for cid, _ in rejects], watermark)
 
     @staticmethod
-    def _result(accepted: int, rejected_ids: list[str], watermark) -> dict:
+    def _result(accepted: int, rejected_ids: list[str], watermark: Any) -> dict[str, Any]:
         return {
             "accepted": accepted,
             "rejected": len(rejected_ids),

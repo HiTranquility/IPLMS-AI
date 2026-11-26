@@ -1,4 +1,6 @@
 """Map Knowledge protobuf messages to/from domain DTOs."""
+from typing import Any
+
 from app.api.grpc.generated_stubs import get_stub
 from app.core.knowledge.dtos.knowledge_dto import (
     IngestDocumentCommand,
@@ -9,7 +11,7 @@ from app.core.knowledge.dtos.knowledge_dto import (
 _pb2, _ = get_stub("knowledge_service")
 
 
-def to_ingest_command(message) -> IngestDocumentCommand:
+def to_ingest_command(message: Any) -> IngestDocumentCommand:
     return IngestDocumentCommand(
         file_data=message.file_data,
         file_name=message.file_name,
@@ -20,7 +22,7 @@ def to_ingest_command(message) -> IngestDocumentCommand:
     )
 
 
-def to_ingest_response(result: IngestResult):
+def to_ingest_response(result: IngestResult) -> Any:
     return _pb2.IngestDocumentResponse(
         document_id=result.document_id,
         status=_pb2.IngestStatus.Value(result.status.value),
@@ -32,14 +34,14 @@ def to_ingest_response(result: IngestResult):
     )
 
 
-def to_delete_response(removed_chunk_count: int):
+def to_delete_response(removed_chunk_count: int) -> Any:
     return _pb2.DeleteDocumentResponse(
         deleted=removed_chunk_count > 0,
         removed_chunk_count=removed_chunk_count,
     )
 
 
-def to_list_response(documents: list[KnowledgeDocumentSummary]):
+def to_list_response(documents: list[KnowledgeDocumentSummary]) -> Any:
     return _pb2.ListDocumentsResponse(
         documents=[
             _pb2.KnowledgeDocument(
@@ -59,7 +61,7 @@ def to_list_response(documents: list[KnowledgeDocumentSummary]):
     )
 
 
-def to_chunks_response(result: dict):
+def to_chunks_response(result: dict[str, Any]) -> Any:
     return _pb2.ListDocumentChunksResponse(
         version_no=result["version_no"],
         status=result["status"],

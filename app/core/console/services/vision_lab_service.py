@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import re
-from typing import Optional, Sequence
+from typing import Any, Optional, Sequence
 
 from app.config import get_config
 from app.core.console.dtos import ConsoleActor
@@ -55,7 +55,7 @@ def split_for(group_ref: str) -> str:
 
 
 class VisionLabService:
-    def __init__(self, store=None, demo_seed_enabled: Optional[bool] = None) -> None:
+    def __init__(self, store: Any = None, demo_seed_enabled: Optional[bool] = None) -> None:
         self.store = store or console_vision_store
         self._demo_seed_enabled = demo_seed_enabled
 

@@ -5,6 +5,7 @@ Chạy: `python -m app.grpc_server`
 """
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 
 from grpc import aio
 
@@ -27,7 +28,7 @@ SERVICE_REGISTRY = (
 )
 
 
-def build_server(config) -> aio.Server:
+def build_server(config: Any) -> aio.Server:
     # maximum_concurrent_rpcs (bug-046): đầy thì RPC mới nhận RESOURCE_EXHAUSTED ngay
     # thay vì xếp hàng không trần sau grpc_max_workers luồng. Helm gọi thẳng
     # ClusterIP, không qua Traefik, nên đây là lớp chặn duy nhất ở mọi môi trường.
