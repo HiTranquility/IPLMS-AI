@@ -112,7 +112,7 @@ CNN này là **bộ phân loại ảnh** — trong dịch vụ nó chỉ dùng l
    Với object storage, đặt `AI_VEHICLE_ARTIFACT_URL`, `AI_VEHICLE_ARTIFACT_SHA256`
    và `AI_VEHICLE_MODEL_VERSION`; URL chỉ là quyền tải ngắn hạn, version + hash
    mới là định danh bền của model.
-Phần nhận diện **biển số** do YOLO+EasyOCR trong [`../app/core/vision/engines/anpr/anpr_engine.py`](../app/core/vision/engines/anpr/anpr_engine.py) đảm nhiệm (không cần train lại ở đây; weights `best.pt` đã có sẵn).
+Phần nhận diện **biển số** do YOLO+EasyOCR trong [`../app/core/vision/engines/anpr/engine.py`](../app/core/vision/engines/anpr/engine.py) đảm nhiệm (không cần train lại ở đây; weights `best.pt` đã có sẵn).
 
 > **[GOTCHA] Đừng train phân biệt sedan với SUV — lớp dịch vứt bỏ khác biệt đó.**
 > Hai đầu **cố ý** nói hai từ vựng: AI trả nhãn của model, backend sống bằng

@@ -1,6 +1,6 @@
 import { Mail, Search, Shield, ShieldCheck, UserCheck, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import table from '@/components/common/Ui/data-display/table.module.css';
+import table from '@/components/common/Ui/data-display/Table.module.css';
 import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useMe } from '@/hooks/queries/useAuthQueries';

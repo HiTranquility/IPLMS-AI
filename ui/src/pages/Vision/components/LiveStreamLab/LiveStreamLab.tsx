@@ -4,7 +4,7 @@ import { Button } from '@/components/common/Ui/button/Button';
 import { Segmented } from '@/components/common/Ui/button/Segmented';
 import { Badge } from '@/components/common/Ui/data-display/Badge';
 import { Stat } from '@/components/common/Ui/data-display/Stat';
-import table from '@/components/common/Ui/data-display/table.module.css';
+import table from '@/components/common/Ui/data-display/Table.module.css';
 import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
 import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
 import { useI18n } from '@/i18n/I18nProvider';

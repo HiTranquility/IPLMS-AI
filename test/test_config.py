@@ -59,6 +59,34 @@ class DatalakeConfigTest(unittest.TestCase):
             config = DatalakeConfig(_env_file=None)
             self.assertEqual(config.source_database_url, "")
 
+    def test_legacy_lake_dir_reads_alias_env_vars(self):
+        import os
+        from unittest.mock import patch
+        with patch.dict(os.environ, {"AI_DATALAKE_PATH": "/tmp/custom-lake"}, clear=False):
+            os.environ.pop("DATALAKE_DIR", None)
+            config = DatalakeConfig(_env_file=None)
+            self.assertEqual(config.legacy_lake_dir, "/tmp/custom-lake")
+
+
+class EmbeddingAndConsoleConfigTest(unittest.TestCase):
+    def test_embedding_offline_fallback_reads_env_prefix(self):
+        import os
+        from unittest.mock import patch
+        from app.config.embedding_config import EmbeddingConfig
+
+        with patch.dict(os.environ, {"AI_EMBEDDING_OFFLINE_FALLBACK": "true"}, clear=False):
+            cfg = EmbeddingConfig(_env_file=None)
+            self.assertTrue(cfg.offline_fallback)
+
+    def test_resolve_model_secret_reads_named_env_var(self):
+        import os
+        from unittest.mock import patch
+        from app.config.console_config import resolve_model_secret
+
+        with patch.dict(os.environ, {"AI_LLM_KEY_UNITTEST": "tok-123"}, clear=False):
+            self.assertEqual(resolve_model_secret("AI_LLM_KEY_UNITTEST"), "tok-123")
+            self.assertEqual(resolve_model_secret(""), "")
+
 
 class WorkflowConfigTest(unittest.TestCase):
     def test_workflow_mac_dinh_tat_va_dung_memory_cho_local(self):
@@ -77,6 +105,14 @@ class ServerConfigTest(unittest.TestCase):
 
     def test_config_duoc_cache(self):
         self.assertIs(get_config(), get_config())
+
+    def test_db_host_port_defaults_to_5435_and_reads_env(self):
+        import os
+        from unittest.mock import patch
+        from app.config.server_config import ServerConfig
+
+        with patch.dict(os.environ, {"AI_DB_HOST_PORT": "5499"}, clear=False):
+            self.assertEqual(ServerConfig(_env_file=None).db_host_port, 5499)
 
 
 if __name__ == "__main__":

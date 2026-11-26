@@ -9,12 +9,13 @@ from __future__ import annotations
 
 import http.client
 import json
-import os
 import socket
 import ssl
 import time
 from typing import Any, Callable, Iterable
 from urllib.parse import urlsplit
+
+from app.config.console_config import resolve_model_secret
 
 _MAX_BODY = 1024 * 1024
 _MAX_MODELS = 200
@@ -103,7 +104,7 @@ def probe(
 
     headers = {"Accept": "application/json", "User-Agent": "iplms-ai-console/connection-test"}
     if secret_env_name:
-        key = os.environ.get(secret_env_name, "")
+        key = resolve_model_secret(secret_env_name)
         if not key:
             return _result(False, "auth_failed", None,
                            detail=f"Biến {secret_env_name} chưa được đặt trên AI host.")

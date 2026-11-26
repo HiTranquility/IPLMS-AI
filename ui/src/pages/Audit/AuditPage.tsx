@@ -1,13 +1,14 @@
 import { Bot, Download, Eye, FileSpreadsheet, Lock, Search, Shield, ShieldCheck, UserCheck } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/common/Ui/button/Button';
-import table from '@/components/common/Ui/data-display/table.module.css';
+import table from '@/components/common/Ui/data-display/Table.module.css';
 import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
 import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useAudit } from '@/hooks/queries/useAuditQueries';
 import { useMembers } from '@/hooks/queries/useMemberQueries';
 import { useI18n } from '@/i18n/I18nProvider';
+import type { Messages } from '@/i18n/vi';
 import { MemberStatCard } from '@/pages/Members/components/MemberStatCard';
 import type { AuditEntry } from '@/types/audit';
 import type { Member } from '@/types/member';
@@ -17,7 +18,7 @@ import { actionLabel, AuditActionBadge, getActionMeta, type AuditCategory } from
 import { AuditDetailModal } from './components/AuditDetailModal';
 import styles from './AuditPage.module.css';
 
-function getRelativeTime(isoString: string, t: any): string {
+function getRelativeTime(isoString: string, t: Messages): string {
   const diff = Date.now() - new Date(isoString).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return t.audit.relativeNow;

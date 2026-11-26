@@ -338,7 +338,7 @@ def run_full_benchmark(
         }
 
     if output_path is None:
-        output_path = AI_ROOT / "docs" / "benchmarks" / "anpr_onnx_benchmark_report.md"
+        output_path = AI_ROOT / "docs" / "benchmarks" / "anpr-onnx-benchmark-report.md"
 
     generate_markdown_report(results, output_path)
     print_console_summary(results)
@@ -346,7 +346,7 @@ def run_full_benchmark(
 
 
 def generate_markdown_report(results: Dict[str, Any], output_path: Path) -> None:
-    """Tạo file báo cáo Markdown chuẩn IPLMS tại `ai/docs/benchmarks/anpr_onnx_benchmark_report.md`."""
+    """Tạo file báo cáo Markdown chuẩn IPLMS tại `ai/docs/benchmarks/anpr-onnx-benchmark-report.md`."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     bench_values = list(results["benchmarks"].values())
     pt_means = [b["pytorch"]["mean_ms"] for b in bench_values] or [0.0]

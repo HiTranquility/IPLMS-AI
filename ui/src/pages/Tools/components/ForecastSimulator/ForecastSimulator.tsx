@@ -12,7 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { apiClient } from '@/api/client';
-import table from '@/components/common/Ui/data-display/table.module.css';
+import table from '@/components/common/Ui/data-display/Table.module.css';
 import { SimulatedBanner } from '@/components/common/Ui/feedback/SimulatedBanner';
 import { ErrorBlock } from '@/components/common/Ui/feedback/LoadState';
 import { useI18n } from '@/i18n/I18nProvider';
