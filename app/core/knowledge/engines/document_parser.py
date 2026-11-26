@@ -83,7 +83,7 @@ def _doi_chieu_chu_ky(file_data: bytes, dinh_dang: DocumentFormat) -> None:
         )
 
 
-def _child_entry(conn, target: Callable[..., Any], args: tuple) -> None:
+def _child_entry(conn: Any, target: Callable[..., Any], args: tuple[Any, ...]) -> None:
     try:
         conn.send((True, target(*args)))
     except BaseException as exc:  # gửi lỗi về thay vì chết im lặng

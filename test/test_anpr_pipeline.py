@@ -6,11 +6,13 @@ chứng check-in và đem so lúc check-out.
 """
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import cv2
 import numpy as np
 
+from app.config import get_config
+from app.core.vision.engines.anpr import engine as anpr_engine
 from app.core.vision.engines.anpr.engine import run_anpr
 
 _STATE = "app.core.vision.engines.anpr.model_loader._state"
@@ -59,6 +61,15 @@ def _decoded_shape(data):
 
 
 class RunAnprEvidenceImageTest(unittest.TestCase):
+    def setUp(self) -> None:
+        cfg = get_config()
+        self._saved_onnx_enabled = cfg.vision.onnx_enabled
+        cfg.vision.onnx_enabled = False
+        self.addCleanup(self._restore_onnx_enabled)
+
+    def _restore_onnx_enabled(self) -> None:
+        get_config().vision.onnx_enabled = self._saved_onnx_enabled
+
     def test_full_image_read_wins_but_evidence_is_plate_crop(self):
         # Cả hai nhánh đọc cùng biển; nhánh ảnh gốc có điểm cao hơn (0.67 vs 0.33×0.67).
         state = {
@@ -96,6 +107,24 @@ class RunAnprEvidenceImageTest(unittest.TestCase):
         with patch.dict(_STATE, state):
             result = run_anpr(_jpeg())
         self.assertEqual(("UNKNOWN", 0.0), (result["plate_number"], result["confidence"]))
+
+    def test_cached_onnx_session_is_bypassed_when_onnx_disabled(self):
+        fake_onnx = MagicMock()
+        fake_onnx.is_using_onnx.side_effect = lambda: False
+        fake_onnx.detect_plate.side_effect = anpr_engine.AnprOnnxEngine._fallback_pytorch_detect.__get__(
+            fake_onnx, anpr_engine.AnprOnnxEngine
+        )
+        fake_onnx.session = MagicMock()
+        state = {
+            "ocr_reader": _Reader("59C-888.66", 0.91),
+            "yolo_model": _Yolo([100, 50, 476, 238], 0.85),
+            "initialized": True,
+        }
+        with patch.object(anpr_engine, "get_anpr_detector", return_value=fake_onnx), patch.dict(_STATE, state):
+            result = run_anpr(_jpeg())
+        fake_onnx.session.run.assert_not_called()
+        self.assertEqual("59C-888.66", result["plate_number"])
+        self.assertEqual((188, 376), _decoded_shape(result["crop_bytes"]))
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ nhận 500 cho lỗi vốn của người dùng (ảnh mờ, không có biển).
 import hmac
 import re
 import time
+from typing import Any, AsyncIterator, Awaitable, Callable
 
 import grpc
 from grpc import aio
@@ -89,7 +90,7 @@ _CORRELATION_METADATA_KEYS = ("x-request-id", "x-correlation-id")
 _SAFE_CORRELATION_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
 
 
-def _extract_correlation_id(handler_call_details) -> str:
+def _extract_correlation_id(handler_call_details: grpc.HandlerCallDetails) -> str:
     metadata = getattr(handler_call_details, "invocation_metadata", None) or ()
     for item in metadata:
         key = getattr(item, "key", item[0] if isinstance(item, tuple) else "")
@@ -101,7 +102,7 @@ def _extract_correlation_id(handler_call_details) -> str:
     return "-"
 
 
-def _has_valid_internal_token(handler_call_details, expected_token: str) -> bool:
+def _has_valid_internal_token(handler_call_details: grpc.HandlerCallDetails, expected_token: str) -> bool:
     active_keys = [k.strip() for k in (expected_token or "").split(",") if k.strip()]
     if not active_keys:
         return True
@@ -130,7 +131,11 @@ class LoggingInterceptor(aio.ServerInterceptor):
             return self._expected_token
         return get_config().server.internal_api_token
 
-    async def intercept_service(self, continuation, handler_call_details):
+    async def intercept_service(
+        self,
+        continuation: Callable[[grpc.HandlerCallDetails], Awaitable[Any]],
+        handler_call_details: grpc.HandlerCallDetails,
+    ) -> Any:
         handler = await continuation(handler_call_details)
         if handler is None:
             return None
@@ -139,14 +144,14 @@ class LoggingInterceptor(aio.ServerInterceptor):
         correlation_id = _extract_correlation_id(handler_call_details)
         expected_token = self._resolve_expected_token()
         if not _has_valid_internal_token(handler_call_details, expected_token):
-            async def _unauthenticated_unary(request, context):
+            async def _unauthenticated_unary(request: Any, context: aio.ServicerContext) -> None:
                 logger.warning(f"{method} → UNAUTHENTICATED: Missing or invalid x-internal-token")
                 await context.abort(
                     grpc.StatusCode.UNAUTHENTICATED,
                     "Missing or invalid x-internal-token",
                 )
 
-            async def _unauthenticated_stream(request, context):
+            async def _unauthenticated_stream(request: Any, context: aio.ServicerContext) -> AsyncIterator[Any]:
                 logger.warning(f"{method} → UNAUTHENTICATED: Missing or invalid x-internal-token")
                 await context.abort(
                     grpc.StatusCode.UNAUTHENTICATED,
@@ -170,7 +175,7 @@ class LoggingInterceptor(aio.ServerInterceptor):
         if handler.unary_unary is not None:
             inner = handler.unary_unary
 
-            async def unary(request, context):
+            async def unary(request: Any, context: aio.ServicerContext) -> Any:
                 started = time.perf_counter()
                 try:
                     response = await inner(request, context)
@@ -189,7 +194,7 @@ class LoggingInterceptor(aio.ServerInterceptor):
         if handler.unary_stream is not None:
             inner = handler.unary_stream
 
-            async def unary_stream(request, context):
+            async def unary_stream(request: Any, context: aio.ServicerContext) -> AsyncIterator[Any]:
                 started = time.perf_counter()
                 try:
                     async for message in inner(request, context):
@@ -208,7 +213,7 @@ class LoggingInterceptor(aio.ServerInterceptor):
         return handler
 
 
-async def _abort(context, method: str, exc: Exception) -> None:
+async def _abort(context: aio.ServicerContext, method: str, exc: Exception) -> None:
     code = status_for(exc)
     # Lỗi do input của client thì log mức warning — đừng làm nhiễu cảnh báo prod.
     if code in (grpc.StatusCode.INVALID_ARGUMENT, grpc.StatusCode.NOT_FOUND):

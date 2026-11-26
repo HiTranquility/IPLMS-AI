@@ -37,10 +37,10 @@ class _DictCompatibleDto:
     def get(self, key: str, default: Any = None) -> Any:
         return getattr(self, key, default)
 
-    def items(self):
+    def items(self) -> list[tuple[str, Any]]:
         return [(k, getattr(self, k)) for k in self.keys()]
 
-    def values(self):
+    def values(self) -> list[Any]:
         return [getattr(self, k) for k in self.keys()]
 
 

@@ -1,4 +1,6 @@
 """Domain Knowledge Eval — bộ test + cổng xuất bản Knowledge Base (ISSUE-009)."""
+from typing import Any
+
 from app.core.knowledge_eval.dtos import (
     EvalScopeDto,
     ScopeReadinessDto,
@@ -18,7 +20,7 @@ __all__ = [
 ]
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> Any:
     if name in ("EvalService", "eval_service"):
         from app.core.knowledge_eval.services import eval_service as _mod
 

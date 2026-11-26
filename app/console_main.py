@@ -4,6 +4,7 @@ Chạy native: `python -m app.console_main` (nghe AI_CONSOLE_BIND_HOST, mặc đ
 [NEVER] mount vào `app/main.py`: tải của người dùng console không được chạm inference cổng.
 """
 from pathlib import Path
+from typing import Any, Awaitable, Callable
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
@@ -61,7 +62,7 @@ app.add_exception_handler(Exception, generic_error_handler)
 
 
 @app.middleware("http")
-async def _security_headers(request: Request, call_next):
+async def _security_headers(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
@@ -86,7 +87,7 @@ def api_not_found(_path: str) -> JSONResponse:
 
 
 @app.get("/assets/{path:path}", include_in_schema=False)
-def assets(path: str):
+def assets(path: str) -> Response:
     candidate = (UI_DIST / "assets" / path).resolve()
     if candidate.is_file() and candidate.is_relative_to(UI_DIST / "assets"):
         return FileResponse(candidate)
@@ -99,20 +100,20 @@ def assets(path: str):
 @app.get("/redoc", include_in_schema=False)
 @app.get("/redoc/{_path:path}", include_in_schema=False)
 @app.get("/openapi.json", include_in_schema=False)
-def disabled_docs(_path: str = ""):
+def disabled_docs(_path: str = "") -> Response:
     return Response(status_code=404)
 
 
 @app.get("/console", include_in_schema=False)
 @app.get("/console/{_path:path}", include_in_schema=False)
-def console_deprecated(_path: str = ""):
+def console_deprecated(_path: str = "") -> Response:
     # Bỏ hẳn đường /console (ISSUE-021), trả 404 không phục vụ SPA
     return Response(status_code=404)
 
 
 @app.get("/", include_in_schema=False)
 @app.get("/{path:path}", include_in_schema=False)
-def ui(path: str = ""):
+def ui(path: str = "") -> Response:
     """Phục vụ SPA: file tĩnh có thật thì trả file, còn lại trả index.html (route phía client)."""
     if not (UI_DIST / "index.html").is_file():
         return HTMLResponse(

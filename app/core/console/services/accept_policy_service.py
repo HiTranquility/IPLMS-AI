@@ -7,6 +7,7 @@ Console chỉ giữ phiên bản đã duyệt; backend kéo bản APPROVED gần
 from __future__ import annotations
 
 import re
+from typing import Any
 
 from app.core.console.dtos import ConsoleActor
 from app.core.console.engines import access_policy
@@ -26,7 +27,7 @@ def _reason(text: str) -> str:
 
 
 class AcceptPolicyService:
-    def __init__(self, store=None) -> None:
+    def __init__(self, store: Any = None) -> None:
         self.store = store or console_vision_store
 
     async def accuracy(self, actor: ConsoleActor) -> dict:

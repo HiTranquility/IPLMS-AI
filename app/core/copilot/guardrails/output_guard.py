@@ -11,7 +11,7 @@ thoại/tài khoản. Số tiền tính ra (25.000đ × 3 = 75.000đ) không b�
 from __future__ import annotations
 
 import re
-from typing import AsyncGenerator, AsyncIterable
+from typing import AsyncGenerator, AsyncIterable, Callable
 
 from app.core.copilot.messages import GUARD_NOTICE
 from app.core.copilot.guardrails.text_normalize import normalize_for_match
@@ -63,7 +63,7 @@ def _violation(answer: str, context: str) -> str | None:
 
 
 async def guard_stream(
-    tokens: AsyncIterable[str], context: str, on_violation
+    tokens: AsyncIterable[str], context: str, on_violation: Callable[[str], None]
 ) -> AsyncGenerator[str, None]:
     """Phát token nhưng giữ lại đuôi chưa chắc an toàn; vi phạm thì dừng và báo.
 

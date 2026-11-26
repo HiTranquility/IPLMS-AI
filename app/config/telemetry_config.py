@@ -1,5 +1,5 @@
 """Cấu hình telemetry mỗi request AI (IPLMS ADR-0049, đề Final §4.2/§6.6)."""
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import field_validator
 from pydantic_settings import SettingsConfigDict
@@ -23,7 +23,7 @@ class TelemetryConfig(BaseConfig):
 
     @field_validator("price_input_per_mtok", "price_output_per_mtok", mode="before")
     @classmethod
-    def _parse_empty_float(cls, v):
+    def _parse_empty_float(cls, v: Any) -> Any:
         if v == "" or v is None:
             return None
         return v

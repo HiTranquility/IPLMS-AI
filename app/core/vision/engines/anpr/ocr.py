@@ -10,7 +10,7 @@ from app.core.vision.engines.anpr.plate_text import (
 from app.core.vision.engines.anpr.two_line_plate_parser import parse_two_line_vietnam_plate
 
 
-def _reading_order(results):
+def _reading_order(results: list[Any]) -> list[Any]:
     """Xếp cụm chữ theo dòng (trên → dưới) rồi trái → phải.
 
     Biển xe máy hai dòng (``59-C1`` / ``123.45``): EasyOCR không cam kết thứ tự
@@ -34,7 +34,7 @@ def _reading_order(results):
     return [item[3] for line in lines for item in sorted(line, key=lambda item: item[2])]
 
 
-def read_with_confidence(img) -> Tuple[str, float]:
+def read_with_confidence(img: Any) -> Tuple[str, float]:
     """Đọc chữ + điểm tin cậy THẬT của EasyOCR.
 
     EasyOCR trả `(bbox, text, conf)` cho từng cụm chữ. Gộp điểm theo TRỌNG SỐ
@@ -57,7 +57,7 @@ def read_with_confidence(img) -> Tuple[str, float]:
     return text, weighted / total_chars
 
 
-def read_plate_details(img) -> Tuple[str, float, bool, Dict[str, Any]]:
+def read_plate_details(img: Any) -> Tuple[str, float, bool, Dict[str, Any]]:
     """Đọc chữ kèm phân tích biển số 2 dòng xe máy Việt Nam.
 
     Returns:

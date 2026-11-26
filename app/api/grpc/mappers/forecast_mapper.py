@@ -1,4 +1,6 @@
 """Map message protobuf ↔ DTO Domain Forecast."""
+from typing import Any
+
 from app.api.grpc.generated_stubs import get_stub
 from app.core.forecast.constants import DEFAULT_FORECAST_HOURS
 from app.core.forecast.dtos.forecast_dto import (
@@ -11,7 +13,7 @@ from app.core.forecast.dtos.forecast_dto import (
 _pb2, _ = get_stub("forecast_service")
 
 
-def to_occupancy_forecast_query(message) -> OccupancyForecastQuery:
+def to_occupancy_forecast_query(message: Any) -> OccupancyForecastQuery:
     return OccupancyForecastQuery(
         parking_lot_id=message.parking_lot_id,
         target_timestamp=message.target_timestamp,
@@ -19,14 +21,14 @@ def to_occupancy_forecast_query(message) -> OccupancyForecastQuery:
     )
 
 
-def to_tariff_recommendation_query(message) -> TariffRecommendationQuery:
+def to_tariff_recommendation_query(message: Any) -> TariffRecommendationQuery:
     return TariffRecommendationQuery(
         parking_lot_id=message.parking_lot_id,
         base_hourly_rate=message.base_hourly_rate,
     )
 
 
-def to_occupancy_forecast_response(forecast: OccupancyForecast):
+def to_occupancy_forecast_response(forecast: OccupancyForecast) -> Any:
     return _pb2.OccupancyForecastResponse(
         parking_lot_id=forecast.parking_lot_id,
         slots=[
@@ -44,7 +46,7 @@ def to_occupancy_forecast_response(forecast: OccupancyForecast):
     )
 
 
-def to_tariff_recommendation_response(recommendation: TariffRecommendation):
+def to_tariff_recommendation_response(recommendation: TariffRecommendation) -> Any:
     return _pb2.TariffRecommendationResponse(
         parking_lot_id=recommendation.parking_lot_id,
         recommended_multiplier=recommendation.recommended_multiplier,

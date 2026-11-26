@@ -13,11 +13,11 @@ from app.core.knowledge_eval.dtos import (
 _pb2, _ = get_stub("knowledge_service")
 
 
-def to_eval_scope_query(message) -> Optional[str]:
+def to_eval_scope_query(message: Any) -> Optional[str]:
     return EvalScopeDto(parking_lot_id=message.parking_lot_id or None).parking_lot_id
 
 
-def to_create_case_command(message) -> Dict[str, Any]:
+def to_create_case_command(message: Any) -> Dict[str, Any]:
     dto = TestCaseDto(
         id=message.id or None,
         parking_lot_id=message.parking_lot_id or None,
@@ -31,7 +31,7 @@ def to_create_case_command(message) -> Dict[str, Any]:
     return dto.to_dict()
 
 
-def to_case_response(case: Mapping[str, Any] | TestCaseDto):
+def to_case_response(case: Mapping[str, Any] | TestCaseDto) -> Any:
     dto = TestCaseDto.from_dict(case)
     return _pb2.TestCase(
         id=dto.id or "",
@@ -47,11 +47,11 @@ def to_case_response(case: Mapping[str, Any] | TestCaseDto):
     )
 
 
-def to_case_list_response(cases: List[Dict[str, Any]]):
+def to_case_list_response(cases: List[Dict[str, Any]]) -> Any:
     return _pb2.TestCaseList(cases=[to_case_response(c) for c in cases])
 
 
-def to_run_response(run: Optional[Mapping[str, Any] | TestRunSummaryDto]):
+def to_run_response(run: Optional[Mapping[str, Any] | TestRunSummaryDto]) -> Any:
     if not run:
         return _pb2.TestRun()
     dto = TestRunSummaryDto.from_dict(run)
@@ -74,14 +74,14 @@ def to_run_response(run: Optional[Mapping[str, Any] | TestRunSummaryDto]):
     )
 
 
-def to_run_detail_response(detail: Mapping[str, Any]):
+def to_run_detail_response(detail: Mapping[str, Any]) -> Any:
     return _pb2.TestRunDetail(
         run=to_run_response(detail["run"]),
         results=[to_result_response(r) for r in detail["results"]],
     )
 
 
-def to_result_response(r: Mapping[str, Any] | TestRunResultDto):
+def to_result_response(r: Mapping[str, Any] | TestRunResultDto) -> Any:
     dto = TestRunResultDto.from_dict(r)
     return _pb2.TestResult(
         case_id=dto.case_id,
@@ -102,11 +102,11 @@ def to_result_response(r: Mapping[str, Any] | TestRunResultDto):
     )
 
 
-def to_run_list_response(runs: List[Dict[str, Any]]):
+def to_run_list_response(runs: List[Dict[str, Any]]) -> Any:
     return _pb2.TestRunList(runs=[to_run_response(r) for r in runs])
 
 
-def to_readiness_response(state: Mapping[str, Any] | ScopeReadinessDto):
+def to_readiness_response(state: Mapping[str, Any] | ScopeReadinessDto) -> Any:
     dto = ScopeReadinessDto.from_dict(state)
     latest = dto.latest_run
     return _pb2.PublishReadiness(

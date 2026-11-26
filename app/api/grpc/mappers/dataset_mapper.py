@@ -1,6 +1,6 @@
 """Map protobuf DatasetService ↔ DTO domain dataset."""
 import json
-from typing import List
+from typing import Any, List
 
 from app.api.grpc.generated_stubs import get_stub
 from app.core.console.dtos import ExportedCapture
@@ -9,7 +9,7 @@ from app.core.dataset.dtos import CurationResult, EvalSample, SnapshotSample
 _pb2, _ = get_stub("dataset_service")
 
 
-def to_evaluate_response(result: CurationResult):
+def to_evaluate_response(result: CurationResult) -> Any:
     q = result.quality
     return _pb2.EvaluateCaptureResponse(
         selected=result.selected,
@@ -26,7 +26,7 @@ def to_evaluate_response(result: CurationResult):
     )
 
 
-def to_create_snapshot_command(message) -> List[SnapshotSample]:
+def to_create_snapshot_command(message: Any) -> List[SnapshotSample]:
     return [
         SnapshotSample(
             sample_id=s.sample_id,
@@ -40,18 +40,18 @@ def to_create_snapshot_command(message) -> List[SnapshotSample]:
     ]
 
 
-def to_evaluate_snapshot_query(message) -> List[EvalSample]:
+def to_evaluate_snapshot_query(message: Any) -> List[EvalSample]:
     return [
         EvalSample(sample_id=s.sample_id, image_url=s.image_url, label=s.label)
         for s in message.samples
     ]
 
 
-def to_progress_event(done: int, total: int):
+def to_progress_event(done: int, total: int) -> Any:
     return _pb2.EvaluateSnapshotEvent(progress=_pb2.EvaluationProgress(done=done, total=total))
 
 
-def to_result_event(model_version: str, summary: dict):
+def to_result_event(model_version: str, summary: dict[str, Any]) -> Any:
     return _pb2.EvaluateSnapshotEvent(
         result=_pb2.EvaluationResult(
             model_version=model_version,
@@ -60,7 +60,7 @@ def to_result_event(model_version: str, summary: dict):
     )
 
 
-def to_snapshot_response(lock: dict):
+def to_snapshot_response(lock: dict[str, Any]) -> Any:
     return _pb2.BuildSnapshotResponse(
         dataset_id=lock["dataset_id"],
         sample_count=lock["sample_count"],
@@ -69,7 +69,7 @@ def to_snapshot_response(lock: dict):
     )
 
 
-def to_export_for_console_command(message) -> List[ExportedCapture]:
+def to_export_for_console_command(message: Any) -> List[ExportedCapture]:
     return [
         ExportedCapture(
             capture_id=s.capture_id.lower(),
@@ -98,7 +98,7 @@ to_evaluation_samples = to_evaluate_snapshot_query
 to_exported_captures = to_export_for_console_command
 
 
-def to_export_response(result: dict):
+def to_export_response(result: dict[str, Any]) -> Any:
     return _pb2.ExportForConsoleResponse(
         accepted=result["accepted"],
         rejected=result["rejected"],
@@ -108,7 +108,7 @@ def to_export_response(result: dict):
     )
 
 
-def to_accept_policy_response(policy: dict | None):
+def to_accept_policy_response(policy: dict[str, Any] | None) -> Any:
     if policy is None:
         return _pb2.GetAcceptPolicyResponse(found=False)
     return _pb2.GetAcceptPolicyResponse(

@@ -37,7 +37,7 @@ def _scope_id(scope: Optional[str] | EvalScopeDto) -> Optional[str]:
 
 
 class EvalService:
-    def __init__(self, store=None, vector_store=None, rag=None, llm=None) -> None:
+    def __init__(self, store: Any = None, vector_store: Any = None, rag: Any = None, llm: Any = None) -> None:
         self.store = store or knowledge_eval_store
         self.vector_store = vector_store or pgvector_client
         self.rag = rag or rag_pipeline
@@ -139,8 +139,8 @@ class EvalService:
 
     async def _execute(
         self, run_id: str, scope: Optional[str], cases: List[Dict[str, Any]], version_ids: List[str],
-        answer_llm=None,
-        judge_llm=None,
+        answer_llm: Any = None,
+        judge_llm: Any = None,
     ) -> None:
         passed = failed_facts = failed_abstain = 0
         try:
@@ -182,8 +182,8 @@ class EvalService:
         if gate.fingerprint(await self.vector_store.latest_version_ids(scope)) == gate.fingerprint(version_ids):
             await self.vector_store.mark_versions_tested(version_ids, ok)
 
-    async def _run_case(self, case: Dict[str, Any], scope: Optional[str], answer_llm=None,
-                        judge_llm=None) -> Dict[str, Any]:
+    async def _run_case(self, case: Dict[str, Any], scope: Optional[str], answer_llm: Any = None,
+                        judge_llm: Any = None) -> Dict[str, Any]:
         kwargs = {"parking_lot_id": scope, "preview": True}
         if answer_llm is not None:
             kwargs["llm_override"] = answer_llm
@@ -252,8 +252,16 @@ class EvalService:
         return result
 
     # ── cổng xuất bản ────────────────────────────────────────────────────────
-    def _readiness_reasons(self, latest, version_ids, cases, review, unpublished,
-                           active_profile_ids=None, flagged=None):
+    def _readiness_reasons(
+        self,
+        latest: Any,
+        version_ids: Any,
+        cases: Any,
+        review: Dict[str, Any],
+        unpublished: Any,
+        active_profile_ids: Optional[Dict[str, str]] = None,
+        flagged: Any = None,
+    ) -> List[str]:
         reasons = gate.readiness(
             latest,
             gate.fingerprint(version_ids),

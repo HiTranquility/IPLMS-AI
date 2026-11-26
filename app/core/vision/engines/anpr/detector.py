@@ -8,7 +8,7 @@ from app.core.exceptions import PlateRecognitionError
 from app.core.vision.engines.anpr import model_loader
 
 
-def detect_plate(img_cv) -> Tuple[Any, Optional[float]]:
+def detect_plate(img_cv: np.ndarray) -> Tuple[Any, Optional[float]]:
     """Trả `(ảnh crop, điểm tin cậy của box)`.
 
     `None` ở vị trí điểm nghĩa là KHÔNG có detector (chưa nạp được YOLO) — khác

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import re
 from ipaddress import IPv4Address, IPv6Address, ip_address, ip_network
+from typing import Iterable
 from urllib.parse import urlsplit
 
 PROVIDERS = ("ollama", "local", "openai")
@@ -69,7 +70,7 @@ def normalize_base_url(raw: str, hosts: frozenset[str]) -> str:
     return f"{parts.scheme}://{netloc}{parts.path.rstrip('/')}"
 
 
-def check_resolved_addresses(addresses) -> None:
+def check_resolved_addresses(addresses: Iterable[str | IPv4Address | IPv6Address]) -> None:
     """Chặn khi BẤT KỲ địa chỉ nào rơi vào metadata/link-local/không định tuyến được."""
     if not addresses:
         raise BlockedEndpoint("Không phân giải được host.")

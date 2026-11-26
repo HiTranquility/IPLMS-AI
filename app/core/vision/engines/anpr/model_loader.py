@@ -56,7 +56,7 @@ def ensure_models_loaded() -> None:
         _state["initialized"] = _state["ocr_reader"] is not None
 
 
-def _load_yolo(vision) -> None:
+def _load_yolo(vision: Any) -> None:
     """YOLO là tầng tuỳ chọn: thiếu nó thì OCR chạy trên cả ảnh (`det_conf=None`)."""
     try:
         model_path = get_artifact_store().resolve(

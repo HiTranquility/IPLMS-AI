@@ -9,6 +9,7 @@ import asyncio
 import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
+from typing import Any, Callable
 
 from app.config import get_config
 from app.core.console.dtos import ConsoleActor, ConsoleSession
@@ -38,7 +39,14 @@ def _reason(reason: str) -> str:
 
 
 class AuthService:
-    def __init__(self, store=None, google=None, vault=None, config=None, clock=None) -> None:
+    def __init__(
+        self,
+        store: Any = None,
+        google: Any = None,
+        vault: Any = None,
+        config: Any = None,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
         self.store = store or console_store
         self._config = config or get_config().console
         self._google = google

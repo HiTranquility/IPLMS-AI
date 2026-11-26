@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+from typing import Any
 
 from app.core.console.dtos import ConsoleActor
 from app.core.console.engines import access_policy
@@ -18,7 +19,7 @@ def _reason(reason: str) -> str:
 
 
 class MemberService:
-    def __init__(self, store=None) -> None:
+    def __init__(self, store: Any = None) -> None:
         self.store = store or console_store
 
     async def invite(

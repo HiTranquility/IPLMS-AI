@@ -100,7 +100,7 @@ def _log_guard(rule: str) -> None:
     logger.warning("Copilot output guard blocked answer rule=%s", rule)
 
 
-def _check_input(query_text: str, history: Optional[List[Dict[str, Any]]] = None):
+def _check_input(query_text: str, history: Optional[List[Dict[str, Any]]] = None) -> Any:
     """Rào chắn đầu vào cho câu hỏi và mọi lượt history client tự khai (ADR-0029, bug-040).
 
     Với history chỉ chặn PROMPT_INJECTION: lượt cũ rỗng hay ngoài phạm vi (đã bị từ chối
@@ -180,7 +180,13 @@ def _enrich_retrieval_query(query: str, history: Optional[List[Dict[str, Any]]] 
 
 
 class RagPipelineEngine:
-    def __init__(self, embedder=None, vector_store=None, llm=None, demo_seed_enabled: bool | None = None) -> None:
+    def __init__(
+        self,
+        embedder: Any = None,
+        vector_store: Any = None,
+        llm: Any = None,
+        demo_seed_enabled: bool | None = None,
+    ) -> None:
         self.embedder = embedder or embedding_client
         self.vector_store = vector_store or pgvector_client
         self.llm = llm or llm_factory
@@ -350,7 +356,7 @@ class RagPipelineEngine:
 
     async def query(
         self, query_text: str, parking_lot_id: str | None = None, preview: bool = False,
-        llm_override=None, top_k: int | None = None, min_similarity: float | None = None,
+        llm_override: Any = None, top_k: int | None = None, min_similarity: float | None = None,
         temperature: float | None = None,
         history: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:

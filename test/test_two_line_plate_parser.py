@@ -282,6 +282,19 @@ class AnprOnnxEngineTest(unittest.TestCase):
 class RunAnprTwoLineIntegrationTest(unittest.TestCase):
     """Kiểm thử tích hợp từ facade run_anpr với biển 2 dòng xe máy."""
 
+    def setUp(self) -> None:
+        from app.config import get_config
+
+        cfg = get_config()
+        self._saved_onnx_enabled = cfg.vision.onnx_enabled
+        cfg.vision.onnx_enabled = False
+        self.addCleanup(self._restore_onnx_enabled)
+
+    def _restore_onnx_enabled(self) -> None:
+        from app.config import get_config
+
+        get_config().vision.onnx_enabled = self._saved_onnx_enabled
+
     def test_run_anpr_integrates_two_line_plate(self):
         import cv2
         from app.core.vision.engines.anpr.engine import run_anpr
