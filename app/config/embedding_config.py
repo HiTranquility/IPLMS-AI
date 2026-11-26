@@ -42,3 +42,7 @@ class EmbeddingConfig(BaseConfig):
     # (cột DOUBLE PRECISION[] + quét toàn bảng). Chỉ dùng cho dev máy không có
     # container pgvector. [NEVER] bật ở production.
     allow_no_pgvector: bool = False
+
+    # Chỉ dùng cho local dev/offline khi dịch vụ embedding tắt (bug-052).
+    # Mặc định tắt để lỗi kết nối ném EmbeddingError rõ ràng thay vì che giấu.
+    offline_fallback: bool = False

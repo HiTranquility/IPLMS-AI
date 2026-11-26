@@ -170,8 +170,7 @@ class EmbeddingClient:
         # Nếu không thể kết nối tới Ollama / OpenAI: chỉ dùng deterministic fallback khi
         # bật tường minh AI_EMBEDDING_OFFLINE_FALLBACK=true; mặc định ném EmbeddingError để
         # không che giấu lỗi kết nối AI dưới vỏ bọc NO_CONTEXT (bug-052).
-        import os
-        if os.getenv("AI_EMBEDDING_OFFLINE_FALLBACK", "").strip().lower() in ("1", "true", "yes"):
+        if self._config.offline_fallback:
             self._offline_until = time.monotonic() + 300.0
             logger.warning(
                 "Không thể kết nối dịch vụ embedding (%s). Tự động kích hoạt deterministic local fallback embedding (dim=%d).",

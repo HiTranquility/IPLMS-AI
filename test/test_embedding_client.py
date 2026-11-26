@@ -58,6 +58,21 @@ class EmbeddingProviderTest(unittest.TestCase):
         with self.assertRaises(ModelNotLoadedError):
             client._get_client()
 
+    def test_offline_fallback_uses_config_flag(self):
+        from unittest.mock import AsyncMock, patch
+        from app.config.embedding_config import EmbeddingConfig
+
+        client = EmbeddingClient()
+        client._config = EmbeddingConfig(_env_file=None, offline_fallback=True, dimensions=8)
+        client._api_key = "k"
+        client._base_url = "http://127.0.0.1:11434/v1"
+        with patch.object(client, "_create_sdk_client", return_value=SimpleNamespace()), patch.object(
+            client, "_call_sdk", new=AsyncMock(side_effect=ConnectionError("down"))
+        ):
+            vectors = asyncio.run(client.embed_texts(["xin chào"]))
+        self.assertEqual(len(vectors), 1)
+        self.assertEqual(len(vectors[0]), 8)
+
 
 if __name__ == "__main__":
     unittest.main()

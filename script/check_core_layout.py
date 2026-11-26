@@ -25,6 +25,7 @@ PROMPT_PATTERNS = (
 CLASS_DEF_RE = re.compile(r"^class\s+\w+", re.MULTILINE)
 IMPORT_RE = re.compile(r"^\s*(?:from|import)\s+", re.MULTILINE)
 DATACLASS_RE = re.compile(r"^@dataclass\b", re.MULTILINE)
+ENV_ACCESS_RE = re.compile(r"\bos\.(?:environ|getenv)\b")
 
 
 def _pascal_case(stem: str) -> str:
@@ -116,6 +117,29 @@ def naming_violations(core: Path) -> list[str]:
     return out
 
 
+def env_access_violations(app_root: Path) -> list[str]:
+    """Chặn đọc trực tiếp `os.environ` / `os.getenv` ngoài `app/config/` và `app/script/` (AI_CONVENTIONS §4)."""
+    out = []
+    if not app_root.is_dir():
+        return out
+    for path in sorted(app_root.rglob("*.py")):
+        rel = path.relative_to(app_root).as_posix()
+        if SKIP & set(path.parts):
+            continue
+        if rel.startswith(("config/", "script/", "api/grpc/generated/")):
+            continue
+        for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            stripped = line.lstrip()
+            if stripped.startswith("#"):
+                continue
+            if ENV_ACCESS_RE.search(line):
+                out.append(
+                    f"{path.as_posix()}:{line_no}: đọc `os.environ`/`os.getenv` ngoài config/; "
+                    "gom vào app/config/ và gọi get_config() (AI_CONVENTIONS §4)"
+                )
+    return out
+
+
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -125,7 +149,12 @@ def main() -> int:
     if not core.is_dir():
         print(f"check_core_layout: không thấy {core}")
         return 2
-    found = layout_violations(core) + prompt_violations(core) + naming_violations(core)
+    found = (
+        layout_violations(core)
+        + prompt_violations(core)
+        + naming_violations(core)
+        + env_access_violations(core.parent)
+    )
     for line in found:
         print(line)
     print(f"check_core_layout: {len(found)} lệch")

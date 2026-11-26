@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import psycopg2
 
+from app.config import get_config
 from app.infra.database import db_connection
 
 URL = "postgresql://ai:pw-secret@database-vector:5432/iplms_knowledge"
@@ -17,6 +18,8 @@ class DbFallbackTest(unittest.TestCase):
         env = patch.dict(os.environ, {"AI_DB_HOST_PORT": "5435"})
         env.start()
         self.addCleanup(env.stop)
+        get_config.cache_clear()
+        self.addCleanup(get_config.cache_clear)
         docker = patch.object(db_connection.os.path, "exists", return_value=False)
         docker.start()
         self.addCleanup(docker.stop)

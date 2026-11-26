@@ -1,5 +1,5 @@
 import { Stat } from '@/components/common/Ui/data-display/Stat';
-import table from '@/components/common/Ui/data-display/table.module.css';
+import table from '@/components/common/Ui/data-display/Table.module.css';
 import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
 import { useI18n } from '@/i18n/I18nProvider';
 import type { UsageSummary } from '@/types/copilot';

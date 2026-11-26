@@ -38,3 +38,5 @@ class ServerConfig(BaseConfig):
     # Khi để rỗng (dev mặc định) thì không bắt buộc; khi đặt giá trị thì mọi RPC trừ
     # `/grpc.health.v1.Health/Check` phải kèm header khớp hằng thời gian (REQ-038).
     internal_api_token: str = ""
+    # Cổng ánh xạ pgvector Postgres ra máy host khi dev (compose map 5435:5432, bug-029).
+    db_host_port: int = Field(5435, ge=1, le=65535)

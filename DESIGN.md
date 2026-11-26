@@ -1,6 +1,6 @@
 # DESIGN — IPLMS AI
 
-Trạng thái: thiết kế hiện hành; đối chiếu cấu trúc/config ngày 2026-10-14, chưa chạy model hay chứng nhận chất lượng production trong lần rà này. Người viết: Codex.
+Trạng thái: thiết kế hiện hành; đối chiếu cấu trúc/config ngày 2026-11-26, chưa chạy model hay chứng nhận chất lượng production trong lần rà này. Người viết: Codex (cập nhật đồng bộ bởi ISSUE-030).
 Luật code: [AI_CONVENTIONS](docs/standards/AI_CONVENTIONS.md). Điểm vào: [README](README.md).
 Trong umbrella, xem thêm [naming chung](../docs/standards/NAMING_CONVENTIONS.md); clone riêng vẫn đọc được thiết kế và conventions tại đây.
 
@@ -35,6 +35,7 @@ Mỗi static Traefik file là một cấu hình **đầy đủ**, không phải 
 | `model/architectures/m1`, `m2` | Tên phiên bản mã kiến trúc nhập từ nguồn ngoài | Đổi cùng registry/import/checkpoint metadata, không rename weights |
 | `knowledge_eval` chưa có DTO riêng | Nợ cấu trúc đã ghi ở conventions; không tạo thư mục rỗng | Thêm DTO thật khi thay đổi hợp đồng domain |
 | Proto generated | Stub là output của proto nguồn chuẩn ở umbrella (image build từ bản chép `proto/` của repo, ADR-0006) | Sinh lại, không sửa tay tên symbol/field tag |
+| `AI_GUIDE.md`, `AI_USAGE.md`, `SETUP_GUIDE.md`, `USER_STORIES_AND_PRESENTATION.md`, `docs/projects/KHOA_MODULE_GUIDE.md` | Tài liệu hợp đồng/nộp bài Final Project và tài liệu tham chiếu lịch sử có caller từ `README.md`/`BOARD.md` | Giữ nguyên tên cũ để không gãy tham chiếu; tài liệu mới dùng `lower-kebab-case.md` |
 
 File REST mới dùng `<domain>_controller.py`; health nay là `health_controller.py`, vẫn giữ URL `/health`.
 `AI_*` là env key, Python dùng snake_case cho module/hàm và PascalCase cho type. Mọi exception mới phải có phạm vi, lý do và điều kiện bỏ như bảng trên.
@@ -68,23 +69,34 @@ ai/
 │   │       └── routes/              #     anpr_controller.py · health_controller.py · forecast_controller.py
 │   ├── config/                      # CẤU HÌNH — mỗi nhóm 1 file, gom ở app_config.get_config()
 │   │   ├── base_config.py           #   BaseConfig (pydantic-settings, native dev đọc .env.dev)
-│   │   ├── server_config.py         #   cổng gRPC/REST, max workers, max message
-│   │   ├── vision_config.py         #   YOLO · EasyOCR · CNN phân loại xe
-│   │   ├── llm_config.py            #   pgvector DB · embedding · API key
-│   │   ├── datalake_config.py       #   export batch + slot occupancy cho forecast
+│   │   ├── server_config.py         #   cổng gRPC/REST, max workers, max message, db_host_port
+│   │   ├── vision_config.py         #   YOLO · EasyOCR · ONNX · CNN phân loại xe · clip
+│   │   ├── llm_config.py            #   pgvector DB · LLM provider · RAG top_k/min_similarity
+│   │   ├── embedding_config.py      #   model embedding · dimensions · offline_fallback
+│   │   ├── datalake_config.py       #   export batch + slot occupancy + legacy_lake_dir
 │   │   ├── logging_config.py        #   tên logger · level · format
+│   │   ├── model_registry_config.py #   thư mục cache model cục bộ
+│   │   ├── object_storage_config.py #   timeout/giới hạn tải artifact signed URL
+│   │   ├── workflow_config.py       #   LangGraph checkpoint backend & retention
+│   │   ├── eval_config.py           #   ngưỡng cổng đánh giá tri thức
+│   │   ├── console_config.py        #   AI Console auth, DB, allowlist connection & secret lookup
+│   │   ├── telemetry_config.py      #   giữ chân/chi phí log request AI
+│   │   ├── runtime_override_config.py # ghi/đọc var/runtime_settings.json từ AI Console Settings
 │   │   └── app_config.py            #   AppConfig gộp + get_config() (lru_cache)
-│   ├── core/                        # NGHIỆP VỤ — mỗi domain 1 folder
-│   │   ├── vision/                  #   ANPR: engines/anpr/ (engine.py façade + các tầng) · services/
+│   ├── core/                        # NGHIỆP VỤ — mỗi domain 1 folder (ADR-0005)
+│   │   ├── vision/                  #   ANPR: engines/anpr/ (engine.py façade, model_loader.py, …) · services/
 │   │   ├── dataset/                 #   chọn ảnh cho người gán nhãn + khoá snapshot (ISSUE-010)
-│   │   ├── copilot/                 #   RAG hỏi đáp: engines/rag_pipeline.py · dispute_workflow (chưa nối)
-│   │   ├── knowledge/               #   nạp tài liệu → chunk → embedding → pgvector (bản nháp)
+│   │   ├── copilot/                 #   RAG hỏi đáp: engines/rag_pipeline.py · workflows/dispute · guardrails/
+│   │   ├── knowledge/               #   nạp tài liệu → chunk → embedding → pgvector
 │   │   ├── knowledge_eval/          #   bộ test Copilot + cổng xuất bản (ISSUE-009)
-│   │   └── forecast/                #   phục vụ MỞ (ADR-0037); kết nối ClickHouse Data Marts & giá động
-│   ├── infra/                       # ADAPTER RA NGOÀI — database/ (pgvector) · datalake/ · llm/
+│   │   ├── forecast/                #   dự báo lấp đầy & gợi ý giá (ADR-0037)
+│   │   ├── model_policy/            #   profile/policy/connection model theo tác vụ (ADR-0061)
+│   │   └── console/                 #   nghiệp vụ AI Console nội bộ (ADR-0048)
+│   ├── infra/                       # ADAPTER RA NGOÀI — database/ · datalake/ · embedding/ · llm/ · model_registry/ · monitoring/ · storage/
 │   ├── util/                        # logger.py · console.py · file.py · generate_url.py · request_metrics.py
-│   ├── script/                      # compile_proto.py · smoke/eval/seed · export_parking_sessions.py
-│   ├── main.py                      # entrypoint REST (FastAPI app)
+│   ├── script/                      # compile_proto.py · smoke/eval/seed · export_parking_sessions.py · export_anpr_onnx.py
+│   ├── main.py                      # entrypoint REST (FastAPI app, cổng 8000)
+│   ├── console_main.py              # entrypoint AI Console (FastAPI + SPA ui/dist, cổng 8090)
 │   └── grpc_server.py               # entrypoint gRPC (grpc.aio, cổng 50051)
 ├── test/                            # unittest stdlib — KHÔNG cần thêm dependency
 ├── model/                           # một root cho toàn bộ vòng đời model
@@ -274,6 +286,8 @@ Danh sách biến chuẩn nằm trong `.env.example`:
 | `AI_RUNTIME_SETTINGS_PATH` | `ai/var/runtime_settings.json` | File cấu hình đổi ở trang Settings; console áp dụng ngay, inference nạp khi khởi động lại. Chỉ đọc từ biến môi trường thật, không đọc `.env.dev` |
 | `AI_EMBEDDING_MODEL` | `text-embedding-3-small` | Model sinh vector cho tri thức |
 | `AI_EMBEDDING_ALLOW_NO_PGVECTOR` | `false` | Postgres không có pgvector thì dừng với lỗi; `true` (chỉ dev) cho chạy chế độ mảng `DOUBLE PRECISION[]` quét toàn bảng — [ADR-0001](docs/projects/adrs/10-2026/0001-fallback-khong-pgvector-chi-cho-dev.md) |
+| `AI_EMBEDDING_OFFLINE_FALLBACK` | `false` | Chỉ bật local/dev khi muốn fallback embedding tất định lúc service embedding tắt (bug-052) |
+| `AI_DB_HOST_PORT` | `5435` | Cổng host map tới `database-vector` khi chạy Python native (tránh đụng Postgres khác, bug-029) |
 | `AI_RAG_TOP_K` | `5` | Số chunk tương đồng lấy từ pgvector |
 | `AI_RAG_MIN_SIMILARITY` | `0.35` | Ngưỡng cosine tối thiểu của nhánh vector, đồng thời là cổng từ chối: đoạn vector tốt nhất dưới ngưỡng → không gọi LLM. Phụ thuộc model embedding (`bge-m3`: 0.55) — bảng ở [core/copilot](app/core/copilot/README.md#cấu-hình) |
 | `AI_DATALAKE_LOCAL_PATH` | `data/datalake` | Workspace raw/manifest/watermark local |

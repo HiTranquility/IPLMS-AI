@@ -68,5 +68,3 @@ export const apiClient = {
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
   deleteOne: <T>(path: string) => requestOne<T>(path, { method: 'DELETE' }),
 };
-
-export default apiClient;

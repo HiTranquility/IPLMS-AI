@@ -1,6 +1,6 @@
 import { Camera, CheckCircle2, Percent, Sliders } from 'lucide-react';
 import { Badge } from '@/components/common/Ui/data-display/Badge';
-import table from '@/components/common/Ui/data-display/table.module.css';
+import table from '@/components/common/Ui/data-display/Table.module.css';
 import { ThresholdCurve } from '@/components/common/Ui/data-display/ThresholdCurve';
 import { useI18n } from '@/i18n/I18nProvider';
 import type { Messages } from '@/i18n/vi';

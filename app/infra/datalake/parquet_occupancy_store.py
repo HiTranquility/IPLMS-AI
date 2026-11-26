@@ -8,13 +8,13 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import io
-import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from app.config import get_config
 from app.core.exceptions import DataLakeError
 from app.util.logger import logger
 
@@ -24,7 +24,7 @@ def _resolve_default_gold_lake_path(custom_path: str | Path | None = None) -> Pa
     if custom_path:
         return Path(custom_path)
 
-    env_dir = os.environ.get("DATALAKE_DIR") or os.environ.get("AI_DATALAKE_PATH") or os.environ.get("LAKE_LOCAL_FALLBACK_DIR")
+    env_dir = get_config().datalake.legacy_lake_dir
     if env_dir:
         cand = Path(env_dir)
         if not cand.is_absolute() and "gold/occupancy" not in str(cand).replace("\\", "/"):

@@ -6,6 +6,7 @@ import urllib.parse
 from typing import Any, List, Optional, Tuple
 
 import psycopg2
+from app.config import get_config
 from app.util.logger import logger
 
 def _redact_url(url: str) -> str:
@@ -52,11 +53,7 @@ def resolve_db_candidates(db_url: str) -> List[str]:
         in_docker = os.path.exists("/.dockerenv")
         local_hosts = ["127.0.0.1", "localhost"] + (["host.docker.internal"] if in_docker else [])
 
-        host_port_env = os.environ.get("AI_DB_HOST_PORT", "5435")
-        try:
-            custom_port = int(host_port_env)
-        except ValueError:
-            custom_port = 5435
+        custom_port = get_config().server.db_host_port
 
         target_ports: List[int] = [custom_port, 5435, 5432]
         seen_ports: List[int] = []
@@ -112,7 +109,7 @@ def _may_create_database(cand_url: str, db_url: str) -> bool:
     if cand_url == db_url:
         return True
     try:
-        own_port = int(os.environ.get("AI_DB_HOST_PORT", "5435"))
+        own_port = get_config().server.db_host_port
         return urllib.parse.urlsplit(cand_url).port == own_port
     except ValueError:
         return False

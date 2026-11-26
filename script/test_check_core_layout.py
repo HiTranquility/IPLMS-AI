@@ -86,6 +86,17 @@ class CheckCoreLayoutTest(unittest.TestCase):
         found = "\n".join(ccl.naming_violations(self.core))
         self.assertIn("bad_controller.py", found)
 
+    def test_chan_doc_env_ngoai_config_va_cho_phep_trong_config_script(self):
+        make(self.core.parent, {
+            "core/__init__.py": "",
+            "config/server_config.py": 'import os\nPORT = os.environ.get("AI_PORT")\n',
+            "script/run_dev.py": 'import os\nENV = os.getenv("AI_ENV")\n',
+            "infra/bad_client.py": 'import os\nFLAG = os.getenv("AI_BAD_FLAG")\n',
+        })
+        found = ccl.env_access_violations(self.core.parent)
+        self.assertEqual(1, len(found), found)
+        self.assertIn("bad_client.py:2", found[0])
+
 
 if __name__ == "__main__":
     unittest.main()

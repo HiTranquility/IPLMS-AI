@@ -1,4 +1,6 @@
 """Cấu hình AI Console nội bộ (ADR-0048)."""
+import os
+
 from pydantic_settings import SettingsConfigDict
 
 from app.config.base_config import BaseConfig
@@ -54,3 +56,10 @@ class ConsoleConfig(BaseConfig):
     model_secret_names: str = ""
     model_test_timeout_seconds: float = 10.0
     model_tests_per_minute: int = 10
+
+
+def resolve_model_secret(secret_env_name: str) -> str:
+    """Đọc giá trị biến môi trường chứa API key theo tên động do admin cấu hình (ADR-0061 §7)."""
+    if not secret_env_name:
+        return ""
+    return os.environ.get(secret_env_name, "")

@@ -13,7 +13,7 @@ import {
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/common/Ui/data-display/Badge';
-import table from '@/components/common/Ui/data-display/table.module.css';
+import table from '@/components/common/Ui/data-display/Table.module.css';
 import { EmptyState } from '@/components/common/Ui/feedback/EmptyState';
 import { ErrorBlock, Loading } from '@/components/common/Ui/feedback/LoadState';
 import { ReasonAction } from '@/components/common/Ui/form/ReasonAction';
