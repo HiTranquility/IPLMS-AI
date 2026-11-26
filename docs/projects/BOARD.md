@@ -86,6 +86,7 @@
 
 | Việc | Hồ sơ | Ngày đóng |
 |---|---|---|
+| Cô lập test ANPR khỏi `best.onnx` cục bộ và chuẩn hoá type hint tầng `config`/`core`/`mappers` | [ISSUE-031](issues/11-2026/ISSUE-031-anpr-test-isolation-and-type-hints/issue.md) | 2026-11-26 |
 | Khắc phục các lệch naming, config env và `DESIGN.md` trong `ai/` (AUDIT-009) | [ISSUE-030](issues/11-2026/ISSUE-030-ai-naming-and-conventions/issue.md) | 2026-11-26 |
 | `ParquetOccupancyStore` bỏ qua cột `data_source='synthetic_fallback'` từ `analytic` khiến dữ liệu g… | [bug-060](bugs/bug-060-parquet-occupancy-store-bo-qua-cot-data-source-fallback/bug.md) | 2026-11-14 |
 | `console_access.py` gọi tên cũ `console_auth_service` gây nổ 35 lỗi `NameError` trên `AI · CI` | [bug-059](bugs/bug-059-console-access-undefined-auth-service/bug.md) | 2026-11-14 |
@@ -105,4 +106,3 @@
 | CORS của REST inference phản chiếu mọi origin kèm `allow-credentials: true` | [bug-045](bugs/bug-045-cors-inference-phan-chieu-moi-origin-kem-credentials/bug.md) | 2026-10-31 |
 | `/anpr/recognize-many` nhận tới 1000 file mỗi request và chạy ANPR tuần tự từng file | [bug-044](bugs/bug-044-anpr-recognize-many-khong-gioi-han-so-file/bug.md) | 2026-10-31 |
 | REST ANPR đọc cả file upload vào RAM, không giới hạn kích thước, không kiểm loại file | [bug-043](bugs/bug-043-anpr-rest-doc-anh-khong-gioi-han-kich-thuoc/bug.md) | 2026-10-31 |
-| Prompt Copilot không vào image, service âm thầm chạy prompt dự phòng | [bug-042](bugs/bug-042-prompt-copilot-khong-vao-image-chay-prompt-du-phong/bug.md) | 2026-10-31 |
